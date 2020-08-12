@@ -4,38 +4,55 @@
 #include <climits>
 #include <string>
 #include <variant>
-
 #include <tl/expected.hpp>
-#include <zmq.h>
-
+#include "json.hpp"
 #include "models/device.hpp"
 #include "models/file.hpp"
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
 
+namespace swagger::v1::model {
+class BlockGenerator;
+class BlockGeneratorResult;
+class BulkCreateBlockFilesRequest;
+class BulkDeleteBlockFilesRequest;
+class BulkCreateBlockGeneratorsRequest;
+class BulkDeleteBlockGeneratorsRequest;
+class BulkStartBlockGeneratorsRequest;
+class BulkStopBlockGeneratorsRequest;
+class BlockFile;
+class BlockDevice;
+} // namespace swagger::v1::model
+
 namespace openperf::message {
 struct serialized_message;
-};
+}
 
 namespace openperf::block::api {
 
+using namespace swagger::v1::model;
+
 const std::string endpoint = "inproc://openperf_block";
 
-using openperf::message::serialized_message;
-using device_ptr = std::unique_ptr<model::device>;
-using file_ptr = std::unique_ptr<model::file>;
-using generator_ptr = std::unique_ptr<model::block_generator>;
-using generator_result_ptr = std::unique_ptr<model::block_generator_result>;
-using string_ptr = std::unique_ptr<std::string>;
+using device_t = model::device;
+using device_ptr = std::unique_ptr<device_t>;
+
+using file_t = model::file;
+using file_ptr = std::unique_ptr<file_t>;
+
+using generator_t = model::block_generator;
+using generator_ptr = std::unique_ptr<generator_t>;
+
+using generator_result_t = model::block_generator_result;
+using generator_result_ptr = std::unique_ptr<generator_result_t>;
+
+using string_t = std::string;
+using string_ptr = std::unique_ptr<string_t>;
+
+using serialized_msg = openperf::message::serialized_message;
 
 static constexpr size_t err_max_length = 256;
-enum class error_type : uint8_t {
-    NONE = 0,
-    NOT_FOUND,
-    ZMQ_ERROR,
-    CUSTOM_ERROR
-};
-
+enum class error_type { NONE = 0, NOT_FOUND, ZMQ_ERROR, CUSTOM_ERROR };
 struct typed_error
 {
     error_type type = error_type::NONE;
@@ -207,16 +224,50 @@ using reply_msg = std::variant<reply_block_devices,
                                reply_ok,
                                reply_error>;
 
-serialized_message serialize_request(request_msg&&);
-serialized_message serialize_reply(reply_msg&&);
+serialized_msg serialize_request(request_msg&& request);
+serialized_msg serialize_reply(reply_msg&& reply);
 
-tl::expected<request_msg, int> deserialize_request(serialized_message&&);
-tl::expected<reply_msg, int> deserialize_reply(serialized_message&&);
+tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg);
+tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
+
+bool is_valid(const BlockFile& generator, std::vector<std::string>& errors);
+bool is_valid(const BlockGenerator& generator,
+              std::vector<std::string>& errors);
 
 reply_error
 to_error(error_type type, int code = 0, const std::string& value = "");
 const char* to_string(const api::typed_error&);
+std::shared_ptr<BlockDevice> to_swagger(const model::device&);
+std::shared_ptr<BlockFile> to_swagger(const model::file&);
+std::shared_ptr<BlockGenerator> to_swagger(const model::block_generator&);
+std::shared_ptr<BlockGeneratorResult>
+to_swagger(const model::block_generator_result&);
+model::file from_swagger(const BlockFile&);
+
+model::block_generator from_swagger(const BlockGenerator&);
+request_block_file_bulk_add from_swagger(BulkCreateBlockFilesRequest&);
+request_block_file_bulk_del from_swagger(BulkDeleteBlockFilesRequest&);
+request_block_generator_bulk_add
+from_swagger(BulkCreateBlockGeneratorsRequest&);
+request_block_generator_bulk_del
+from_swagger(BulkDeleteBlockGeneratorsRequest&);
+request_block_generator_bulk_start
+from_swagger(BulkStartBlockGeneratorsRequest&);
+request_block_generator_bulk_stop from_swagger(BulkStopBlockGeneratorsRequest&);
+
+extern const std::string endpoint;
 
 } // namespace openperf::block::api
+
+namespace swagger::v1::model {
+void from_json(const nlohmann::json&, BlockFile&);
+void from_json(const nlohmann::json&, BulkCreateBlockFilesRequest&);
+void from_json(const nlohmann::json&, BulkDeleteBlockFilesRequest&);
+void from_json(const nlohmann::json&, BlockGenerator&);
+void from_json(const nlohmann::json&, BulkCreateBlockGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkDeleteBlockGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStartBlockGeneratorsRequest&);
+void from_json(const nlohmann::json&, BulkStopBlockGeneratorsRequest&);
+} // namespace swagger::v1::model
 
 #endif /* _OP_BLOCK_API_HPP_ */

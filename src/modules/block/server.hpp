@@ -1,7 +1,8 @@
 #ifndef _OP_BLOCK_SERVER_HPP_
 #define _OP_BLOCK_SERVER_HPP_
 
-#include "framework/core/op_core.h"
+#include "json.hpp"
+#include "core/op_core.h"
 
 #include "api.hpp"
 #include "device_stack.hpp"
@@ -10,13 +11,17 @@
 
 namespace openperf::block::api {
 
+using json = nlohmann::json;
+using device_stack = block::device::device_stack;
+using file_stack = block::file::file_stack;
+using generator_stack = block::generator::generator_stack;
 class server
 {
 private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
-    std::unique_ptr<device::device_stack> m_device_stack;
-    std::unique_ptr<file::file_stack> m_file_stack;
-    std::unique_ptr<generator::generator_stack> m_generator_stack;
+    std::unique_ptr<device_stack> m_device_stack;
+    std::unique_ptr<file_stack> m_file_stack;
+    std::unique_ptr<generator_stack> m_generator_stack;
 
 public:
     server(void* context, core::event_loop& loop);

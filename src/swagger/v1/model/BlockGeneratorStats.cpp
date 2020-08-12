@@ -24,11 +24,9 @@ BlockGeneratorStats::BlockGeneratorStats()
     m_Bytes_target = 0L;
     m_Bytes_actual = 0L;
     m_Io_errors = 0L;
-    m_Latency_total = 0L;
+    m_Latency = 0L;
     m_Latency_min = 0L;
-    m_Latency_minIsSet = false;
     m_Latency_max = 0L;
-    m_Latency_maxIsSet = false;
     
 }
 
@@ -50,15 +48,9 @@ nlohmann::json BlockGeneratorStats::toJson() const
     val["bytes_target"] = m_Bytes_target;
     val["bytes_actual"] = m_Bytes_actual;
     val["io_errors"] = m_Io_errors;
-    val["latency_total"] = m_Latency_total;
-    if(m_Latency_minIsSet)
-    {
-        val["latency_min"] = m_Latency_min;
-    }
-    if(m_Latency_maxIsSet)
-    {
-        val["latency_max"] = m_Latency_max;
-    }
+    val["latency"] = m_Latency;
+    val["latency_min"] = m_Latency_min;
+    val["latency_max"] = m_Latency_max;
     
 
     return val;
@@ -71,15 +63,9 @@ void BlockGeneratorStats::fromJson(nlohmann::json& val)
     setBytesTarget(val.at("bytes_target"));
     setBytesActual(val.at("bytes_actual"));
     setIoErrors(val.at("io_errors"));
-    setLatencyTotal(val.at("latency_total"));
-    if(val.find("latency_min") != val.end())
-    {
-        setLatencyMin(val.at("latency_min"));
-    }
-    if(val.find("latency_max") != val.end())
-    {
-        setLatencyMax(val.at("latency_max"));
-    }
+    setLatency(val.at("latency"));
+    setLatencyMin(val.at("latency_min"));
+    setLatencyMax(val.at("latency_max"));
     
 }
 
@@ -129,13 +115,13 @@ void BlockGeneratorStats::setIoErrors(int64_t value)
     m_Io_errors = value;
     
 }
-int64_t BlockGeneratorStats::getLatencyTotal() const
+int64_t BlockGeneratorStats::getLatency() const
 {
-    return m_Latency_total;
+    return m_Latency;
 }
-void BlockGeneratorStats::setLatencyTotal(int64_t value)
+void BlockGeneratorStats::setLatency(int64_t value)
 {
-    m_Latency_total = value;
+    m_Latency = value;
     
 }
 int64_t BlockGeneratorStats::getLatencyMin() const
@@ -145,15 +131,7 @@ int64_t BlockGeneratorStats::getLatencyMin() const
 void BlockGeneratorStats::setLatencyMin(int64_t value)
 {
     m_Latency_min = value;
-    m_Latency_minIsSet = true;
-}
-bool BlockGeneratorStats::latencyMinIsSet() const
-{
-    return m_Latency_minIsSet;
-}
-void BlockGeneratorStats::unsetLatency_min()
-{
-    m_Latency_minIsSet = false;
+    
 }
 int64_t BlockGeneratorStats::getLatencyMax() const
 {
@@ -162,15 +140,7 @@ int64_t BlockGeneratorStats::getLatencyMax() const
 void BlockGeneratorStats::setLatencyMax(int64_t value)
 {
     m_Latency_max = value;
-    m_Latency_maxIsSet = true;
-}
-bool BlockGeneratorStats::latencyMaxIsSet() const
-{
-    return m_Latency_maxIsSet;
-}
-void BlockGeneratorStats::unsetLatency_max()
-{
-    m_Latency_maxIsSet = false;
+    
 }
 
 }
