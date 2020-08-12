@@ -39,6 +39,13 @@ void checksum_ipv4_headers(const uint8_t* const ipv4_header_ptrs[],
                        sum += header->data[3];
                        sum += header->data[4];
 
+                       const int nb_words = header->data[0] & 0xf;
+                       if (nb_words > 5) {
+                           for (int word = 5; word < nb_words; word++) {
+                               sum += header->data[word];
+                           }
+                       }
+
                        uint16_t csum = fold32(fold64(sum));
                        return (csum == 0xffff ? csum : (0xffff ^ csum));
                    });
@@ -48,27 +55,27 @@ void checksum_ipv4_pseudoheaders(const uint8_t* const ipv4_header_ptrs[],
                                  uint16_t count,
                                  uint32_t checksums[])
 {
-    std::transform(
-        ipv4_header_ptrs,
-        ipv4_header_ptrs + count,
-        checksums,
-        [](const uint8_t* ptr) {
-            auto ipv4 = reinterpret_cast<const pga::headers::ipv4*>(ptr);
+    std::transform(ipv4_header_ptrs,
+                   ipv4_header_ptrs + count,
+                   checksums,
+                   [](const uint8_t* ptr) {
+                       auto ipv4 =
+                           reinterpret_cast<const pga::headers::ipv4*>(ptr);
+                       const uint8_t ihl = ptr[0] & 0xf;
+                       auto pheader = pga::headers::ipv4_pseudo{
+                           .src_address = ipv4->src_address,
+                           .dst_address = ipv4->dst_address,
+                           .zero = 0,
+                           .protocol = ipv4->protocol,
+                           .length = htons(static_cast<uint16_t>(
+                               ntohs(ipv4->length) - (4 * ihl)))};
 
-            auto pheader = pga::headers::ipv4_pseudo{
-                .src_address = ipv4->src_address,
-                .dst_address = ipv4->dst_address,
-                .zero = 0,
-                .protocol = ipv4->protocol,
-                .length = htons(static_cast<uint16_t>(
-                    ntohs(ipv4->length) - sizeof(pga::headers::ipv4)))};
+                       uint64_t sum = pheader.data[0];
+                       sum += pheader.data[1];
+                       sum += pheader.data[2];
 
-            uint64_t sum = pheader.data[0];
-            sum += pheader.data[1];
-            sum += pheader.data[2];
-
-            return (fold32(fold64(sum)));
-        });
+                       return (fold32(fold64(sum)));
+                   });
 }
 
 uint32_t checksum_data_aligned(const uint32_t data[], uint16_t length)

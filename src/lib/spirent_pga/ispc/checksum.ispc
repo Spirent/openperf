@@ -11,38 +11,150 @@ inline static uniform unsigned int32 fold(uniform unsigned int32 x)
     return ((x >> 16) + (x & 0xffff));
 }
 
+/*
+ * Instead of shuffling data around and checksumming multiple headers
+ * in parallel, we use the SIMD registers to go wide and minimize
+ * the number of instructions per header.  This ends up being faster
+ * when we're just summing data across the lanes.
+ *
+ * The masks are used to exclude data from the checksumming process.
+ * Additionally, we use the checksum output array as a scratch area
+ * to store a temporary sum. We then iterate through the checksum array
+ * and calculate the final results in parallel.
+ */
+
+#if TARGET_WIDTH == 4
+
 export void checksum_ipv4_headers(const unsigned int8* const uniform ipv4_header_ptrs[],
                                   uniform unsigned int16 count,
                                   unsigned int32 uniform checksums[])
 {
-    uniform int32 scratch[5 * programCount];
-    uniform int base = 0;
+    static const unsigned int32 masks[16][3] = {
+        { { -1,  0,  0,  0 }, {  0,  0,  0,  0}, {  0,  0,  0,  0} },
+        { { -1,  0,  0,  0 }, {  0,  0,  0,  0}, {  0,  0,  0,  0} },
+        { { -1,  0,  0,  0 }, {  0,  0,  0,  0}, {  0,  0,  0,  0} },
+        { { -1,  0,  0,  0 }, {  0,  0,  0,  0}, {  0,  0,  0,  0} },
+        { { -1,  0,  0,  0 }, {  0,  0,  0,  0}, {  0,  0,  0,  0} },
+        { { -1,  0,  0,  0 }, {  0,  0,  0,  0}, {  0,  0,  0,  0} },
+        { { -1, -1,  0,  0 }, {  0,  0,  0,  0}, {  0,  0,  0,  0} },
+        { { -1, -1, -1,  0 }, {  0,  0,  0,  0}, {  0,  0,  0,  0} },
+        { { -1, -1, -1, -1 }, {  0,  0,  0,  0}, {  0,  0,  0,  0} },
+        { { -1, -1, -1, -1 }, { -1,  0,  0,  0}, {  0,  0,  0,  0} },
+        { { -1, -1, -1, -1 }, { -1, -1,  0,  0}, {  0,  0,  0,  0} },
+        { { -1, -1, -1, -1 }, { -1, -1, -1,  0}, {  0,  0,  0,  0} },
+        { { -1, -1, -1, -1 }, { -1, -1, -1, -1}, {  0,  0,  0,  0} },
+        { { -1, -1, -1, -1 }, { -1, -1, -1, -1}, { -1,  0,  0,  0} },
+        { { -1, -1, -1, -1 }, { -1, -1, -1, -1}, { -1, -1,  0,  0} },
+        { { -1, -1, -1, -1 }, { -1, -1, -1, -1}, { -1, -1, -1,  0} },
+    };
 
-    foreach (i = 0 ... count) {
-        /* Copy IPv4 header into scratch area */
-        memcpy(&scratch[5 * programIndex], (unsigned int8* const)ipv4_header_ptrs[i], 20);
+    for (uniform int i = 0; i < count; i++) {
+        /* XXX: uniform key word required for optimal 4-wide load */
+        varying unsigned int32* uniform ptr = (varying unsigned int32*)ipv4_header_ptrs[i];
+        uniform int ihl = extract(ptr[0], 0) & 0xf;
 
-        /* Transpose it into our lanes */
-        unsigned int32<5> headers;
-        aos_to_soa5(&scratch[0],
-                    (varying int32*)&headers[0],
-                    (varying int32*)&headers[1],
-                    (varying int32*)&headers[2],
-                    (varying int32*)&headers[3],
-                    (varying int32*)&headers[4]);
+        unsigned int32 sum = fold(ptr[0]);
+        sum += fold(ptr[1] & masks[ihl][0]);
 
-        /* Now sum and fold the values */
-        unsigned int32 sum = fold(headers[0]);
-        sum += fold(headers[1]);
-        sum += fold(headers[2]);
-        sum += fold(headers[3]);
-        sum += fold(headers[4]);
-        sum = fold(fold(sum));
+        if (ihl > 8) {
+            sum += fold(ptr[2] & masks[ihl][1]);
 
-        packed_store_active(&checksums[base], (sum == 0xffff ? sum : (0xffff - sum)));
-        base += programCount;
+            if (ihl > 12) {
+                sum += fold(ptr[3] & masks[ihl][2]);
+            }
+        }
+
+        checksums[i] = reduce_add(sum);
+    }
+
+    foreach(i = 0 ... count) {
+        unsigned int32 sum = fold(fold(checksums[i]));
+        checksums[i] = select(sum == 0xffff, (int32)sum, (int32)(0xffff - sum));
     }
 }
+
+#elif TARGET_WIDTH == 8
+
+export void checksum_ipv4_headers(const unsigned int8* const uniform ipv4_header_ptrs[],
+                                  uniform unsigned int16 count,
+                                  unsigned int32 uniform checksums[])
+{
+    static const unsigned int32 masks[16][2] = {
+        { { -1, -1, -1, -1, -1,  0,  0,  0 }, {  0,  0,  0,  0,  0,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1,  0,  0,  0 }, {  0,  0,  0,  0,  0,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1,  0,  0,  0 }, {  0,  0,  0,  0,  0,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1,  0,  0,  0 }, {  0,  0,  0,  0,  0,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1,  0,  0,  0 }, {  0,  0,  0,  0,  0,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1,  0,  0,  0 }, {  0,  0,  0,  0,  0,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1, -1,  0,  0 }, {  0,  0,  0,  0,  0,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1, -1, -1,  0 }, {  0,  0,  0,  0,  0,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1, -1, -1, -1 }, {  0,  0,  0,  0,  0,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1, -1, -1, -1 }, { -1,  0,  0,  0,  0,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1, -1, -1, -1 }, { -1, -1,  0,  0,  0,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1, -1, -1, -1 }, { -1, -1, -1,  0,  0,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1, -1, -1, -1 }, { -1, -1, -1, -1,  0,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1, -1, -1, -1 }, { -1, -1, -1, -1, -1,  0,  0,  0 } },
+        { { -1, -1, -1, -1, -1, -1, -1, -1 }, { -1, -1, -1, -1, -1, -1,  0,  0 } },
+        { { -1, -1, -1, -1, -1, -1, -1, -1 }, { -1, -1, -1, -1, -1, -1, -1,  0 } },
+    };
+
+    for (uniform int i = 0; i < count; i++) {
+        varying unsigned int32* ptr = (varying unsigned int32*)ipv4_header_ptrs[i];
+        uniform int ihl = extract(ptr[0], 0) & 0xf;
+
+        unsigned int32 sum = fold(ptr[0] & masks[ihl][0]);
+
+        if (ihl > 8) {
+            sum += fold(ptr[1] & masks[ihl][1]);
+        }
+
+        checksums[i] = reduce_add(sum);
+    }
+
+    foreach(i = 0 ... count) {
+        unsigned int32 sum = fold(fold(checksums[i]));
+        checksums[i] = select(sum == 0xffff, (int32)sum, (int32)(0xffff - sum));
+    }
+}
+
+#elif TARGET_WIDTH == 16
+
+export void checksum_ipv4_headers(const unsigned int8* const uniform ipv4_header_ptrs[],
+                                  uniform unsigned int16 count,
+                                  unsigned int32 uniform checksums[])
+{
+    static const unsigned int32 masks[16] = {
+        { -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
+        { -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
+        { -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
+        { -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
+        { -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
+        { -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
+        { -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
+        { -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
+        { -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0 },
+        { -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0 },
+        { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0 },
+        { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0 },
+        { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0 },
+        { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0 },
+        { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  0 },
+        { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0 },
+    };
+
+    for (uniform int i = 0; i < count; i++) {
+        varying unsigned int32* ptr = (varying unsigned int32*)ipv4_header_ptrs[i];
+        uniform int ihl = extract(ptr[0], 0) & 0xf;
+        checksums[i] = reduce_add(fold(ptr[0] & masks[ihl]));
+    }
+
+    foreach(i = 0 ... count) {
+        unsigned int32 sum = fold(fold(checksums[i]));
+        checksums[i] = select(sum == 0xffff, (int32)sum, (int32)(0xffff - sum));
+    }
+}
+
+#endif
 
 /*
  * XXX: ISPC doesn't support unions, so we have to manually
@@ -70,8 +182,9 @@ inline void populate_pseudoheaders(const uniform int32 input[],
                 (varying int32*)&headers[3],
                 (varying int32*)&headers[4]);
 
-    unsigned int16 length = headers[0] >> 16;
-    length = bswap(bswap(length) - 20);
+    unsigned int length = headers[0] >> 16;
+    unsigned int ihl = headers[0] & 0xf;
+    length = bswap(bswap(length) - (4 * ihl));
 
     unsigned int32 protocol = (headers[2] >> 8) & 0xff;
 
@@ -85,7 +198,6 @@ export void checksum_ipv4_pseudoheaders(const unsigned int8* const uniform ipv4_
                                         unsigned int32 uniform checksums[])
 {
     uniform int32 scratch[5 * programCount];
-    uniform int base = 0;
 
     foreach (i = 0 ... count) {
         /* Copy IPv4 headers into scratch area */
@@ -98,8 +210,7 @@ export void checksum_ipv4_pseudoheaders(const unsigned int8* const uniform ipv4_
         sum += fold(phdrs.proto_len);
         sum = fold(fold(sum));
 
-        packed_store_active(&checksums[base], sum);
-        base += programCount;
+        packed_store_active(&checksums[extract(i, 0)], sum);
     }
 }
 

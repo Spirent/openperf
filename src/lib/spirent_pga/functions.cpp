@@ -5,9 +5,9 @@
 namespace pga {
 
 constexpr uint16_t nb_items = 32;
+
 constexpr uint16_t nb_headers = nb_items;
-constexpr uint16_t ipv4_header_length = 20; /* octets */
-constexpr uint16_t ipv6_header_length = 40; /* also octets */
+constexpr uint16_t header_length = 60; /* octets */
 
 constexpr uint16_t nb_signatures = nb_items;
 constexpr uint16_t signature_length = 20;    /* octets */
@@ -19,18 +19,28 @@ constexpr uint16_t fill_buffer_length = 128; /* quadlets */
  * doesn't require any memory allocations.
  ***/
 
-template <int HeaderLength, typename Tag>
+template <uint8_t FirstByte, typename Tag>
 void initialize_checksum_headers(
     function_wrapper<checksum_headers_fn, Tag>& wrapper)
 {
-    std::array<uint8_t[HeaderLength], nb_headers> headers;
+    std::array<uint8_t[header_length], nb_headers> headers;
     std::array<uint8_t*, nb_headers> header_ptrs;
     std::array<uint32_t, nb_headers> checksums;
+
+    auto seed = std::numeric_limits<uint32_t>::max();
 
     std::transform(std::begin(headers),
                    std::end(headers),
                    std::begin(header_ptrs),
-                   [](auto& buffer) { return (std::addressof(buffer[0])); });
+                   [&](auto& buffer) {
+                       auto* ptr = std::addressof(buffer[0]);
+                       constexpr auto to_fill =
+                           header_length / sizeof(uint32_t);
+                       seed = scalar::fill_prbs_aligned(
+                           reinterpret_cast<uint32_t*>(ptr), to_fill, seed);
+                       ptr[0] = FirstByte;
+                       return (ptr);
+                   });
 
     wrapper.init(reinterpret_cast<uint8_t**>(header_ptrs.data()),
                  nb_headers,
@@ -175,11 +185,9 @@ void initialize_unpack_and_sum_indexicals(
 
 functions::functions()
 {
-    initialize_checksum_headers<ipv4_header_length>(checksum_ipv4_headers_impl);
-    initialize_checksum_headers<ipv4_header_length>(
-        checksum_ipv4_pseudoheaders_impl);
-    initialize_checksum_headers<ipv6_header_length>(
-        checksum_ipv6_pseudoheaders_impl);
+    initialize_checksum_headers<0x45>(checksum_ipv4_headers_impl);
+    initialize_checksum_headers<0x45>(checksum_ipv4_pseudoheaders_impl);
+    initialize_checksum_headers<0x60>(checksum_ipv6_pseudoheaders_impl);
     initialize_checksum_data(checksum_data_aligned_impl);
     initialize_decode_signatures(decode_signatures_impl);
     initialize_encode_signatures(encode_signatures_impl);
