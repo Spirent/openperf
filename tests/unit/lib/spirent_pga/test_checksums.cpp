@@ -22,23 +22,28 @@ TEST_CASE("checksum functions", "[spirent-pga]")
 
         SECTION("IPv4 header")
         {
-            constexpr uint16_t ipv4_header_length = 20;
+            constexpr uint16_t ipv4_header_max_length = 60;
             constexpr uint16_t nb_headers = 32;
             /*
              * XXX: Using array here to work around issue with the Xcode.app
              * toolchain whining about destroying uint8_t[] values in vectors.
              */
-            std::array<uint8_t[ipv4_header_length], nb_headers> ipv4_headers;
+            std::array<uint8_t[ipv4_header_max_length], nb_headers>
+                ipv4_headers;
             std::vector<const uint8_t*> ipv4_header_ptrs(nb_headers);
 
             /* Fill in headers with (pseudo) random data */
             uint32_t seed = 0xffffffff;
+            unsigned index = 0;
             std::for_each(std::begin(ipv4_headers),
                           std::end(ipv4_headers),
                           [&](auto& buffer) {
                               uint8_t* ptr = std::addressof(buffer[0]);
-                              uint16_t length = ipv4_header_length;
-                              seed = pga_fill_prbs(&ptr, &length, 1, seed);
+                              uint16_t ihl = (5 + (index % 11));
+                              seed = scalar::fill_prbs_aligned(
+                                  reinterpret_cast<uint32_t*>(ptr), ihl, seed);
+                              ptr[0] = 0x4 << 4 | ihl;
+                              index++;
                           });
 
             /* Generate vector of pointers for checksum functions */
