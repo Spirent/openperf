@@ -5,18 +5,19 @@
 BLOCK_DEPENDS += api expected framework json pistache swagger_model timesync versions
 
 BLOCK_SOURCES += \
-	api_converters.cpp \
 	api_transmogrify.cpp \
-	block_generator.cpp \
-	device_stack.cpp \
+	virtual_device.cpp \
 	file_stack.cpp \
+	device_stack.cpp \
+	block_generator.cpp \
 	generator_stack.cpp \
-	handler.cpp \
 	init.cpp \
-	pattern_generator.cpp \
+	handler.cpp \
 	server.cpp \
-	task.cpp \
-	virtual_device.cpp
+	pattern_generator.cpp \
+	task.cpp
+
+include $(BLOCK_SRC_DIR)/models/directory.mk
 
 BLOCK_LDLIBS += -lrt
 

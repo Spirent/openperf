@@ -5,7 +5,6 @@
 #include "block/pattern_generator.hpp"
 
 using namespace openperf::block::worker;
-using pattern = openperf::block::model::block_generation_pattern;
 
 TEST_CASE("pattern_generator", "[block]")
 {
@@ -15,14 +14,14 @@ TEST_CASE("pattern_generator", "[block]")
 
         SECTION("success, ")
         {
-            REQUIRE_NOTHROW(pg.reset(2, 10, pattern::REVERSE));
-            REQUIRE_NOTHROW(pg.reset(-5, -2, pattern::SEQUENTIAL));
+            REQUIRE_NOTHROW(pg.reset(2, 10, generation_pattern::REVERSE));
+            REQUIRE_NOTHROW(pg.reset(-5, -2, generation_pattern::SEQUENTIAL));
         }
 
         SECTION("exception, ")
         {
-            REQUIRE_THROWS(pg.reset(0, 0, pattern::RANDOM));
-            REQUIRE_THROWS(pg.reset(0, -1, pattern::RANDOM));
+            REQUIRE_THROWS(pg.reset(0, 0, generation_pattern::RANDOM));
+            REQUIRE_THROWS(pg.reset(0, -1, generation_pattern::RANDOM));
         }
     }
 
@@ -46,7 +45,7 @@ TEST_CASE("pattern_generator", "[block]")
         };
 
         auto test = [&](off_t min, off_t max) {
-            pg.reset(min, max, pattern::RANDOM);
+            pg.reset(min, max, generation_pattern::RANDOM);
             for (off_t i = min; i < max; i++) {
                 verify(min, max, pg.generate());
             }
@@ -64,7 +63,7 @@ TEST_CASE("pattern_generator", "[block]")
         auto pg = pattern_generator();
 
         auto test = [&](off_t min, off_t max) {
-            pg.reset(min, max, pattern::SEQUENTIAL);
+            pg.reset(min, max, generation_pattern::SEQUENTIAL);
             for (off_t i = 0; i < (max - min) * 2; i++) {
                 REQUIRE(pg.generate() == i % (max - min) + min);
             }
@@ -82,7 +81,7 @@ TEST_CASE("pattern_generator", "[block]")
         auto pg = pattern_generator();
 
         auto test = [&](off_t min, off_t max) {
-            pg.reset(min, max, pattern::REVERSE);
+            pg.reset(min, max, generation_pattern::REVERSE);
             for (off_t i = 0; i < (max - min) * 2; i++) {
                 REQUIRE(pg.generate() == (max - 1 - i % (max - min)));
             }

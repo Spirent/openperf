@@ -36,7 +36,7 @@ class BlockGeneratorStats(object):
         'bytes_target': 'int',
         'bytes_actual': 'int',
         'io_errors': 'int',
-        'latency_total': 'int',
+        'latency': 'int',
         'latency_min': 'int',
         'latency_max': 'int'
     }
@@ -47,12 +47,12 @@ class BlockGeneratorStats(object):
         'bytes_target': 'bytes_target',
         'bytes_actual': 'bytes_actual',
         'io_errors': 'io_errors',
-        'latency_total': 'latency_total',
+        'latency': 'latency',
         'latency_min': 'latency_min',
         'latency_max': 'latency_max'
     }
 
-    def __init__(self, ops_target=None, ops_actual=None, bytes_target=None, bytes_actual=None, io_errors=None, latency_total=None, latency_min=None, latency_max=None):  # noqa: E501
+    def __init__(self, ops_target=None, ops_actual=None, bytes_target=None, bytes_actual=None, io_errors=None, latency=None, latency_min=None, latency_max=None):  # noqa: E501
         """BlockGeneratorStats - a model defined in Swagger"""  # noqa: E501
 
         self._ops_target = None
@@ -60,7 +60,7 @@ class BlockGeneratorStats(object):
         self._bytes_target = None
         self._bytes_actual = None
         self._io_errors = None
-        self._latency_total = None
+        self._latency = None
         self._latency_min = None
         self._latency_max = None
         self.discriminator = None
@@ -70,11 +70,9 @@ class BlockGeneratorStats(object):
         self.bytes_target = bytes_target
         self.bytes_actual = bytes_actual
         self.io_errors = io_errors
-        self.latency_total = latency_total
-        if latency_min is not None:
-            self.latency_min = latency_min
-        if latency_max is not None:
-            self.latency_max = latency_max
+        self.latency = latency
+        self.latency_min = latency_min
+        self.latency_max = latency_max
 
     @property
     def ops_target(self):
@@ -187,26 +185,26 @@ class BlockGeneratorStats(object):
         self._io_errors = io_errors
 
     @property
-    def latency_total(self):
-        """Gets the latency_total of this BlockGeneratorStats.  # noqa: E501
+    def latency(self):
+        """Gets the latency of this BlockGeneratorStats.  # noqa: E501
 
         The total amount of time required to perform all operations (in nanoseconds)  # noqa: E501
 
-        :return: The latency_total of this BlockGeneratorStats.  # noqa: E501
+        :return: The latency of this BlockGeneratorStats.  # noqa: E501
         :rtype: int
         """
-        return self._latency_total
+        return self._latency
 
-    @latency_total.setter
-    def latency_total(self, latency_total):
-        """Sets the latency_total of this BlockGeneratorStats.
+    @latency.setter
+    def latency(self, latency):
+        """Sets the latency of this BlockGeneratorStats.
 
         The total amount of time required to perform all operations (in nanoseconds)  # noqa: E501
 
-        :param latency_total: The latency_total of this BlockGeneratorStats.  # noqa: E501
+        :param latency: The latency of this BlockGeneratorStats.  # noqa: E501
         :type: int
         """
-        self._latency_total = latency_total
+        self._latency = latency
 
     @property
     def latency_min(self):
