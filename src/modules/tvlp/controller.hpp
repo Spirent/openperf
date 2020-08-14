@@ -12,13 +12,15 @@ namespace openperf::tvlp::internal {
 
 using framework_controller = openperf::framework::generator::controller;
 using duration = std::chrono::nanoseconds;
+using time_point = std::chrono::time_point<timesync::chrono::realtime>;
+using realtime = timesync::chrono::realtime;
 
 class controller_t : public model::tvlp_configuration_t
 {
 private:
     static constexpr auto NAME_PREFIX = "op_tvlp";
 
-    std::unique_ptr<tvlp_worker_t> m_block, m_memory, m_cpu, m_packet;
+    std::unique_ptr<worker::tvlp_worker_t> m_block, m_memory, m_cpu, m_packet;
 
 public:
     // Constructors & Destructor
@@ -30,9 +32,10 @@ public:
     // Operators overloading
     controller_t& operator=(const controller_t&) = delete;
 
-    void start();
-    void start_delayed();
+    void start(const time_point& start_time);
     void stop();
+
+    model::tvlp_configuration_t model();
 };
 
 } // namespace openperf::tvlp::internal

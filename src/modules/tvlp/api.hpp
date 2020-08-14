@@ -4,6 +4,7 @@
 #include <string>
 #include <variant>
 
+#include <chrono>
 #include <json.hpp>
 #include <zmq.h>
 #include <tl/expected.hpp>
@@ -15,6 +16,8 @@ namespace openperf::tvlp::api {
 
 static constexpr auto endpoint = "inproc://openperf_tvlp";
 
+using time_point = std::chrono::time_point<timesync::chrono::realtime>;
+using realtime = timesync::chrono::realtime;
 using tvlp_config_t = model::tvlp_configuration_t;
 using tvlp_config_ptr = std::unique_ptr<tvlp_config_t>;
 using serialized_msg = openperf::message::serialized_message;
@@ -42,8 +45,15 @@ struct create : message
 };
 struct stop : id_message
 {};
-struct start : id_message
-{};
+struct start : message
+{
+    struct start_data
+    {
+        std::string id;
+        time_point start_time;
+    };
+    std::unique_ptr<start_data> data;
+};
 
 } // namespace tvlp
 } // namespace request

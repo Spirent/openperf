@@ -37,7 +37,8 @@ controller_stack::get(const std::string& id) const
 }
 bool controller_stack::erase(const std::string& id) { return false; }
 
-tl::expected<void, std::string> controller_stack::start(const std::string& id)
+tl::expected<void, std::string>
+controller_stack::start(const std::string& id, const time_point& start_time)
 {
     auto controller = get(id);
     if (!controller) return tl::make_unexpected(controller.error());
@@ -46,7 +47,7 @@ tl::expected<void, std::string> controller_stack::start(const std::string& id)
         return tl::make_unexpected("Generator is already in running state");
     }*/
 
-    controller.value()->start();
+    controller.value()->start(start_time);
 
     // auto result = controller.value()->start();
     // m_block_results[result->get_id()] = gen;

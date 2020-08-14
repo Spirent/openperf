@@ -1,3 +1,8 @@
+#include <sstream>
+#include <iostream>
+#include <string>
+#include <iomanip>
+
 #include "api.hpp"
 #include "swagger_converters.hpp"
 #include "swagger/v1/converters/tvlp.hpp"
@@ -11,6 +16,7 @@ namespace openperf::tvlp::api {
 namespace model = ::swagger::v1::model;
 using json = nlohmann::json;
 using namespace Pistache;
+using namespace std::chrono_literals;
 
 std::string json_error(std::string_view msg)
 {
@@ -199,6 +205,24 @@ void handler::delete_tvlp(const Rest::Request& request,
     response.send(Http::Code::Internal_Server_Error);
 }
 
+std::optional<time_point> from_rfc3339(const std::string& from)
+{
+    std::stringstream is(from);
+    std::tm t = {};
+    is >> std::get_time(&t, "%Y-%m-%dT%H:%M:%S");
+    if (is.fail()) return std::nullopt;
+    auto dur = std::chrono::system_clock::from_time_t(std::mktime(&t))
+                   .time_since_epoch();
+
+    // Calculate nanoseconds
+    int d;
+    double seconds = 0;
+    sscanf(from.c_str(), "%d-%d-%dT%d:%d:%lfZ", &d, &d, &d, &d, &d, &seconds);
+    dur += std::chrono::nanoseconds(static_cast<long>(std::nano::den * seconds)
+                                    % std::nano::den);
+    return time_point(dur);
+}
+
 void handler::start_tvlp(const Rest::Request& request,
                          Http::ResponseWriter response)
 {
@@ -208,12 +232,21 @@ void handler::start_tvlp(const Rest::Request& request,
         return;
     }
 
-    if (request.query().has("time"))
-        printf("%s\n", request.query().get("time").get().c_str());
-    else
-        printf("NOPE\n");
+    auto start_time = realtime::now();
+    if (request.query().has("time")) {
+        auto time = from_rfc3339(request.query().get("time").get());
+        if (time)
+            start_time = time.value();
+        else {
+            response.send(Http::Code::Bad_Request, "Wrong time format");
+            return;
+        }
+    }
 
-    auto api_reply = submit_request(request::tvlp::start{{.id = id}});
+    using start_data_t = request::tvlp::start::start_data;
+    auto api_reply = submit_request(request::tvlp::start{
+        .data = std::make_unique<start_data_t>(
+            start_data_t{.id = id, .start_time = start_time})});
     // if (auto item = std::get_if<reply::statistic::item>(&api_reply)) {
     //     auto model = to_swagger(*item->data);
     //     response.headers().add<Http::Header::ContentType>(
