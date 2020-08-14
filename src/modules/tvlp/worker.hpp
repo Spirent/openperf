@@ -11,7 +11,7 @@
 #include "models/tvlp_config.hpp"
 #include "tl/expected.hpp"
 
-namespace openperf::tvlp::internal {
+namespace openperf::tvlp::internal::worker {
 
 using namespace std::chrono_literals;
 using time_point = std::chrono::time_point<timesync::chrono::realtime>;
@@ -22,24 +22,30 @@ using duration = std::chrono::nanoseconds;
 struct tvlp_worker_state_t
 {
     std::atomic<model::tvlp_state_t> state;
-    std::atomic<std::chrono::nanoseconds> total_offset;
+    std::atomic<duration> offset;
     std::atomic_bool stopped;
 };
 
 class tvlp_worker_t
 {
+    using worker_future = std::future<std::optional<std::string>>;
+
 public:
     tvlp_worker_t() = delete;
     tvlp_worker_t(const tvlp_worker_t&) = delete;
     tvlp_worker_t(const model::tvlp_module_profile_t&);
-    virtual ~tvlp_worker_t() = default;
+    virtual ~tvlp_worker_t();
 
-    void start(time_point start_time = ref_clock::now());
+    void start(const time_point& start_time = realtime::now());
     void stop();
+    model::tvlp_state_t state() const;
+    std::optional<std::string> error() const;
+    duration offset() const;
 
 protected:
-    void schedule(time_point start_time,
-                  const model::tvlp_module_profile_t& profile);
+    std::optional<std::string>
+    schedule(time_point start_time,
+             const model::tvlp_module_profile_t& profile);
     virtual tl::expected<std::string, std::string>
     send_create(const nlohmann::json& config,
                 const std::string& resource_id) = 0;
@@ -53,10 +59,11 @@ protected:
     send_delete(const std::string& id) = 0;
 
     tvlp_worker_state_t m_state;
-    std::future<void> m_scheduler_thread;
+    std::string m_error;
+    worker_future m_scheduler_thread;
     model::tvlp_module_profile_t m_profile;
 };
 
-} // namespace openperf::tvlp::internal
+} // namespace openperf::tvlp::internal::worker
 
 #endif
