@@ -28,7 +28,8 @@ public:
     get(const std::string& id) const;
     bool erase(const std::string& id);
 
-    tl::expected<void, std::string> start(const std::string&);
+    tl::expected<void, std::string> start(const std::string&,
+                                          const time_point&);
 };
 
 } // namespace openperf::tvlp::internal

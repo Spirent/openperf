@@ -7,6 +7,7 @@
 
 namespace openperf::tvlp::internal {
 
+using namespace std::chrono_literals;
 // static uint16_t serial_counter = 0;
 
 controller_t::controller_t(const model::tvlp_configuration_t& model)
@@ -54,16 +55,56 @@ controller_t::controller_t(const model::tvlp_configuration_t& model)
 }
 controller_t::~controller_t() {}
 
-void controller_t::start()
+void controller_t::start(const time_point& start_time)
 {
-    if (m_profile.block) { m_block->start(); }
-    if (m_profile.memory) { m_memory->start(); }
-    if (m_profile.cpu) { m_cpu->start(); }
-    if (m_profile.packet) { m_packet->start(); }
+    if (m_profile.block) { m_block->start(start_time); }
+    if (m_profile.memory) { m_memory->start(start_time); }
+    if (m_profile.cpu) { m_cpu->start(start_time); }
+    if (m_profile.packet) { m_packet->start(start_time); }
+
+    m_start_time = start_time;
+    if (start_time > realtime::now())
+        m_state = model::COUNTDOWN;
+    else
+        m_state = model::RUNNING;
 }
 
-void controller_t::start_delayed() {}
-
 void controller_t::stop() {}
+
+model::tvlp_configuration_t controller_t::model()
+{
+    auto recv_state = [this](const worker::tvlp_worker_t& worker) {
+        switch (worker.state()) {
+        case model::READY: {
+            break;
+        }
+        case model::COUNTDOWN: {
+            if (m_state == model::READY) m_state = model::COUNTDOWN;
+            break;
+        }
+        case model::RUNNING: {
+            if (m_state != model::ERROR) m_state = model::RUNNING;
+
+            break;
+        }
+        case model::ERROR: {
+            m_error += worker.error().value() + ";";
+            m_state = model::ERROR;
+            break;
+        }
+        }
+        m_current_offset = std::max(m_current_offset, worker.offset());
+    };
+    m_error = "";
+    m_current_offset = duration::zero();
+    if (m_state != model::READY) {
+        m_state = model::READY;
+        if (m_profile.block) { recv_state(*m_block); }
+        if (m_profile.memory) { recv_state(*m_memory); }
+        if (m_profile.cpu) { recv_state(*m_cpu); }
+        if (m_profile.packet) { recv_state(*m_packet); }
+    }
+    return model::tvlp_configuration_t(*this);
+}
 
 } // namespace openperf::tvlp::internal

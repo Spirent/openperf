@@ -55,7 +55,7 @@ api_reply server::handle_request(const request::tvlp::list&)
         .data = std::make_unique<std::vector<tvlp_config_t>>()};
     auto list = m_controller_stack->list();
     std::for_each(std::begin(list), std::end(list), [&](const auto& c) {
-        reply.data->push_back(tvlp_config_t(*c));
+        reply.data->push_back(tvlp_config_t(c->model()));
     });
     return reply;
 }
@@ -66,7 +66,7 @@ api_reply server::handle_request(const request::tvlp::get& request)
 
     if (!controller) { return to_error(reply::error_data::NOT_FOUND); }
     auto reply = reply::tvlp::item{
-        .data = std::make_unique<tvlp_config_t>(*controller.value())};
+        .data = std::make_unique<tvlp_config_t>(controller.value()->model())};
 
     return reply;
 }
@@ -100,12 +100,13 @@ api_reply server::handle_request(const request::tvlp::create& request)
 
 api_reply server::handle_request(const request::tvlp::start& request)
 {
-    auto controller = m_controller_stack->get(request.id);
+    auto controller = m_controller_stack->get(request.data->id);
     if (!controller) { return to_error(reply::error_data::NOT_FOUND); }
     auto reply = reply::tvlp::item{
         .data = std::make_unique<tvlp_config_t>(*controller.value())};
 
-    auto result = m_controller_stack->start(request.id);
+    auto result =
+        m_controller_stack->start(request.data->id, request.data->start_time);
     if (!result) {
         return to_error(
             reply::error_data::BAD_REQUEST_ERROR, 0, result.error());

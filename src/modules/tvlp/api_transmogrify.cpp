@@ -14,6 +14,10 @@ serialized_msg serialize(api_request&& msg)
                                         return openperf::message::push(
                                             serialized, std::move(create.data));
                                     },
+                                    [&](request::tvlp::start& start) {
+                                        return openperf::message::push(
+                                            serialized, std::move(start.data));
+                                    },
                                     [&](const id_message& msg) {
                                         return openperf::message::push(
                                             serialized, msg.id);
@@ -72,9 +76,10 @@ tl::expected<api_request, int> deserialize_request(serialized_msg&& msg)
         return request::tvlp::erase{};
     }
     case utils::variant_index<api_request, request::tvlp::start>(): {
-        auto id = openperf::message::pop_string(msg);
-        if (id.length()) { return request::tvlp::start{{.id = std::move(id)}}; }
-        return request::tvlp::start{};
+        request::tvlp::start request{};
+        request.data.reset(
+            openperf::message::pop<request::tvlp::start::start_data*>(msg));
+        return request;
     }
     case utils::variant_index<api_request, request::tvlp::stop>(): {
         auto id = openperf::message::pop_string(msg);
