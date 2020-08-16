@@ -5,6 +5,7 @@
 #include <atomic>
 
 #include "models/tvlp_config.hpp"
+#include "models/tvlp_result.hpp"
 #include "framework/generator/controller.hpp"
 #include "worker.hpp"
 
@@ -19,7 +20,7 @@ class controller_t : public model::tvlp_configuration_t
 {
 private:
     static constexpr auto NAME_PREFIX = "op_tvlp";
-
+    std::shared_ptr<model::tvlp_result_t> m_result;
     std::unique_ptr<worker::tvlp_worker_t> m_block, m_memory, m_cpu, m_packet;
 
 public:
@@ -32,7 +33,7 @@ public:
     // Operators overloading
     controller_t& operator=(const controller_t&) = delete;
 
-    void start(const time_point& start_time);
+    std::shared_ptr<model::tvlp_result_t> start(const time_point& start_time);
     void stop();
 
     model::tvlp_configuration_t model();

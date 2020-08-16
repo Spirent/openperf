@@ -141,7 +141,7 @@ void from_json(const nlohmann::json& j, TvlpProfile& profile)
 
 void from_json(const nlohmann::json& j, TvlpConfiguration& generator)
 {
-    generator.fromJson(const_cast<nlohmann::json&>(j));
+    if (j.find("id") != j.end()) generator.setId(j.at("id"));
 
     generator.setProfile(std::make_shared<TvlpProfile>());
     from_json(j.at("profile"), *generator.getProfile());
