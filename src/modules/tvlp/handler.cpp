@@ -247,15 +247,15 @@ void handler::start_tvlp(const Rest::Request& request,
     auto api_reply = submit_request(request::tvlp::start{
         .data = std::make_unique<start_data_t>(
             start_data_t{.id = id, .start_time = start_time})});
-    // if (auto item = std::get_if<reply::statistic::item>(&api_reply)) {
-    //     auto model = to_swagger(*item->data);
-    //     response.headers().add<Http::Header::ContentType>(
-    //         MIME(Application, Json));
-    //     response.headers().add<Http::Header::Location>("/tvlp-results/"
-    //                                                    + model.getId());
-    //     response.send(Http::Code::Created, model.toJson().dump());
-    //     return;
-    // }
+    if (auto item = std::get_if<reply::tvlp::result::item>(&api_reply)) {
+        auto model = to_swagger(*item->data);
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.headers().add<Http::Header::Location>("/tvlp-results/"
+                                                       + model.getId());
+        response.send(Http::Code::Created, model.toJson().dump());
+        return;
+    }
 
     if (auto error = std::get_if<reply::error>(&api_reply)) {
         response_error(response, *error);

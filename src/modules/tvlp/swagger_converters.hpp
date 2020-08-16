@@ -4,14 +4,19 @@
 #include <iomanip>
 
 #include "models/tvlp_config.hpp"
+#include "swagger/v1/converters/block.hpp"
+#include "swagger/v1/converters/memory.hpp"
+#include "swagger/v1/converters/cpu.hpp"
 #include "swagger/v1/converters/packet_generator.hpp"
 #include "swagger/v1/model/TvlpConfiguration.h"
+#include "swagger/v1/model/TvlpResult.h"
 
 namespace openperf::tvlp::api {
 
 using config_t = tvlp::model::tvlp_configuration_t;
 using profile_t = tvlp::model::tvlp_profile_t;
 using profile_entry_t = tvlp::model::tvlp_profile_entry_t;
+using result_t = tvlp::model::tvlp_result_t;
 
 namespace swagger = ::swagger::v1::model;
 
@@ -181,6 +186,28 @@ static swagger::TvlpConfiguration to_swagger(const config_t& config)
             });
 
         model.getProfile()->setPacket(packet);
+    }
+
+    return model;
+}
+
+static swagger::TvlpResult to_swagger(const result_t& result)
+{
+    swagger::TvlpResult model;
+    model.setId(result.id());
+    model.setTvlpId(result.tvlp_id());
+
+    auto modules_results = result.results();
+    if (modules_results.block) {
+        auto block_results = modules_results.block.value();
+        std::for_each(std::begin(block_results),
+                      std::end(block_results),
+                      [&](const auto& res) {
+                          auto g_result =
+                              std::make_shared<swagger::BlockGeneratorResult>();
+                          swagger::from_json(res, *g_result);
+                          model.getBlock().push_back(g_result);
+                      });
     }
 
     return model;

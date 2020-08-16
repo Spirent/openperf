@@ -37,7 +37,7 @@ controller_stack::get(const std::string& id) const
 }
 bool controller_stack::erase(const std::string& id) { return false; }
 
-tl::expected<void, std::string>
+tl::expected<tvlp_result_ptr, std::string>
 controller_stack::start(const std::string& id, const time_point& start_time)
 {
     auto controller = get(id);
@@ -47,7 +47,24 @@ controller_stack::start(const std::string& id, const time_point& start_time)
         return tl::make_unexpected("Generator is already in running state");
     }*/
 
-    controller.value()->start(start_time);
+    auto result = controller.value()->start(start_time);
+
+    // auto result = controller.value()->start();
+    // m_block_results[result->get_id()] = gen;
+    // return result;
+    return result;
+}
+
+tl::expected<void, std::string> controller_stack::stop(const std::string& id)
+{
+    auto controller = get(id);
+    if (!controller) return tl::make_unexpected(controller.error());
+
+    /*if (gen.value()->is_running()) {
+        return tl::make_unexpected("Generator is already in running state");
+    }*/
+
+    controller.value()->stop();
 
     // auto result = controller.value()->start();
     // m_block_results[result->get_id()] = gen;

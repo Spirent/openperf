@@ -11,6 +11,7 @@
 
 #include "message/serialized_message.hpp"
 #include "models/tvlp_config.hpp"
+#include "models/tvlp_result.hpp"
 
 namespace openperf::tvlp::api {
 
@@ -20,6 +21,8 @@ using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 using realtime = timesync::chrono::realtime;
 using tvlp_config_t = model::tvlp_configuration_t;
 using tvlp_config_ptr = std::unique_ptr<tvlp_config_t>;
+using tvlp_result_t = model::tvlp_result_t;
+using tvlp_result_ptr = std::unique_ptr<tvlp_result_t>;
 using serialized_msg = openperf::message::serialized_message;
 
 struct message
@@ -93,6 +96,20 @@ struct list : message
     std::unique_ptr<std::vector<tvlp_config_t>> data;
 };
 
+namespace result {
+
+struct item : message
+{
+    tvlp_result_ptr data;
+};
+
+struct list : message
+{
+    std::unique_ptr<std::vector<tvlp_result_t>> data;
+};
+
+} // namespace result
+
 } // namespace tvlp
 
 } // namespace reply
@@ -105,8 +122,12 @@ using api_request = std::variant<request::tvlp::list,
                                  request::tvlp::start,
                                  request::tvlp::stop>;
 
-using api_reply =
-    std::variant<reply::ok, reply::error, reply::tvlp::list, reply::tvlp::item>;
+using api_reply = std::variant<reply::ok,
+                               reply::error,
+                               reply::tvlp::list,
+                               reply::tvlp::item,
+                               reply::tvlp::result::item,
+                               reply::tvlp::result::list>;
 
 serialized_msg serialize(api_request&& request);
 serialized_msg serialize(api_reply&& reply);

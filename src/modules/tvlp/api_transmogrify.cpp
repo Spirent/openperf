@@ -42,6 +42,14 @@ serialized_msg serialize(api_reply&& msg)
                                         return openperf::message::push(
                                             serialized, std::move(reply.data));
                                     },
+                                    [&](reply::tvlp::result::list& reply) {
+                                        return openperf::message::push(
+                                            serialized, std::move(reply.data));
+                                    },
+                                    [&](reply::tvlp::result::item& reply) {
+                                        return openperf::message::push(
+                                            serialized, std::move(reply.data));
+                                    },
                                     [&](reply::error& reply) {
                                         return openperf::message::push(
                                             serialized, std::move(reply.data));
@@ -113,6 +121,17 @@ tl::expected<api_reply, int> deserialize_reply(serialized_msg&& msg)
         reply::tvlp::list reply{};
         reply.data.reset(
             openperf::message::pop<std::vector<tvlp_config_t>*>(msg));
+        return reply;
+    }
+    case utils::variant_index<api_reply, reply::tvlp::result::item>(): {
+        reply::tvlp::result::item reply{};
+        reply.data.reset(openperf::message::pop<tvlp_result_t*>(msg));
+        return reply;
+    }
+    case utils::variant_index<api_reply, reply::tvlp::result::list>(): {
+        reply::tvlp::result::list reply{};
+        reply.data.reset(
+            openperf::message::pop<std::vector<tvlp_result_t>*>(msg));
         return reply;
     }
     }

@@ -5,6 +5,7 @@
 #include <variant>
 #include "controller.hpp"
 #include "models/tvlp_config.hpp"
+#include "models/tvlp_result.hpp"
 #include "tl/expected.hpp"
 
 namespace openperf::tvlp::internal {
@@ -12,6 +13,7 @@ namespace openperf::tvlp::internal {
 using tvlp_controller_ptr = std::shared_ptr<controller_t>;
 using tvlp_controller_map =
     std::unordered_map<std::string, tvlp_controller_ptr>;
+using tvlp_result_ptr = std::shared_ptr<model::tvlp_result_t>;
 
 class controller_stack
 {
@@ -28,8 +30,9 @@ public:
     get(const std::string& id) const;
     bool erase(const std::string& id);
 
-    tl::expected<void, std::string> start(const std::string&,
-                                          const time_point&);
+    tl::expected<tvlp_result_ptr, std::string> start(const std::string&,
+                                                     const time_point&);
+    tl::expected<void, std::string> stop(const std::string&);
 };
 
 } // namespace openperf::tvlp::internal

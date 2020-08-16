@@ -1,4 +1,6 @@
 #include <algorithm>
+#include "framework/core/op_core.h"
+
 #include "controller.hpp"
 #include "workers/block.hpp"
 #include "workers/memory.hpp"
@@ -52,21 +54,44 @@ controller_t::controller_t(const model::tvlp_configuration_t& model)
     if (total_length == 0ms) throw std::runtime_error("Invalid field value");
 
     m_total_length = total_length;
+
+    if (model.id().empty()) id(core::to_string(core::uuid::random()));
 }
 controller_t::~controller_t() {}
 
-void controller_t::start(const time_point& start_time)
+std::shared_ptr<model::tvlp_result_t>
+controller_t::start(const time_point& start_time)
 {
-    if (m_profile.block) { m_block->start(start_time); }
-    if (m_profile.memory) { m_memory->start(start_time); }
-    if (m_profile.cpu) { m_cpu->start(start_time); }
-    if (m_profile.packet) { m_packet->start(start_time); }
+    auto modules_results = model::tvlp_modules_results_t{};
+
+    if (m_profile.block) {
+        modules_results.block = model::json_vector();
+        m_block->start(start_time);
+    }
+    if (m_profile.memory) {
+        modules_results.memory = model::json_vector();
+        m_memory->start(start_time);
+    }
+    if (m_profile.cpu) {
+        modules_results.cpu = model::json_vector();
+        m_cpu->start(start_time);
+    }
+    if (m_profile.packet) {
+        modules_results.packet = model::json_vector();
+        m_packet->start(start_time);
+    }
 
     m_start_time = start_time;
     if (start_time > realtime::now())
         m_state = model::COUNTDOWN;
     else
         m_state = model::RUNNING;
+
+    m_result = std::make_shared<model::tvlp_result_t>();
+    m_result->tvlp_id(id());
+    m_result->id(core::to_string(core::uuid::random()));
+    m_result->results(modules_results);
+    return m_result;
 }
 
 void controller_t::stop() {}
