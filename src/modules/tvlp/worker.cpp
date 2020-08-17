@@ -50,24 +50,35 @@ std::optional<std::string> tvlp_worker_t::error() const
 {
     if (m_state.state.load() != model::ERROR) return std::nullopt;
     if (m_scheduler_thread.valid()) {
-        auto err = const_cast<worker_future*>(&m_scheduler_thread)->get();
-        assert(err.has_value());
-        const_cast<tvlp_worker_t*>(this)->m_error = err.value();
+        auto res = const_cast<worker_future*>(&m_scheduler_thread)->get();
+        const_cast<tvlp_worker_t*>(this)->m_error = res.error();
     }
     return m_error;
 }
 
 duration tvlp_worker_t::offset() const { return m_state.offset.load(); }
 
-std::optional<std::string>
+model::json_vector tvlp_worker_t::results() const
+{
+    if (m_state.state.load() == model::ERROR) return model::json_vector();
+    if (m_scheduler_thread.valid()) {
+        auto res = const_cast<worker_future*>(&m_scheduler_thread)->get();
+        if (res) const_cast<tvlp_worker_t*>(this)->m_result = res.value();
+    }
+    return m_result;
+}
+
+tl::expected<model::json_vector, std::string>
 tvlp_worker_t::schedule(time_point start_time,
                         const model::tvlp_module_profile_t& profile)
 {
+    model::json_vector results;
+
     m_state.state.store(model::COUNTDOWN);
     for (auto now = realtime::now(); now < start_time; now = realtime::now()) {
         if (m_state.stopped.load()) {
             m_state.state.store(model::READY);
-            return std::nullopt;
+            return results;
         }
         duration sleep_time = std::min(start_time - now, THRESHOLD);
         std::this_thread::sleep_for(sleep_time);
@@ -78,7 +89,7 @@ tvlp_worker_t::schedule(time_point start_time,
     for (auto entry : profile) {
         if (m_state.stopped.load()) {
             m_state.state.store(model::READY);
-            return std::nullopt;
+            return results;
         }
 
         // Create generator
@@ -86,7 +97,7 @@ tvlp_worker_t::schedule(time_point start_time,
             send_create(entry.config, entry.resource_id.value());
         if (!create_result) {
             m_state.state.store(model::ERROR);
-            return create_result.error();
+            return tl::make_unexpected(create_result.error());
         }
         auto gen_id = create_result.value();
         auto end_time = ref_clock::now() + entry.length;
@@ -95,7 +106,7 @@ tvlp_worker_t::schedule(time_point start_time,
         auto start_result = send_start(gen_id);
         if (!start_result) {
             m_state.state.store(model::ERROR);
-            return start_result.error();
+            return tl::make_unexpected(start_result.error());
         }
 
         // Wait until profile entry done
@@ -103,7 +114,7 @@ tvlp_worker_t::schedule(time_point start_time,
         for (auto now = started; now < end_time; now = ref_clock::now()) {
             if (m_state.stopped.load()) {
                 m_state.state.store(model::READY);
-                return std::nullopt;
+                return results;
             }
             m_state.offset.store(total_offset + now - started);
             duration sleep_time = std::min(end_time - now, THRESHOLD);
@@ -116,20 +127,25 @@ tvlp_worker_t::schedule(time_point start_time,
         // Stop generator
         if (auto res = send_stop(gen_id); !res) {
             m_state.state.store(model::ERROR);
-            return res.error();
+            return tl::make_unexpected(res.error());
         }
 
         // Recv statistics
-        send_stat(start_result.value());
+        auto stat_result = send_stat(start_result.value());
+        if (!stat_result) {
+            m_state.state.store(model::ERROR);
+            return tl::make_unexpected(stat_result.error());
+        }
+        results.push_back(stat_result.value());
 
         // Delete generator
         if (auto res = send_delete(gen_id); !res) {
             m_state.state.store(model::ERROR);
-            return res.error();
+            return tl::make_unexpected(res.error());
         }
     }
     m_state.state.store(model::READY);
-    return std::nullopt;
+    return results;
 }
 
 } // namespace openperf::tvlp::internal::worker

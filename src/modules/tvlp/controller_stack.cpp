@@ -43,15 +43,12 @@ controller_stack::start(const std::string& id, const time_point& start_time)
     auto controller = get(id);
     if (!controller) return tl::make_unexpected(controller.error());
 
-    /*if (gen.value()->is_running()) {
+    if (controller.value()->is_running()) {
         return tl::make_unexpected("Generator is already in running state");
-    }*/
+    }
 
     auto result = controller.value()->start(start_time);
-
-    // auto result = controller.value()->start();
-    // m_block_results[result->get_id()] = gen;
-    // return result;
+    m_results[result->id()] = result;
     return result;
 }
 
@@ -60,16 +57,29 @@ tl::expected<void, std::string> controller_stack::stop(const std::string& id)
     auto controller = get(id);
     if (!controller) return tl::make_unexpected(controller.error());
 
-    /*if (gen.value()->is_running()) {
-        return tl::make_unexpected("Generator is already in running state");
-    }*/
+    if (!controller.value()->is_running()) {
+        return tl::make_unexpected("Generator is not in running state");
+    }
 
     controller.value()->stop();
 
-    // auto result = controller.value()->start();
-    // m_block_results[result->get_id()] = gen;
-    // return result;
     return {};
+}
+
+std::vector<tvlp_result_ptr> controller_stack::results() const
+{
+    std::vector<tvlp_result_ptr> result_list;
+    for (const auto& pair : m_results) { result_list.push_back(pair.second); }
+    return result_list;
+}
+
+tl::expected<tvlp_result_ptr, std::string>
+controller_stack::result(const std::string& id) const
+{
+    if (!m_results.count(id)) return nullptr;
+
+    auto result = m_results.at(id);
+    return result;
 }
 
 } // namespace openperf::tvlp::internal

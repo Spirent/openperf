@@ -1,4 +1,6 @@
 #include <algorithm>
+#include "json.hpp"
+
 #include "framework/core/op_core.h"
 
 #include "controller.hpp"
@@ -94,9 +96,20 @@ controller_t::start(const time_point& start_time)
     return m_result;
 }
 
-void controller_t::stop() {}
+void controller_t::stop()
+{
+    if (m_profile.block) { m_block->stop(); }
+    if (m_profile.memory) { m_memory->stop(); }
+    if (m_profile.cpu) { m_cpu->stop(); }
+    if (m_profile.packet) { m_packet->stop(); }
+}
 
-model::tvlp_configuration_t controller_t::model()
+bool controller_t::is_running() const
+{
+    return m_state == model::COUNTDOWN || m_state == model::RUNNING;
+}
+
+void controller_t::update()
 {
     auto recv_state = [this](const worker::tvlp_worker_t& worker) {
         switch (worker.state()) {
@@ -119,16 +132,23 @@ model::tvlp_configuration_t controller_t::model()
         }
         }
         m_current_offset = std::max(m_current_offset, worker.offset());
+        return worker.results();
     };
+
     m_error = "";
     m_current_offset = duration::zero();
-    if (m_state != model::READY) {
-        m_state = model::READY;
-        if (m_profile.block) { recv_state(*m_block); }
-        if (m_profile.memory) { recv_state(*m_memory); }
-        if (m_profile.cpu) { recv_state(*m_cpu); }
-        if (m_profile.packet) { recv_state(*m_packet); }
-    }
+    m_state = model::READY;
+    model::tvlp_modules_results_t modules_results;
+    if (m_profile.block) { modules_results.block = recv_state(*m_block); }
+    if (m_profile.memory) { modules_results.memory = recv_state(*m_memory); }
+    if (m_profile.cpu) { modules_results.cpu = recv_state(*m_cpu); }
+    if (m_profile.packet) { modules_results.packet = recv_state(*m_packet); }
+    m_result->results(modules_results);
+}
+
+model::tvlp_configuration_t controller_t::model()
+{
+    update();
     return model::tvlp_configuration_t(*this);
 }
 
