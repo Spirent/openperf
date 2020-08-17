@@ -358,3 +358,30 @@ Response:
     "cores": 4
 }
 ```
+
+## Dynamic Results field names
+
+### Common statistics:
+* **available** - available CPU time.
+* **error** - difference between wanted and actual utilization.
+* **steal** - time the hypervisor reported VM were blocked.
+* **system** - system time used, e.g. kernel or system calls.
+* **user** - user time used, e.g. generator load code.
+* **utilization** - CPU time used.
+
+### Per *core* statistics:
+
+To access to the particular statitics of a configured core, use an appropriate core number instead of *N* below. The core number is the integer value from 0 to number core configuration blocks in the generator configuration minus 1. The order of cores are preserved.
+
+* **cores[*N*].available** - available CPU time.
+* **cores[*N*].error** - difference between wanted and actual utilization.
+* **cores[*N*].steal** - time the hypervisor reported VM were blocked.
+* **cores[*N*].system** - system time used, e.g. kernel or system calls.
+* **cores[*N*].user** - user time used, e.g. generator load code.
+* **cores[*N*].utilization** - CPU time used.
+
+### Per *target* statistics:
+
+By analogy with *cores* use appropriate *target* number, instead of *T* below.
+
+* **cores[*N*].targets[*T*].operations** - number of operations.
