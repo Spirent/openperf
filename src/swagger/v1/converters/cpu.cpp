@@ -49,9 +49,13 @@ void from_json(const nlohmann::json& j, BulkStopCpuGeneratorsRequest& request)
     request.fromJson(const_cast<nlohmann::json&>(j));
 }
 
-void from_json(const nlohmann::json& j, CpuGeneratorResult& generator)
+void from_json(const nlohmann::json& j, CpuGeneratorResult& result)
 {
-    generator.fromJson(const_cast<nlohmann::json&>(j));
+    result.fromJson(const_cast<nlohmann::json&>(j));
+
+    auto stats = std::make_shared<CpuGeneratorStats>();
+    stats->fromJson(const_cast<nlohmann::json&>(j).at("stats"));
+    result.setStats(stats);
 }
 
 } // namespace swagger::v1::model

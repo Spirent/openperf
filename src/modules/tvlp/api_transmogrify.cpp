@@ -94,6 +94,13 @@ tl::expected<api_request, int> deserialize_request(serialized_msg&& msg)
         if (id.length()) { return request::tvlp::stop{{.id = std::move(id)}}; }
         return request::tvlp::stop{};
     }
+    case utils::variant_index<api_request, request::tvlp::result::list>():
+        return request::tvlp::result::list{};
+    case utils::variant_index<api_request, request::tvlp::result::get>(): {
+        auto id = openperf::message::pop_string(msg);
+        if (id.length()) { return request::tvlp::result::get{{.id = std::move(id)}}; }
+        return request::tvlp::result::get{};
+    }
     }
 
     return tl::make_unexpected(EINVAL);

@@ -46,8 +46,7 @@ struct create : message
 {
     std::unique_ptr<tvlp_config_t> data;
 };
-struct stop : id_message
-{};
+
 struct start : message
 {
     struct start_data
@@ -57,6 +56,15 @@ struct start : message
     };
     std::unique_ptr<start_data> data;
 };
+struct stop : id_message
+{};
+
+namespace result {
+struct list : message
+{};
+struct get : id_message
+{};
+} // namespace result
 
 } // namespace tvlp
 } // namespace request
@@ -120,7 +128,9 @@ using api_request = std::variant<request::tvlp::list,
                                  request::tvlp::erase,
                                  request::tvlp::create,
                                  request::tvlp::start,
-                                 request::tvlp::stop>;
+                                 request::tvlp::stop,
+                                 request::tvlp::result::list,
+                                 request::tvlp::result::get>;
 
 using api_reply = std::variant<reply::ok,
                                reply::error,
