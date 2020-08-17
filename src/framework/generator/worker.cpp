@@ -25,12 +25,12 @@ worker::~worker()
 // Methods : private
 operation_t worker::next_command(bool wait) noexcept
 {
-    constexpr int ZMQ_BLOCK = 0;
+    constexpr int ZMQ_WAIT = 0;
     auto operation = operation_t::NOOP;
     auto recv = zmq_recv(m_control_socket.get(),
                          &operation,
                          sizeof(operation),
-                         wait ? ZMQ_BLOCK : ZMQ_NOBLOCK);
+                         wait ? ZMQ_WAIT : ZMQ_DONTWAIT);
 
     if (recv < 0 && errno != EAGAIN) {
         operation = operation_t::STOP;
