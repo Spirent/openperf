@@ -54,9 +54,16 @@ void from_json(const nlohmann::json& j,
     request.fromJson(const_cast<nlohmann::json&>(j));
 }
 
-void from_json(const nlohmann::json& j, MemoryGeneratorResult& generator)
+void from_json(const nlohmann::json& j, MemoryGeneratorResult& result)
 {
-    generator.fromJson(const_cast<nlohmann::json&>(j));
+    result.fromJson(const_cast<nlohmann::json&>(j));
+
+    auto write_stats = std::make_shared<MemoryGeneratorStats>();
+    write_stats->fromJson(const_cast<nlohmann::json&>(j).at("write"));
+    result.setWrite(write_stats);
+    auto read_stats = std::make_shared<MemoryGeneratorStats>();
+    read_stats->fromJson(const_cast<nlohmann::json&>(j).at("read"));
+    result.setRead(read_stats);
 }
 
 } // namespace swagger::v1::model

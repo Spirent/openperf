@@ -53,7 +53,7 @@ packet_tvlp_worker_t::send_stop(const std::string& id)
         return tl::make_unexpected(result.second);
     return {};
 }
-tl::expected<std::string, std::string>
+tl::expected<nlohmann::json, std::string>
 packet_tvlp_worker_t::send_stat(const std::string& id)
 {
     auto result = openperf::api::client::internal_api_get(

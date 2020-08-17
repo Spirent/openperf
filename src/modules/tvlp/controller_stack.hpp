@@ -14,11 +14,13 @@ using tvlp_controller_ptr = std::shared_ptr<controller_t>;
 using tvlp_controller_map =
     std::unordered_map<std::string, tvlp_controller_ptr>;
 using tvlp_result_ptr = std::shared_ptr<model::tvlp_result_t>;
+using tvlp_result_map = std::unordered_map<std::string, tvlp_result_ptr>;
 
 class controller_stack
 {
 private:
     tvlp_controller_map m_controllers;
+    tvlp_result_map m_results;
 
 public:
     controller_stack() = default;
@@ -33,6 +35,10 @@ public:
     tl::expected<tvlp_result_ptr, std::string> start(const std::string&,
                                                      const time_point&);
     tl::expected<void, std::string> stop(const std::string&);
+
+    std::vector<tvlp_result_ptr> results() const;
+    tl::expected<tvlp_result_ptr, std::string>
+    result(const std::string& id) const;
 };
 
 } // namespace openperf::tvlp::internal

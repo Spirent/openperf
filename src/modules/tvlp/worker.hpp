@@ -5,10 +5,12 @@
 #include <vector>
 #include <chrono>
 #include <future>
+#include "json.hpp"
 
 #include "framework/generator/task.hpp"
 #include "modules/timesync/chrono.hpp"
 #include "models/tvlp_config.hpp"
+#include "models/tvlp_result.hpp"
 #include "tl/expected.hpp"
 
 namespace openperf::tvlp::internal::worker {
@@ -28,7 +30,8 @@ struct tvlp_worker_state_t
 
 class tvlp_worker_t
 {
-    using worker_future = std::future<std::optional<std::string>>;
+    using worker_future =
+        std::future<tl::expected<model::json_vector, std::string>>;
 
 public:
     tvlp_worker_t() = delete;
@@ -41,9 +44,10 @@ public:
     model::tvlp_state_t state() const;
     std::optional<std::string> error() const;
     duration offset() const;
+    model::json_vector results() const;
 
 protected:
-    std::optional<std::string>
+    tl::expected<model::json_vector, std::string>
     schedule(time_point start_time,
              const model::tvlp_module_profile_t& profile);
     virtual tl::expected<std::string, std::string>
@@ -53,13 +57,14 @@ protected:
     send_start(const std::string& id) = 0;
     virtual tl::expected<void, std::string>
     send_stop(const std::string& id) = 0;
-    virtual tl::expected<std::string, std::string>
+    virtual tl::expected<nlohmann::json, std::string>
     send_stat(const std::string& id) = 0;
     virtual tl::expected<void, std::string>
     send_delete(const std::string& id) = 0;
 
     tvlp_worker_state_t m_state;
     std::string m_error;
+    model::json_vector m_result;
     worker_future m_scheduler_thread;
     model::tvlp_module_profile_t m_profile;
 };

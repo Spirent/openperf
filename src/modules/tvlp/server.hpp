@@ -25,6 +25,8 @@ private:
     api_reply handle_request(const request::tvlp::create&);
     api_reply handle_request(const request::tvlp::start&);
     api_reply handle_request(const request::tvlp::stop&);
+    api_reply handle_request(const request::tvlp::result::list&);
+    api_reply handle_request(const request::tvlp::result::get&);
 };
 
 } // namespace openperf::tvlp::api

@@ -291,27 +291,26 @@ void handler::stop_tvlp(const Rest::Request& request,
 // tvlp results
 void handler::list_results(const Rest::Request&, Http::ResponseWriter response)
 {
-    // auto api_reply = submit_request(request::statistic::list{});
+    auto api_reply = submit_request(request::tvlp::result::list{});
 
-    // if (auto list = std::get_if<reply::statistic::list>(&api_reply)) {
-    //     auto array = json::array();
-    //     std::transform(
-    //         list->data->begin(),
-    //         list->data->end(),
-    //         std::back_inserter(array),
-    //         [](const auto& item) -> json { return to_swagger(item).toJson();
-    //         });
+    if (auto list = std::get_if<reply::tvlp::result::list>(&api_reply)) {
+        auto array = json::array();
+        std::transform(
+            list->data->begin(),
+            list->data->end(),
+            std::back_inserter(array),
+            [](const auto& item) -> json { return to_swagger(item).toJson(); });
 
-    //     response.headers().add<Http::Header::ContentType>(
-    //         MIME(Application, Json));
-    //     response.send(Http::Code::Ok, array.dump());
-    //     return;
-    // }
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Ok, array.dump());
+        return;
+    }
 
-    // if (auto error = std::get_if<reply::error>(&api_reply)) {
-    //     response_error(response, *error);
-    //     return;
-    // }
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
+    }
 
     response.send(Http::Code::Internal_Server_Error);
 }
@@ -319,24 +318,24 @@ void handler::list_results(const Rest::Request&, Http::ResponseWriter response)
 void handler::get_result(const Rest::Request& request,
                          Http::ResponseWriter response)
 {
-    // auto id = request.param(":id").as<std::string>();
-    // if (auto res = config::op_config_validate_id_string(id); !res) {
-    //     response.send(Http::Code::Bad_Request, res.error());
-    //     return;
-    // }
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Bad_Request, res.error());
+        return;
+    }
 
-    // auto api_reply = submit_request(request::statistic::get{{.id = id}});
-    // if (auto item = std::get_if<reply::statistic::item>(&api_reply)) {
-    //     response.headers().add<Http::Header::ContentType>(
-    //         MIME(Application, Json));
-    //     response.send(Http::Code::Ok,
-    //     to_swagger(*item->data).toJson().dump()); return;
-    // }
+    auto api_reply = submit_request(request::tvlp::result::get{{.id = id}});
+    if (auto item = std::get_if<reply::tvlp::result::item>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(Http::Code::Ok, to_swagger(*item->data).toJson().dump());
+        return;
+    }
 
-    // if (auto error = std::get_if<reply::error>(&api_reply)) {
-    //     response_error(response, *error);
-    //     return;
-    // }
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
+    }
 
     response.send(Http::Code::Internal_Server_Error);
 }
