@@ -124,4 +124,26 @@ api_reply server::handle_request(const request::tvlp::stop& request)
     return reply::ok{};
 }
 
+api_reply server::handle_request(const request::tvlp::result::list&)
+{
+    auto reply = reply::tvlp::result::list{
+        .data = std::make_unique<std::vector<tvlp_result_t>>()};
+    auto list = m_controller_stack->results();
+    std::for_each(std::begin(list), std::end(list), [&](const auto& c) {
+        reply.data->push_back(*c);
+    });
+    return reply;
+}
+
+api_reply server::handle_request(const request::tvlp::result::get& request)
+{
+    auto result = m_controller_stack->result(request.id);
+
+    if (!result) { return to_error(reply::error_data::NOT_FOUND); }
+    auto reply = reply::tvlp::result::item{
+        .data = std::make_unique<tvlp_result_t>(*result.value())};
+
+    return reply;
+}
+
 } // namespace openperf::tvlp::api

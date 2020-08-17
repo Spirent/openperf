@@ -105,9 +105,18 @@ void from_json(const nlohmann::json& j, PacketGenerator& generator)
     }
 }
 
-void from_json(const nlohmann::json& j, PacketGeneratorResult& generator)
+void from_json(const nlohmann::json& j, PacketGeneratorResult& result)
 {
-    generator.fromJson(const_cast<nlohmann::json&>(j));
+    result.fromJson(const_cast<nlohmann::json&>(j));
+
+    auto flow_counters = std::make_shared<PacketGeneratorFlowCounters>();
+    flow_counters->fromJson(const_cast<nlohmann::json&>(j).at("flow_counters"));
+    result.setFlowCounters(flow_counters);
+    auto protocol_counters =
+        std::make_shared<PacketGeneratorProtocolCounters>();
+    protocol_counters->fromJson(
+        const_cast<nlohmann::json&>(j).at("protocol_counters"));
+    result.setProtocolCounters(protocol_counters);
 }
 
 } // namespace swagger::v1::model

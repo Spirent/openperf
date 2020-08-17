@@ -19,7 +19,7 @@ protected:
                                                        const std::string&);
     tl::expected<std::string, std::string> send_start(const std::string&);
     tl::expected<void, std::string> send_stop(const std::string&);
-    tl::expected<std::string, std::string> send_stat(const std::string&);
+    tl::expected<nlohmann::json, std::string> send_stat(const std::string&);
     tl::expected<void, std::string> send_delete(const std::string&);
 };
 

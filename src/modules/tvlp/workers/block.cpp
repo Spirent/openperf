@@ -53,7 +53,7 @@ block_tvlp_worker_t::send_stop(const std::string& id)
         return tl::make_unexpected(result.second);
     return {};
 }
-tl::expected<std::string, std::string>
+tl::expected<nlohmann::json, std::string>
 block_tvlp_worker_t::send_stat(const std::string& id)
 {
     auto result = openperf::api::client::internal_api_get(
@@ -61,7 +61,7 @@ block_tvlp_worker_t::send_stat(const std::string& id)
     if (result.first < Pistache::Http::Code::Ok
         || result.first >= Pistache::Http::Code::Already_Reported)
         return tl::make_unexpected(result.second);
-    return result.second;
+    return nlohmann::json::parse(result.second);
 }
 tl::expected<void, std::string>
 block_tvlp_worker_t::send_delete(const std::string& id)

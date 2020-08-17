@@ -35,7 +35,9 @@ public:
 
     std::shared_ptr<model::tvlp_result_t> start(const time_point& start_time);
     void stop();
+    bool is_running() const;
 
+    void update();
     model::tvlp_configuration_t model();
 };
 
