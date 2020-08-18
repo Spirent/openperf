@@ -28,7 +28,7 @@ with description('Interfaces,', 'interfaces') as self:
             self.process = service.start()
             self.api = client.api.InterfacesApi(service.client())
             if not check_modules_exists(service.client(), 'packetio'):
-                sself.skip()
+                self.skip()
 
         with description('list,'):
             with description('Eth,'):
