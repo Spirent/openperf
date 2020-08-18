@@ -13,7 +13,7 @@ To embed Dynamic Results to a generator include `framework/dynamic/spool.hpp` an
 template <typename T> class spool
 ```
 
-The spool is a collection of the dynamic resutls objects, such as Threshods and T-Digests. You should provide *extractor* function for the spool constructor. The template parameter *T* is a struct of the statistics data.
+The spool is a collection of the dynamic results objects, such as Threshods and T-Digests. You should provide *extractor* function for the spool constructor. The template parameter *T* is a struct of the statistics data.
 
 ### Configuring
 
