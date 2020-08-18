@@ -81,8 +81,9 @@ file_stack::create_block_file(const model::file& block_file_model)
                                    + " already exists.");
 
     for (const auto& blkfile_pair : m_block_files) {
-        if (std::filesystem::equivalent(block_file_model.path(),
-                                        blkfile_pair.second->path()))
+        std::error_code code;
+        if (std::filesystem::equivalent(
+                block_file_model.path(), blkfile_pair.second->path(), code))
             return tl::make_unexpected("File with path "
                                        + block_file_model.path()
                                        + " already exists.");
