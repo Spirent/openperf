@@ -125,7 +125,10 @@ block_file_ptr file_stack::get_block_file(const std::string& id) const
 tl::expected<void, deletion_error_type>
 file_stack::delete_block_file(const std::string& id)
 {
-    if (m_block_files.count(id) && m_block_files.at(id)->get_fd())
+    if (!m_block_files.count(id))
+        return tl::make_unexpected(deletion_error_type::NOT_FOUND);
+
+    if (m_block_files.at(id)->get_fd())
         return tl::make_unexpected(deletion_error_type::BUSY);
 
     auto f = m_block_files.at(id);
