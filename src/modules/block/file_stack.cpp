@@ -124,6 +124,13 @@ file_stack::delete_block_file(const std::string& id)
     if (m_block_files.count(id) && m_block_files.at(id)->fd())
         return tl::make_unexpected(deletion_error_type::BUSY);
 
+    auto f = m_block_files.at(id);
+    if (remove(f->get_path().c_str()))
+        OP_LOG(OP_LOG_ERROR,
+               "Cannot delete block file %s from the disk: %s",
+               f->get_path().c_str(),
+               strerror(errno));
+
     if (m_block_files.erase(id) <= 0)
         return tl::make_unexpected(deletion_error_type::NOT_FOUND);
 
