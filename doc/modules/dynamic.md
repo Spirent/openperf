@@ -5,11 +5,11 @@ OpenPerf generators _may_ be configured to record optional test results during t
 
 ## API
 
-Generators can be configured to use Dynamic Results at time of start. All generators that implies Dynamic Results use the same common API described in that document. However, not all generators support Dynamic Results. Please, see the generator documentation for more information.
+Generators can be configured to use Dynamic Results at generator time start. All generators that support Dynamic Results use the same API request and response structure described in that document. However, not all generators support Dynamic Results. Please, see the generator documentation for more information and list of available field names.
 
 ## Configuration
 
-Dynamic Results configuration consists of the Threshold and T-Digest configuration arrays.
+Dynamic Results configuration consists of the Threshold and T-Digest configuration arrays. The arrays are optional and can be absent.
 
 ```json
 {
@@ -35,8 +35,7 @@ Dynamic Results configuration consists of the Threshold and T-Digest configurati
 
 ## Thresholds
 
-Threshold counters evaluate a mathematical relation between a threshold and a statistic
-and record the results.
+Threshold counters evaluate a mathematical relation between a threshold and a statistic. Threshold compares the result of *function* and the *value* using *condition*. The result of the comparison increases an appropriate counter, *condition_true* or *condition_false*.
 
 ### Configuration
 
