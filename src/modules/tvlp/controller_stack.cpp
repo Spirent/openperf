@@ -6,6 +6,7 @@ std::vector<tvlp_controller_ptr> controller_stack::list() const
 {
     std::vector<tvlp_controller_ptr> controllers_list;
     for (const auto& c_pair : m_controllers) {
+        c_pair.second->update();
         controllers_list.push_back(c_pair.second);
     }
 
@@ -31,11 +32,28 @@ controller_stack::create(const model::tvlp_configuration_t& model)
 tl::expected<tvlp_controller_ptr, std::string>
 controller_stack::get(const std::string& id) const
 {
-    if (m_controllers.count(id)) return m_controllers.at(id);
+    if (m_controllers.count(id)) {
+        auto controller = m_controllers.at(id);
+        controller->update();
+        return controller;
+    }
     return tl::make_unexpected("TVLP configuration with id \"" + id
                                + "\" not found.");
 }
-bool controller_stack::erase(const std::string& id) { return false; }
+tl::expected<void, std::string> controller_stack::erase(const std::string& id)
+{
+    auto controller = get(id);
+    if (!controller)
+        return tl::make_unexpected("TVLP configuration with id \"" + id
+                                   + "\" not found.");
+    if (controller.value()->is_running())
+        return tl::make_unexpected(
+            "Cannot delete TVLP configuration in running state.");
+
+    m_controllers.erase(id);
+
+    return {};
+}
 
 tl::expected<tvlp_result_ptr, std::string>
 controller_stack::start(const std::string& id, const time_point& start_time)
@@ -70,8 +88,7 @@ std::vector<tvlp_result_ptr> controller_stack::results() const
 {
     std::vector<tvlp_result_ptr> result_list;
     for (const auto& pair : m_results) {
-        if (auto controller = get(pair.second->tvlp_id()); controller)
-            controller.value()->update();
+        get(pair.second->tvlp_id());
         result_list.push_back(pair.second);
     }
     return result_list;
@@ -80,10 +97,30 @@ std::vector<tvlp_result_ptr> controller_stack::results() const
 tl::expected<tvlp_result_ptr, std::string>
 controller_stack::result(const std::string& id) const
 {
-    if (!m_results.count(id)) return nullptr;
+    if (!m_results.count(id))
+        return tl::make_unexpected("TVLP result with id \"" + id
+                                   + "\" not found.");
 
     auto result = m_results.at(id);
+    get(result->tvlp_id());
     return result;
+}
+
+tl::expected<void, std::string>
+controller_stack::erase_result(const std::string& id)
+{
+    auto res = result(id);
+    if (!res)
+        return tl::make_unexpected("TVLP result with id \"" + id
+                                   + "\" not found.");
+    auto controller = get(res.value()->tvlp_id());
+    if (controller && controller.value()->is_running())
+        return tl::make_unexpected(
+            "Cannot delete TVLP result in running state.");
+
+    m_results.erase(id);
+
+    return {};
 }
 
 } // namespace openperf::tvlp::internal

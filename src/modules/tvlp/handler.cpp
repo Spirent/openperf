@@ -343,17 +343,17 @@ void handler::get_result(const Rest::Request& request,
 void handler::delete_result(const Rest::Request& request,
                             Http::ResponseWriter response)
 {
-    // auto id = request.param(":id").as<std::string>();
-    // if (auto res = config::op_config_validate_id_string(id); !res) {
-    //     response.send(Http::Code::Bad_Request, res.error());
-    //     return;
-    // }
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Bad_Request, res.error());
+        return;
+    }
 
-    // auto api_reply = submit_request(request::statistic::erase{{.id = id}});
-    // if (auto error = std::get_if<reply::error>(&api_reply)) {
-    //     response_error(response, *error);
-    //     return;
-    // }
+    auto api_reply = submit_request(request::tvlp::result::erase{{.id = id}});
+    if (auto error = std::get_if<reply::error>(&api_reply)) {
+        response_error(response, *error);
+        return;
+    }
 
     response.send(Http::Code::No_Content);
 }
