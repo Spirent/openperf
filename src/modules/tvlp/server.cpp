@@ -71,8 +71,16 @@ api_reply server::handle_request(const request::tvlp::get& request)
     return reply;
 }
 
-api_reply server::handle_request(const request::tvlp::erase&)
+api_reply server::handle_request(const request::tvlp::erase& request)
 {
+    auto result = m_controller_stack->get(request.id);
+    if (!result) { return to_error(reply::error_data::NOT_FOUND); }
+
+    auto res = m_controller_stack->erase(request.id);
+    if (!res) {
+        return to_error(reply::error_data::BAD_REQUEST_ERROR, 0, res.error());
+    }
+
     return reply::ok{};
 }
 
@@ -144,6 +152,19 @@ api_reply server::handle_request(const request::tvlp::result::get& request)
         .data = std::make_unique<tvlp_result_t>(*result.value())};
 
     return reply;
+}
+
+api_reply server::handle_request(const request::tvlp::result::erase& request)
+{
+    auto result = m_controller_stack->result(request.id);
+    if (!result) { return to_error(reply::error_data::NOT_FOUND); }
+
+    auto res = m_controller_stack->erase_result(request.id);
+    if (!res) {
+        return to_error(reply::error_data::BAD_REQUEST_ERROR, 0, res.error());
+    }
+
+    return reply::ok{};
 }
 
 } // namespace openperf::tvlp::api
