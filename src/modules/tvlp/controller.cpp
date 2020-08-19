@@ -143,7 +143,7 @@ void controller_t::update()
     if (m_profile.memory) { modules_results.memory = recv_state(*m_memory); }
     if (m_profile.cpu) { modules_results.cpu = recv_state(*m_cpu); }
     if (m_profile.packet) { modules_results.packet = recv_state(*m_packet); }
-    m_result->results(modules_results);
+    if (m_result) m_result->results(modules_results);
 }
 
 model::tvlp_configuration_t controller_t::model()

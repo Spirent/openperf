@@ -30,7 +30,7 @@ public:
     create(const model::tvlp_configuration_t&);
     tl::expected<tvlp_controller_ptr, std::string>
     get(const std::string& id) const;
-    bool erase(const std::string& id);
+    tl::expected<void, std::string> erase(const std::string& id);
 
     tl::expected<tvlp_result_ptr, std::string> start(const std::string&,
                                                      const time_point&);
@@ -39,6 +39,7 @@ public:
     std::vector<tvlp_result_ptr> results() const;
     tl::expected<tvlp_result_ptr, std::string>
     result(const std::string& id) const;
+    tl::expected<void, std::string> erase_result(const std::string& id);
 };
 
 } // namespace openperf::tvlp::internal

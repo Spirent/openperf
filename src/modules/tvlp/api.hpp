@@ -64,6 +64,8 @@ struct list : message
 {};
 struct get : id_message
 {};
+struct erase : id_message
+{};
 } // namespace result
 
 } // namespace tvlp
@@ -130,7 +132,8 @@ using api_request = std::variant<request::tvlp::list,
                                  request::tvlp::start,
                                  request::tvlp::stop,
                                  request::tvlp::result::list,
-                                 request::tvlp::result::get>;
+                                 request::tvlp::result::get,
+                                 request::tvlp::result::erase>;
 
 using api_reply = std::variant<reply::ok,
                                reply::error,
