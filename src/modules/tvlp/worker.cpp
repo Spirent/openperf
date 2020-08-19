@@ -11,6 +11,7 @@ tvlp_worker_t::tvlp_worker_t(const model::tvlp_module_profile_t& profile)
 {
     m_state.state.store(model::READY);
     m_state.offset.store(duration::zero());
+    m_result_atomic.store(&m_result);
 }
 
 tvlp_worker_t::~tvlp_worker_t() { stop(); }
@@ -22,7 +23,7 @@ void tvlp_worker_t::start(const time_point& start_time)
     m_state.state =
         start_time > ref_clock::now() ? model::COUNTDOWN : model::RUNNING;
     m_state.stopped = false;
-
+    m_result.clear();
     m_scheduler_thread = std::async(
         std::launch::async,
         [this](time_point tp, model::tvlp_module_profile_t p) {
@@ -61,14 +62,10 @@ duration tvlp_worker_t::offset() const { return m_state.offset.load(); }
 model::json_vector tvlp_worker_t::results() const
 {
     if (m_state.state.load() == model::ERROR) return model::json_vector();
-    if (m_scheduler_thread.valid()) {
-        auto res = const_cast<worker_future*>(&m_scheduler_thread)->get();
-        if (res) const_cast<tvlp_worker_t*>(this)->m_result = res.value();
-    }
-    return m_result;
+    return *m_result_atomic;
 }
 
-tl::expected<model::json_vector, std::string>
+tl::expected<void, std::string>
 tvlp_worker_t::schedule(time_point start_time,
                         const model::tvlp_module_profile_t& profile)
 {
@@ -78,7 +75,7 @@ tvlp_worker_t::schedule(time_point start_time,
     for (auto now = realtime::now(); now < start_time; now = realtime::now()) {
         if (m_state.stopped.load()) {
             m_state.state.store(model::READY);
-            return results;
+            return {};
         }
         duration sleep_time = std::min(start_time - now, THRESHOLD);
         std::this_thread::sleep_for(sleep_time);
@@ -89,7 +86,7 @@ tvlp_worker_t::schedule(time_point start_time,
     for (auto entry : profile) {
         if (m_state.stopped.load()) {
             m_state.state.store(model::READY);
-            return results;
+            return {};
         }
 
         // Create generator
@@ -109,13 +106,27 @@ tvlp_worker_t::schedule(time_point start_time,
             return tl::make_unexpected(start_result.error());
         }
 
+        // Add new statistics
+        results.push_back(start_result.value().second);
+        *m_result_atomic = results;
+
         // Wait until profile entry done
         auto started = ref_clock::now();
         for (auto now = started; now < end_time; now = ref_clock::now()) {
             if (m_state.stopped.load()) {
                 m_state.state.store(model::READY);
-                return results;
+                return {};
             }
+
+            // Update statistics
+            auto stat_result = send_stat(start_result.value().first);
+            if (!stat_result) {
+                m_state.state.store(model::ERROR);
+                return tl::make_unexpected(stat_result.error());
+            }
+            results.back() = stat_result.value();
+            *m_result_atomic = results;
+
             m_state.offset.store(total_offset + now - started);
             duration sleep_time = std::min(end_time - now, THRESHOLD);
             std::this_thread::sleep_for(sleep_time);
@@ -130,13 +141,14 @@ tvlp_worker_t::schedule(time_point start_time,
             return tl::make_unexpected(res.error());
         }
 
-        // Recv statistics
-        auto stat_result = send_stat(start_result.value());
+        // Update statistics
+        auto stat_result = send_stat(start_result.value().first);
         if (!stat_result) {
             m_state.state.store(model::ERROR);
             return tl::make_unexpected(stat_result.error());
         }
-        results.push_back(stat_result.value());
+        results.back() = stat_result.value();
+        *m_result_atomic = results;
 
         // Delete generator
         if (auto res = send_delete(gen_id); !res) {
@@ -145,7 +157,7 @@ tvlp_worker_t::schedule(time_point start_time,
         }
     }
     m_state.state.store(model::READY);
-    return results;
+    return {};
 }
 
 } // namespace openperf::tvlp::internal::worker
