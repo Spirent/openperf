@@ -20,6 +20,7 @@ using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 using ref_clock = timesync::chrono::monotime;
 using realtime = timesync::chrono::realtime;
 using duration = std::chrono::nanoseconds;
+using stat_pair_t = std::pair<std::string, nlohmann::json>;
 
 struct tvlp_worker_state_t
 {
@@ -30,8 +31,7 @@ struct tvlp_worker_state_t
 
 class tvlp_worker_t
 {
-    using worker_future =
-        std::future<tl::expected<model::json_vector, std::string>>;
+    using worker_future = std::future<tl::expected<void, std::string>>;
 
 public:
     tvlp_worker_t() = delete;
@@ -47,13 +47,13 @@ public:
     model::json_vector results() const;
 
 protected:
-    tl::expected<model::json_vector, std::string>
+    tl::expected<void, std::string>
     schedule(time_point start_time,
              const model::tvlp_module_profile_t& profile);
     virtual tl::expected<std::string, std::string>
     send_create(const nlohmann::json& config,
                 const std::string& resource_id) = 0;
-    virtual tl::expected<std::string, std::string>
+    virtual tl::expected<stat_pair_t, std::string>
     send_start(const std::string& id) = 0;
     virtual tl::expected<void, std::string>
     send_stop(const std::string& id) = 0;
@@ -65,6 +65,7 @@ protected:
     tvlp_worker_state_t m_state;
     std::string m_error;
     model::json_vector m_result;
+    std::atomic<model::json_vector*> m_result_atomic;
     worker_future m_scheduler_thread;
     model::tvlp_module_profile_t m_profile;
 };

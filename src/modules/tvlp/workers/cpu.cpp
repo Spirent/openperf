@@ -30,7 +30,7 @@ cpu_tvlp_worker_t::send_create(const nlohmann::json& config,
     auto gen = nlohmann::json::parse(result.second).get<CpuGenerator>();
     return gen.getId();
 }
-tl::expected<std::string, std::string>
+tl::expected<stat_pair_t, std::string>
 cpu_tvlp_worker_t::send_start(const std::string& id)
 {
     auto result = openperf::api::client::internal_api_post(
@@ -38,8 +38,8 @@ cpu_tvlp_worker_t::send_start(const std::string& id)
     if (result.first < Pistache::Http::Code::Ok
         || result.first >= Pistache::Http::Code::Already_Reported)
         return tl::make_unexpected(result.second);
-    auto stat = nlohmann::json::parse(result.second).get<CpuGeneratorResult>();
-    return stat.getId();
+    auto stat = nlohmann::json::parse(result.second);
+    return std::pair(stat.get<CpuGeneratorResult>().getId(), stat);
 }
 tl::expected<void, std::string>
 cpu_tvlp_worker_t::send_stop(const std::string& id)

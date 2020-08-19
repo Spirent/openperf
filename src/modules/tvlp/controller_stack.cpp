@@ -69,7 +69,11 @@ tl::expected<void, std::string> controller_stack::stop(const std::string& id)
 std::vector<tvlp_result_ptr> controller_stack::results() const
 {
     std::vector<tvlp_result_ptr> result_list;
-    for (const auto& pair : m_results) { result_list.push_back(pair.second); }
+    for (const auto& pair : m_results) {
+        if (auto controller = get(pair.second->tvlp_id()); controller)
+            controller.value()->update();
+        result_list.push_back(pair.second);
+    }
     return result_list;
 }
 
