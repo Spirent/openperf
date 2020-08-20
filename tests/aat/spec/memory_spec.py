@@ -19,13 +19,14 @@ from common.matcher import (raise_api_exception,
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                 os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
-def get_dynamic_results_fields(stat_object):
+
+def get_dynamic_results_fields():
     fields = []
-    for (name, type) in stat_object.swagger_types.items():
+    swagger_types = client.models.MemoryGeneratorStats.swagger_types
+    for (name, type) in swagger_types.items():
         if type in ['int', 'float']:
-            if name not in ['latency_min', 'latency_max']:
-                fields.append('read.' + name)
-                fields.append('write.' + name)
+            fields.append('read.' + name)
+            fields.append('write.' + name)
     return fields
 
 
@@ -271,7 +272,7 @@ with description('Memory Generator Module', 'memory') as self:
                     with before.all:
                         self._api.stop_memory_generator(self._g7r.id)
                         dynamic = make_dynamic_results_config(
-                            get_dynamic_results_fields(client.models.MemoryGeneratorStats()))
+                            get_dynamic_results_fields())
                         self._result = self._api.start_memory_generator_with_http_info(
                             self._g7r.id, dynamic_results=dynamic, _return_http_data_only=False)
 

@@ -6,16 +6,28 @@ from mamba import description, before, after
 from expects import *
 from expects.matchers import Matcher
 from common import Config, Service
+from common.helper import make_dynamic_results_config
+from common.helper import check_modules_exists
 from common.matcher import (be_valid_block_device,
                             be_valid_block_file,
                             be_valid_block_generator,
                             be_valid_block_generator_result,
-                            raise_api_exception)
-from common.helper import check_modules_exists
+                            raise_api_exception,
+                            be_valid_dynamic_results)
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                              os.environ.get('MAMBA_CONFIG', 'config.yaml')))
+
+
+def get_dynamic_results_fields():
+    fields = []
+    swagger_types = client.models.BlockGeneratorStats.swagger_types
+    for (name, type) in swagger_types.items():
+        if type in ['int', 'float']:
+            fields.append('read.' + name)
+            fields.append('write.' + name)
+    return fields
 
 
 def generator_model(resource_id = None):
@@ -332,7 +344,6 @@ with description('Block,', 'block') as self:
                     expect(self._result[0].config.ratio.reads).to(be(1))
                     expect(self._result[0].config.ratio.writes).to(be(1))
 
-
             with description('empty source id,'):
                 with it('returns 400'):
                     gen = generator_model()
@@ -406,6 +417,18 @@ with description('Block,', 'block') as self:
                 with it('returns 400'):
                     self.api.start_block_generator(self.gen.id)
                     expect(lambda: self.api.start_block_generator(self.gen.id)).to(raise_api_exception(400))
+
+            with description('by existing ID with Dynamic Results'):
+                with it('started'):
+                    dynamic = make_dynamic_results_config(get_dynamic_results_fields())
+                    result = self.api.start_block_generator_with_http_info(
+                        self.gen.id, dynamic_results=dynamic, _return_http_data_only=False)
+                    expect(result[1]).to(equal(201))
+                    expect(result[2]).to(has_location('/block-generator-results/' + result[0].id))
+                    expect(result[0]).to(be_valid_block_generator_result)
+                    expect(result[0].active).to(be_true)
+                    expect(result[0].generator_id).to(equal(self.gen.id))
+                    expect(result[0].dynamic_results).to(be_valid_dynamic_results)
 
             with description('non-existent id,'):
                 with it('returns 404'):

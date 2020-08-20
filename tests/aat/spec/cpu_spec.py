@@ -6,15 +6,32 @@ from mamba import description, before, after, it
 from expects import *
 from expects.matchers import Matcher
 from common import Config, Service
+from common.helper import make_dynamic_results_config
+from common.helper import check_modules_exists
 from common.matcher import (raise_api_exception,
                             be_valid_cpu_info,
                             be_valid_cpu_generator,
-                            be_valid_cpu_generator_result)
-from common.helper import check_modules_exists
+                            be_valid_cpu_generator_result,
+                            be_valid_dynamic_results)
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                 os.environ.get('MAMBA_CONFIG', 'config.yaml')))
+
+
+def get_dynamic_results_fields(generator_config):
+    fields = []
+    for (name, type) in client.models.CpuGeneratorStats.swagger_types.items():
+        if type in ['int', 'float']:
+            fields.append(name)
+
+    for i in range(len(generator_config.cores)):
+        swagger_types = client.models.CpuGeneratorCoreStats.swagger_types
+        for (name, type) in swagger_types.items():
+            if type in ['int', 'float']:
+                fields.append('cores[' + str(i) + '].' + name)
+
+    return fields
 
 
 def generator_model(api_client, running = False, id = ''):
@@ -245,6 +262,38 @@ with description('CPU Generator Module', 'cpu') as self:
 
                     with it('returned valid result'):
                         expect(self._result[0]).to(be_valid_cpu_generator_result)
+
+                    with it('is running'):
+                        g7r = self._api.get_cpu_generator(self._g7r.id)
+                        expect(g7r).to(be_valid_cpu_generator)
+                        expect(g7r.running).to(be_true)
+
+                with description('by existing ID with Dynamic Results'):
+                    with before.all:
+                        self._api.stop_cpu_generator(self._g7r.id)
+                        dynamic = make_dynamic_results_config(
+                            get_dynamic_results_fields(self._g7r.config))
+                        self._result = self._api.start_cpu_generator_with_http_info(
+                            self._g7r.id, dynamic_results=dynamic, _return_http_data_only=False)
+
+                    with it('is not running'):
+                        expect(self._g7r.running).to(be_false)
+
+                    with it('started'):
+                        expect(self._result[1]).to(equal(201))
+
+                    with it('has valid Location header'):
+                        expect(self._result[2]).to(has_location(
+                            '/cpu-generator-results/' + self._result[0].id))
+
+                    with it('has Content-Type: application/json header'):
+                        expect(self._result[2]).to(has_json_content_type)
+
+                    with it('returned valid result'):
+                        expect(self._result[0]).to(be_valid_cpu_generator_result)
+                        expect(self._result[0].active).to(be_true)
+                        expect(self._result[0].generator_id).to(equal(self._g7r.id))
+                        expect(self._result[0].dynamic_results).to(be_valid_dynamic_results)
 
                     with it('is running'):
                         g7r = self._api.get_cpu_generator(self._g7r.id)
