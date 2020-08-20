@@ -14,12 +14,17 @@ CPU_SOURCES += \
 	handler.cpp \
 	init.cpp \
 	server.cpp \
-	task_cpu.cpp \
-	instruction_set_x86.cpp
+	task_cpu.cpp
+
+ifeq ($(ARCH),x86_64)
+	CPU_SOURCES += instruction_set_x86.cpp
+endif
 
 ifeq ($(PLATFORM), linux)
 	CPU_SOURCES += cpu_linux.cpp
 endif
+
+include $(CPU_SRC_DIR)/ispc/directory.mk
 
 CPU_VERSIONED_FILES := init.cpp
 CPU_UNVERSIONED_OBJECTS :=\
