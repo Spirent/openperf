@@ -10,6 +10,8 @@ constexpr auto NAME_PREFIX = "op_cpu";
 
 std::optional<double> get_field(const cpu_stat& stat, std::string_view name)
 {
+    if (name == "timestamp") return stat.available.count();
+
     if (name == "available") return stat.available.count();
     if (name == "utilization") return stat.utilization.count();
     if (name == "system") return stat.system.count();

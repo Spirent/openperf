@@ -33,7 +33,7 @@ std::optional<double> get_field(const model::block_generator_result& stat,
     if (name == "read.bytes_target") return read.bytes_target;
     if (name == "read.bytes_actual") return read.bytes_actual;
     if (name == "read.io_errors") return read.io_errors;
-    if (name == "read.latency") return read.latency.count();
+    if (name == "read.latency_total") return read.latency.count();
 
     if (name == "read.latency_min")
         return read.latency_min.value_or(0ns).count();
@@ -46,7 +46,7 @@ std::optional<double> get_field(const model::block_generator_result& stat,
     if (name == "write.bytes_target") return write.bytes_target;
     if (name == "write.bytes_actual") return write.bytes_actual;
     if (name == "write.io_errors") return write.io_errors;
-    if (name == "write.latency") return write.latency.count();
+    if (name == "write.latency_total") return write.latency.count();
 
     if (name == "write.latency_min")
         return write.latency_min.value_or(0ns).count();
