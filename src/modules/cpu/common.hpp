@@ -3,9 +3,9 @@
 
 #include <string_view>
 
-namespace openperf::cpu {
+#include "instruction_set.hpp"
 
-enum class instruction_set { SCALAR = 1 };
+namespace openperf::cpu {
 
 enum class data_type { INT32 = 1, INT64, FLOAT32, FLOAT64 };
 
@@ -27,23 +27,6 @@ struct generator_config
 {
     std::vector<task_cpu_config> cores;
 };
-
-constexpr cpu::instruction_set to_instruction_set(std::string_view value)
-{
-    if (value == "scalar") return cpu::instruction_set::SCALAR;
-    throw std::runtime_error("Error from string to instruction_set converting: "
-                             "Illegal string value");
-}
-
-constexpr std::string_view to_string(cpu::instruction_set value)
-{
-    switch (value) {
-    case cpu::instruction_set::SCALAR:
-        return "scalar";
-    default:
-        return "unknown";
-    }
-}
 
 constexpr cpu::data_type to_data_type(std::string_view value)
 {

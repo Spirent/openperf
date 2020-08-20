@@ -14,7 +14,8 @@ CPU_SOURCES += \
 	handler.cpp \
 	init.cpp \
 	server.cpp \
-	task_cpu.cpp
+	task_cpu.cpp \
+	instruction_set_x86.cpp
 
 ifeq ($(PLATFORM), linux)
 	CPU_SOURCES += cpu_linux.cpp
