@@ -371,7 +371,7 @@ Response:
 
 ### Per *core* statistics:
 
-To access to the particular statitics of a configured core, use an appropriate core number instead of *N* below. The core number is the integer value from 0 to number core configuration blocks in the generator configuration minus 1. The order of cores are preserved.
+To access to the particular statitics of a configured core, use an appropriate core number instead of *N* below. The core number is the integer value from 0 to number core configuration blocks in the generator configuration minus 1. The order of cores are preserved. The core number refer to core number of system.
 
 * **cores[*N*].available** - available CPU time.
 * **cores[*N*].error** - difference between wanted and actual utilization.

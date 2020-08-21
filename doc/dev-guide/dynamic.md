@@ -5,7 +5,7 @@ Dynamic Results Framework is located at `src/framework/dynamic` path. Framework 
 
 ## Usage
 
-To embed Dynamic Results to a generator include `framework/dynamic/spool.hpp` and use *spool* template to create and control the collection of Dynamic Results. Also, you may want include `framework/dynamic/api.hpp` to get access to API structures and supporting conversion functions of `openperf::dynamic::configuration` and `openperf::dynamic::results`.
+To embed Dynamic Results in a generator include `framework/dynamic/spool.hpp` and use *spool* template to create and control the collection of Dynamic Results. Also, you may want include `framework/dynamic/api.hpp` to get access to API structures and supporting conversion functions of `openperf::dynamic::configuration` and `openperf::dynamic::results`.
 
 ## Spool
 
