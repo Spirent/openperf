@@ -7,7 +7,7 @@
 
 #include "modules/api/api_route_handler.hpp"
 
-#include "swagger/v1/converters/block.hpp"
+#include "swagger/converters/block.hpp"
 
 namespace opneperf::block {
 

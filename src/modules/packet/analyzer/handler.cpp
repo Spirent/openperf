@@ -6,7 +6,7 @@
 #include "message/serialized_message.hpp"
 #include "packet/analyzer/api.hpp"
 
-#include "swagger/v1/converters/packet_analyzer.hpp"
+#include "swagger/converters/packet_analyzer.hpp"
 #include "swagger/v1/model/BulkCreatePacketAnalyzersResponse.h"
 #include "swagger/v1/model/BulkDeletePacketAnalyzersRequest.h"
 #include "swagger/v1/model/BulkStartPacketAnalyzersRequest.h"

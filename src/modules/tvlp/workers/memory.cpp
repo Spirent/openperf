@@ -1,5 +1,5 @@
 #include "memory.hpp"
-#include "swagger/v1/converters/memory.hpp"
+#include "swagger/converters/memory.hpp"
 #include "swagger/v1/model/MemoryGenerator.h"
 #include "swagger/v1/model/MemoryGeneratorResult.h"
 
