@@ -21,8 +21,8 @@ block_tvlp_worker_t::send_create(const nlohmann::json& config,
     blk_conf->fromJson(const_cast<nlohmann::json&>(config));
     gen.setConfig(blk_conf);
 
-    auto result = openperf::api::client::internal_api_post("/block-generators",
-                                                           gen.toJson().dump());
+    auto result = openperf::api::client::internal_api_post(
+        "/block-generators", gen.toJson().dump(), INTERNAL_REQUEST_TIMEOUT);
 
     if (result.first < Pistache::Http::Code::Ok
         || result.first >= Pistache::Http::Code::Already_Reported)
@@ -35,7 +35,7 @@ tl::expected<stat_pair_t, std::string>
 block_tvlp_worker_t::send_start(const std::string& id)
 {
     auto result = openperf::api::client::internal_api_post(
-        "/block-generators/" + id + "/start", "");
+        "/block-generators/" + id + "/start", "", INTERNAL_REQUEST_TIMEOUT);
     if (result.first < Pistache::Http::Code::Ok
         || result.first >= Pistache::Http::Code::Already_Reported)
         return tl::make_unexpected(result.second);
@@ -46,7 +46,7 @@ tl::expected<void, std::string>
 block_tvlp_worker_t::send_stop(const std::string& id)
 {
     auto result = openperf::api::client::internal_api_post(
-        "/block-generators/" + id + "/stop", "");
+        "/block-generators/" + id + "/stop", "", INTERNAL_REQUEST_TIMEOUT);
     if (result.first < Pistache::Http::Code::Ok
         || result.first >= Pistache::Http::Code::Already_Reported)
         return tl::make_unexpected(result.second);
@@ -56,7 +56,7 @@ tl::expected<nlohmann::json, std::string>
 block_tvlp_worker_t::send_stat(const std::string& id)
 {
     auto result = openperf::api::client::internal_api_get(
-        "/block-generator-results/" + id);
+        "/block-generator-results/" + id, INTERNAL_REQUEST_TIMEOUT);
     if (result.first < Pistache::Http::Code::Ok
         || result.first >= Pistache::Http::Code::Already_Reported)
         return tl::make_unexpected(result.second);
@@ -65,8 +65,8 @@ block_tvlp_worker_t::send_stat(const std::string& id)
 tl::expected<void, std::string>
 block_tvlp_worker_t::send_delete(const std::string& id)
 {
-    auto result =
-        openperf::api::client::internal_api_del("/block-generators/" + id);
+    auto result = openperf::api::client::internal_api_del(
+        "/block-generators/" + id, INTERNAL_REQUEST_TIMEOUT);
     if (result.first < Pistache::Http::Code::Ok
         || result.first >= Pistache::Http::Code::Already_Reported)
         return tl::make_unexpected(result.second);
