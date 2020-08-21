@@ -1,6 +1,6 @@
 #include "api.hpp"
 #include "api_converters.hpp"
-#include "swagger/v1/converters/memory.hpp"
+#include "swagger/converters/memory.hpp"
 #include "framework/config/op_config_utils.hpp"
 #include "framework/core/op_core.h"
 #include "framework/message/serialized_message.hpp"

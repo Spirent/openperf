@@ -220,7 +220,7 @@ definitions:
                   format: int64
                   description: Length of the current operation in ns
                 config:
-                  $ref: ./memory.yaml#/definitions/MemoryGeneratorConfig
+                  $ref: "./memory.yaml#/definitions/MemoryGeneratorConfig"
               required:
                 - length
                 - config
@@ -243,7 +243,7 @@ definitions:
                   format: int64
                   description: Length of a current operation in ns
                 config:
-                  $ref: ./block.yaml#/definitions/BlockGeneratorConfig
+                  $ref: "./block.yaml#/definitions/BlockGeneratorConfig"
               required:
                 - resource_id
                 - length
@@ -264,7 +264,7 @@ definitions:
                   format: int64
                   description: Length of a current operation in ns
                 config:
-                  $ref: ./cpu.yaml#/definitions/CpuGeneratorConfig
+                  $ref: "./cpu.yaml#/definitions/CpuGeneratorConfig"
               required:
                 - length
                 - config
@@ -289,7 +289,7 @@ definitions:
                   format: int64
                   description: Length of a current operation in ns
                 config:
-                  $ref: ./packet/generator.yaml#/definitions/PacketGeneratorConfig
+                  $ref: "./packet/generator.yaml#/definitions/PacketGeneratorConfig"
               required:
                 - target_id
                 - length
@@ -310,15 +310,15 @@ definitions:
       memory:
         type: array
         items:
-          $ref: ./memory.yaml#/definitions/MemoryGeneratorResult
+          $ref: "./memory.yaml#/definitions/MemoryGeneratorResult"
       block:
         type: array
         items:
-          $ref: ./block.yaml#/definitions/BlockGeneratorResult
+          $ref: "./block.yaml#/definitions/BlockGeneratorResult"
       cpu:
         type: array
         items:
-          $ref: ./cpu.yaml#/definitions/CpuGeneratorResult
+          $ref: "./cpu.yaml#/definitions/CpuGeneratorResult"
       packet:
         type: array
         items:

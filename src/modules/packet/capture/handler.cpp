@@ -8,7 +8,7 @@
 #include "packet/capture/api.hpp"
 #include "packet/capture/pcap_transfer.hpp"
 
-#include "swagger/v1/converters/packet_capture.hpp"
+#include "swagger/converters/packet_capture.hpp"
 #include "swagger/v1/model/BulkCreatePacketCapturesResponse.h"
 #include "swagger/v1/model/BulkDeletePacketCapturesRequest.h"
 #include "swagger/v1/model/BulkStartPacketCapturesRequest.h"

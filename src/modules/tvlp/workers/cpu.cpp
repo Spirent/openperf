@@ -1,5 +1,5 @@
 #include "cpu.hpp"
-#include "swagger/v1/converters/cpu.hpp"
+#include "swagger/converters/cpu.hpp"
 #include "swagger/v1/model/CpuGenerator.h"
 #include "swagger/v1/model/CpuGeneratorResult.h"
 

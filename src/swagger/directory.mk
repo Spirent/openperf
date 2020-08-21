@@ -7,7 +7,7 @@ OP_CPPFLAGS += -Wno-unused-parameter
 # Just suck up every cpp file in the model directory properly formatted
 # for our generic build rules
 SWAGGER_SOURCES += $(patsubst $(SWAGGER_SRC_DIR)/%,%,$(wildcard $(SWAGGER_SRC_DIR)/v1/model/*.cpp))
-SWAGGER_SOURCES += $(patsubst $(SWAGGER_SRC_DIR)/%,%,$(wildcard $(SWAGGER_SRC_DIR)/v1/converters/*.cpp))
+SWAGGER_SOURCES += $(patsubst $(SWAGGER_SRC_DIR)/%,%,$(wildcard $(SWAGGER_SRC_DIR)/converters/*.cpp))
 
 # Custom types in swagger generate useless JSON translation functions with
 # unused arguments.  Hence, we need to append a compiler flag to compile

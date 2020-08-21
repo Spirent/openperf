@@ -5,7 +5,7 @@
 
 #include "api.hpp"
 #include "swagger_converters.hpp"
-#include "swagger/v1/converters/tvlp.hpp"
+#include "swagger/converters/tvlp.hpp"
 
 #include "framework/core/op_core.h"
 #include "framework/config/op_config_utils.hpp"

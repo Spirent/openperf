@@ -1,5 +1,5 @@
 #include "block.hpp"
-#include "swagger/v1/converters/block.hpp"
+#include "swagger/converters/block.hpp"
 #include "swagger/v1/model/BlockGenerator.h"
 #include "swagger/v1/model/BlockGeneratorResult.h"
 
