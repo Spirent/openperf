@@ -17,8 +17,7 @@ private:
     square_matrix matrix2;
 
 public:
-    target_scalar(cpu::data_type dtype)
-        : target(dtype)
+    target_scalar()
     {
         matrix1.resize(size);
         matrix2.resize(size);
