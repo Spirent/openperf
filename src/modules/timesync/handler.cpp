@@ -9,7 +9,7 @@
 #include "message/serialized_message.hpp"
 #include "timesync/api.hpp"
 
-#include "swagger/v1/converters/timesync.hpp"
+#include "swagger/converters/timesync.hpp"
 
 namespace opneperf::timesync {
 

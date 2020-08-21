@@ -1,5 +1,5 @@
 #include "packet.hpp"
-#include "swagger/v1/converters/packet_generator.hpp"
+#include "swagger/converters/packet_generator.hpp"
 #include "swagger/v1/model/PacketGenerator.h"
 #include "swagger/v1/model/PacketGeneratorResult.h"
 
