@@ -15,20 +15,20 @@ tl::expected<std::string, std::string>
 memory_tvlp_worker_t::send_create(const nlohmann::json& config,
                                   const std::string&)
 {
-    MemoryGenerator blk_gen;
+    MemoryGenerator gen;
     auto blk_conf = std::make_shared<MemoryGeneratorConfig>();
     blk_conf->fromJson(const_cast<nlohmann::json&>(config));
-    blk_gen.setConfig(blk_conf);
+    gen.setConfig(blk_conf);
 
-    auto result = openperf::api::client::internal_api_post(
-        "/memory-generators", blk_gen.toJson().dump());
+    auto result = openperf::api::client::internal_api_post("/memory-generators",
+                                                           gen.toJson().dump());
 
     if (result.first < Pistache::Http::Code::Ok
         || result.first >= Pistache::Http::Code::Already_Reported)
         return tl::make_unexpected(result.second);
 
-    auto gen = nlohmann::json::parse(result.second).get<MemoryGenerator>();
-    return gen.getId();
+    auto mg = nlohmann::json::parse(result.second).get<MemoryGenerator>();
+    return mg.getId();
 }
 tl::expected<stat_pair_t, std::string>
 memory_tvlp_worker_t::send_start(const std::string& id)
@@ -59,7 +59,7 @@ memory_tvlp_worker_t::send_stat(const std::string& id)
     if (result.first < Pistache::Http::Code::Ok
         || result.first >= Pistache::Http::Code::Already_Reported)
         return tl::make_unexpected(result.second);
-    return result.second;
+    return nlohmann::json::parse(result.second);
 }
 tl::expected<void, std::string>
 memory_tvlp_worker_t::send_delete(const std::string& id)

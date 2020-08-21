@@ -209,6 +209,41 @@ static swagger::TvlpResult to_swagger(const result_t& result)
                           model.getBlock().push_back(g_result);
                       });
     }
+    if (modules_results.memory) {
+        auto memory_results = modules_results.memory.value();
+        std::for_each(
+            std::begin(memory_results),
+            std::end(memory_results),
+            [&](const auto& res) {
+                auto g_result =
+                    std::make_shared<swagger::MemoryGeneratorResult>();
+                swagger::from_json(res, *g_result);
+                model.getMemory().push_back(g_result);
+            });
+    }
+    if (modules_results.cpu) {
+        auto cpu_results = modules_results.cpu.value();
+        std::for_each(std::begin(cpu_results),
+                      std::end(cpu_results),
+                      [&](const auto& res) {
+                          auto g_result =
+                              std::make_shared<swagger::CpuGeneratorResult>();
+                          swagger::from_json(res, *g_result);
+                          model.getCpu().push_back(g_result);
+                      });
+    }
+    if (modules_results.packet) {
+        auto packet_results = modules_results.packet.value();
+        std::for_each(
+            std::begin(packet_results),
+            std::end(packet_results),
+            [&](const auto& res) {
+                auto g_result =
+                    std::make_shared<swagger::PacketGeneratorResult>();
+                swagger::from_json(res, *g_result);
+                model.getPacket().push_back(g_result);
+            });
+    }
 
     return model;
 }

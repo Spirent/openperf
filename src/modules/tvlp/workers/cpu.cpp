@@ -15,20 +15,20 @@ tl::expected<std::string, std::string>
 cpu_tvlp_worker_t::send_create(const nlohmann::json& config,
                                const std::string& resource_id)
 {
-    CpuGenerator blk_gen;
+    CpuGenerator gen;
     auto blk_conf = std::make_shared<CpuGeneratorConfig>();
     blk_conf->fromJson(const_cast<nlohmann::json&>(config));
-    blk_gen.setConfig(blk_conf);
+    gen.setConfig(blk_conf);
 
-    auto result = openperf::api::client::internal_api_post(
-        "/cpu-generators", blk_gen.toJson().dump());
+    auto result = openperf::api::client::internal_api_post("/cpu-generators",
+                                                           gen.toJson().dump());
 
     if (result.first < Pistache::Http::Code::Ok
         || result.first >= Pistache::Http::Code::Already_Reported)
         return tl::make_unexpected(result.second);
 
-    auto gen = nlohmann::json::parse(result.second).get<CpuGenerator>();
-    return gen.getId();
+    auto cg = nlohmann::json::parse(result.second).get<CpuGenerator>();
+    return cg.getId();
 }
 tl::expected<stat_pair_t, std::string>
 cpu_tvlp_worker_t::send_start(const std::string& id)
@@ -59,7 +59,7 @@ cpu_tvlp_worker_t::send_stat(const std::string& id)
     if (result.first < Pistache::Http::Code::Ok
         || result.first >= Pistache::Http::Code::Already_Reported)
         return tl::make_unexpected(result.second);
-    return result.second;
+    return nlohmann::json::parse(result.second);
 }
 tl::expected<void, std::string>
 cpu_tvlp_worker_t::send_delete(const std::string& id)
