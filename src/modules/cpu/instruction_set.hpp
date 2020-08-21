@@ -14,7 +14,8 @@ enum class instruction_set : uint8_t {
     SSE4,
     AVX,
     AVX2,
-    AVX512SKX
+    AVX512SKX,
+    MAX
 };
 
 namespace {
