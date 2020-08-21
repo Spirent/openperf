@@ -15,21 +15,21 @@ tl::expected<std::string, std::string>
 block_tvlp_worker_t::send_create(const nlohmann::json& config,
                                  const std::string& resource_id)
 {
-    BlockGenerator blk_gen;
-    blk_gen.setResourceId(resource_id);
+    BlockGenerator gen;
+    gen.setResourceId(resource_id);
     auto blk_conf = std::make_shared<BlockGeneratorConfig>();
     blk_conf->fromJson(const_cast<nlohmann::json&>(config));
-    blk_gen.setConfig(blk_conf);
+    gen.setConfig(blk_conf);
 
-    auto result = openperf::api::client::internal_api_post(
-        "/block-generators", blk_gen.toJson().dump());
+    auto result = openperf::api::client::internal_api_post("/block-generators",
+                                                           gen.toJson().dump());
 
     if (result.first < Pistache::Http::Code::Ok
         || result.first >= Pistache::Http::Code::Already_Reported)
         return tl::make_unexpected(result.second);
 
-    auto gen = nlohmann::json::parse(result.second).get<BlockGenerator>();
-    return gen.getId();
+    auto bg = nlohmann::json::parse(result.second).get<BlockGenerator>();
+    return bg.getId();
 }
 tl::expected<stat_pair_t, std::string>
 block_tvlp_worker_t::send_start(const std::string& id)

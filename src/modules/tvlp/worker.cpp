@@ -90,8 +90,7 @@ tvlp_worker_t::schedule(time_point start_time,
         }
 
         // Create generator
-        auto create_result =
-            send_create(entry.config, entry.resource_id.value());
+        auto create_result = send_create(entry.config, (entry.resource_id) ? entry.resource_id.value() : "");
         if (!create_result) {
             m_state.state.store(model::ERROR);
             return tl::make_unexpected(create_result.error());
