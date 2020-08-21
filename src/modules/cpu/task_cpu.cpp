@@ -1,5 +1,6 @@
 #include "task_cpu.hpp"
 #include "target_scalar.hpp"
+#include "target_ispc.hpp"
 
 #include "framework/core/op_log.h"
 
@@ -159,9 +160,24 @@ task_cpu::target_ptr task_cpu::make_target(cpu::instruction_set iset,
         case cpu::data_type::FLOAT64:
             return std::make_unique<target_scalar<double>>();
         }
+    case cpu::instruction_set::SSE2:
+    case cpu::instruction_set::SSE4:
+    case cpu::instruction_set::AVX:
+    case cpu::instruction_set::AVX2:
+    case cpu::instruction_set::AVX512SKX:
+        switch (dtype) {
+        case cpu::data_type::INT32:
+            return std::make_unique<target_ispc<uint32_t>>(iset);
+        case cpu::data_type::INT64:
+            return std::make_unique<target_ispc<uint64_t>>(iset);
+        case cpu::data_type::FLOAT32:
+            return std::make_unique<target_ispc<float>>(iset);
+        case cpu::data_type::FLOAT64:
+            return std::make_unique<target_ispc<double>>(iset);
+        }
     default:
         throw std::runtime_error("Unknown instruction set "
-                                 + std::to_string((int)iset));
+                                 + std::string(to_string(iset)));
     }
 }
 
