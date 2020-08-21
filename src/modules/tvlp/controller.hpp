@@ -28,7 +28,7 @@ public:
     controller_t() = delete;
     explicit controller_t(const model::tvlp_configuration_t&);
     controller_t(const controller_t&) = delete;
-    ~controller_t();
+    ~controller_t() = default;
 
     // Operators overloading
     controller_t& operator=(const controller_t&) = delete;

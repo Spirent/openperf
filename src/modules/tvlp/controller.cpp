@@ -12,7 +12,6 @@
 namespace openperf::tvlp::internal {
 
 using namespace std::chrono_literals;
-// static uint16_t serial_counter = 0;
 
 controller_t::controller_t(const model::tvlp_configuration_t& model)
     : model::tvlp_configuration_t(model)
@@ -59,7 +58,6 @@ controller_t::controller_t(const model::tvlp_configuration_t& model)
 
     if (model.id().empty()) id(core::to_string(core::uuid::random()));
 }
-controller_t::~controller_t() {}
 
 std::shared_ptr<model::tvlp_result_t>
 controller_t::start(const time_point& start_time)
@@ -122,7 +120,6 @@ void controller_t::update()
         }
         case model::RUNNING: {
             if (m_state != model::ERROR) m_state = model::RUNNING;
-
             break;
         }
         case model::ERROR: {
