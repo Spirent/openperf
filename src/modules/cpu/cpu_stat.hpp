@@ -23,8 +23,8 @@ struct task_cpu_stat : public common_stat
 {
     struct target_cpu_stat
     {
-        uint64_t operations;
-        std::chrono::nanoseconds runtime;
+        uint64_t operations = 0;
+        std::chrono::nanoseconds runtime = 0ns;
     };
 
     double load = 0.0;
@@ -34,6 +34,8 @@ struct task_cpu_stat : public common_stat
     task_cpu_stat(size_t targets = 0);
     task_cpu_stat& operator+=(const task_cpu_stat&);
     task_cpu_stat operator+(const task_cpu_stat&) const;
+
+    void clear();
 };
 
 struct cpu_stat : public common_stat
@@ -43,6 +45,8 @@ struct cpu_stat : public common_stat
     cpu_stat(size_t cores = 0);
     cpu_stat& operator+=(const task_cpu_stat&);
     cpu_stat operator+(const task_cpu_stat&) const;
+
+    void clear();
 };
 
 } // namespace openperf::cpu

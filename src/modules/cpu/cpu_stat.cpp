@@ -10,6 +10,8 @@ task_cpu_stat::task_cpu_stat(size_t targets_number)
 
 task_cpu_stat& task_cpu_stat::operator+=(const task_cpu_stat& other)
 {
+    assert(targets.size() == other.targets.size());
+
     available += other.available;
     utilization += other.utilization;
     system += other.system;
@@ -17,7 +19,6 @@ task_cpu_stat& task_cpu_stat::operator+=(const task_cpu_stat& other)
     steal += other.steal;
     error += other.error;
 
-    targets.resize(std::max(targets.size(), other.targets.size()));
     for (size_t i = 0; i < targets.size(); i++) {
         targets[i].operations += other.targets[i].operations;
         targets[i].runtime += other.targets[i].runtime;
@@ -30,6 +31,18 @@ task_cpu_stat task_cpu_stat::operator+(const task_cpu_stat& other) const
 {
     auto copy = *this;
     return copy += other;
+}
+
+void task_cpu_stat::clear()
+{
+    available = 0ns;
+    utilization = 0ns;
+    system = 0ns;
+    user = 0ns;
+    steal = 0ns;
+    error = 0ns;
+
+    for (auto&& target : targets) target = {};
 }
 
 cpu_stat::cpu_stat(size_t cores_number)
@@ -56,6 +69,18 @@ cpu_stat cpu_stat::operator+(const task_cpu_stat& task) const
 {
     auto stat = *this;
     return stat += task;
+}
+
+void cpu_stat::clear()
+{
+    available = 0ns;
+    utilization = 0ns;
+    system = 0ns;
+    user = 0ns;
+    steal = 0ns;
+    error = 0ns;
+
+    for (auto&& core : cores) core.clear();
 }
 
 } // namespace openperf::cpu

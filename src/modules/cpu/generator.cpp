@@ -17,6 +17,7 @@ std::optional<double> get_field(const cpu_stat& stat, std::string_view name)
     if (name == "steal") return stat.steal.count();
     if (name == "error") return stat.error.count();
 
+    // Parse the cores[N] field name
     constexpr auto prefix = "cores[";
     auto prefix_size = std::strlen(prefix);
     if (name.substr(0, prefix_size) == prefix) {
@@ -39,6 +40,26 @@ std::optional<double> get_field(const cpu_stat& stat, std::string_view name)
                 return stat.cores[core_number].steal.count();
             if (field_name == "error")
                 return stat.cores[core_number].error.count();
+
+            // Parse the targest[N] field name
+            constexpr auto target_prefix = "targets[";
+            auto target_prefix_size = std::strlen(target_prefix);
+            if (field_name.substr(0, target_prefix_size) == target_prefix) {
+                auto target_number = std::stoul(std::string(field_name.substr(
+                    target_prefix_size,
+                    field_name.find_first_of(']', target_prefix_size)
+                        - target_prefix_size)));
+
+                if (target_number < stat.cores[core_number].targets.size()) {
+                    auto target_field = field_name.substr(
+                        field_name.find_first_of('.', target_prefix_size) + 1);
+
+                    if (target_field == "operations")
+                        return stat.cores[core_number]
+                            .targets[target_number]
+                            .operations;
+                }
+            }
         }
     }
 
@@ -93,6 +114,8 @@ void generator::config(const generator_config& config)
                 throw std::runtime_error("Instruction set "
                                          + std::string(to_string(target.set))
                                          + " is not supported");
+
+        m_stat.cores[core].targets.resize(core_conf.targets.size());
 
         if (core_conf.utilization == 0.0) continue;
 
@@ -158,7 +181,8 @@ void generator::reset()
 {
     m_controller.pause();
     m_controller.reset();
-    m_stat = {m_stat.cores.size()};
+    m_stat.clear();
+
     m_result_id = core::to_string(core::uuid::random());
 
     if (m_running) m_controller.resume();
