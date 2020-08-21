@@ -6,7 +6,7 @@
 #include "core/op_core.h"
 #include "config/op_config_utils.hpp"
 #include "swagger/v1/model/Interface.h"
-#include "swagger/v1/converters/packetio.hpp"
+#include "swagger/converters/packetio.hpp"
 #include "packetio/generic_interface.hpp"
 #include "packetio/interface_api.hpp"
 #include "packetio/interface_server.hpp"

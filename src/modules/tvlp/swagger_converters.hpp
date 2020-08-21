@@ -4,10 +4,10 @@
 #include <iomanip>
 
 #include "models/tvlp_config.hpp"
-#include "swagger/v1/converters/block.hpp"
-#include "swagger/v1/converters/memory.hpp"
-#include "swagger/v1/converters/cpu.hpp"
-#include "swagger/v1/converters/packet_generator.hpp"
+#include "swagger/converters/block.hpp"
+#include "swagger/converters/memory.hpp"
+#include "swagger/converters/cpu.hpp"
+#include "swagger/converters/packet_generator.hpp"
 #include "swagger/v1/model/TvlpConfiguration.h"
 #include "swagger/v1/model/TvlpResult.h"
 
