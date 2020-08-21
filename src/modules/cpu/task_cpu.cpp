@@ -151,13 +151,13 @@ task_cpu::target_ptr task_cpu::make_target(cpu::instruction_set iset,
     case cpu::instruction_set::SCALAR:
         switch (dtype) {
         case cpu::data_type::INT32:
-            return std::make_unique<target_scalar<uint32_t>>(dtype);
+            return std::make_unique<target_scalar<uint32_t>>();
         case cpu::data_type::INT64:
-            return std::make_unique<target_scalar<uint64_t>>(dtype);
+            return std::make_unique<target_scalar<uint64_t>>();
         case cpu::data_type::FLOAT32:
-            return std::make_unique<target_scalar<float>>(dtype);
+            return std::make_unique<target_scalar<float>>();
         case cpu::data_type::FLOAT64:
-            return std::make_unique<target_scalar<double>>(dtype);
+            return std::make_unique<target_scalar<double>>();
         }
     default:
         throw std::runtime_error("Unknown instruction set "

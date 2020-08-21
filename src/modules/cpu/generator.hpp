@@ -40,9 +40,6 @@ public:
     bool running() const override { return model::generator::running(); }
 
     model::generator_result statistics() const;
-
-private:
-    bool is_supported(cpu::instruction_set);
 };
 
 } // namespace openperf::cpu::generator

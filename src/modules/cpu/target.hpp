@@ -8,13 +8,8 @@ namespace openperf::cpu::internal {
 
 class target
 {
-protected:
-    cpu::data_type m_data_type;
-
 public:
-    target(cpu::data_type dtype)
-        : m_data_type(dtype)
-    {}
+    target() = default;
     virtual ~target() = default;
     virtual uint64_t operation() const = 0;
 
