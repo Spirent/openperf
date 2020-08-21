@@ -8,6 +8,7 @@ from common import Config, Service
 from common.matcher import (be_valid_packet_analyzer,
                             be_valid_packet_analyzer_result,
                             raise_api_exception)
+from common.helper import check_modules_exists
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
@@ -56,6 +57,8 @@ with description('Packet Analyzer,', 'packet_analyzer') as self:
             service = Service(CONFIG.service())
             self.process = service.start()
             self.api = client.api.PacketAnalyzersApi(service.client())
+            if not check_modules_exists(service.client(), 'packet-analyzer'):
+                self.skip()
 
         with description('invalid HTTP methods,'):
             with description('/packet/analyzers,'):

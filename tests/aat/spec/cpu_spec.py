@@ -10,6 +10,7 @@ from common.matcher import (raise_api_exception,
                             be_valid_cpu_info,
                             be_valid_cpu_generator,
                             be_valid_cpu_generator_result)
+from common.helper import check_modules_exists
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
@@ -60,6 +61,8 @@ with description('CPU Generator Module', 'cpu') as self:
         service = Service(CONFIG.service())
         self._process = service.start()
         self._api = client.api.CpuGeneratorApi(service.client())
+        if not check_modules_exists(service.client(), 'cpu'):
+            self.skip()
 
     with after.all:
         try:

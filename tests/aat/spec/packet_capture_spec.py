@@ -15,6 +15,7 @@ from common.helper import (get_capture_pcap, get_merged_capture_pcap)
 from common.matcher import (be_valid_packet_capture,
                             be_valid_packet_capture_result,
                             raise_api_exception)
+from common.helper import check_modules_exists
 
 import scapy.all
 
@@ -162,6 +163,8 @@ with description('Packet Capture,', 'packet_capture') as self:
             self.process = service.start()
             self.api = client.api.PacketCapturesApi(service.client())
             self.intf_api = client.api.InterfacesApi(self.api.api_client)
+            if not check_modules_exists(service.client(), 'packetio', 'packet-capture'):
+                self.skip()
 
             # By default, ping is a privileged process.  We need it unprivileged
             # to use LD_PRELOAD, so just make a copy as a regular user.
