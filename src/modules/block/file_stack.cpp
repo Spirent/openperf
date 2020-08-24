@@ -134,8 +134,7 @@ file_stack::delete_block_file(const std::string& id)
                f->get_path().c_str(),
                strerror(errno));
 
-    if (m_block_files.erase(id) <= 0)
-        return tl::make_unexpected(deletion_error_type::NOT_FOUND);
+    m_block_files.erase(id);
 
     return {};
 }
