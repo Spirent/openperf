@@ -49,6 +49,10 @@ void controller::clear()
 // Methods : private
 void controller::send(internal::operation_t operation)
 {
+    // Prevent sending commands to the ZMQ socket without subscribers.
+    // This resolve the bug with generators hanging on deletion.
+    if (m_workers.empty()) return;
+
     auto result = zmq_send(
         m_control_socket.get(), &operation, sizeof(operation), ZMQ_DONTWAIT);
 

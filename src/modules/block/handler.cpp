@@ -1,33 +1,20 @@
-#include <memory>
-
-#include <json.hpp>
-#include <zmq.h>
-
-#include "api/api_route_handler.hpp"
-#include "config/op_config_utils.hpp"
-#include "core/op_core.h"
-#include "message/serialized_message.hpp"
 #include "api.hpp"
+#include "api_converters.hpp"
 
-#include "swagger/v1/model/BlockGenerator.h"
-#include "swagger/v1/model/BlockGeneratorResult.h"
-#include "swagger/v1/model/BulkCreateBlockFilesRequest.h"
-#include "swagger/v1/model/BulkDeleteBlockFilesRequest.h"
-#include "swagger/v1/model/BulkCreateBlockGeneratorsRequest.h"
-#include "swagger/v1/model/BulkDeleteBlockGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStartBlockGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStopBlockGeneratorsRequest.h"
-#include "swagger/v1/model/BlockFile.h"
-#include "swagger/v1/model/BlockDevice.h"
+#include "framework/config/op_config_utils.hpp"
+#include "framework/core/op_core.h"
+#include "framework/message/serialized_message.hpp"
+
+#include "modules/api/api_route_handler.hpp"
 
 namespace opneperf::block {
 
+namespace api = openperf::block::api;
 using namespace swagger::v1::model;
 using namespace Pistache;
 using request_type = Pistache::Rest::Request;
 using response_type = Pistache::Http::ResponseWriter;
 using json = nlohmann::json;
-namespace api = openperf::block::api;
 
 class handler : public openperf::api::route::handler::registrar<handler>
 {
@@ -331,10 +318,11 @@ void handler::create_file(const Rest::Request& request,
             return;
         }
 
-        auto api_reply = submit_request(
-            m_socket.get(),
-            api::request_block_file_add{
-                std::make_unique<api::file_t>(api::from_swagger(file_model))});
+        auto api_reply =
+            submit_request(m_socket.get(),
+                           api::request_block_file_add{
+                               std::make_unique<openperf::block::model::file>(
+                                   api::from_swagger(file_model))});
         if (auto reply = std::get_if<api::reply_block_files>(&api_reply)) {
             assert(!reply->files.empty());
             response.headers().add<Http::Header::ContentType>(
@@ -342,7 +330,7 @@ void handler::create_file(const Rest::Request& request,
             if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
                 response.headers().add<Http::Header::Location>(
                     *uri + request.resource() + "/"
-                    + reply->files.front()->get_id());
+                    + reply->files.front()->id());
             }
             response.send(
                 Http::Code::Created,
@@ -490,17 +478,21 @@ void handler::create_generator(const Rest::Request& request,
 
         auto api_reply = submit_request(
             m_socket.get(),
-            api::request_block_generator_add{std::make_unique<api::generator_t>(
-                api::from_swagger(generator_model))});
+            api::request_block_generator_add{
+                std::make_unique<openperf::block::model::block_generator>(
+                    api::from_swagger(generator_model))});
+
         if (auto reply = std::get_if<api::reply_block_generators>(&api_reply)) {
             assert(!reply->generators.empty());
             response.headers().add<Http::Header::ContentType>(
                 MIME(Application, Json));
+
             if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
                 response.headers().add<Http::Header::Location>(
                     *uri + request.resource() + "/"
-                    + reply->generators.front()->get_id());
+                    + reply->generators.front()->id());
             }
+
             response.send(
                 Http::Code::Created,
                 api::to_swagger(*reply->generators.front())->toJson().dump());
@@ -617,17 +609,31 @@ void handler::start_generator(const Rest::Request& request,
         return;
     }
 
-    auto api_reply = submit_request(
-        m_socket.get(), api::request_block_generator_start{id : id});
+    auto data = api::request_block_generator_start::start_data{.id = id};
+    if (!request.body().empty()) {
+        auto json_obj = json::parse(request.body());
+        DynamicResultsConfig model;
+        model.fromJson(json_obj);
+
+        data.dynamic_results = openperf::dynamic::from_swagger(model);
+    }
+
+    auto api_reply =
+        submit_request(m_socket.get(),
+                       api::request_block_generator_start{
+                           std::make_unique<decltype(data)>(std::move(data))});
+
     if (auto reply =
             std::get_if<api::reply_block_generator_results>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
+
         if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
             response.headers().add<Http::Header::Location>(
                 *uri + "/block-generator-results/"
-                + reply->results.front()->get_id());
+                + reply->results.front()->id());
         }
+
         response.send(
             Http::Code::Created,
             api::to_swagger(*reply->results.front())->toJson().dump());
@@ -666,8 +672,18 @@ void handler::bulk_start_generators(const Rest::Request& request,
     auto request_model =
         json::parse(request.body()).get<BulkStartBlockGeneratorsRequest>();
 
+    auto data = api::request_block_generator_bulk_start::start_data{
+        .ids = std::move(request_model.getIds())};
+
+    if (request_model.dynamicResultsIsSet())
+        data.dynamic_results =
+            openperf::dynamic::from_swagger(*request_model.getDynamicResults());
+
     auto api_reply =
-        submit_request(m_socket.get(), api::from_swagger(request_model));
+        submit_request(m_socket.get(),
+                       api::request_block_generator_bulk_start{
+                           std::make_unique<decltype(data)>(std::move(data))});
+
     if (auto reply =
             std::get_if<api::reply_block_generator_results>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(

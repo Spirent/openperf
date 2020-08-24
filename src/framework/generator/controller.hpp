@@ -167,9 +167,9 @@ template <typename S>
 std::enable_if_t<!std::is_pointer_v<S>, std::optional<S>>
 controller::next_statistics(bool wait)
 {
-    constexpr int ZMQ_BLOCK = 0;
+    constexpr int ZMQ_WAIT = 0;
     auto recv = message::recv(m_statistics_socket.get(),
-                              wait ? ZMQ_BLOCK : ZMQ_NOBLOCK);
+                              wait ? ZMQ_WAIT : ZMQ_DONTWAIT);
 
     if (!recv && recv.error() != EAGAIN) {
         if (errno == ETERM) {
@@ -193,9 +193,9 @@ controller::next_statistics(bool wait)
 template <typename S>
 std::enable_if_t<std::is_pointer_v<S>, S> controller::next_statistics(bool wait)
 {
-    constexpr int ZMQ_BLOCK = 0;
+    constexpr int ZMQ_WAIT = 0;
     auto recv = message::recv(m_statistics_socket.get(),
-                              wait ? ZMQ_BLOCK : ZMQ_NOBLOCK);
+                              wait ? ZMQ_WAIT : ZMQ_DONTWAIT);
 
     if (!recv && recv.error() != EAGAIN) {
         if (errno == ETERM) {

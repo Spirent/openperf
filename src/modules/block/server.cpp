@@ -1,14 +1,15 @@
 #include <zmq.h>
 
-#include "block/api.hpp"
-#include "block/server.hpp"
-#include "config/op_config_utils.hpp"
-#include "block/block_generator.hpp"
-#include "message/serialized_message.hpp"
+#include "api.hpp"
+#include "block_generator.hpp"
+#include "server.hpp"
 #include "models/device.hpp"
 #include "models/file.hpp"
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
+
+#include "framework/config/op_config_utils.hpp"
+#include "framework/message/serialized_message.hpp"
 
 namespace openperf::block::api {
 
@@ -26,7 +27,7 @@ reply_msg server::handle_request(const request_block_device_list&)
 reply_msg server::handle_request(const request_block_device& request)
 {
     auto reply = reply_block_devices{};
-    auto blkdev = m_device_stack->get_block_device(request.id);
+    auto blkdev = m_device_stack->block_device(request.id);
 
     if (!blkdev) { return to_error(api::error_type::NOT_FOUND); }
     reply.devices.emplace_back(std::make_unique<model::device>(*blkdev));
@@ -38,7 +39,7 @@ reply_msg server::handle_request(const request_block_device_init& request)
 {
     auto reply = reply_block_devices{};
 
-    auto blkdev = m_device_stack->get_block_device(request.id);
+    auto blkdev = m_device_stack->block_device(request.id);
     if (!blkdev) return to_error(api::error_type::NOT_FOUND);
 
     if (auto r = m_device_stack->initialize_device(request.id); !r)
@@ -60,7 +61,7 @@ reply_msg server::handle_request(const request_block_file_list&)
 reply_msg server::handle_request(const request_block_file& request)
 {
     auto reply = reply_block_files{};
-    auto blkfile = m_file_stack->get_block_file(request.id);
+    auto blkfile = m_file_stack->block_file(request.id);
 
     if (!blkfile) { return to_error(api::error_type::NOT_FOUND); }
     reply.files.emplace_back(std::make_unique<model::file>(*blkfile));
@@ -71,12 +72,12 @@ reply_msg server::handle_request(const request_block_file& request)
 reply_msg server::handle_request(const request_block_file_add& request)
 {
     // If user did not specify an id create one for them.
-    if (request.source->get_id().empty()) {
-        request.source->set_id(core::to_string(core::uuid::random()));
+    if (request.source->id().empty()) {
+        request.source->id(core::to_string(core::uuid::random()));
     }
 
     if (auto id_check =
-            config::op_config_validate_id_string(request.source->get_id());
+            config::op_config_validate_id_string(request.source->id());
         !id_check)
         return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
 
@@ -96,9 +97,9 @@ reply_msg server::handle_request(const request_block_file_del& request)
 
     if (!result) {
         switch (result.error()) {
-        case block::file::deletion_error_type::NOT_FOUND:
+        case block::file::file_stack::deletion_error_type::NOT_FOUND:
             return to_error(api::error_type::NOT_FOUND);
-        case block::file::deletion_error_type::BUSY:
+        case block::file::file_stack::deletion_error_type::BUSY:
             return to_error(error_type::CUSTOM_ERROR,
                             0,
                             "File \"" + request.id + "\" is busy");
@@ -115,18 +116,17 @@ reply_msg server::handle_request(const request_block_file_bulk_add& request)
     auto remove_created_items = [&]() -> auto
     {
         for (const auto& item : reply.files) {
-            m_file_stack->delete_block_file(item->get_id());
+            m_file_stack->delete_block_file(item->id());
         }
     };
 
     for (const auto& source : request.files) {
         // If user did not specify an id create one for them.
-        if (source->get_id().empty()) {
-            source->set_id(core::to_string(core::uuid::random()));
+        if (source->id().empty()) {
+            source->id(core::to_string(core::uuid::random()));
         }
 
-        if (auto id_check =
-                config::op_config_validate_id_string(source->get_id());
+        if (auto id_check = config::op_config_validate_id_string(source->id());
             !id_check) {
             remove_created_items();
             return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
@@ -173,7 +173,7 @@ reply_msg server::handle_request(const request_block_generator_list&)
 reply_msg server::handle_request(const request_block_generator& request)
 {
     auto reply = reply_block_generators{};
-    auto blkgenerator = m_generator_stack->get_block_generator(request.id);
+    auto blkgenerator = m_generator_stack->block_generator(request.id);
 
     if (!blkgenerator) { return to_error(api::error_type::NOT_FOUND); }
     reply.generators.emplace_back(
@@ -185,12 +185,12 @@ reply_msg server::handle_request(const request_block_generator& request)
 reply_msg server::handle_request(const request_block_generator_add& request)
 {
     // If user did not specify an id create one for them.
-    if (request.source->get_id().empty()) {
-        request.source->set_id(core::to_string(core::uuid::random()));
+    if (request.source->id().empty()) {
+        request.source->id(core::to_string(core::uuid::random()));
     }
 
     if (auto id_check =
-            config::op_config_validate_id_string(request.source->get_id());
+            config::op_config_validate_id_string(request.source->id());
         !id_check)
         return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
 
@@ -222,18 +222,17 @@ server::handle_request(const request_block_generator_bulk_add& request)
     auto remove_created_items = [&]() -> auto
     {
         for (const auto& item : reply.generators) {
-            m_generator_stack->delete_block_generator(item->get_id());
+            m_generator_stack->delete_block_generator(item->id());
         }
     };
 
     for (const auto& source : request.generators) {
         // If user did not specify an id create one for them.
-        if (source->get_id().empty()) {
-            source->set_id(core::to_string(core::uuid::random()));
+        if (source->id().empty()) {
+            source->id(core::to_string(core::uuid::random()));
         }
 
-        if (auto id_check =
-                config::op_config_validate_id_string(source->get_id());
+        if (auto id_check = config::op_config_validate_id_string(source->id());
             !id_check) {
             remove_created_items();
             return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
@@ -269,18 +268,21 @@ server::handle_request(const request_block_generator_bulk_del& request)
 
 reply_msg server::handle_request(const request_block_generator_start& request)
 {
-    auto result = m_generator_stack->start_generator(request.id);
+    try {
+        auto result = m_generator_stack->start_generator(
+            request.data->id, request.data->dynamic_results);
 
-    if (!result) {
-        return to_error(api::error_type::CUSTOM_ERROR, 0, result.error());
+        if (!result) throw std::logic_error(result.error());
+        if (!result.value()) return to_error(api::error_type::NOT_FOUND);
+
+        auto reply = reply_block_generator_results{};
+        reply.results.emplace_back(
+            std::make_unique<model::block_generator_result>(*result.value()));
+
+        return reply;
+    } catch (const std::logic_error& e) {
+        return to_error(api::error_type::CUSTOM_ERROR, 0, e.what());
     }
-
-    if (!result.value()) { return to_error(api::error_type::NOT_FOUND); }
-
-    auto reply = reply_block_generator_results{};
-    reply.results.emplace_back(
-        std::make_unique<model::block_generator_result>(*result.value()));
-    return reply;
 }
 
 reply_msg server::handle_request(const request_block_generator_stop& request)
@@ -297,29 +299,30 @@ server::handle_request(const request_block_generator_bulk_start& request)
 {
     auto reply = reply_block_generator_results{};
 
-    for (const auto& id : request.ids) {
-        auto stats = m_generator_stack->start_generator(*id);
-        if (!stats || !stats.value()) {
-            for (const auto& stat : reply.results) {
-                m_generator_stack->stop_generator(stat->get_generator_id());
-                m_generator_stack->delete_statistics(stat->get_id());
+    try {
+        for (const auto& id : request.data->ids) {
+            auto stats = m_generator_stack->start_generator(
+                id, request.data->dynamic_results);
+
+            if (!stats) throw std::logic_error(stats.error());
+            if (!stats.value()) {
+                throw std::logic_error("Generator " + id + " not found");
             }
-            if (!stats) {
-                return to_error(api::error_type::CUSTOM_ERROR,
-                                0,
-                                "Generator " + *id + " not found");
-            } else {
-                return to_error(
-                    api::error_type::CUSTOM_ERROR, 0, stats.error());
-            }
+
+            reply.results.emplace_back(
+                std::make_unique<model::block_generator_result>(
+                    *stats.value()));
         }
 
-        auto reply_model = model::block_generator_result(*stats.value());
-        reply.results.emplace_back(
-            std::make_unique<model::block_generator_result>(reply_model));
-    }
+        return reply;
+    } catch (const std::logic_error& e) {
+        for (const auto& stat : reply.results) {
+            m_generator_stack->stop_generator(stat->generator_id());
+            m_generator_stack->delete_statistics(stat->id());
+        }
 
-    return reply;
+        return to_error(api::error_type::CUSTOM_ERROR, 0, e.what());
+    }
 }
 
 reply_msg
@@ -351,7 +354,7 @@ reply_msg server::handle_request(const request_block_generator_result_list&)
 reply_msg server::handle_request(const request_block_generator_result& request)
 {
     auto reply = reply_block_generator_results{};
-    auto stat = m_generator_stack->get_statistics(request.id);
+    auto stat = m_generator_stack->statistics(request.id);
 
     if (!stat) { return to_error(api::error_type::NOT_FOUND); }
     reply.results.emplace_back(
@@ -395,9 +398,9 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
 
 server::server(void* context, openperf::core::event_loop& loop)
     : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
-    , m_device_stack(std::make_unique<device_stack>())
-    , m_file_stack(std::make_unique<file_stack>())
-    , m_generator_stack(std::make_unique<generator_stack>())
+    , m_device_stack(std::make_unique<device::device_stack>())
+    , m_file_stack(std::make_unique<file::file_stack>())
+    , m_generator_stack(std::make_unique<generator::generator_stack>())
 {
 
     struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};

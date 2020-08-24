@@ -24,6 +24,7 @@ BlockGeneratorResult::BlockGeneratorResult()
     m_Generator_idIsSet = false;
     m_Active = false;
     m_Timestamp = "";
+    m_Dynamic_resultsIsSet = false;
     
 }
 
@@ -49,6 +50,10 @@ nlohmann::json BlockGeneratorResult::toJson() const
     val["timestamp"] = ModelBase::toJson(m_Timestamp);
     val["read"] = ModelBase::toJson(m_Read);
     val["write"] = ModelBase::toJson(m_Write);
+    if(m_Dynamic_resultsIsSet)
+    {
+        val["dynamic_results"] = ModelBase::toJson(m_Dynamic_results);
+    }
     
 
     return val;
@@ -64,6 +69,16 @@ void BlockGeneratorResult::fromJson(nlohmann::json& val)
     }
     setActive(val.at("active"));
     setTimestamp(val.at("timestamp"));
+    if(val.find("dynamic_results") != val.end())
+    {
+        if(!val["dynamic_results"].is_null())
+        {
+            std::shared_ptr<DynamicResults> newItem(new DynamicResults());
+            newItem->fromJson(val["dynamic_results"]);
+            setDynamicResults( newItem );
+        }
+        
+    }
     
 }
 
@@ -129,6 +144,23 @@ void BlockGeneratorResult::setWrite(std::shared_ptr<BlockGeneratorStats> value)
 {
     m_Write = value;
     
+}
+std::shared_ptr<DynamicResults> BlockGeneratorResult::getDynamicResults() const
+{
+    return m_Dynamic_results;
+}
+void BlockGeneratorResult::setDynamicResults(std::shared_ptr<DynamicResults> value)
+{
+    m_Dynamic_results = value;
+    m_Dynamic_resultsIsSet = true;
+}
+bool BlockGeneratorResult::dynamicResultsIsSet() const
+{
+    return m_Dynamic_resultsIsSet;
+}
+void BlockGeneratorResult::unsetDynamic_results()
+{
+    m_Dynamic_resultsIsSet = false;
 }
 
 }
