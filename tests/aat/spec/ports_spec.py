@@ -6,6 +6,7 @@ import client.api
 import client.models
 from common import Config, Service
 from common.matcher import be_valid_port, raise_api_exception
+from common.helper import check_modules_exists
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CONFIG', 'config.yaml')))
@@ -18,6 +19,8 @@ with description('Ports,', 'ports') as self:
             service = Service(CONFIG.service())
             self.process = service.start()
             self.api = client.api.PortsApi(service.client())
+            if not check_modules_exists(service.client(), 'packetio'):
+                self.skip()
 
         with description('list,'):
             with description('unfiltered,'):

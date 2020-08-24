@@ -12,6 +12,7 @@ import client.api
 
 from expects import *
 from common import Config, Service
+from common.helper import check_modules_exists
 
 ###
 # Spec constants
@@ -307,6 +308,8 @@ with description('Dataplane,', 'dataplane') as self:
         service = Service(CONFIG.service('dataplane'))
         self.process = service.start()
         self.api = client.api.InterfacesApi(service.client())
+        if not check_modules_exists(service.client(), 'packetio'):
+            self.skip()
 
     with description('ipv4,', 'dataplane:ipv4'):
         with description('ping,', 'dataplane:ipv4:ping'):

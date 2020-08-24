@@ -300,3 +300,25 @@ Response:
     "total_memory": 4038316032
 }
 ```
+
+## Dynamic Results field names
+
+### For *read* statistics:
+* **read.bytes_actual** - the actual number of bytes read.
+* **read.bytes_target** - the intended number of bytes read.
+* **read.io_errors** - the number of io_errors observed during reading.
+* **read.latency_total** - the total amount of time required to perform all read operations (in nanoseconds).
+* **read.latency_max** - the maximum observed latency value (in nanoseconds).
+* **read.latency_min** - the minimum observed latency value (in nanoseconds).
+* **read.ops_actual** - the actual number of read operations performed.
+* **read.ops_target** - the intended number of read operations performed.
+
+### For *write* statistics:
+* **write.bytes_actual** - the actual number of bytes written.
+* **write.bytes_target** - the intended number of bytes written.
+* **write.io_errors** - the number of io_errors observed during writing.
+* **write.latency_total** - the total amount of time required to perform all write operations (in nanoseconds).
+* **write.latency_max** - the maximum observed latency value (in nanoseconds).
+* **write.latency_min** - the minimum observed latency value (in nanoseconds).
+* **write.ops_actual** - the actual number of wirite operations performed.
+* **write.ops_target** - the intended number of write operations performed.
