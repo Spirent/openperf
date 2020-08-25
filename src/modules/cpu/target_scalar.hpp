@@ -11,7 +11,7 @@ template <class T> class target_scalar : public target
 private:
     using square_matrix = std::vector<std::vector<T>>;
 
-    constexpr static size_t size = 30;
+    constexpr static size_t size = 32;
 
     square_matrix matrix1;
     square_matrix matrix2;
