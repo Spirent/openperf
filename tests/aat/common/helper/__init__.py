@@ -1,5 +1,8 @@
 from __future__ import absolute_import
 
+# dynamic.py
+from common.helper.dynamic import make_dynamic_results_config
+
 # interface.py
 from common.helper.interface import (empty_interface,
                                      example_ipv4_interface,
