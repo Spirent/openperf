@@ -121,11 +121,20 @@ file_stack::block_file_ptr file_stack::block_file(const std::string& id) const
 tl::expected<void, file_stack::deletion_error_type>
 file_stack::delete_block_file(const std::string& id)
 {
-    if (m_block_files.count(id) && m_block_files.at(id)->fd())
+    if (!m_block_files.count(id))
+        return tl::make_unexpected(deletion_error_type::NOT_FOUND);
+
+    if (m_block_files.at(id)->fd())
         return tl::make_unexpected(deletion_error_type::BUSY);
 
-    if (m_block_files.erase(id) <= 0)
-        return tl::make_unexpected(deletion_error_type::NOT_FOUND);
+    auto f = m_block_files.at(id);
+    if (remove(f->path().c_str()))
+        OP_LOG(OP_LOG_ERROR,
+               "Cannot delete block file %s from the disk: %s",
+               f->path().c_str(),
+               strerror(errno));
+
+    m_block_files.erase(id);
 
     return {};
 }
