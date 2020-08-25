@@ -9,27 +9,12 @@ namespace openperf::cpu::internal {
 #define ISPC_FUNCTION(f, ispc_type, type)                                      \
     namespace ispc {                                                           \
     extern "C" {                                                               \
-    uint64_t f##_##ispc_type(const type*, const type*, const type*, uint16_t); \
-    uint64_t f##_##ispc_type##_sse2(const type*,                               \
-                                    const type*,                               \
-                                    const type*,                               \
-                                    uint16_t);                                 \
-    uint64_t f##_##ispc_type##_sse4(const type*,                               \
-                                    const type*,                               \
-                                    const type*,                               \
-                                    uint16_t);                                 \
-    uint64_t f##_##ispc_type##_avx(const type*,                                \
-                                   const type*,                                \
-                                   const type*,                                \
-                                   uint16_t);                                  \
-    uint64_t f##_##ispc_type##_avx2(const type*,                               \
-                                    const type*,                               \
-                                    const type*,                               \
-                                    uint16_t);                                 \
-    uint64_t f##_##ispc_type##_avx512skx(const type*,                          \
-                                         const type*,                          \
-                                         const type*,                          \
-                                         uint16_t);                            \
+    uint64_t f##_##ispc_type(const type*, const type*, uint16_t);              \
+    uint64_t f##_##ispc_type##_sse2(const type*, const type*, uint16_t);       \
+    uint64_t f##_##ispc_type##_sse4(const type*, const type*, uint16_t);       \
+    uint64_t f##_##ispc_type##_avx(const type*, const type*, uint16_t);        \
+    uint64_t f##_##ispc_type##_avx2(const type*, const type*, uint16_t);       \
+    uint64_t f##_##ispc_type##_avx512skx(const type*, const type*, uint16_t);  \
     }                                                                          \
     }
 
@@ -55,7 +40,7 @@ ISPC_FUNCTION(multiplicate_matrix, float, float)
 template <class T> class target_ispc : public target
 {
 private:
-    using function = uint64_t (*)(const T*, const T*, const T*, uint16_t);
+    using function = uint64_t (*)(const T*, const T*, uint16_t);
     using function_array = std::array<std::pair<instruction_set, function>,
                                       static_cast<int>(instruction_set::MAX)>;
 
@@ -74,7 +59,8 @@ private:
     ();
 
 private:
-    constexpr static size_t size = 30;
+    constexpr static size_t size = 32;
+
     std::vector<T> matrix_a;
     std::vector<T> matrix_b;
     std::vector<T> matrix_r;
@@ -85,7 +71,7 @@ public:
     {
         matrix_a.resize(size * size);
         matrix_b.resize(size * size);
-        matrix_r.resize(size * size);
+
         for (size_t i = 0; i < size * size; ++i) {
             auto row = i / size;
             auto col = i % size;
@@ -108,8 +94,7 @@ public:
 
     [[clang::optnone]] uint64_t operation() const override
     {
-        return m_operation(
-            matrix_a.data(), matrix_b.data(), matrix_r.data(), size);
+        return m_operation(matrix_a.data(), matrix_b.data(), size);
     }
 };
 
