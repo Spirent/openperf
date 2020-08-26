@@ -14,7 +14,8 @@ CPU_SOURCES += \
 	handler.cpp \
 	init.cpp \
 	server.cpp \
-	task_cpu.cpp
+	task_cpu.cpp \
+	ispc/target.ispc
 
 ifeq ($(ARCH),x86_64)
 	CPU_SOURCES += instruction_set_x86.cpp
@@ -24,8 +25,6 @@ ifeq ($(PLATFORM), linux)
 	CPU_SOURCES += cpu_linux.cpp
 endif
 
-include $(CPU_SRC_DIR)/ispc/directory.mk
-
 CPU_VERSIONED_FILES := init.cpp
 CPU_UNVERSIONED_OBJECTS :=\
 	$(call op_generate_objects,$(filter-out $(CPU_VERSIONED_FILES),$(CPU_SOURCES)),$(CPU_OBJ_DIR))
@@ -34,4 +33,7 @@ $(CPU_OBJ_DIR)/init.o: $(CPU_UNVERSIONED_FILES)
 $(CPU_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 	-DBUILD_COMMIT="\"$(GIT_COMMIT)\"" \
 	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
-	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\"" \
+	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\""
+
+CPU_TEST_SOURCES += \
+	ispc/target.ispc

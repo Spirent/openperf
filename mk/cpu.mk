@@ -87,7 +87,7 @@ $(eval $(call op_generate_build_rules,$(CPU_SOURCES),CPU_SRC_DIR,CPU_OBJ_DIR,CPU
 $(eval $(call op_generate_clean_rules,cpu,CPU_TARGET,CPU_OBJECTS))
 
 # ISPC options
-CPU_ISPC_OPTS := -O0
+CPU_ISPC_OPTS :=
 ifneq ($(MODE),release)
 	CPU_ISPC_OPTS += -g
 endif
