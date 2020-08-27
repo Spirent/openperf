@@ -81,15 +81,16 @@ void tvlp_fini(void* state)
     delete s;
 }
 
-REGISTER_MODULE(tvlp_m,
-                INIT_MODULE_INFO("tvlp",
-                                 "TVLP module",
-                                 openperf::tvlp::module_version),
-                new openperf::tvlp::service(),
-                nullptr,
-                tvlp_init,
-                nullptr,
-                tvlp_start,
-                tvlp_fini);
+static constexpr op_module_info tvlp_module_info =
+    INIT_MODULE_INFO("tvlp", "TVLP module", openperf::tvlp::module_version);
+
+REGISTER_PLUGIN_MODULE(tvlp_m,
+                       tvlp_module_info,
+                       new openperf::tvlp::service(),
+                       nullptr,
+                       tvlp_init,
+                       nullptr,
+                       tvlp_start,
+                       tvlp_fini);
 
 } // extern "C"
