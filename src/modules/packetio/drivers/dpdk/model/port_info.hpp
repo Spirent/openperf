@@ -2,6 +2,9 @@
 #define _OP_PACKETIO_DPDK_MODEL_PORT_INFO_HPP_
 
 #include <cstdint>
+#include <optional>
+#include <string>
+
 #include "packetio/drivers/dpdk/dpdk.h"
 
 namespace openperf::packetio::dpdk::model {
@@ -14,8 +17,9 @@ public:
     uint16_t id() const;
     unsigned socket_id() const;
 
-    const char* driver_name() const;
-    unsigned if_index() const;
+    std::string driver_name() const;
+    std::string device_name() const;
+    std::optional<std::string> interface_name() const;
 
     uint32_t speeds() const;
     uint32_t max_speed() const;

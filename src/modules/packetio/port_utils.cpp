@@ -3,9 +3,13 @@
 
 #include "json.hpp"
 
-#include "swagger/v1/model/Port.h"
+#include "message/serialized_message.hpp"
 #include "packetio/generic_port.hpp"
+#include "packetio/port_api.hpp"
 #include "utils/overloaded_visitor.hpp"
+#include "utils/variant_index.hpp"
+
+#include "swagger/v1/model/Port.h"
 
 namespace openperf::packetio::port {
 
@@ -99,8 +103,11 @@ static void validate(const dpdk_config& dpdk, std::vector<std::string>& errors)
     }
 }
 
-static bool is_valid(config_data& config, std::vector<std::string>& errors)
+static bool is_valid(const config_data& config,
+                     std::vector<std::string>& errors)
 {
+    const auto init_errors = errors.size();
+
     auto config_visitor = utils::overloaded_visitor(
         [&](const bond_config& bond) { validate(bond, errors); },
         [&](const dpdk_config& dpdk) { validate(dpdk, errors); },
@@ -110,7 +117,7 @@ static bool is_valid(config_data& config, std::vector<std::string>& errors)
 
     std::visit(config_visitor, config);
 
-    return (errors.size() == 0);
+    return (errors.size() == init_errors);
 }
 
 static bond_config from_swagger(const std::shared_ptr<PortConfig_bond>& config)
@@ -129,18 +136,21 @@ static bond_config from_swagger(const std::shared_ptr<PortConfig_bond>& config)
 static dpdk_config from_swagger(const std::shared_ptr<PortConfig_dpdk>& config)
 {
     dpdk_config to_return;
-    to_return.auto_negotiation = config->isAutoNegotiation();
+    if (auto link = config->getLink()) {
+        to_return.auto_negotiation = link->isAutoNegotiation();
 
-    if (config->speedIsSet()) {
-        to_return.speed = static_cast<link_speed>(config->getSpeed());
-    }
+        if (link->speedIsSet()) {
+            to_return.speed = static_cast<link_speed>(link->getSpeed());
+        }
 
-    if (config->duplexIsSet()) {
-        auto duplex = config->getDuplex();
-        to_return.duplex =
-            (duplex == "full" ? link_duplex::DUPLEX_FULL
-                              : duplex == "half" ? link_duplex::DUPLEX_HALF
-                                                 : link_duplex::DUPLEX_UNKNOWN);
+        if (link->duplexIsSet()) {
+            auto duplex = link->getDuplex();
+            to_return.duplex =
+                (duplex == "full"
+                     ? link_duplex::DUPLEX_FULL
+                     : duplex == "half" ? link_duplex::DUPLEX_HALF
+                                        : link_duplex::DUPLEX_UNKNOWN);
+        }
     }
 
     return (to_return);
@@ -159,17 +169,6 @@ config_data make_config_data(const Port& port)
         }
     }
 
-    std::vector<std::string> errors;
-    if (!is_valid(to_return, errors)) {
-        throw std::runtime_error(std::accumulate(
-            begin(errors),
-            end(errors),
-            std::string(),
-            [](const std::string& a, const std::string& b) -> std::string {
-                return a + (a.length() > 0 ? " " : "") + b;
-            }));
-    }
-
     return (to_return);
 }
 
@@ -183,12 +182,21 @@ make_swagger_port_config_dpdk(const generic_port& port)
     auto config_dpdk = std::make_shared<PortConfig_dpdk>();
     auto config = std::get<dpdk_config>(port.config());
 
-    config_dpdk->setAutoNegotiation(config.auto_negotiation);
+    config_dpdk->setDriver(config.driver);
+    config_dpdk->setDevice(config.device);
+    if (config.interface) {
+        config_dpdk->setInterface(config.interface.value());
+    }
+
+    /* Set DPDK link information */
+    auto link = std::make_shared<PortConfig_dpdk_link>();
+    link->setAutoNegotiation(config.auto_negotiation);
 
     if (!config.auto_negotiation) {
-        config_dpdk->setSpeed(static_cast<int>(config.speed));
-        config_dpdk->setDuplex(to_string(config.duplex));
+        link->setSpeed(static_cast<int>(config.speed));
+        link->setDuplex(to_string(config.duplex));
     }
+    config_dpdk->setLink(link);
 
     return (config_dpdk);
 }
@@ -250,9 +258,9 @@ make_swagger_port_stats(const generic_port& port)
     return (stats);
 }
 
-std::shared_ptr<Port> make_swagger_port(const generic_port& in_port)
+std::unique_ptr<Port> make_swagger_port(const generic_port& in_port)
 {
-    auto out_port = std::make_shared<Port>();
+    auto out_port = std::make_unique<Port>();
 
     out_port->setId(in_port.id());
     out_port->setKind(in_port.kind());
@@ -262,5 +270,114 @@ std::shared_ptr<Port> make_swagger_port(const generic_port& in_port)
 
     return (out_port);
 }
+
+namespace api {
+
+bool is_valid(const swagger::v1::model::Port& port,
+              std::vector<std::string>& errors)
+{
+    return (is_valid(make_config_data(port), errors));
+}
+
+serialized_msg serialize_request(request_msg&& msg)
+{
+    serialized_msg serialized;
+    auto error =
+        (message::push(serialized, msg.index())
+         || std::visit(utils::overloaded_visitor(
+                           [&](request_list_ports& request) {
+                               return (message::push(
+                                   serialized, std::move(request.filter)));
+                           },
+                           [&](request_create_port& request) {
+                               return (message::push(serialized,
+                                                     std::move(request.port)));
+                           },
+                           [&](const request_get_port& request) {
+                               return (message::push(serialized, request.id));
+                           },
+                           [&](request_update_port& request) {
+                               return (message::push(serialized,
+                                                     std::move(request.port)));
+                           },
+                           [&](const request_delete_port& request) {
+                               return (message::push(serialized, request.id));
+                           }),
+                       msg));
+    if (error) { throw std::bad_alloc(); }
+
+    return (serialized);
+}
+
+serialized_msg serialize_reply(reply_msg&& msg)
+{
+    serialized_msg serialized;
+    auto error =
+        (message::push(serialized, msg.index())
+         || std::visit(utils::overloaded_visitor(
+                           [&](reply_ports& reply) {
+                               return (message::push(serialized, reply.ports));
+                           },
+                           [](const reply_ok&) { return (0); },
+                           [&](const reply_error& error) -> int {
+                               return (message::push(serialized, error.type)
+                                       || message::push(serialized, error.msg));
+                           }),
+                       msg));
+    if (error) { throw std::bad_alloc(); }
+
+    return (serialized);
+}
+
+tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
+{
+    using index_type = decltype(std::declval<request_msg>().index());
+    auto idx = message::pop<index_type>(msg);
+    switch (idx) {
+    case utils::variant_index<request_msg, request_list_ports>(): {
+        auto request = request_list_ports{};
+        request.filter.reset(message::pop<filter_map_type*>(msg));
+        return (request);
+    }
+    case utils::variant_index<request_msg, request_create_port>(): {
+        auto request = request_create_port{};
+        request.port.reset(message::pop<port_type*>(msg));
+        return (request);
+    }
+    case utils::variant_index<request_msg, request_get_port>(): {
+        return (request_get_port{message::pop_string(msg)});
+    }
+    case utils::variant_index<request_msg, request_update_port>(): {
+        auto request = request_update_port{};
+        request.port.reset(message::pop<port_type*>(msg));
+        return (request);
+    }
+    case utils::variant_index<request_msg, request_delete_port>(): {
+        return (request_delete_port{message::pop_string(msg)});
+    }
+    }
+
+    return (tl::make_unexpected(EINVAL));
+}
+
+tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg)
+{
+    using index_type = decltype(std::declval<reply_msg>().index());
+    auto idx = message::pop<index_type>(msg);
+    switch (idx) {
+    case utils::variant_index<reply_msg, reply_ports>(): {
+        return (reply_ports{message::pop_unique_vector<port_type>(msg)});
+    }
+    case utils::variant_index<reply_msg, reply_ok>():
+        return (reply_ok{});
+    case utils::variant_index<reply_msg, reply_error>():
+        return (reply_error{.type = message::pop<error_type>(msg),
+                            .msg = message::pop_string(msg)});
+    }
+
+    return (tl::make_unexpected(EINVAL));
+}
+
+} // namespace api
 
 } // namespace openperf::packetio::port

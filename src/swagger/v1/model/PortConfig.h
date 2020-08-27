@@ -52,23 +52,23 @@ public:
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<PortConfig_dpdk> getDpdk() const;
-    void setDpdk(std::shared_ptr<PortConfig_dpdk> value);
-    bool dpdkIsSet() const;
-    void unsetDpdk();
-    /// <summary>
-    /// 
-    /// </summary>
     std::shared_ptr<PortConfig_bond> getBond() const;
     void setBond(std::shared_ptr<PortConfig_bond> value);
     bool bondIsSet() const;
     void unsetBond();
+    /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<PortConfig_dpdk> getDpdk() const;
+    void setDpdk(std::shared_ptr<PortConfig_dpdk> value);
+    bool dpdkIsSet() const;
+    void unsetDpdk();
 
 protected:
-    std::shared_ptr<PortConfig_dpdk> m_Dpdk;
-    bool m_DpdkIsSet;
     std::shared_ptr<PortConfig_bond> m_Bond;
     bool m_BondIsSet;
+    std::shared_ptr<PortConfig_dpdk> m_Dpdk;
+    bool m_DpdkIsSet;
 };
 
 }

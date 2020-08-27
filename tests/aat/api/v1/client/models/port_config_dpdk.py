@@ -31,96 +31,121 @@ class PortConfigDpdk(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'auto_negotiation': 'bool',
-        'speed': 'int',
-        'duplex': 'str'
+        'device': 'str',
+        'driver': 'str',
+        'interface': 'str',
+        'link': 'PortConfigDpdkLink'
     }
 
     attribute_map = {
-        'auto_negotiation': 'auto_negotiation',
-        'speed': 'speed',
-        'duplex': 'duplex'
+        'device': 'device',
+        'driver': 'driver',
+        'interface': 'interface',
+        'link': 'link'
     }
 
-    def __init__(self, auto_negotiation=None, speed=None, duplex=None):  # noqa: E501
+    def __init__(self, device=None, driver=None, interface=None, link=None):  # noqa: E501
         """PortConfigDpdk - a model defined in Swagger"""  # noqa: E501
 
-        self._auto_negotiation = None
-        self._speed = None
-        self._duplex = None
+        self._device = None
+        self._driver = None
+        self._interface = None
+        self._link = None
         self.discriminator = None
 
-        self.auto_negotiation = auto_negotiation
-        if speed is not None:
-            self.speed = speed
-        if duplex is not None:
-            self.duplex = duplex
+        if device is not None:
+            self.device = device
+        if driver is not None:
+            self.driver = driver
+        if interface is not None:
+            self.interface = interface
+        self.link = link
 
     @property
-    def auto_negotiation(self):
-        """Gets the auto_negotiation of this PortConfigDpdk.  # noqa: E501
+    def device(self):
+        """Gets the device of this PortConfigDpdk.  # noqa: E501
 
-        Enable link auto-negotiation  # noqa: E501
+        Device name  # noqa: E501
 
-        :return: The auto_negotiation of this PortConfigDpdk.  # noqa: E501
-        :rtype: bool
-        """
-        return self._auto_negotiation
-
-    @auto_negotiation.setter
-    def auto_negotiation(self, auto_negotiation):
-        """Sets the auto_negotiation of this PortConfigDpdk.
-
-        Enable link auto-negotiation  # noqa: E501
-
-        :param auto_negotiation: The auto_negotiation of this PortConfigDpdk.  # noqa: E501
-        :type: bool
-        """
-        self._auto_negotiation = auto_negotiation
-
-    @property
-    def speed(self):
-        """Gets the speed of this PortConfigDpdk.  # noqa: E501
-
-        Manually-configured port speed (in Mbps)  # noqa: E501
-
-        :return: The speed of this PortConfigDpdk.  # noqa: E501
-        :rtype: int
-        """
-        return self._speed
-
-    @speed.setter
-    def speed(self, speed):
-        """Sets the speed of this PortConfigDpdk.
-
-        Manually-configured port speed (in Mbps)  # noqa: E501
-
-        :param speed: The speed of this PortConfigDpdk.  # noqa: E501
-        :type: int
-        """
-        self._speed = speed
-
-    @property
-    def duplex(self):
-        """Gets the duplex of this PortConfigDpdk.  # noqa: E501
-
-        Manually-configured port duplex  # noqa: E501
-
-        :return: The duplex of this PortConfigDpdk.  # noqa: E501
+        :return: The device of this PortConfigDpdk.  # noqa: E501
         :rtype: str
         """
-        return self._duplex
+        return self._device
 
-    @duplex.setter
-    def duplex(self, duplex):
-        """Sets the duplex of this PortConfigDpdk.
+    @device.setter
+    def device(self, device):
+        """Sets the device of this PortConfigDpdk.
 
-        Manually-configured port duplex  # noqa: E501
+        Device name  # noqa: E501
 
-        :param duplex: The duplex of this PortConfigDpdk.  # noqa: E501
+        :param device: The device of this PortConfigDpdk.  # noqa: E501
         :type: str
         """
-        self._duplex = duplex
+        self._device = device
+
+    @property
+    def driver(self):
+        """Gets the driver of this PortConfigDpdk.  # noqa: E501
+
+        Generic driver name  # noqa: E501
+
+        :return: The driver of this PortConfigDpdk.  # noqa: E501
+        :rtype: str
+        """
+        return self._driver
+
+    @driver.setter
+    def driver(self, driver):
+        """Sets the driver of this PortConfigDpdk.
+
+        Generic driver name  # noqa: E501
+
+        :param driver: The driver of this PortConfigDpdk.  # noqa: E501
+        :type: str
+        """
+        self._driver = driver
+
+    @property
+    def interface(self):
+        """Gets the interface of this PortConfigDpdk.  # noqa: E501
+
+        Host interface name, if applicable  # noqa: E501
+
+        :return: The interface of this PortConfigDpdk.  # noqa: E501
+        :rtype: str
+        """
+        return self._interface
+
+    @interface.setter
+    def interface(self, interface):
+        """Sets the interface of this PortConfigDpdk.
+
+        Host interface name, if applicable  # noqa: E501
+
+        :param interface: The interface of this PortConfigDpdk.  # noqa: E501
+        :type: str
+        """
+        self._interface = interface
+
+    @property
+    def link(self):
+        """Gets the link of this PortConfigDpdk.  # noqa: E501
+
+
+        :return: The link of this PortConfigDpdk.  # noqa: E501
+        :rtype: PortConfigDpdkLink
+        """
+        return self._link
+
+    @link.setter
+    def link(self, link):
+        """Sets the link of this PortConfigDpdk.
+
+
+        :param link: The link of this PortConfigDpdk.  # noqa: E501
+        :type: PortConfigDpdkLink
+        """
+        self._link = link
 
     def to_dict(self):
         """Returns the model properties as a dict"""

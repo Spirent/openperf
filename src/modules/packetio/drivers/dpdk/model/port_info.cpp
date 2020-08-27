@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <limits>
 
+#include <net/if.h>
+
 #include "core/op_core.h"
 #include "config/op_config_file.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
@@ -38,14 +40,30 @@ unsigned port_info::socket_id() const
     return (id >= 0 ? id : 0);
 }
 
-const char* port_info::driver_name() const
+std::string port_info::driver_name() const
 {
     return (get_info_field(m_id, &rte_eth_dev_info::driver_name));
 }
 
-unsigned port_info::if_index() const
+std::string port_info::device_name() const
 {
-    return (get_info_field(m_id, &rte_eth_dev_info::if_index));
+    auto buffer = std::array<char, RTE_ETH_NAME_MAX_LEN>{};
+    if (rte_eth_dev_get_name_by_port(m_id, buffer.data()) == 0) {
+        return (std::string(buffer.data()));
+    }
+
+    return (std::string{});
+}
+
+std::optional<std::string> port_info::interface_name() const
+{
+    auto if_index = get_info_field(m_id, &rte_eth_dev_info::if_index);
+    auto buffer = std::array<char, IF_NAMESIZE>{};
+    if (if_indextoname(if_index, buffer.data())) {
+        return (std::string(buffer.data()));
+    }
+
+    return (std::nullopt);
 }
 
 uint32_t port_info::max_rx_pktlen() const

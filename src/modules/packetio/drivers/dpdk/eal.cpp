@@ -5,8 +5,6 @@
 #include <vector>
 #include <future>
 
-#include <net/if.h>
-
 #include "lwip/netif.h"
 #include "tl/expected.hpp"
 
@@ -39,9 +37,7 @@ log_port(uint16_t port_idx, std::string_view port_id, model::port_info& info)
     struct rte_ether_addr mac_addr;
     rte_eth_macaddr_get(port_idx, &mac_addr);
 
-    if (auto if_index = info.if_index(); if_index > 0) {
-        char if_name[IF_NAMESIZE];
-        if_indextoname(if_index, if_name);
+    if (auto if_name = info.interface_name()) {
         OP_LOG(OP_LOG_INFO,
                "Port index %u is using id = %.*s (MAC = "
                "%02x:%02x:%02x:%02x:%02x:%02x, driver = %s attached to %s)",
@@ -54,8 +50,8 @@ log_port(uint16_t port_idx, std::string_view port_id, model::port_info& info)
                mac_addr.addr_bytes[3],
                mac_addr.addr_bytes[4],
                mac_addr.addr_bytes[5],
-               info.driver_name(),
-               if_name);
+               info.driver_name().c_str(),
+               if_name.value().c_str());
     } else {
         OP_LOG(OP_LOG_INFO,
                "Port index %u is using id = %.*s (MAC = "
@@ -69,7 +65,7 @@ log_port(uint16_t port_idx, std::string_view port_id, model::port_info& info)
                mac_addr.addr_bytes[3],
                mac_addr.addr_bytes[4],
                mac_addr.addr_bytes[5],
-               info.driver_name());
+               info.driver_name().c_str());
     }
 }
 
