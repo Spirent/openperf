@@ -478,26 +478,6 @@ definitions:
     type: object
     description: Port configuration
     properties:
-      dpdk:
-        type: object
-        description: DPDK-specific configuration information
-        properties:
-          auto_negotiation:
-            type: boolean
-            description: Enable link auto-negotiation
-          speed:
-            type: integer
-            description: Manually-configured port speed (in Mbps)
-            format: int64
-          duplex:
-            type: string
-            description: Manually-configured port duplex
-            enum:
-              - full
-              - half
-        required:
-          - auto_negotiation
-      #host:
       bond:
         type: object
         description: Bond-specific configuration information
@@ -516,6 +496,43 @@ definitions:
         required:
           - mode
           - ports
+      dpdk:
+        type: object
+        description: DPDK-specific port configuration information
+        properties:
+          device:
+            type: string
+            description: Device name
+            readOnly: true
+          driver:
+            type: string
+            description: Generic driver name
+            readOnly: true
+          interface:
+            type: string
+            description: Host interface name, if applicable
+            readOnly: true
+          link:
+            type: object
+            description: Link specific configuration information
+            properties:
+              auto_negotiation:
+                type: boolean
+                description: Enable link auto-negotiation
+              speed:
+                type: integer
+                description: Manually-configured port speed (in Mbps)
+                format: int64
+              duplex:
+                type: string
+                description: Manually-configured port duplex
+                enum:
+                  - full
+                  - half
+            required:
+              - auto_negotiation
+        required:
+          - link
 
   PortStats:
     type: object

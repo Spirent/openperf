@@ -1,245 +1,173 @@
-#include <cerrno>
-#include <optional>
-#include <unordered_map>
-
 #include "zmq.h"
 
-#include "core/op_core.h"
-#include "core/op_uuid.hpp"
-#include "config/op_config_utils.hpp"
-#include "swagger/v1/model/Port.h"
-#include "swagger/converters/packetio.hpp"
-#include "packetio/port_api.hpp"
 #include "packetio/port_server.hpp"
+#include "message/serialized_message.hpp"
+#include "utils/overloaded_visitor.hpp"
+
+#include "swagger/v1/model/Port.h"
 
 namespace openperf::packetio::port::api {
 
-const std::string endpoint = "inproc://op_packetio_port";
-
-using namespace swagger::v1::model;
-using json = nlohmann::json;
 using generic_driver = openperf::packetio::driver::generic_driver;
 
-std::string to_string(request_type type)
+static std::string to_string(const request_msg& request)
 {
-    const static std::unordered_map<request_type, std::string> request_types = {
-        {request_type::LIST_PORTS, "LIST_PORTS"},
-        {request_type::CREATE_PORT, "CREATE_PORT"},
-        {request_type::GET_PORT, "GET_PORT"},
-        {request_type::UPDATE_PORT, "UPDATE_PORT"},
-        {request_type::DELETE_PORT, "DELETE_PORT"},
-        {request_type::NONE, "UNKNOWN"} /* Overloaded */
-    };
-
-    return (request_types.find(type) == request_types.end()
-                ? request_types.at(request_type::NONE)
-                : request_types.at(type));
+    return (std::visit(utils::overloaded_visitor(
+                           [](const request_list_ports&) {
+                               return (std::string("list ports"));
+                           },
+                           [](const request_create_port&) {
+                               return (std::string("create port"));
+                           },
+                           [](const request_get_port& request) {
+                               return ("get port " + request.id);
+                           },
+                           [](const request_update_port&) {
+                               return (std::string("update port"));
+                           },
+                           [](const request_delete_port& request) {
+                               return ("delete port " + request.id);
+                           }),
+                       request));
 }
 
-std::string to_string(reply_code code)
+static std::string to_string(const reply_msg& reply)
 {
-    const static std::unordered_map<reply_code, std::string> reply_codes = {
-        {reply_code::OK, "OK"},
-        {reply_code::NO_PORT, "NO_PORT_ID"},
-        {reply_code::BAD_INPUT, "BAD_INPUT"},
-        {reply_code::ERROR, "ERROR"},
-        {reply_code::NONE, "UNKNOWN"}, /* Overloaded */
-    };
-
-    return (reply_codes.find(code) == reply_codes.end()
-                ? reply_codes.at(reply_code::NONE)
-                : reply_codes.at(code));
-}
-
-template <typename T>
-static std::optional<T> get_optional_key(json& j, const char* key)
-{
-    return (j.find(key) != j.end() && !j[key].is_null()
-                ? std::make_optional(j[key].get<T>())
-                : std::nullopt);
-}
-
-static void
-_handle_list_ports_request(generic_driver& driver, json& request, json& reply)
-{
-    auto kind = get_optional_key<std::string>(request, "kind");
-    json jports = json::array();
-
-    for (const auto& id : driver.port_ids()) {
-        auto port = driver.port(id);
-        if (!kind || *kind == port->kind()) {
-            jports.emplace_back(make_swagger_port(*port)->toJson());
-        }
+    if (auto error = std::get_if<reply_error>(&reply)) {
+        return ("failed: " + error->msg);
     }
 
-    reply["code"] = reply_code::OK;
-    reply["data"] = jports.dump();
+    return ("succeeded");
 }
 
-static void
-_handle_create_port_request(generic_driver& driver, json& request, json& reply)
+static int handle_rpc_request(const op_event_data* data, void* arg)
 {
-    try {
-        auto port_model =
-            json::parse(request["data"].get<std::string>()).get<Port>();
+    auto s = reinterpret_cast<server*>(arg);
 
-        auto id_check =
-            config::op_config_validate_id_string(port_model.getId());
-        if (!id_check) { throw std::runtime_error(id_check.error().c_str()); }
+    auto reply_errors = 0;
+    while (auto request = message::recv(data->socket, ZMQ_DONTWAIT)
+                              .and_then(deserialize_request)) {
 
-        auto result =
-            driver.create_port(port_model.getId() == empty_id_string
-                                   ? core::to_string(core::uuid::random())
-                                   : port_model.getId(),
-                               make_config_data(port_model));
-        if (!result) { throw std::runtime_error(result.error().c_str()); }
-        reply["code"] = reply_code::OK;
-        reply["data"] =
-            make_swagger_port(*driver.port(result.value()))->toJson().dump();
-    } catch (const json::exception& e) {
-        reply["code"] = reply_code::BAD_INPUT;
-        reply["error"] = json_error(e.id, e.what());
-    } catch (const std::runtime_error& e) {
-        reply["code"] = reply_code::BAD_INPUT;
-        reply["error"] = json_error(EINVAL, e.what());
-    }
-}
+        OP_LOG(OP_LOG_TRACE,
+               "Received request to %s\n",
+               to_string(*request).c_str());
 
-static void
-_handle_get_port_request(generic_driver& driver, json& request, json& reply)
-{
-    auto id = request["id"].get<std::string>();
-    auto port = driver.port(id);
-    if (port) {
-        reply["code"] = reply_code::OK;
-        reply["data"] = make_swagger_port(*port)->toJson().dump();
-    } else {
-        reply["code"] = reply_code::NO_PORT;
-    }
-}
+        auto request_visitor = [&](auto& request) -> reply_msg {
+            return (s->handle_request(request));
+        };
+        auto reply = std::visit(request_visitor, *request);
 
-static void
-_handle_update_port_request(generic_driver& driver, json& request, json& reply)
-{
-    auto id = request["id"].get<std::string>();
-    auto port = driver.port(id);
-    if (!port) {
-        reply["code"] = reply_code::NO_PORT;
-        return;
-    }
+        OP_LOG(OP_LOG_TRACE,
+               "Request to %s %s\n",
+               to_string(*request).c_str(),
+               to_string(reply).c_str());
 
-    try {
-        auto port_model =
-            json::parse(request["data"].get<std::string>()).get<Port>();
-        auto result = port->config(make_config_data(port_model));
-        if (!result) { throw std::runtime_error(result.error().c_str()); }
-        reply["code"] = reply_code::OK;
-        reply["data"] = make_swagger_port(*port)->toJson().dump();
-    } catch (const json::exception& e) {
-        reply["code"] = reply_code::BAD_INPUT;
-        reply["error"] = json_error(e.id, e.what());
-    } catch (const std::runtime_error& e) {
-        reply["code"] = reply_code::BAD_INPUT;
-        reply["error"] = json_error(EINVAL, e.what());
-    }
-}
-
-static void
-_handle_delete_port_request(generic_driver& driver, json& request, json& reply)
-{
-    auto result = driver.delete_port(request["id"].get<std::string>());
-    if (result) {
-        reply["code"] = reply_code::OK;
-    } else {
-        reply["code"] = reply_code::BAD_INPUT;
-        reply["error"] = json_error(EINVAL, result.error().c_str());
-    }
-}
-
-static int _handle_rpc_request(const op_event_data* data, void* arg)
-{
-    generic_driver& driver = *(reinterpret_cast<generic_driver*>(arg));
-    int recv_or_err = 0;
-    int send_or_err = 0;
-    zmq_msg_t request_msg;
-    if (zmq_msg_init(&request_msg) == -1) {
-        throw std::runtime_error(zmq_strerror(errno));
-    }
-    while (
-        (recv_or_err = zmq_msg_recv(&request_msg, data->socket, ZMQ_DONTWAIT))
-        > 0) {
-        std::vector<uint8_t> request_buffer(
-            static_cast<uint8_t*>(zmq_msg_data(&request_msg)),
-            static_cast<uint8_t*>(zmq_msg_data(&request_msg))
-                + zmq_msg_size(&request_msg));
-
-        json request = json::from_cbor(request_buffer);
-        auto type = request["type"].get<request_type>();
-        json reply;
-
-        switch (type) {
-        case request_type::GET_PORT:
-        case request_type::UPDATE_PORT:
-        case request_type::DELETE_PORT:
-            OP_LOG(OP_LOG_TRACE,
-                   "Received %s request for port %s\n",
-                   to_string(type).c_str(),
-                   request["id"].get<std::string>().c_str());
-            break;
-        default:
+        if (message::send(data->socket, serialize_reply(std::move(reply)))
+            == -1) {
+            reply_errors++;
             OP_LOG(
-                OP_LOG_TRACE, "Received %s request\n", to_string(type).c_str());
-        }
-
-        switch (type) {
-        case request_type::LIST_PORTS:
-            _handle_list_ports_request(driver, request, reply);
-            break;
-        case request_type::CREATE_PORT:
-            _handle_create_port_request(driver, request, reply);
-            break;
-        case request_type::GET_PORT:
-            _handle_get_port_request(driver, request, reply);
-            break;
-        case request_type::UPDATE_PORT:
-            _handle_update_port_request(driver, request, reply);
-            break;
-        case request_type::DELETE_PORT:
-            _handle_delete_port_request(driver, request, reply);
-            break;
-        default:
-            reply["code"] = reply_code::ERROR;
-            reply["error"] = json_error(
-                ENOSYS, "Request type not implemented in packtio port server");
-        }
-
-        std::vector<uint8_t> reply_buffer = json::to_cbor(reply);
-        if ((send_or_err = zmq_send(
-                 data->socket, reply_buffer.data(), reply_buffer.size(), 0))
-            != static_cast<int>(reply_buffer.size())) {
-            OP_LOG(OP_LOG_ERROR,
-                   "Request reply failed: %s\n",
-                   zmq_strerror(errno));
-        } else {
-            OP_LOG(OP_LOG_TRACE,
-                   "Sent %s reply to %s request\n",
-                   to_string(reply["code"].get<reply_code>()).c_str(),
-                   to_string(type).c_str());
+                OP_LOG_ERROR, "Error sending reply: %s\n", zmq_strerror(errno));
+            continue;
         }
     }
 
-    zmq_msg_close(&request_msg);
-
-    return (((recv_or_err < 0 || send_or_err < 0) && errno == ETERM) ? -1 : 0);
+    return ((reply_errors || errno == ETERM) ? -1 : 0);
 }
 
 server::server(void* context,
                openperf::core::event_loop& loop,
                generic_driver& driver)
-    : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.c_str()))
+    : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
+    , m_driver(driver)
 {
-    struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};
-    loop.add(m_socket.get(), &callbacks, &driver);
+    struct op_event_callbacks callbacks = {.on_read = handle_rpc_request};
+    loop.add(m_socket.get(), &callbacks, this);
 }
+
+reply_msg server::handle_request(const request_list_ports& request)
+{
+    /*
+     * Retrieve the list of port ids and use that to generate
+     * a vector of port objects.
+     */
+    auto ids = m_driver.port_ids();
+    auto ports = std::vector<port::generic_port>{};
+    std::transform(std::begin(ids),
+                   std::end(ids),
+                   std::back_inserter(ports),
+                   [&](const auto id) { return (m_driver.port(id).value()); });
+
+    /* Filter out any ports if necessary */
+    if (request.filter && request.filter->count(filter_key_type::kind)) {
+        auto& kind = (*request.filter)[filter_key_type::kind];
+        ports.erase(std::remove_if(std::begin(ports),
+                                   std::end(ports),
+                                   [&](const auto& port) {
+                                       return (port.kind() != kind);
+                                   }),
+                    std::end(ports));
+    }
+
+    /* Turn generic port objects into swagger objects */
+    auto reply = reply_ports{};
+    std::transform(std::begin(ports),
+                   std::end(ports),
+                   std::back_inserter(reply.ports),
+                   [](const auto& port) { return (make_swagger_port(port)); });
+
+    return (reply);
+};
+
+reply_msg server::handle_request(const request_create_port& request)
+{
+    const auto id = request.port->getId();
+    auto result = m_driver.create_port(id, make_config_data(*request.port));
+    if (!result) {
+        return (
+            reply_error{.type = error_type::VERBOSE, .msg = result.error()});
+    }
+
+    auto reply = reply_ports{};
+    reply.ports.emplace_back(make_swagger_port(m_driver.port(id).value()));
+    return (reply);
+};
+
+reply_msg server::handle_request(const request_get_port& request)
+{
+    auto port = m_driver.port(request.id);
+    if (!port) { return (reply_error{.type = error_type::NOT_FOUND}); }
+
+    auto reply = reply_ports{};
+    reply.ports.emplace_back(make_swagger_port(*port));
+    return (reply);
+};
+
+reply_msg server::handle_request(const request_update_port& request)
+{
+    auto port = m_driver.port(request.port->getId());
+    if (!port) { return (reply_error{.type = error_type::NOT_FOUND}); }
+
+    auto success = port->config(make_config_data(*request.port));
+    if (!success) {
+        return (
+            reply_error{.type = error_type::VERBOSE, .msg = success.error()});
+    }
+
+    auto reply = reply_ports{};
+    reply.ports.emplace_back(
+        make_swagger_port(m_driver.port(request.port->getId()).value()));
+    return (reply);
+};
+
+reply_msg server::handle_request(const request_delete_port& request)
+{
+    auto success = m_driver.delete_port(request.id);
+    if (!success) {
+        return (
+            reply_error{.type = error_type::VERBOSE, .msg = success.error()});
+    }
+
+    return (reply_ok{});
+};
 
 } // namespace openperf::packetio::port::api

@@ -19,8 +19,8 @@ namespace model {
 
 PortConfig::PortConfig()
 {
-    m_DpdkIsSet = false;
     m_BondIsSet = false;
+    m_DpdkIsSet = false;
     
 }
 
@@ -37,13 +37,13 @@ nlohmann::json PortConfig::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_DpdkIsSet)
-    {
-        val["dpdk"] = ModelBase::toJson(m_Dpdk);
-    }
     if(m_BondIsSet)
     {
         val["bond"] = ModelBase::toJson(m_Bond);
+    }
+    if(m_DpdkIsSet)
+    {
+        val["dpdk"] = ModelBase::toJson(m_Dpdk);
     }
     
 
@@ -52,16 +52,6 @@ nlohmann::json PortConfig::toJson() const
 
 void PortConfig::fromJson(nlohmann::json& val)
 {
-    if(val.find("dpdk") != val.end())
-    {
-        if(!val["dpdk"].is_null())
-        {
-            std::shared_ptr<PortConfig_dpdk> newItem(new PortConfig_dpdk());
-            newItem->fromJson(val["dpdk"]);
-            setDpdk( newItem );
-        }
-        
-    }
     if(val.find("bond") != val.end())
     {
         if(!val["bond"].is_null())
@@ -72,27 +62,20 @@ void PortConfig::fromJson(nlohmann::json& val)
         }
         
     }
+    if(val.find("dpdk") != val.end())
+    {
+        if(!val["dpdk"].is_null())
+        {
+            std::shared_ptr<PortConfig_dpdk> newItem(new PortConfig_dpdk());
+            newItem->fromJson(val["dpdk"]);
+            setDpdk( newItem );
+        }
+        
+    }
     
 }
 
 
-std::shared_ptr<PortConfig_dpdk> PortConfig::getDpdk() const
-{
-    return m_Dpdk;
-}
-void PortConfig::setDpdk(std::shared_ptr<PortConfig_dpdk> value)
-{
-    m_Dpdk = value;
-    m_DpdkIsSet = true;
-}
-bool PortConfig::dpdkIsSet() const
-{
-    return m_DpdkIsSet;
-}
-void PortConfig::unsetDpdk()
-{
-    m_DpdkIsSet = false;
-}
 std::shared_ptr<PortConfig_bond> PortConfig::getBond() const
 {
     return m_Bond;
@@ -109,6 +92,23 @@ bool PortConfig::bondIsSet() const
 void PortConfig::unsetBond()
 {
     m_BondIsSet = false;
+}
+std::shared_ptr<PortConfig_dpdk> PortConfig::getDpdk() const
+{
+    return m_Dpdk;
+}
+void PortConfig::setDpdk(std::shared_ptr<PortConfig_dpdk> value)
+{
+    m_Dpdk = value;
+    m_DpdkIsSet = true;
+}
+bool PortConfig::dpdkIsSet() const
+{
+    return m_DpdkIsSet;
+}
+void PortConfig::unsetDpdk()
+{
+    m_DpdkIsSet = false;
 }
 
 }

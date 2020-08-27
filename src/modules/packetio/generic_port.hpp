@@ -53,6 +53,9 @@ struct stats_data
 
 struct dpdk_config
 {
+    std::string driver;
+    std::string device;
+    std::optional<std::string> interface;
     bool auto_negotiation;
     link_speed speed;
     link_duplex duplex;
@@ -149,7 +152,7 @@ private:
     std::unique_ptr<port_concept> m_self;
 };
 
-std::shared_ptr<swagger::v1::model::Port>
+std::unique_ptr<swagger::v1::model::Port>
 make_swagger_port(const generic_port&);
 
 } // namespace openperf::packetio::port
