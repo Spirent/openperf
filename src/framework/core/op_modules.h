@@ -59,6 +59,14 @@ struct op_module
 };
 
 /**
+ * Load module libraries
+ *
+ * @param[in] module
+ *   Pointer to an op_module structure describing the module to register
+ */
+void op_modules_load();
+
+/**
  * Register a module
  *
  * @param[in] module
@@ -197,6 +205,11 @@ int op_modules_get_info_list(const struct op_module_info* info[],
     {                                                                          \
         op_modules_register(&m);                                               \
     }
+
+#define REGISTER_PLUGIN_MODULE(m, ...)                                         \
+    REGISTER_MODULE(m, __VA_ARGS__)                                            \
+    op_module op_plugin_module_registration                                    \
+        __attribute__((__section__(".op_plugin_module_registration"))) = m;
 
 #ifdef __cplusplus
 }

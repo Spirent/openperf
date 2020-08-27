@@ -70,6 +70,9 @@ void op_init(void* context, int argc, char* argv[])
         op_exit("Option parsing failed!");
     }
 
+    /* Load plugin modules */
+    op_modules_load();
+
     /* Initialize all modules */
     if (op_modules_pre_init(context) != 0 || op_modules_init(context) != 0
         || op_modules_post_init(context) != 0) {
