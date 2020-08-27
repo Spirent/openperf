@@ -3,15 +3,127 @@
 #include <ctype.h>
 #include <regex.h>
 #include <errno.h>
+#include <dlfcn.h>
+#include <linux/limits.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 #include "core/op_log.h"
 #include "core/op_modules.h"
 #include "core/op_common.h"
+#include "core/op_options.h"
 
 static SLIST_HEAD(op_modules_list, op_module)
     op_modules_list_head = SLIST_HEAD_INITIALIZER(op_modules_list_head);
 
 static const size_t op_modules_err_str_max_len = 144;
+
+char op_plugin_modules_path[PATH_MAX];
+static int op_find_plugin_modules_path()
+{
+    char *p, path[PATH_MAX];
+    int rv;
+
+    /* find executable path */
+    if ((rv = readlink("/proc/self/exe", path, PATH_MAX - 1)) == -1) return 1;
+
+    /* readlink doesn't provide null termination */
+    path[rv] = 0;
+
+    /* strip filename */
+    if ((p = strrchr(path, '/')) == 0) return 1;
+    *p = 0;
+
+    /* strip bin/ */
+    if ((p = strrchr(path, '/')) == 0) return 1;
+    *p = 0;
+
+    strcpy(op_plugin_modules_path, path);
+    strcat(op_plugin_modules_path, "/plugins");
+
+    return 0;
+}
+
+static int plugin_option_handler(int opt __attribute__((unused)),
+                                 const char* opt_arg)
+{
+    if (opt_arg) { strcpy(op_plugin_modules_path, opt_arg); }
+
+    return (0);
+}
+
+static struct op_options_data plugin_options = {
+    .name = "PLUGIN",
+    .init = op_find_plugin_modules_path,
+    .callback = plugin_option_handler,
+    .options =
+        {
+            {"Specifies path to plugin modules",
+             "plugin",
+             'm',
+             OP_OPTION_TYPE_STRING},
+            {0, 0, 0, 0},
+        },
+};
+REGISTER_OPTIONS(plugin_options)
+
+void op_modules_load()
+{
+    void* handle;
+    struct op_module* reg;
+    DIR* dir;
+    struct dirent* entry;
+    struct stat statb;
+
+    OP_LOG(OP_LOG_INFO, "Plugin modules path %s\n", op_plugin_modules_path);
+
+    dir = opendir(op_plugin_modules_path);
+
+    if (dir == 0) {
+        OP_LOG(OP_LOG_ERROR,
+               "Failed to open plugin modules path: %s\n",
+               op_plugin_modules_path);
+        return;
+    }
+
+    while ((entry = readdir(dir))) {
+        char path[PATH_MAX];
+        sprintf(path, "%s/%s", op_plugin_modules_path, entry->d_name);
+
+        /* Only accept .so */
+        char* ext = strrchr((const char*)path, '.');
+        /* unreadable */
+        if (!ext || (strcmp(ext, ".so") != 0) || stat((char*)path, &statb) < 0)
+            continue;
+
+        /* a dir or other things which aren't plugins */
+        if (!S_ISREG(statb.st_mode)) continue;
+
+        handle = dlopen(path, RTLD_NOW | RTLD_GLOBAL);
+
+        if (handle == 0) {
+            OP_LOG(OP_LOG_ERROR, "Failed to load plugin: %s\n", dlerror());
+            continue;
+        }
+        reg = dlsym(handle, "op_plugin_module_registration");
+        if (reg == 0) {
+            /* This should never happen unless registration process was changed
+             */
+            OP_LOG(OP_LOG_ERROR, "Missing module registration in plugin \n");
+            dlclose(handle);
+            continue;
+        }
+
+        OP_LOG(OP_LOG_INFO,
+               "Loaded plugin module %s (%s, %s)\n",
+               entry->d_name,
+               reg->info.id,
+               reg->info.description);
+    }
+
+    closedir(dir);
+}
 
 void op_modules_register(struct op_module* module)
 {
