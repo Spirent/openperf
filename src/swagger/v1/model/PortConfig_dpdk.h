@@ -12,7 +12,7 @@
 /*
  * PortConfig_dpdk.h
  *
- * DPDK-specific configuration information
+ * DPDK-specific port configuration information
  */
 
 #ifndef PortConfig_dpdk_H_
@@ -21,6 +21,7 @@
 
 #include "ModelBase.h"
 
+#include "PortConfig_dpdk_link.h"
 #include <string>
 
 namespace swagger {
@@ -28,7 +29,7 @@ namespace v1 {
 namespace model {
 
 /// <summary>
-/// DPDK-specific configuration information
+/// DPDK-specific port configuration information
 /// </summary>
 class  PortConfig_dpdk
     : public ModelBase
@@ -49,32 +50,41 @@ public:
     /// PortConfig_dpdk members
 
     /// <summary>
-    /// Enable link auto-negotiation
+    /// Device name
     /// </summary>
-    bool isAutoNegotiation() const;
-    void setAutoNegotiation(bool value);
-        /// <summary>
-    /// Manually-configured port speed (in Mbps)
-    /// </summary>
-    int64_t getSpeed() const;
-    void setSpeed(int64_t value);
-    bool speedIsSet() const;
-    void unsetSpeed();
+    std::string getDevice() const;
+    void setDevice(std::string value);
+    bool deviceIsSet() const;
+    void unsetDevice();
     /// <summary>
-    /// Manually-configured port duplex
+    /// Generic driver name
     /// </summary>
-    std::string getDuplex() const;
-    void setDuplex(std::string value);
-    bool duplexIsSet() const;
-    void unsetDuplex();
-
+    std::string getDriver() const;
+    void setDriver(std::string value);
+    bool driverIsSet() const;
+    void unsetDriver();
+    /// <summary>
+    /// Host interface name, if applicable
+    /// </summary>
+    std::string getInterface() const;
+    void setInterface(std::string value);
+    bool interfaceIsSet() const;
+    void unsetInterface();
+    /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<PortConfig_dpdk_link> getLink() const;
+    void setLink(std::shared_ptr<PortConfig_dpdk_link> value);
+    
 protected:
-    bool m_Auto_negotiation;
+    std::string m_Device;
+    bool m_DeviceIsSet;
+    std::string m_Driver;
+    bool m_DriverIsSet;
+    std::string m_Interface;
+    bool m_InterfaceIsSet;
+    std::shared_ptr<PortConfig_dpdk_link> m_Link;
 
-    int64_t m_Speed;
-    bool m_SpeedIsSet;
-    std::string m_Duplex;
-    bool m_DuplexIsSet;
 };
 
 }

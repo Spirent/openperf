@@ -62,20 +62,25 @@ port::stats_data physical_port::stats() const
 
 port::config_data physical_port::config() const
 {
+    auto info = model::port_info(m_idx);
+    auto config = port::dpdk_config{.driver = info.driver_name(),
+                                    .device = info.device_name(),
+                                    .interface = info.interface_name()};
+
     rte_eth_link link;
     rte_eth_link_get_nowait(m_idx, &link);
 
     if (link.link_autoneg == ETH_LINK_AUTONEG) {
-        return (
-            port::config_data(port::dpdk_config({.auto_negotiation = true})));
+        config.auto_negotiation = true;
     } else {
-        return (port::config_data(port::dpdk_config(
-            {.auto_negotiation = false,
-             .speed = static_cast<port::link_speed>(link.link_speed),
-             .duplex = (link.link_duplex == ETH_LINK_FULL_DUPLEX
-                            ? port::link_duplex::DUPLEX_FULL
-                            : port::link_duplex::DUPLEX_HALF)})));
+        config.auto_negotiation = false;
+        config.speed = static_cast<port::link_speed>(link.link_speed);
+        config.duplex = (link.link_duplex == ETH_LINK_FULL_DUPLEX
+                             ? port::link_duplex::DUPLEX_FULL
+                             : port::link_duplex::DUPLEX_HALF);
     }
+
+    return (config);
 }
 
 static uint32_t eth_link_speed_flag(port::link_speed speed,

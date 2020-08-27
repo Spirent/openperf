@@ -19,11 +19,12 @@ namespace model {
 
 PortConfig_dpdk::PortConfig_dpdk()
 {
-    m_Auto_negotiation = false;
-    m_Speed = 0L;
-    m_SpeedIsSet = false;
-    m_Duplex = "";
-    m_DuplexIsSet = false;
+    m_Device = "";
+    m_DeviceIsSet = false;
+    m_Driver = "";
+    m_DriverIsSet = false;
+    m_Interface = "";
+    m_InterfaceIsSet = false;
     
 }
 
@@ -40,15 +41,19 @@ nlohmann::json PortConfig_dpdk::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["auto_negotiation"] = m_Auto_negotiation;
-    if(m_SpeedIsSet)
+    if(m_DeviceIsSet)
     {
-        val["speed"] = m_Speed;
+        val["device"] = ModelBase::toJson(m_Device);
     }
-    if(m_DuplexIsSet)
+    if(m_DriverIsSet)
     {
-        val["duplex"] = ModelBase::toJson(m_Duplex);
+        val["driver"] = ModelBase::toJson(m_Driver);
     }
+    if(m_InterfaceIsSet)
+    {
+        val["interface"] = ModelBase::toJson(m_Interface);
+    }
+    val["link"] = ModelBase::toJson(m_Link);
     
 
     return val;
@@ -56,62 +61,84 @@ nlohmann::json PortConfig_dpdk::toJson() const
 
 void PortConfig_dpdk::fromJson(nlohmann::json& val)
 {
-    setAutoNegotiation(val.at("auto_negotiation"));
-    if(val.find("speed") != val.end())
+    if(val.find("device") != val.end())
     {
-        setSpeed(val.at("speed"));
+        setDevice(val.at("device"));
+        
     }
-    if(val.find("duplex") != val.end())
+    if(val.find("driver") != val.end())
     {
-        setDuplex(val.at("duplex"));
+        setDriver(val.at("driver"));
+        
+    }
+    if(val.find("interface") != val.end())
+    {
+        setInterface(val.at("interface"));
         
     }
     
 }
 
 
-bool PortConfig_dpdk::isAutoNegotiation() const
+std::string PortConfig_dpdk::getDevice() const
 {
-    return m_Auto_negotiation;
+    return m_Device;
 }
-void PortConfig_dpdk::setAutoNegotiation(bool value)
+void PortConfig_dpdk::setDevice(std::string value)
 {
-    m_Auto_negotiation = value;
+    m_Device = value;
+    m_DeviceIsSet = true;
+}
+bool PortConfig_dpdk::deviceIsSet() const
+{
+    return m_DeviceIsSet;
+}
+void PortConfig_dpdk::unsetDevice()
+{
+    m_DeviceIsSet = false;
+}
+std::string PortConfig_dpdk::getDriver() const
+{
+    return m_Driver;
+}
+void PortConfig_dpdk::setDriver(std::string value)
+{
+    m_Driver = value;
+    m_DriverIsSet = true;
+}
+bool PortConfig_dpdk::driverIsSet() const
+{
+    return m_DriverIsSet;
+}
+void PortConfig_dpdk::unsetDriver()
+{
+    m_DriverIsSet = false;
+}
+std::string PortConfig_dpdk::getInterface() const
+{
+    return m_Interface;
+}
+void PortConfig_dpdk::setInterface(std::string value)
+{
+    m_Interface = value;
+    m_InterfaceIsSet = true;
+}
+bool PortConfig_dpdk::interfaceIsSet() const
+{
+    return m_InterfaceIsSet;
+}
+void PortConfig_dpdk::unsetInterface()
+{
+    m_InterfaceIsSet = false;
+}
+std::shared_ptr<PortConfig_dpdk_link> PortConfig_dpdk::getLink() const
+{
+    return m_Link;
+}
+void PortConfig_dpdk::setLink(std::shared_ptr<PortConfig_dpdk_link> value)
+{
+    m_Link = value;
     
-}
-int64_t PortConfig_dpdk::getSpeed() const
-{
-    return m_Speed;
-}
-void PortConfig_dpdk::setSpeed(int64_t value)
-{
-    m_Speed = value;
-    m_SpeedIsSet = true;
-}
-bool PortConfig_dpdk::speedIsSet() const
-{
-    return m_SpeedIsSet;
-}
-void PortConfig_dpdk::unsetSpeed()
-{
-    m_SpeedIsSet = false;
-}
-std::string PortConfig_dpdk::getDuplex() const
-{
-    return m_Duplex;
-}
-void PortConfig_dpdk::setDuplex(std::string value)
-{
-    m_Duplex = value;
-    m_DuplexIsSet = true;
-}
-bool PortConfig_dpdk::duplexIsSet() const
-{
-    return m_DuplexIsSet;
-}
-void PortConfig_dpdk::unsetDuplex()
-{
-    m_DuplexIsSet = false;
 }
 
 }

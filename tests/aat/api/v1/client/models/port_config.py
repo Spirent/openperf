@@ -31,46 +31,26 @@ class PortConfig(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'dpdk': 'PortConfigDpdk',
-        'bond': 'PortConfigBond'
+        'bond': 'PortConfigBond',
+        'dpdk': 'PortConfigDpdk'
     }
 
     attribute_map = {
-        'dpdk': 'dpdk',
-        'bond': 'bond'
+        'bond': 'bond',
+        'dpdk': 'dpdk'
     }
 
-    def __init__(self, dpdk=None, bond=None):  # noqa: E501
+    def __init__(self, bond=None, dpdk=None):  # noqa: E501
         """PortConfig - a model defined in Swagger"""  # noqa: E501
 
-        self._dpdk = None
         self._bond = None
+        self._dpdk = None
         self.discriminator = None
 
-        if dpdk is not None:
-            self.dpdk = dpdk
         if bond is not None:
             self.bond = bond
-
-    @property
-    def dpdk(self):
-        """Gets the dpdk of this PortConfig.  # noqa: E501
-
-
-        :return: The dpdk of this PortConfig.  # noqa: E501
-        :rtype: PortConfigDpdk
-        """
-        return self._dpdk
-
-    @dpdk.setter
-    def dpdk(self, dpdk):
-        """Sets the dpdk of this PortConfig.
-
-
-        :param dpdk: The dpdk of this PortConfig.  # noqa: E501
-        :type: PortConfigDpdk
-        """
-        self._dpdk = dpdk
+        if dpdk is not None:
+            self.dpdk = dpdk
 
     @property
     def bond(self):
@@ -91,6 +71,26 @@ class PortConfig(object):
         :type: PortConfigBond
         """
         self._bond = bond
+
+    @property
+    def dpdk(self):
+        """Gets the dpdk of this PortConfig.  # noqa: E501
+
+
+        :return: The dpdk of this PortConfig.  # noqa: E501
+        :rtype: PortConfigDpdk
+        """
+        return self._dpdk
+
+    @dpdk.setter
+    def dpdk(self, dpdk):
+        """Sets the dpdk of this PortConfig.
+
+
+        :param dpdk: The dpdk of this PortConfig.  # noqa: E501
+        :type: PortConfigDpdk
+        """
+        self._dpdk = dpdk
 
     def to_dict(self):
         """Returns the model properties as a dict"""

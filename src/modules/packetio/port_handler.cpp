@@ -1,132 +1,209 @@
 #include <zmq.h>
 
 #include "api/api_route_handler.hpp"
-#include "core/op_core.h"
-#include "packetio/port_api.hpp"
 #include "config/op_config_utils.hpp"
+#include "core/op_core.h"
+#include "message/serialized_message.hpp"
+#include "packetio/port_api.hpp"
+
+#include "swagger/v1/model/Port.h"
 
 namespace openperf::packetio::port::api {
-
-using namespace Pistache;
-using json = nlohmann::json;
-
-json submit_request(void* socket, json& request)
-{
-    auto type = request["type"].get<request_type>();
-    switch (type) {
-    case request_type::GET_PORT:
-    case request_type::UPDATE_PORT:
-    case request_type::DELETE_PORT:
-        OP_LOG(OP_LOG_TRACE,
-               "Sending %s request for port %s\n",
-               to_string(type).c_str(),
-               request["id"].get<std::string>().c_str());
-        break;
-    default:
-        OP_LOG(OP_LOG_TRACE, "Sending %s request\n", to_string(type).c_str());
-    }
-
-    std::vector<uint8_t> request_buffer = json::to_cbor(request);
-    zmq_msg_t reply_msg;
-    if (zmq_msg_init(&reply_msg) == -1
-        || zmq_send(socket, request_buffer.data(), request_buffer.size(), 0)
-               != static_cast<int>(request_buffer.size())
-        || zmq_msg_recv(&reply_msg, socket, 0) == -1) {
-        return {{"code", reply_code::ERROR},
-                {"error", json_error(errno, zmq_strerror(errno))}};
-    }
-
-    OP_LOG(OP_LOG_TRACE, "Received %s reply\n", to_string(type).c_str());
-
-    std::vector<uint8_t> reply_buffer(
-        static_cast<uint8_t*>(zmq_msg_data(&reply_msg)),
-        static_cast<uint8_t*>(zmq_msg_data(&reply_msg))
-            + zmq_msg_size(&reply_msg));
-
-    zmq_msg_close(&reply_msg);
-
-    return json::from_cbor(reply_buffer);
-}
 
 class handler : public openperf::api::route::handler::registrar<handler>
 {
 public:
-    handler(void* context, Rest::Router& router);
+    handler(void* context, Pistache::Rest::Router& router);
 
-    void list_ports(const Rest::Request& request,
-                    Http::ResponseWriter response);
-    void create_port(const Rest::Request& request,
-                     Http::ResponseWriter response);
-    void get_port(const Rest::Request& request, Http::ResponseWriter response);
-    void update_port(const Rest::Request& request,
-                     Http::ResponseWriter response);
-    void delete_port(const Rest::Request& request,
-                     Http::ResponseWriter response);
+    using request_type = Pistache::Rest::Request;
+    using response_type = Pistache::Http::ResponseWriter;
+
+    void list_ports(const request_type& request, response_type response);
+    void create_port(const request_type& request, response_type response);
+    void get_port(const request_type& request, response_type response);
+    void update_port(const request_type& request, response_type response);
+    void delete_port(const request_type& request, response_type response);
 
 private:
-    std::unique_ptr<void, op_socket_deleter> socket;
+    std::unique_ptr<void, op_socket_deleter> m_socket;
 };
 
-handler::handler(void* context, Rest::Router& router)
-    : socket(op_socket_get_client(context, ZMQ_REQ, endpoint.c_str()))
+handler::handler(void* context, Pistache::Rest::Router& router)
+    : m_socket(op_socket_get_client(context, ZMQ_REQ, endpoint.data()))
 {
-    Rest::Routes::Get(
-        router, "/ports", Rest::Routes::bind(&handler::list_ports, this));
-    Rest::Routes::Post(
-        router, "/ports", Rest::Routes::bind(&handler::create_port, this));
-    Rest::Routes::Get(
-        router, "/ports/:id", Rest::Routes::bind(&handler::get_port, this));
-    Rest::Routes::Put(
-        router, "/ports/:id", Rest::Routes::bind(&handler::update_port, this));
-    Rest::Routes::Delete(
-        router, "/ports/:id", Rest::Routes::bind(&handler::delete_port, this));
+    using namespace Pistache::Rest::Routes;
+
+    Get(router, "/ports", bind(&handler::list_ports, this));
+    Post(router, "/ports", bind(&handler::create_port, this));
+    Get(router, "/ports/:id", bind(&handler::get_port, this));
+    Put(router, "/ports/:id", bind(&handler::update_port, this));
+    Delete(router, "/ports/:id", bind(&handler::delete_port, this));
 }
 
-void handler::list_ports(const Rest::Request& request,
-                         Http::ResponseWriter response)
+using namespace Pistache;
+
+static enum Http::Code to_code(const reply_error& error)
 {
-    json api_request = {{"type", request_type::LIST_PORTS}};
-
-    if (request.query().has("kind")) {
-        api_request["kind"] = request.query().get("kind").get();
+    switch (error.type) {
+    case error_type::NOT_FOUND:
+        return (Http::Code::Not_Found);
+    case error_type::VERBOSE:
+        return (Http::Code::Bad_Request);
+    default:
+        return (Http::Code::Internal_Server_Error);
     }
+}
 
-    json api_reply = submit_request(socket.get(), api_request);
+static reply_error to_error(error_type type, std::string_view msg)
+{
+    return (reply_error{.type = type, .msg = std::string(msg)});
+};
 
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    if (api_reply["code"].get<reply_code>() == reply_code::OK) {
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
+static void handle_reply_error(const reply_msg& reply,
+                               handler::response_type response)
+{
+    if (auto error = std::get_if<reply_error>(&reply)) {
+        response.send(to_code(*error), error->msg);
     } else {
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+        response.send(Http::Code::Internal_Server_Error);
     }
 }
 
-void handler::create_port(const Rest::Request& request,
-                          Http::ResponseWriter response)
+static reply_msg submit_request(void* socket, request_msg&& request)
 {
-    json api_request = {{"type", request_type::CREATE_PORT},
-                        {"data", request.body()}};
+    if (auto error = message::send(
+            socket, api::serialize_request(std::forward<request_msg>(request)));
+        error != 0) {
+        return (to_error(error_type::VERBOSE, zmq_strerror(error)));
+    }
 
-    json api_reply = submit_request(socket.get(), api_request);
+    auto reply = message::recv(socket).and_then(api::deserialize_reply);
+    if (!reply) {
+        return (to_error(error_type::VERBOSE, zmq_strerror(reply.error())));
+    }
 
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    switch (api_reply["code"].get<reply_code>()) {
-    case reply_code::OK:
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-        break;
-    case reply_code::BAD_INPUT:
-        response.send(Http::Code::Bad_Request,
-                      api_reply["error"].get<std::string>());
-        break;
-    default:
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+    return (std::move(*reply));
+}
+
+static std::string concatenate(const std::vector<std::string>& strings)
+{
+    return (std::accumulate(
+        std::begin(strings),
+        std::end(strings),
+        std::string{},
+        [](std::string& lhs, const std::string& rhs) -> decltype(auto) {
+            return (lhs += ((lhs.empty() ? "" : " ") + rhs));
+        }));
+}
+
+static std::string json_error(int code, std::string_view message)
+{
+    return (
+        nlohmann::json({{"code", code}, {"message", message.data()}}).dump());
+}
+
+static void set_optional_filter(const handler::request_type& request,
+                                filter_map_ptr& filter,
+                                filter_key_type key)
+{
+    if (auto query = request.query().get(std::string(to_key_name(key)));
+        !query.isEmpty()) {
+        if (!filter) { filter = std::make_unique<filter_map_type>(); }
+        filter->emplace(key, query.get().data());
     }
 }
 
-void handler::get_port(const Rest::Request& request,
-                       Http::ResponseWriter response)
+void handler::list_ports(const request_type& request, response_type response)
+{
+    auto api_request = request_list_ports{};
+
+    set_optional_filter(request, api_request.filter, filter_key_type::kind);
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<reply_ports>(&api_reply)) {
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        auto ports = nlohmann::json::array();
+        std::transform(std::begin(reply->ports),
+                       std::end(reply->ports),
+                       std::back_inserter(ports),
+                       [](const auto& port) { return (port->toJson()); });
+        response.send(Http::Code::Ok, ports.dump());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+static tl::expected<swagger::v1::model::Port, std::string>
+parse_create_port(const handler::request_type& request)
+{
+    try {
+        return (nlohmann::json::parse(request.body())
+                    .get<swagger::v1::model::Port>());
+    } catch (const nlohmann::json::exception& e) {
+        return (tl::unexpected(json_error(e.id, e.what())));
+    }
+}
+
+static std::optional<std::string>
+maybe_get_request_uri(const handler::request_type& request)
+{
+    if (request.headers().has<Http::Header::Host>()) {
+        auto host_header = request.headers().get<Http::Header::Host>();
+        return (request.resource());
+    }
+
+    return (std::nullopt);
+}
+
+void handler::create_port(const request_type& request, response_type response)
+{
+    auto port = parse_create_port(request);
+    if (!port) {
+        response.send(Http::Code::Bad_Request, port.error());
+        return;
+    }
+
+    auto api_request = request_create_port{
+        std::make_unique<swagger::v1::model::Port>(std::move(*port))};
+
+    /* Ensure we have a valid id */
+    if (!api_request.port->getId().empty()) {
+        auto res =
+            config::op_config_validate_id_string(api_request.port->getId());
+        if (!res) {
+            response.send(Http::Code::Not_Found, res.error());
+            return;
+        }
+    }
+
+    /* And a valid configuration */
+    std::vector<std::string> errors;
+    if (!is_valid(*api_request.port, errors)) {
+        response.send(Http::Code::Bad_Request, concatenate(errors));
+        return;
+    }
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<reply_ports>(&api_reply)) {
+        assert(reply->ports.size() == 1);
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+
+        if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
+            response.headers().add<Http::Header::Location>(
+                *uri + "/" + reply->ports[0]->getId());
+        }
+
+        response.send(Http::Code::Created, reply->ports[0]->toJson().dump());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+void handler::get_port(const request_type& request, response_type response)
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
@@ -134,29 +211,65 @@ void handler::get_port(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", request_type::GET_PORT}, {"id", id}};
+    auto api_reply = submit_request(m_socket.get(), request_get_port{id});
 
-    json api_reply = submit_request(socket.get(), api_request);
-
-    switch (api_reply["code"].get<reply_code>()) {
-    case reply_code::OK:
+    if (auto reply = std::get_if<reply_ports>(&api_reply)) {
+        assert(reply->ports.size() == 1);
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-        break;
-    case reply_code::NO_PORT:
-        response.send(Http::Code::Not_Found);
-        break;
-    default:
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+        response.send(Http::Code::Ok, reply->ports[0]->toJson().dump());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
     }
 }
 
-void handler::update_port(const Rest::Request& request,
-                          Http::ResponseWriter response)
+void handler::update_port(const request_type& request, response_type response)
+{
+    auto port = parse_create_port(request);
+    if (!port) {
+        response.send(Http::Code::Bad_Request, port.error());
+        return;
+    }
+
+    auto api_request = request_update_port{
+        std::make_unique<swagger::v1::model::Port>(std::move(*port))};
+
+    /* Ensure we have a valid id */
+    if (!api_request.port->getId().empty()) {
+        auto res =
+            config::op_config_validate_id_string(api_request.port->getId());
+        if (!res) {
+            response.send(Http::Code::Not_Found, res.error());
+            return;
+        }
+    }
+
+    /* And a valid configuration */
+    std::vector<std::string> errors;
+    if (!is_valid(*api_request.port, errors)) {
+        response.send(Http::Code::Bad_Request, concatenate(errors));
+        return;
+    }
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<reply_ports>(&api_reply)) {
+        assert(reply->ports.size() == 1);
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+
+        if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
+            response.headers().add<Http::Header::Location>(
+                *uri + reply->ports[0]->getId());
+        }
+
+        response.send(Http::Code::Created, reply->ports[0]->toJson().dump());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+void handler::delete_port(const request_type& request, response_type response)
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
@@ -164,64 +277,12 @@ void handler::update_port(const Rest::Request& request,
         return;
     }
 
-    json api_request = {{"type", request_type::UPDATE_PORT},
-                        {"id", id},
-                        {"data", request.body()}};
+    auto api_reply = submit_request(m_socket.get(), request_delete_port{id});
 
-    json api_reply = submit_request(socket.get(), api_request);
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-    switch (api_reply["code"].get<reply_code>()) {
-    case reply_code::OK:
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok, api_reply["data"].get<std::string>());
-        break;
-    case reply_code::NO_PORT:
-        response.send(Http::Code::Not_Found);
-        break;
-    case reply_code::BAD_INPUT:
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Bad_Request,
-                      api_reply["error"].get<std::string>());
-        break;
-    default:
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
-    }
-}
-
-void handler::delete_port(const Rest::Request& request,
-                          Http::ResponseWriter response)
-{
-    auto id = request.param(":id").as<std::string>();
-    if (auto res = config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
-        return;
-    }
-
-    json api_request = {{"type", request_type::DELETE_PORT},
-                        {"id", request.param(":id").as<std::string>()}};
-
-    /* We don't care about any reply, here */
-    json api_reply = submit_request(socket.get(), api_request);
-    switch (api_reply["code"].get<reply_code>()) {
-    case reply_code::OK:
+    if (auto reply = std::get_if<reply_ok>(&api_reply)) {
         response.send(Http::Code::No_Content);
-        break;
-    case reply_code::BAD_INPUT:
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Bad_Request,
-                      api_reply["error"].get<std::string>());
-        break;
-    default:
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Internal_Server_Error,
-                      api_reply["error"].get<std::string>());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
     }
 }
 

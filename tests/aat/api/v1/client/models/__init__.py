@@ -130,6 +130,7 @@ from client.models.port import Port
 from client.models.port_config import PortConfig
 from client.models.port_config_bond import PortConfigBond
 from client.models.port_config_dpdk import PortConfigDpdk
+from client.models.port_config_dpdk_link import PortConfigDpdkLink
 from client.models.port_stats import PortStats
 from client.models.port_status import PortStatus
 from client.models.rx_flow import RxFlow

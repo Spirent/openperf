@@ -1,10 +1,11 @@
-# PortConfig
+# PortConfigDpdkLink
 
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**bond** | [**PortConfigBond**](PortConfigBond.md) |  | [optional] 
-**dpdk** | [**PortConfigDpdk**](PortConfigDpdk.md) |  | [optional] 
+**auto_negotiation** | **bool** | Enable link auto-negotiation | 
+**speed** | **int** | Manually-configured port speed (in Mbps) | [optional] 
+**duplex** | **str** | Manually-configured port duplex | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

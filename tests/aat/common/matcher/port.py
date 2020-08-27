@@ -12,8 +12,11 @@ class _be_valid_port(Matcher):
         expect(p.config).not_to(be_none)
         if p.kind == 'dpdk':
             expect(p.config.dpdk).not_to(be_none)
-            expect(p.config.dpdk.speed).to(be_above_or_equal(0))
-            expect(['full', 'half', 'unknown']).to(contain(p.config.dpdk.duplex))
+            expect(p.config.dpdk.driver).not_to(be_none)
+            expect(p.config.dpdk.device).not_to(be_none)
+            expect(p.config.dpdk.link).not_to(be_none)
+            expect(p.config.dpdk.link.speed).to(be_above_or_equal(0))
+            expect(['full', 'half', 'unknown']).to(contain(p.config.dpdk.link.duplex))
         elif p.kind == 'host':
             pass
         elif p.kind == 'bond':

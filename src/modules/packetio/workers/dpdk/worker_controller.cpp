@@ -17,6 +17,8 @@
 
 namespace openperf::packetio::dpdk {
 
+inline constexpr auto net_ring_driver_name = "net_ring";
+
 using mac_address = libpacket::type::mac_address;
 
 static void launch_workers(void* context,
@@ -214,7 +216,7 @@ bool always_has_tx_sink(const model::port_info& info)
 {
     // Always need tx sink callback when using net_ring driver
     // This is used to clear the mbuf tx_sink flag so it is not seen on rx
-    return (std::strcmp(info.driver_name(), "net_ring") == 0);
+    return (info.driver_name() == net_ring_driver_name);
 }
 
 worker_controller::worker_controller(void* context,
@@ -444,7 +446,7 @@ worker_controller::get_transmit_function(std::string_view port_id) const
      */
     const bool use_direct = rte_lcore_count() <= 2;
     auto info = model::port_info(*port_idx);
-    if (std::strcmp(info.driver_name(), "net_ring") == 0) {
+    if (info.driver_name() == net_ring_driver_name) {
         /*
          * For the DPDK driver, we use a portion of the mbuf private area to
          * store the lwip pbuf.  Because the net_ring driver hands transmitted
@@ -1073,8 +1075,7 @@ bool need_sink_feature(const worker::fib&,
                        size_t port_idx,
                        const port::net_ring_fixup&)
 {
-    return (std::strcmp(model::port_info(port_idx).driver_name(), "net_ring")
-            == 0);
+    return (model::port_info(port_idx).driver_name() == net_ring_driver_name);
 }
 
 template <>
