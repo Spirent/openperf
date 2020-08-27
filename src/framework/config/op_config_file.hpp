@@ -141,7 +141,11 @@ template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_DOUBLE>
 };
 template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_MAP>
 {
-    typedef std::map<std::string, std::string> type;
+    using type = std::map<std::string, std::string>;
+};
+template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_OPTIONS>
+{
+    using type = std::vector<std::string>;
 };
 template <> struct op_option_type_maps<op_option_type::OP_OPTION_TYPE_LIST>
 {
