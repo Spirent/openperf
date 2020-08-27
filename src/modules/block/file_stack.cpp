@@ -87,6 +87,10 @@ file_stack::create_block_file(const model::file& block_file_model)
             return tl::make_unexpected("File with path "
                                        + block_file_model.path()
                                        + " already exists.");
+        if (code)
+            OP_LOG(OP_LOG_WARNING,
+                   "Unexpected file operation result: %s",
+                   code.message().c_str());
     }
 
     if (block_file_model.size() <= sizeof(virtual_device_header)) {
