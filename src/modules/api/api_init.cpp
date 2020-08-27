@@ -110,8 +110,11 @@ public:
         op_thread_setname("op_api");
 
         Address addr(IP::any(Ipv6::supported()), Port(port));
-        auto opts =
-            Http::Endpoint::options().threads(1).flags(Tcp::Options::ReuseAddr);
+        auto opts = Http::Endpoint::options()
+                        .maxRequestSize(1024 * 1024)
+                        .maxResponseSize(1024 * 1024)
+                        .threads(1)
+                        .flags(Tcp::Options::ReuseAddr);
 
         m_server = std::make_unique<Http::Endpoint>(addr);
         m_server->init(opts);
