@@ -28,13 +28,14 @@ typedef int(op_option_callback_fn)(int opt, const char* optarg);
 /**
  * Enum denoting the type of an option's data.
  * Exact types are mapped as:
+ * NONE -> bool
  * STRING -> std::string
+ * HEX -> long
  * LONG -> long
  * DOUBLE -> double
  * MAP -> std::map<std::string, std::string>>
  * LIST -> std::vector<std::string>
- *
- * NONE -> bool
+ * OPTIONS -> std::vector<std::string>
  * The NONE -> bool thing means that if the option is present
  * framework will return true when queried for it, false otherwise.
  */
@@ -45,7 +46,8 @@ typedef enum op_option_type {
     OP_OPTION_TYPE_LONG,
     OP_OPTION_TYPE_DOUBLE,
     OP_OPTION_TYPE_MAP,
-    OP_OPTION_TYPE_LIST
+    OP_OPTION_TYPE_LIST,
+    OP_OPTION_TYPE_OPTIONS,
 } op_option_type_t;
 
 /**
