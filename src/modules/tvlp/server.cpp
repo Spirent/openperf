@@ -54,9 +54,11 @@ api_reply server::handle_request(const request::tvlp::list&)
     auto reply = reply::tvlp::list{
         .data = std::make_unique<std::vector<tvlp_config_t>>()};
     auto list = m_controller_stack->list();
-    std::for_each(std::begin(list), std::end(list), [&](const auto& c) {
-        reply.data->push_back(tvlp_config_t(c->model()));
-    });
+    std::transform(
+        list.begin(),
+        list.end(),
+        std::back_inserter(*reply.data),
+        [](const auto& config) { return tvlp_config_t(config->model()); });
     return reply;
 }
 
@@ -137,9 +139,10 @@ api_reply server::handle_request(const request::tvlp::result::list&)
     auto reply = reply::tvlp::result::list{
         .data = std::make_unique<std::vector<tvlp_result_t>>()};
     auto list = m_controller_stack->results();
-    std::for_each(std::begin(list), std::end(list), [&](const auto& c) {
-        reply.data->push_back(*c);
-    });
+    std::transform(list.begin(),
+                   list.end(),
+                   std::back_inserter(*reply.data),
+                   [](const auto& result) { return *result; });
     return reply;
 }
 

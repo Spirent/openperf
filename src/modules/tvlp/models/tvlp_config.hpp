@@ -37,18 +37,18 @@ public:
     tvlp_configuration_t() = default;
     tvlp_configuration_t(const tvlp_configuration_t&) = default;
 
-    inline std::string id() const { return m_id; };
-    inline void id(std::string_view value) { m_id = value; };
+    std::string id() const { return m_id; };
+    void id(std::string_view value) { m_id = value; };
 
-    inline tvlp_profile_t profile() const { return m_profile; };
-    inline void profile(const tvlp_profile_t& value) { m_profile = value; };
+    tvlp_profile_t profile() const { return m_profile; };
+    void profile(const tvlp_profile_t& value) { m_profile = value; };
 
-    inline tvlp_state_t state() const { return m_state; };
-    inline time_point start_time() const { return m_start_time; };
-    inline duration total_length() const { return m_total_length; };
-    inline duration current_offset() const { return m_current_offset; };
+    tvlp_state_t state() const { return m_state; };
+    time_point start_time() const { return m_start_time; };
+    duration total_length() const { return m_total_length; };
+    duration current_offset() const { return m_current_offset; };
 
-    inline std::string error() const { return m_error; };
+    std::string error() const { return m_error; };
 
 protected:
     std::string m_id = "";

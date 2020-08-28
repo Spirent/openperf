@@ -1,5 +1,5 @@
-#ifndef _OP_MEMORY_SWAGGER_CONVERTERS_HPP_
-#define _OP_MEMORY_SWAGGER_CONVERTERS_HPP_
+#ifndef _OP_TVLP_API_CONVERTERS_HPP_
+#define _OP_TVLP_API_CONVERTERS_HPP_
 
 #include <iomanip>
 
@@ -19,6 +19,24 @@ using profile_entry_t = tvlp::model::tvlp_profile_entry_t;
 using result_t = tvlp::model::tvlp_result_t;
 
 namespace swagger = ::swagger::v1::model;
+
+std::optional<time_point> from_rfc3339(const std::string& from)
+{
+    std::stringstream is(from);
+    std::tm t = {};
+    is >> std::get_time(&t, "%Y-%m-%dT%H:%M:%S");
+    if (is.fail()) return std::nullopt;
+    auto dur = std::chrono::system_clock::from_time_t(std::mktime(&t))
+                   .time_since_epoch();
+
+    // Calculate nanoseconds
+    int d;
+    double seconds = 0;
+    sscanf(from.c_str(), "%d-%d-%dT%d:%d:%lfZ", &d, &d, &d, &d, &d, &seconds);
+    dur += std::chrono::nanoseconds(static_cast<long>(std::nano::den * seconds)
+                                    % std::nano::den);
+    return time_point(dur);
+}
 
 template <typename Rep, typename Period>
 std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
@@ -86,28 +104,28 @@ static swagger::TvlpConfiguration to_swagger(const config_t& config)
         model.getTime()->setOffset(config.current_offset().count());
     if (config.state() == model::ERROR) model.setError(config.error());
     switch (config.state()) {
-    case (model::READY):
+    case model::READY:
         model.setState("ready");
         break;
-    case (model::COUNTDOWN):
+    case model::COUNTDOWN:
         model.setState("countdown");
         break;
-    case (model::RUNNING):
+    case model::RUNNING:
         model.setState("running");
         break;
-    case (model::ERROR):
+    case model::ERROR:
         model.setState("error");
     }
 
     model.setProfile(std::make_shared<swagger::TvlpProfile>());
     if (config.profile().block) {
         auto block = std::make_shared<swagger::TvlpProfile_block>();
-
         auto block_vector = config.profile().block.value();
-        std::for_each(
-            std::begin(block_vector),
-            std::end(block_vector),
-            [&](auto& block_entry) {
+        std::transform(
+            block_vector.begin(),
+            block_vector.end(),
+            std::back_inserter(block->getSeries()),
+            [](auto& block_entry) {
                 auto entry =
                     std::make_shared<swagger::TvlpProfile_block_series>();
                 entry->setLength(block_entry.length.count());
@@ -117,20 +135,19 @@ static swagger::TvlpConfiguration to_swagger(const config_t& config)
                     std::make_shared<swagger::BlockGeneratorConfig>();
                 g_config->fromJson(block_entry.config);
                 entry->setConfig(g_config);
-
-                block->getSeries().push_back(entry);
+                return entry;
             });
 
         model.getProfile()->setBlock(block);
     }
     if (config.profile().memory) {
         auto memory = std::make_shared<swagger::TvlpProfile_memory>();
-
         auto memory_vector = config.profile().memory.value();
-        std::for_each(
-            std::begin(memory_vector),
-            std::end(memory_vector),
-            [&](auto& memory_entry) {
+        std::transform(
+            memory_vector.begin(),
+            memory_vector.end(),
+            std::back_inserter(memory->getSeries()),
+            [](auto& memory_entry) {
                 auto entry =
                     std::make_shared<swagger::TvlpProfile_memory_series>();
                 entry->setLength(memory_entry.length.count());
@@ -140,17 +157,18 @@ static swagger::TvlpConfiguration to_swagger(const config_t& config)
                 g_config->fromJson(memory_entry.config);
                 entry->setConfig(g_config);
 
-                memory->getSeries().push_back(entry);
+                return entry;
             });
-
         model.getProfile()->setMemory(memory);
     }
     if (config.profile().cpu) {
         auto cpu = std::make_shared<swagger::TvlpProfile_cpu>();
-
         auto cpu_vector = config.profile().memory.value();
-        std::for_each(
-            std::begin(cpu_vector), std::end(cpu_vector), [&](auto& cpu_entry) {
+        std::transform(
+            cpu_vector.begin(),
+            cpu_vector.end(),
+            std::back_inserter(cpu->getSeries()),
+            [](auto& cpu_entry) {
                 auto entry =
                     std::make_shared<swagger::TvlpProfile_cpu_series>();
                 entry->setLength(cpu_entry.length.count());
@@ -158,20 +176,18 @@ static swagger::TvlpConfiguration to_swagger(const config_t& config)
                 auto g_config = std::make_shared<swagger::CpuGeneratorConfig>();
                 g_config->fromJson(cpu_entry.config);
                 entry->setConfig(g_config);
-
-                cpu->getSeries().push_back(entry);
+                return entry;
             });
-
         model.getProfile()->setCpu(cpu);
     }
     if (config.profile().packet) {
         auto packet = std::make_shared<swagger::TvlpProfile_packet>();
-
         auto packet_vector = config.profile().memory.value();
-        std::for_each(
-            std::begin(packet_vector),
-            std::end(packet_vector),
-            [&](auto& packet_entry) {
+        std::transform(
+            packet_vector.begin(),
+            packet_vector.end(),
+            std::back_inserter(packet->getSeries()),
+            [](auto& packet_entry) {
                 auto entry =
                     std::make_shared<swagger::TvlpProfile_packet_series>();
                 entry->setLength(packet_entry.length.count());
@@ -181,10 +197,8 @@ static swagger::TvlpConfiguration to_swagger(const config_t& config)
                     std::make_shared<swagger::PacketGeneratorConfig>();
                 swagger::from_json(packet_entry.config, *g_config);
                 entry->setConfig(g_config);
-
-                packet->getSeries().push_back(entry);
+                return entry;
             });
-
         model.getProfile()->setPacket(packet);
     }
 
@@ -200,48 +214,53 @@ static swagger::TvlpResult to_swagger(const result_t& result)
     auto modules_results = result.results();
     if (modules_results.block) {
         auto block_results = modules_results.block.value();
-        std::for_each(std::begin(block_results),
-                      std::end(block_results),
-                      [&](const auto& res) {
-                          auto g_result =
-                              std::make_shared<swagger::BlockGeneratorResult>();
-                          swagger::from_json(res, *g_result);
-                          model.getBlock().push_back(g_result);
-                      });
+        std::transform(
+            block_results.begin(),
+            block_results.end(),
+            std::back_inserter(model.getBlock()),
+            [](auto& res) {
+                auto g_result =
+                    std::make_shared<swagger::BlockGeneratorResult>();
+                swagger::from_json(res, *g_result);
+                return g_result;
+            });
     }
     if (modules_results.memory) {
         auto memory_results = modules_results.memory.value();
-        std::for_each(
-            std::begin(memory_results),
-            std::end(memory_results),
-            [&](const auto& res) {
+        std::transform(
+            memory_results.begin(),
+            memory_results.end(),
+            std::back_inserter(model.getMemory()),
+            [](auto& res) {
                 auto g_result =
                     std::make_shared<swagger::MemoryGeneratorResult>();
                 swagger::from_json(res, *g_result);
-                model.getMemory().push_back(g_result);
+                return g_result;
             });
     }
     if (modules_results.cpu) {
         auto cpu_results = modules_results.cpu.value();
-        std::for_each(std::begin(cpu_results),
-                      std::end(cpu_results),
-                      [&](const auto& res) {
-                          auto g_result =
-                              std::make_shared<swagger::CpuGeneratorResult>();
-                          swagger::from_json(res, *g_result);
-                          model.getCpu().push_back(g_result);
-                      });
+        std::transform(cpu_results.begin(),
+                       cpu_results.end(),
+                       std::back_inserter(model.getCpu()),
+                       [](auto& res) {
+                           auto g_result =
+                               std::make_shared<swagger::CpuGeneratorResult>();
+                           swagger::from_json(res, *g_result);
+                           return g_result;
+                       });
     }
     if (modules_results.packet) {
         auto packet_results = modules_results.packet.value();
-        std::for_each(
-            std::begin(packet_results),
-            std::end(packet_results),
-            [&](const auto& res) {
+        std::transform(
+            packet_results.begin(),
+            packet_results.end(),
+            std::back_inserter(model.getPacket()),
+            [](auto& res) {
                 auto g_result =
                     std::make_shared<swagger::PacketGeneratorResult>();
                 swagger::from_json(res, *g_result);
-                model.getPacket().push_back(g_result);
+                return g_result;
             });
     }
 
@@ -250,4 +269,4 @@ static swagger::TvlpResult to_swagger(const result_t& result)
 
 } // namespace openperf::tvlp::api
 
-#endif // _OP_MEMORY_SWAGGER_CONVERTERS_HPP_
+#endif // _OP_TVLP_API_CONVERTERS_HPP_
