@@ -3,6 +3,9 @@
 
 #include <array>
 #include <string_view>
+#include <utility>
+
+#include "ispc/ispc.hpp"
 
 namespace openperf::cpu {
 
@@ -14,48 +17,9 @@ enum class instruction_set : uint8_t {
     SSE4,
     AVX,
     AVX2,
-    AVX512SKX,
+    AVX512,
     MAX
 };
-
-namespace {
-/* Turn our nasty ifdef's into nice boolean constants */
-#ifdef ISPC_TARGET_AUTOMATIC
-constexpr bool automatic_enabled = true;
-#else
-constexpr bool automatic_enabled = false;
-#endif
-
-#ifdef ISPC_TARGET_SSE2
-constexpr bool sse2_enabled = true;
-#else
-constexpr bool sse2_enabled = false;
-#endif
-
-#ifdef ISPC_TARGET_SSE4
-constexpr bool sse4_enabled = true;
-#else
-constexpr bool sse4_enabled = false;
-#endif
-
-#ifdef ISPC_TARGET_AVX
-constexpr bool avx_enabled = true;
-#else
-constexpr bool avx_enabled = false;
-#endif
-
-#ifdef ISPC_TARGET_AVX2
-constexpr bool avx2_enabled = true;
-#else
-constexpr bool avx2_enabled = false;
-#endif
-
-#ifdef ISPC_TARGET_AVX512SKX
-constexpr bool avx512skx_enabled = true;
-#else
-constexpr bool avx512skx_enabled = false;
-#endif
-} // namespace
 
 template <typename Key, typename Value, typename... Pairs>
 constexpr auto associative_array(Pairs&&... pairs)
@@ -74,7 +38,7 @@ constexpr std::string_view to_string(instruction_set t)
             std::pair(instruction_set::SSE4, "sse4"),
             std::pair(instruction_set::AVX, "avx"),
             std::pair(instruction_set::AVX2, "avx2"),
-            std::pair(instruction_set::AVX512SKX, "avx512"));
+            std::pair(instruction_set::AVX512, "avx512"));
 
     auto cursor = std::begin(instruction_set_names),
          end = std::end(instruction_set_names);
@@ -93,7 +57,7 @@ constexpr cpu::instruction_set to_instruction_set(std::string_view value)
     if (value == "sse4") return cpu::instruction_set::SSE4;
     if (value == "avx") return cpu::instruction_set::AVX;
     if (value == "avx2") return cpu::instruction_set::AVX2;
-    if (value == "avx512") return cpu::instruction_set::AVX512SKX;
+    if (value == "avx512") return cpu::instruction_set::AVX512;
 
     throw std::runtime_error("Error from string to instruction_set converting: "
                              "Illegal string value");
@@ -103,12 +67,12 @@ constexpr bool enabled(instruction_set t)
 {
     constexpr auto sets_enabled = associative_array<instruction_set, bool>(
         std::pair(instruction_set::SCALAR, true),
-        std::pair(instruction_set::AUTO, automatic_enabled),
-        std::pair(instruction_set::SSE2, sse2_enabled),
-        std::pair(instruction_set::SSE4, sse4_enabled),
-        std::pair(instruction_set::AVX, avx_enabled),
-        std::pair(instruction_set::AVX2, avx2_enabled),
-        std::pair(instruction_set::AVX512SKX, avx512skx_enabled));
+        std::pair(instruction_set::AUTO, ispc::automatic_enabled),
+        std::pair(instruction_set::SSE2, ispc::sse2_enabled),
+        std::pair(instruction_set::SSE4, ispc::sse4_enabled),
+        std::pair(instruction_set::AVX, ispc::avx_enabled),
+        std::pair(instruction_set::AVX2, ispc::avx2_enabled),
+        std::pair(instruction_set::AVX512, ispc::avx512skx_enabled));
 
     auto cursor = std::begin(sets_enabled), end = std::end(sets_enabled);
     while (cursor != end) {
