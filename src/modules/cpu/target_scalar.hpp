@@ -39,7 +39,7 @@ public:
             for (size_t j = 0; j < size; j++) {
                 T sum = 0;
                 for (size_t k = 0; k < size; k++) {
-                    sum += matrix_a[i * size + k] * matrix_b[k * size + i];
+                    sum += matrix_a[i * size + k] * matrix_b[k * size + j];
                 }
                 mx_r[i * size + j] = sum;
             }
