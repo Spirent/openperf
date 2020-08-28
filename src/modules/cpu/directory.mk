@@ -20,6 +20,7 @@ CPU_SOURCES += \
 
 ifeq ($(ARCH),x86_64)
 	CPU_SOURCES += instruction_set_x86.cpp
+	CPU_TEST_SOURCES += instruction_set_x86.cpp
 endif
 
 ifeq ($(PLATFORM), linux)
