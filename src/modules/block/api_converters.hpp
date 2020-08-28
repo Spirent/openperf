@@ -16,17 +16,6 @@
 #include "swagger/v1/model/BulkStartBlockGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopBlockGeneratorsRequest.h"
 
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, BlockFile&);
-void from_json(const nlohmann::json&, BulkCreateBlockFilesRequest&);
-void from_json(const nlohmann::json&, BulkDeleteBlockFilesRequest&);
-void from_json(const nlohmann::json&, BlockGenerator&);
-void from_json(const nlohmann::json&, BulkCreateBlockGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkDeleteBlockGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStartBlockGeneratorsRequest&);
-void from_json(const nlohmann::json&, BulkStopBlockGeneratorsRequest&);
-} // namespace swagger::v1::model
-
 namespace openperf::block::api {
 
 using namespace swagger::v1::model;
