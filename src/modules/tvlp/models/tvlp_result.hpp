@@ -23,17 +23,14 @@ public:
     tvlp_result_t() = default;
     tvlp_result_t(const tvlp_result_t&) = default;
 
-    inline std::string id() const { return m_id; };
-    inline void id(std::string_view value) { m_id = value; };
+    std::string id() const { return m_id; };
+    void id(std::string_view value) { m_id = value; };
 
-    inline std::string tvlp_id() const { return m_tvlp_id; };
-    inline void tvlp_id(std::string_view value) { m_tvlp_id = value; };
+    std::string tvlp_id() const { return m_tvlp_id; };
+    void tvlp_id(std::string_view value) { m_tvlp_id = value; };
 
-    inline tvlp_modules_results_t results() const { return m_results; };
-    inline void results(const tvlp_modules_results_t& value)
-    {
-        m_results = value;
-    };
+    tvlp_modules_results_t results() const { return m_results; };
+    void results(const tvlp_modules_results_t& value) { m_results = value; };
 
 protected:
     std::string m_id = "";

@@ -16,7 +16,6 @@
 namespace openperf::tvlp::internal::worker {
 
 using namespace std::chrono_literals;
-using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 using ref_clock = timesync::chrono::monotime;
 using realtime = timesync::chrono::realtime;
 using duration = std::chrono::nanoseconds;
@@ -38,10 +37,10 @@ class tvlp_worker_t
 public:
     tvlp_worker_t() = delete;
     tvlp_worker_t(const tvlp_worker_t&) = delete;
-    tvlp_worker_t(const model::tvlp_module_profile_t&);
+    explicit tvlp_worker_t(const model::tvlp_module_profile_t&);
     virtual ~tvlp_worker_t();
 
-    void start(const time_point& start_time = realtime::now());
+    void start(const realtime::time_point& start_time = realtime::now());
     void stop();
     model::tvlp_state_t state() const;
     std::optional<std::string> error() const;
@@ -50,7 +49,7 @@ public:
 
 protected:
     tl::expected<void, std::string>
-    schedule(time_point start_time,
+    schedule(realtime::time_point start_time,
              const model::tvlp_module_profile_t& profile);
     virtual tl::expected<std::string, std::string>
     send_create(const nlohmann::json& config,
@@ -65,7 +64,7 @@ protected:
     send_delete(const std::string& id) = 0;
 
     tvlp_worker_state_t m_state;
-    std::string m_error;
+    std::string m_error = "";
     model::json_vector m_result;
     std::atomic<model::json_vector*> m_result_atomic;
     worker_future m_scheduler_thread;

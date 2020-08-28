@@ -6,8 +6,7 @@ namespace openperf::tvlp::internal::worker {
 constexpr duration THRESHOLD = 100ms;
 
 tvlp_worker_t::tvlp_worker_t(const model::tvlp_module_profile_t& profile)
-    : m_error("")
-    , m_profile(profile)
+    : m_profile(profile)
 {
     m_state.state.store(model::READY);
     m_state.offset.store(duration::zero());
@@ -16,7 +15,7 @@ tvlp_worker_t::tvlp_worker_t(const model::tvlp_module_profile_t& profile)
 
 tvlp_worker_t::~tvlp_worker_t() { stop(); }
 
-void tvlp_worker_t::start(const time_point& start_time)
+void tvlp_worker_t::start(const realtime::time_point& start_time)
 {
     if (m_scheduler_thread.valid()) m_scheduler_thread.wait();
     m_state.offset = duration::zero();
@@ -26,7 +25,7 @@ void tvlp_worker_t::start(const time_point& start_time)
     m_result.clear();
     m_scheduler_thread = std::async(
         std::launch::async,
-        [this](time_point tp, model::tvlp_module_profile_t p) {
+        [this](realtime::time_point tp, model::tvlp_module_profile_t p) {
             return schedule(tp, p);
         },
         start_time,
@@ -66,7 +65,7 @@ model::json_vector tvlp_worker_t::results() const
 }
 
 tl::expected<void, std::string>
-tvlp_worker_t::schedule(time_point start_time,
+tvlp_worker_t::schedule(realtime::time_point start_time,
                         const model::tvlp_module_profile_t& profile)
 {
     model::json_vector results;
@@ -90,7 +89,8 @@ tvlp_worker_t::schedule(time_point start_time,
         }
 
         // Create generator
-        auto create_result = send_create(entry.config, (entry.resource_id) ? entry.resource_id.value() : "");
+        auto create_result = send_create(
+            entry.config, (entry.resource_id) ? entry.resource_id.value() : "");
         if (!create_result) {
             m_state.state.store(model::ERROR);
             return tl::make_unexpected(create_result.error());

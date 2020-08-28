@@ -16,10 +16,12 @@ std::vector<tvlp_controller_ptr> controller_stack::list() const
 tl::expected<tvlp_controller_ptr, std::string>
 controller_stack::create(const model::tvlp_configuration_t& model)
 {
-    if (get(model.id()))
+    if (get(model.id())) {
         return tl::make_unexpected("TVLP configuration with id \""
                                    + static_cast<std::string>(model.id())
                                    + "\" already exists.");
+    }
+
     try {
         auto controller = std::make_shared<controller_t>(model);
         m_controllers.emplace(controller->id(), controller);
@@ -43,12 +45,15 @@ controller_stack::get(const std::string& id) const
 tl::expected<void, std::string> controller_stack::erase(const std::string& id)
 {
     auto controller = get(id);
-    if (!controller)
+    if (!controller) {
         return tl::make_unexpected("TVLP configuration with id \"" + id
                                    + "\" not found.");
-    if (controller.value()->is_running())
-        return tl::make_unexpected(
-            "Cannot delete TVLP configuration in running state.");
+    }
+
+    if (controller.value()->is_running()) {
+        return tl::make_unexpected("Cannot delete TVLP configuration "
+                                   "in running state.");
+    }
 
     m_controllers.erase(id);
 
@@ -97,9 +102,10 @@ std::vector<tvlp_result_ptr> controller_stack::results() const
 tl::expected<tvlp_result_ptr, std::string>
 controller_stack::result(const std::string& id) const
 {
-    if (!m_results.count(id))
+    if (!m_results.count(id)) {
         return tl::make_unexpected("TVLP result with id \"" + id
                                    + "\" not found.");
+    }
 
     auto result = m_results.at(id);
     get(result->tvlp_id());
@@ -110,13 +116,16 @@ tl::expected<void, std::string>
 controller_stack::erase_result(const std::string& id)
 {
     auto res = result(id);
-    if (!res)
+    if (!res) {
         return tl::make_unexpected("TVLP result with id \"" + id
                                    + "\" not found.");
+    }
+
     auto controller = get(res.value()->tvlp_id());
-    if (controller && controller.value()->is_running())
+    if (controller && controller.value()->is_running()) {
         return tl::make_unexpected(
             "Cannot delete TVLP result in running state.");
+    }
 
     m_results.erase(id);
 
