@@ -15,7 +15,8 @@ CPU_SOURCES += \
 	init.cpp \
 	server.cpp \
 	task_cpu.cpp \
-	ispc/target.ispc
+	scalar/matrix.cpp \
+	ispc/matrix.ispc
 
 ifeq ($(ARCH),x86_64)
 	CPU_SOURCES += instruction_set_x86.cpp
@@ -36,4 +37,5 @@ $(CPU_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\""
 
 CPU_TEST_SOURCES += \
-	ispc/target.ispc
+	scalar/matrix.cpp \
+	ispc/matrix.ispc

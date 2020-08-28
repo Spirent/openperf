@@ -267,7 +267,7 @@ bool available(instruction_set t)
         return (features.ecx.osxsave && xcr0.sse && xcr0.avx && features.ecx.avx
                 && features.ecx.f16c && features.ecx.rdrnd
                 && extended.ebx.avx2);
-    case instruction_set::AVX512SKX:
+    case instruction_set::AVX512:
         return (features.ecx.osxsave && xcr0.sse && xcr0.avx && xcr0.opmask
                 && xcr0.zmm_hi256 && xcr0.hi16_zmm && extended.ebx.avx2
                 && extended.ebx.avx512f && extended.ebx.avx512dq
