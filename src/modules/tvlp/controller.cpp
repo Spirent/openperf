@@ -21,7 +21,9 @@ controller_t::controller_t(const model::tvlp_configuration_t& model)
         duration total_length = 0ms;
         for (const auto& p : profiles) {
             if (p.length <= 0ms)
-                throw std::runtime_error("Invalid field value");
+                throw std::runtime_error(
+                    "Invalid field value: profile length cannot be less than "
+                    "or equal to zero");
             total_length += p.length;
         }
         return total_length;
@@ -52,7 +54,9 @@ controller_t::controller_t(const model::tvlp_configuration_t& model)
             m_profile.packet.value());
     }
 
-    if (total_length == 0ms) throw std::runtime_error("Invalid field value");
+    if (total_length == 0ms)
+        throw std::runtime_error(
+            "Invalid field value: no profile entries found");
 
     m_total_length = total_length;
 
