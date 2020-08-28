@@ -38,7 +38,7 @@ void task_cpu::reset()
 }
 
 // Methods : public
-[[clang::optnone]] task_cpu_stat_ptr task_cpu::spin()
+task_cpu_stat_ptr task_cpu::spin()
 {
     if (m_last_run.time_since_epoch() == 0ns) {
         m_last_run = chronometer::now();
@@ -113,7 +113,7 @@ void task_cpu::reset()
 }
 
 // Methods : private
-[[clang::optnone]] void task_cpu::config(const task_cpu_config& conf)
+void task_cpu::config(const task_cpu_config& conf)
 {
     assert(0.0 < conf.utilization && conf.utilization <= 100.0);
     OP_LOG(OP_LOG_DEBUG, "CPU Task configuring");

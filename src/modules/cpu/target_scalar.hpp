@@ -9,42 +9,43 @@ namespace openperf::cpu::internal {
 template <class T> class target_scalar : public target
 {
 private:
-    using square_matrix = std::vector<std::vector<T>>;
-
     constexpr static size_t size = 32;
 
-    square_matrix matrix1;
-    square_matrix matrix2;
+    std::vector<T> matrix_a;
+    std::vector<T> matrix_b;
+    std::vector<T> matrix_r;
 
 public:
     target_scalar()
     {
-        matrix1.resize(size);
-        matrix2.resize(size);
-        for (size_t i = 0; i < size; ++i) {
-            matrix1[i].resize(size);
-            matrix2[i].resize(size);
-            for (size_t j = 0; j < size; ++j) {
-                matrix1[i][j] = i * j;
-                matrix2[i][j] = static_cast<T>(size * size) / (i * j + 1);
-            }
+        matrix_a.resize(size * size);
+        matrix_b.resize(size * size);
+        matrix_r.resize(size * size);
+
+        for (size_t i = 0; i < size * size; ++i) {
+            auto row = i / size;
+            auto col = i % size;
+            matrix_a[i] = row * col;
+            matrix_b[i] = static_cast<T>(size * size) / (row * col + 1);
         }
     }
 
     ~target_scalar() override = default;
 
-    [[clang::optnone]] uint64_t operation() const override
+    uint64_t operation() const override
     {
-        for (size_t i = 0; i < size; ++i) {
-            for (size_t j = 0; j < size; ++j) {
+        auto& mx_r = const_cast<target_scalar<T>*>(this)->matrix_r;
+        for (size_t i = 0; i < size; i++) {
+            for (size_t j = 0; j < size; j++) {
                 T sum = 0;
-                for (size_t k = 0; k < size; ++k) {
-                    sum += matrix1[i][k] * matrix2[k][j];
+                for (size_t k = 0; k < size; k++) {
+                    sum += matrix_a[i * size + k] * matrix_b[k * size + i];
                 }
+                mx_r[i * size + j] = sum;
             }
         }
 
-        return size * size * size;
+        return 1;
     }
 };
 
