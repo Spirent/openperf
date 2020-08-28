@@ -164,7 +164,7 @@ task_cpu::target_ptr task_cpu::make_target(cpu::instruction_set iset,
     case cpu::instruction_set::SSE4:
     case cpu::instruction_set::AVX:
     case cpu::instruction_set::AVX2:
-    case cpu::instruction_set::AVX512SKX:
+    case cpu::instruction_set::AVX512:
         switch (dtype) {
         case cpu::data_type::INT32:
             return std::make_unique<target_ispc<uint32_t>>(iset);

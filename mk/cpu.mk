@@ -25,9 +25,9 @@ CPU_OBJECTS := $(call op_generate_objects,$(CPU_SOURCES),$(CPU_OBJ_DIR))
 CPU_ISPC_TARGETS := \
 		avx1-i32x8 \
 		avx2-i32x8 \
-		avx512skx-i32x8 \
-		sse2-i32x8 \
-		sse4-i32x8
+		avx512skx-i32x16 \
+		sse2-i32x4 \
+		sse4-i32x4
 
 ###
 # ISPC generates multiple object files when using multiple targets.
@@ -41,7 +41,6 @@ CPU_ISPC_OBJECTS := $(patsubst %, $(CPU_OBJ_DIR)/%, \
 
 # Adjust objects based on the number of ISPC target architectures
 CPU_DEFINES :=
-CPU_ISPC_DEFINES := CPU_PARALLELIZE_ALGORITHM
 CPU_ISPC_TARGET_OBJECTS :=
 
 ifeq (,$(word 2,$(CPU_ISPC_TARGETS)))  # i.e. there is no 2nd target
@@ -70,14 +69,16 @@ else
 	endif
 endif
 
-CPU_FLAGS := -DARCH="\"$(ARCH)\"" -mpclmul $(addprefix -D,$(CPU_DEFINES))
+CPU_FLAGS := -mpclmul $(addprefix -D,$(CPU_DEFINES))
 CPU_LIBRARY := openperf_cpu
 CPU_TARGET := $(CPU_LIB_DIR)/lib$(CPU_LIBRARY).a
 
 OP_LDLIBS += -Wl,--whole-archive -l$(CPU_LIBRARY) -Wl,--no-whole-archive $(CPU_LDLIBS)
 
-# Load external dependencies
 -include $(CPU_OBJECTS:.o=.d)
+-include $(CPU_ISPC_OBJECTS:.o=.d)
+
+# Load external dependencies
 $(call op_include_dependencies,$(CPU_DEPENDS))
 
 ###
@@ -92,6 +93,9 @@ ifneq ($(MODE),release)
 	CPU_ISPC_OPTS += -g
 endif
 
+# The ISPC target objects depend on their source "objects"
+$(CPU_ISPC_TARGET_OBJECTS): $(CPU_ISPC_OBJECTS)
+
 # In addition to the standard rules above, we need a couple of ISPC rules
 # Note: that the sed command on the bottom is because ispc doesn't write
 # a target name into the dependency when creating multiple targets.  So,
@@ -102,8 +106,7 @@ CPU_SPACE := $(CPU_EMPTY) $(CPU_EMPTY)
 
 $(CPU_OBJ_DIR)/%.o: $(CPU_SRC_DIR)/%.ispc
 	@mkdir -p $(dir $@)
-	$(strip $(OP_ISPC) $(addprefix -D,$(CPU_ISPC_DEFINES)) \
-		-o $@ $(CPU_ISPC_OPTS) \
+	$(strip $(OP_ISPC) -o $@ $(CPU_ISPC_OPTS) \
 		-M -MF $(@:.o=.d) \
 		--target=$(subst $(CPU_SPACE),$(CPU_COMMA),$(CPU_ISPC_TARGETS)) \
 		--header-outfile=$(patsubst %,$(CPU_OBJ_DIR)/%,$(notdir $<.h)) $<)
