@@ -1,4 +1,3 @@
-
 #
 # Makefile component for cpu generator unit tests
 #

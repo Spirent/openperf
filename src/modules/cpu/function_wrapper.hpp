@@ -1,6 +1,8 @@
 #ifndef _OP_CPU_ISPC_FUNCTION_WRAPPER_HPP_
 #define _OP_CPU_ISPC_FUNCTION_WRAPPER_HPP_
 
+#include <functional>
+
 #include "ispc/ispc.hpp"
 #include "instruction_set.hpp"
 

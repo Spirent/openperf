@@ -1,5 +1,6 @@
 
 #include <cinttypes>
+#include "../matrix.hpp"
 
 namespace openperf::cpu::internal::scalar {
 
@@ -11,7 +12,7 @@ namespace openperf::cpu::internal::scalar {
             for (uint32_t j = 0; j < size; j++) {                              \
                 type sum = 0;                                                  \
                 for (uint32_t k = 0; k < size; k++)                            \
-                    sum += matrix_a[i * size + k] * matrix_b[k * size + i];    \
+                    sum += matrix_a[i * size + k] * matrix_b[k * size + j];    \
                 matrix_r[i * size + j] = sum;                                  \
             }                                                                  \
         }                                                                      \
