@@ -1,10 +1,9 @@
 #include <sstream>
-#include <iostream>
 #include <string>
 #include <iomanip>
 
 #include "api.hpp"
-#include "swagger_converters.hpp"
+#include "api_converters.hpp"
 #include "swagger/converters/tvlp.hpp"
 
 #include "framework/core/op_core.h"
@@ -203,24 +202,6 @@ void handler::delete_tvlp(const Rest::Request& request,
     }
 
     response.send(Http::Code::Internal_Server_Error);
-}
-
-std::optional<time_point> from_rfc3339(const std::string& from)
-{
-    std::stringstream is(from);
-    std::tm t = {};
-    is >> std::get_time(&t, "%Y-%m-%dT%H:%M:%S");
-    if (is.fail()) return std::nullopt;
-    auto dur = std::chrono::system_clock::from_time_t(std::mktime(&t))
-                   .time_since_epoch();
-
-    // Calculate nanoseconds
-    int d;
-    double seconds = 0;
-    sscanf(from.c_str(), "%d-%d-%dT%d:%d:%lfZ", &d, &d, &d, &d, &d, &seconds);
-    dur += std::chrono::nanoseconds(static_cast<long>(std::nano::den * seconds)
-                                    % std::nano::den);
-    return time_point(dur);
 }
 
 void handler::start_tvlp(const Rest::Request& request,

@@ -1,5 +1,5 @@
 #
-# Makefile component for Memory Generator module
+# Makefile component for TVLP module
 #
 
 TVLP_DEPENDS += api framework pistache swagger_model json versions timesync
