@@ -1,6 +1,14 @@
 from client.rest import ApiException
 from expects.matchers import Matcher
-from expects import expect, equal, have_keys
+from expects import expect, equal, have_keys, have_key
+
+class has_location(Matcher):
+    def __init__(self, expected):
+        self._expected = expected
+
+    def _match(self, subject):
+        expect(subject).to(have_key('Location'))
+        return subject['Location'] == self._expected, []
 
 class raise_api_exception(Matcher):
     def __init__(self, expected, **kwargs):
