@@ -7,7 +7,7 @@
 #include "models/generator_result.hpp"
 
 #include "framework/generator/controller.hpp"
-#include "framework/dynamic/spool.hpp"
+#include "modules/dynamic/spool.hpp"
 
 #include "modules/timesync/chrono.hpp"
 

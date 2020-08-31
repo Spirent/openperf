@@ -9,7 +9,7 @@
 #include <tl/expected.hpp>
 #include <zmq.h>
 
-#include "framework/dynamic/api.hpp"
+#include "modules/dynamic/api.hpp"
 #include "modules/timesync/chrono.hpp"
 
 #include "common.hpp"

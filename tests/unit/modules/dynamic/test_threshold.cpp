@@ -1,6 +1,6 @@
 #include "catch.hpp"
 
-#include "framework/dynamic/threshold.hpp"
+#include "modules/dynamic/threshold.hpp"
 
 #include <random>
 

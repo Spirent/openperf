@@ -4,7 +4,7 @@
 #include <atomic>
 
 #include "framework/generator/controller.hpp"
-#include "framework/dynamic/spool.hpp"
+#include "modules/dynamic/spool.hpp"
 
 #include "task_cpu.hpp"
 #include "models/generator.hpp"

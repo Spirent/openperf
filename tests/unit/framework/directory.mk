@@ -8,7 +8,6 @@ TEST_SOURCES += \
 	framework/test_aligned_allocator.cpp \
 	framework/test_config_file_utils.cpp \
 	framework/test_config_utils.cpp \
-	framework/test_dynamic_results.cpp \
 	framework/test_enum_flags.cpp \
 	framework/test_hashtab.cpp \
 	framework/test_init_factory.cpp \

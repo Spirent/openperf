@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 
-#include "framework/dynamic/api.hpp"
+#include "modules/dynamic/api.hpp"
 #include "modules/timesync/chrono.hpp"
 
 namespace openperf::block::model {

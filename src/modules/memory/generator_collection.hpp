@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 #include "generator.hpp"
-#include "framework/dynamic/api.hpp"
+#include "modules/dynamic/api.hpp"
 
 namespace openperf::memory {
 
