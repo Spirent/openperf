@@ -131,28 +131,33 @@ void handler::list_tvlp(const Rest::Request&, Http::ResponseWriter response)
 void handler::create_tvlp(const Rest::Request& request,
                           Http::ResponseWriter response)
 {
-    auto model = json::parse(request.body()).get<model::TvlpConfiguration>();
+    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+    try {
+        auto model =
+            json::parse(request.body()).get<model::TvlpConfiguration>();
 
-    auto m = from_swagger(model);
-    auto api_reply = submit_request(
-        request::tvlp::create{.data = std::make_unique<tvlp_config_t>(m)});
+        auto m = from_swagger(model);
+        auto api_reply = submit_request(
+            request::tvlp::create{.data = std::make_unique<tvlp_config_t>(m)});
 
-    if (auto item = std::get_if<reply::tvlp::item>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.headers().add<Http::Header::Location>("/tvlp/"
-                                                       + item->data->id());
-        response.send(Http::Code::Created,
-                      to_swagger(*item->data).toJson().dump());
-        return;
+        if (auto item = std::get_if<reply::tvlp::item>(&api_reply)) {
+            response.headers().add<Http::Header::Location>("/tvlp/"
+                                                           + item->data->id());
+            response.send(Http::Code::Created,
+                          to_swagger(*item->data).toJson().dump());
+            return;
+        }
+
+        if (auto error = std::get_if<reply::error>(&api_reply)) {
+            response_error(response, *error);
+            return;
+        }
+    } catch (const json::exception& e) {
+
+        response.send(
+            Http::Code::Bad_Request,
+            nlohmann::json({{"code", e.id}, {"message", e.what()}}).dump());
     }
-
-    if (auto error = std::get_if<reply::error>(&api_reply)) {
-        response_error(response, *error);
-        return;
-    }
-
-    response.send(Http::Code::Internal_Server_Error);
 }
 
 void handler::get_tvlp(const Rest::Request& request,
