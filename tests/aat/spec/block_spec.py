@@ -7,81 +7,27 @@ from mamba import description, before, after
 from expects import *
 from expects.matchers import Matcher
 from common import Config, Service
-from common.helper import make_dynamic_results_config
-from common.helper import check_modules_exists
+from common.helper import (make_dynamic_results_config,
+                           check_modules_exists,
+                           get_dynamic_results_fields,
+                           generator_model,
+                           file_model,
+                           bulk_start_model,
+                           bulk_stop_model,
+                           wait_for_file_initialization_done)
 from common.matcher import (be_valid_block_device,
                             be_valid_block_file,
                             be_valid_block_generator,
                             be_valid_block_generator_result,
+                            has_location,
                             raise_api_exception,
                             be_valid_dynamic_results)
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                              os.environ.get('MAMBA_CONFIG', 'config.yaml')))
+BASE_URL = CONFIG.service().base_url
 
-
-def get_dynamic_results_fields():
-    fields = []
-    swagger_types = client.models.BlockGeneratorStats.swagger_types
-    for (name, type) in swagger_types.items():
-        if type in ['int', 'float']:
-            fields.append('read.' + name)
-            fields.append('write.' + name)
-    return fields
-
-
-def generator_model(resource_id = None):
-    bg = client.models.BlockGenerator()
-    bg.id = ''
-    bg.resource_id = resource_id
-    bg.running = False
-    bg.config = client.models.BlockGeneratorConfig()
-    bg.config.queue_depth = 1
-    bg.config.reads_per_sec = 1
-    bg.config.read_size = 1
-    bg.config.writes_per_sec = 1
-    bg.config.write_size = 1
-    bg.config.pattern = "random"
-    return bg
-
-
-def file_model(file_size = None, path = None):
-    ba = client.models.BlockFile()
-    ba.id = ''
-    ba.file_size = file_size
-    ba.path = path
-    ba.init_percent_complete = 0
-    ba.state = 'none'
-    return ba
-
-
-def bulk_start_model(ids):
-    bsbgr = client.models.BulkStartBlockGeneratorsRequest()
-    bsbgr.ids = ids
-    return bsbgr
-
-
-def bulk_stop_model(ids):
-    bsbgr = client.models.BulkStopBlockGeneratorsRequest()
-    bsbgr.ids = ids
-    return bsbgr
-
-def wait_for_file_initialization_done(api_client, file_id, timeout):
-    for i in range(timeout * 10):
-        f = api_client.get_block_file(file_id)
-        if f.init_percent_complete == 100:
-            return True
-        time.sleep(.1)
-    return False
-
-class has_location(Matcher):
-    def __init__(self, expected):
-        self._expected = expected
-
-    def _match(self, subject):
-        expect(subject).to(have_key('Location'))
-        return subject['Location'] == self._expected, []
 
 with description('Block,', 'block') as self:
     with description('REST API,'):
@@ -176,7 +122,7 @@ with description('Block,', 'block') as self:
                     expect(self._result[1]).to(equal(201))
 
                 with it('has valid Location header,'):
-                    expect(self._result[2]).to(has_location('/block-files/' + self._result[0].id))
+                    expect(self._result[2]).to(has_location(BASE_URL + '/block-files/' + self._result[0].id))
 
                 with it('has a valid block file'):
                     expect(self._result[0]).to(be_valid_block_file)
@@ -330,7 +276,7 @@ with description('Block,', 'block') as self:
                     expect(self._result[1]).to(equal(201))
 
                 with it('has valid Location header,'):
-                    expect(self._result[2]).to(has_location('/block-generators/' + self._result[0].id))
+                    expect(self._result[2]).to(has_location(BASE_URL + '/block-generators/' + self._result[0].id))
 
                 with it('has a valid block generator'):
                     expect(self._result[0]).to(be_valid_block_generator)
@@ -431,7 +377,7 @@ with description('Block,', 'block') as self:
                 with it('succeeded'):
                     result = self.api.start_block_generator_with_http_info(self.gen.id)
                     expect(result[1]).to(equal(201))
-                    expect(result[2]).to(has_location('/block-generator-results/' + result[0].id))
+                    expect(result[2]).to(has_location(BASE_URL + '/block-generator-results/' + result[0].id))
                     expect(result[0]).to(be_valid_block_generator_result)
 
             with description('running generator,'):
@@ -445,7 +391,7 @@ with description('Block,', 'block') as self:
                     result = self.api.start_block_generator_with_http_info(
                         self.gen.id, dynamic_results=dynamic, _return_http_data_only=False)
                     expect(result[1]).to(equal(201))
-                    expect(result[2]).to(has_location('/block-generator-results/' + result[0].id))
+                    expect(result[2]).to(has_location(BASE_URL + '/block-generator-results/' + result[0].id))
                     expect(result[0]).to(be_valid_block_generator_result)
                     expect(result[0].active).to(be_true)
                     expect(result[0].generator_id).to(equal(self.gen.id))
