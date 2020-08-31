@@ -22,7 +22,14 @@ namespace swagger = ::swagger::v1::model;
 
 std::optional<time_point> from_rfc3339(const std::string& from)
 {
-    std::stringstream is(from);
+    std::string date = from;
+    while (true) {
+        auto idx = date.find("%3A");
+        if (idx == std::string::npos) break;
+        date.replace(idx, 3, ":");
+    }
+
+    std::stringstream is(date);
     std::tm t = {};
     is >> std::get_time(&t, "%Y-%m-%dT%H:%M:%S");
     if (is.fail()) return std::nullopt;
@@ -32,7 +39,7 @@ std::optional<time_point> from_rfc3339(const std::string& from)
     // Calculate nanoseconds
     int d;
     double seconds = 0;
-    sscanf(from.c_str(), "%d-%d-%dT%d:%d:%lfZ", &d, &d, &d, &d, &d, &seconds);
+    sscanf(date.c_str(), "%d-%d-%dT%d:%d:%lfZ", &d, &d, &d, &d, &d, &seconds);
     dur += std::chrono::nanoseconds(static_cast<long>(std::nano::den * seconds)
                                     % std::nano::den);
     return time_point(dur);
