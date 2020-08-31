@@ -149,7 +149,7 @@ paths:
       description: Start an existing CPU generator.
       parameters:
         - $ref: "#/parameters/id"
-        - $ref: "../dynamic.yaml#/parameters/dynamic_results"
+        - $ref: "./modules/dynamic.yaml#/parameters/dynamic_results"
       responses:
         201:
           description: Created
@@ -197,7 +197,7 @@ paths:
                   type: string
                 minItems: 1
               dynamic_results:
-                $ref: "../dynamic.yaml#/definitions/DynamicResultsConfig"
+                $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"
             required:
               - ids
       responses:
@@ -396,7 +396,7 @@ definitions:
       stats:
         $ref: "#/definitions/CpuGeneratorStats"
       dynamic_results:
-        $ref: "../dynamic.yaml#/definitions/DynamicResults"
+        $ref: "./dynamic.yaml#/definitions/DynamicResults"
     required:
       - id
       - active
