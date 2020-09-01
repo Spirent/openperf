@@ -8,8 +8,8 @@ from expects.matchers import Matcher
 from common import Config, Service
 from common.helper import (make_dynamic_results_config,
                            check_modules_exists,
-                           get_dynamic_results_fields,
-                           generator_model,
+                           get_block_dynamic_results_fields,
+                           block_generator_model,
                            file_model,
                            bulk_start_model,
                            bulk_stop_model,
@@ -228,7 +228,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(file.id))
+                gen = self.api.create_block_generator(block_generator_model(file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
 
@@ -246,7 +246,7 @@ with description('Block,', 'block') as self:
                     self.file = file
                     wait_for_file_initialization_done(self.api, file.id, 1)
 
-                    gen = self.api.create_block_generator(generator_model(file.id))
+                    gen = self.api.create_block_generator(block_generator_model(file.id))
                     expect(gen).to(be_valid_block_generator)
                     self.gen = gen
 
@@ -269,7 +269,7 @@ with description('Block,', 'block') as self:
                     self.file = file
                     wait_for_file_initialization_done(self.api, file.id, 1)
 
-                    self._result = self.api.create_block_generator_with_http_info(generator_model(file.id))
+                    self._result = self.api.create_block_generator_with_http_info(block_generator_model(file.id))
 
                 with it('succeeded'):
                     expect(self._result[1]).to(equal(201))
@@ -289,7 +289,7 @@ with description('Block,', 'block') as self:
                     expect(file).to(be_valid_block_file)
                     wait_for_file_initialization_done(self.api, file.id, 1)
 
-                    generator = generator_model(file.id)
+                    generator = block_generator_model(file.id)
                     generator.config.ratio = client.models.BlockGeneratorReadWriteRatio()
                     generator.config.ratio.reads = 1
                     generator.config.ratio.writes = 1
@@ -308,31 +308,31 @@ with description('Block,', 'block') as self:
 
             with description('empty source id,'):
                 with it('returns 400'):
-                    gen = generator_model()
+                    gen = block_generator_model()
                     gen.id = None
                     expect(lambda: self.api.create_block_generator(gen)).to(raise_api_exception(400))
 
             with description('non-existent source id,'):
                 with it('returns 400'):
-                    gen = generator_model()
+                    gen = block_generator_model()
                     gen.id = 'f_oo'
                     expect(lambda: self.api.create_block_generator(gen)).to(raise_api_exception(400))
 
             with description('invalid pattern'):
                 with it('returns 400'):
-                    gen = generator_model()
+                    gen = block_generator_model()
                     gen.config.pattern = 'foo'
                     expect(lambda: self.api.create_block_generator(gen)).to(raise_api_exception(400))
 
             with description('invalid resource_id'):
                 with it('returns 400'):
-                    gen = generator_model()
+                    gen = block_generator_model()
                     gen.resource_id = 'f_oo'
                     expect(lambda: self.api.create_block_generator(gen)).to(raise_api_exception(400))
 
             with description('non-existent resource_id'):
                 with it('returns 400'):
-                    gen = generator_model()
+                    gen = block_generator_model()
                     gen.resource_id = 'foo'
                     expect(lambda: self.api.create_block_generator(gen)).to(raise_api_exception(400))
 
@@ -344,7 +344,7 @@ with description('Block,', 'block') as self:
                     self.file = file
                     wait_for_file_initialization_done(self.api, file.id, 1)
 
-                    gen = self.api.create_block_generator(generator_model(file.id))
+                    gen = self.api.create_block_generator(block_generator_model(file.id))
                     expect(gen).to(be_valid_block_generator)
                     self.gen = gen
 
@@ -368,7 +368,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(self.file.id))
+                gen = self.api.create_block_generator(block_generator_model(self.file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
 
@@ -386,7 +386,7 @@ with description('Block,', 'block') as self:
 
             with description('by existing ID with Dynamic Results'):
                 with it('started'):
-                    dynamic = make_dynamic_results_config(get_dynamic_results_fields())
+                    dynamic = make_dynamic_results_config(get_block_dynamic_results_fields())
                     result = self.api.start_block_generator_with_http_info(
                         self.gen.id, dynamic_results=dynamic, _return_http_data_only=False)
                     expect(result[1]).to(equal(201))
@@ -411,7 +411,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(file.id))
+                gen = self.api.create_block_generator(block_generator_model(file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
                 self.api.start_block_generator(self.gen.id)
@@ -436,7 +436,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(file.id))
+                gen = self.api.create_block_generator(block_generator_model(file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
 
@@ -472,7 +472,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(file.id))
+                gen = self.api.create_block_generator(block_generator_model(file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
                 res = self.api.start_block_generator(gen.id)
@@ -506,7 +506,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(file.id))
+                gen = self.api.create_block_generator(block_generator_model(file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
                 res = self.api.start_block_generator(self.gen.id)
@@ -555,7 +555,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(file.id))
+                gen = self.api.create_block_generator(block_generator_model(file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
                 res = self.api.start_block_generator(self.gen.id)
