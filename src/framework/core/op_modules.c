@@ -4,8 +4,7 @@
 #include <regex.h>
 #include <errno.h>
 #include <dlfcn.h>
-#include <linux/limits.h>
-#include <unistd.h>
+#include <limits.h>
 #include <dirent.h>
 #include <sys/stat.h>
 
@@ -19,17 +18,14 @@ static SLIST_HEAD(op_modules_list, op_module)
 
 static const size_t op_modules_err_str_max_len = 144;
 
+int op_find_executable_path(char* path);
+
 char op_plugin_modules_path[PATH_MAX];
 static int op_find_plugin_modules_path()
 {
     char *p, path[PATH_MAX];
-    int rv;
 
-    /* find executable path */
-    if ((rv = readlink("/proc/self/exe", path, PATH_MAX - 1)) == -1) return 1;
-
-    /* readlink doesn't provide null termination */
-    path[rv] = 0;
+    op_find_executable_path(path);
 
     /* strip filename */
     if ((p = strrchr(path, '/')) == 0) return 1;
