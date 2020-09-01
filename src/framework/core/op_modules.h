@@ -60,9 +60,6 @@ struct op_module
 
 /**
  * Load module libraries
- *
- * @param[in] module
- *   Pointer to an op_module structure describing the module to register
  */
 void op_modules_load();
 

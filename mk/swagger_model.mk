@@ -10,7 +10,7 @@ $(call op_check_vars,$(SWAGGER_REQ_VARS))
 SWAGGER_SOURCES :=
 SWAGGER_INCLUDES :=
 SWAGGER_DEPENDS :=
-SWAGGER_LDOPTS := -fPIC
+SWAGGER_FLAGS := -fPIC
 
 SWAGGER_SRC_DIR := $(OP_ROOT)/src/swagger
 SWAGGER_OBJ_DIR := $(OP_BUILD_ROOT)/obj/swagger
@@ -33,7 +33,7 @@ $(call op_include_dependencies,$(SWAGGER_DEPENDS))
 ###
 # Build rules
 ###
-$(eval $(call op_generate_build_rules,$(SWAGGER_SOURCES),SWAGGER_SRC_DIR,SWAGGER_OBJ_DIR,SWAGGER_DEPENDS,SWAGGER_LDOPTS))
+$(eval $(call op_generate_build_rules,$(SWAGGER_SOURCES),SWAGGER_SRC_DIR,SWAGGER_OBJ_DIR,SWAGGER_DEPENDS,SWAGGER_FLAGS))
 $(eval $(call op_generate_clean_rules,swagger_model,SWAGGER_TARGET,SWAGGER_OBJECTS))
 
 $(SWAGGER_TARGET): $(SWAGGER_OBJECTS)
