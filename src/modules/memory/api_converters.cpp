@@ -82,7 +82,7 @@ swagger::MemoryGeneratorConfig to_swagger(const config_t& config)
     return model;
 }
 
-swagger::MemoryGenerator to_swagger(const reply::generator::item::item_data& g)
+swagger::MemoryGenerator to_swagger(const reply::generator::item& g)
 {
     swagger::MemoryGenerator model;
     model.setId(g.id);
@@ -123,8 +123,7 @@ swagger::MemoryGeneratorStats to_swagger(const task_memory_stat& stat)
     return model;
 }
 
-swagger::MemoryGeneratorResult
-to_swagger(const reply::statistic::item::item_data& i)
+swagger::MemoryGeneratorResult to_swagger(const reply::statistic::item& i)
 {
     swagger::MemoryGeneratorResult model;
     model.setId(i.id);

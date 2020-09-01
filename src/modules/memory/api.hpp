@@ -37,13 +37,6 @@ struct info : message
 
 namespace generator {
 
-using config_ptr = std::unique_ptr<config_t>;
-struct create_data
-{
-    std::string id;
-    bool is_running;
-    config_t config;
-};
 struct list : message
 {};
 struct get : id_message
@@ -52,37 +45,27 @@ struct erase : id_message
 {};
 struct create
 {
-    std::unique_ptr<create_data> data;
+    std::string id;
+    bool is_running;
+    config_t config;
 };
 struct stop : id_message
 {};
 struct start
 {
-    struct start_data
-    {
-        std::string id;
-        dynamic::configuration dynamic_results;
-    };
-
-    std::unique_ptr<start_data> data;
+    std::string id;
+    dynamic::configuration dynamic_results;
 };
 
 namespace bulk {
 
-struct id_list
-{
-    std::unique_ptr<std::vector<std::string>> data;
-};
+using id_list = std::vector<std::string>;
+using create = std::vector<generator::create>;
 
 struct start
 {
-    struct start_data
-    {
-        std::vector<std::string> ids;
-        dynamic::configuration dynamic_results;
-    };
-
-    std::unique_ptr<start_data> data;
+    id_list ids;
+    dynamic::configuration dynamic_results;
 };
 
 struct stop : id_list
@@ -90,11 +73,6 @@ struct stop : id_list
 
 struct erase : id_list
 {};
-
-struct create
-{
-    std::unique_ptr<std::vector<create_data>> data;
-};
 
 } // namespace bulk
 } // namespace generator
@@ -126,57 +104,36 @@ struct error
         CUSTOM
     };
 
-    struct error_data
-    {
-        type_t type = NONE;
-        int value = 0;
-        std::string message;
-    };
-
-    std::unique_ptr<error_data> data;
+    type_t type = NONE;
+    int value = 0;
+    std::string message;
 };
+
 using info = memory_info::info_t;
 
 namespace generator {
 struct item
 {
-    struct item_data
-    {
-        std::string id;
-        bool is_running;
-        config_t config;
-        int32_t init_percent_complete;
-    };
-
-    std::unique_ptr<item_data> data;
+    std::string id;
+    bool is_running;
+    config_t config;
+    int32_t init_percent_complete;
 };
 
-struct list
-{
-    std::unique_ptr<std::vector<item::item_data>> data;
-};
+using list = std::vector<item>;
 
 } // namespace generator
 
 namespace statistic {
 struct item
 {
-    struct item_data
-    {
-        std::string id;
-        std::string generator_id;
-        internal::memory_stat stat;
-        dynamic::results dynamic_results;
-    };
-
-    using data_ptr = std::unique_ptr<item_data>;
-    data_ptr data;
+    std::string id;
+    std::string generator_id;
+    internal::memory_stat stat;
+    dynamic::results dynamic_results;
 };
 
-struct list
-{
-    std::unique_ptr<std::vector<item::item_data>> data;
-};
+using list = std::vector<item>;
 
 } // namespace statistic
 } // namespace reply
