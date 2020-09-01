@@ -21,7 +21,7 @@ FW_SOURCES :=
 FW_DEPENDS :=
 FW_LDLIBS  :=
 
-FW_MODULES := core memory generator dynamic
+FW_MODULES := core memory generator
 
 # Load each module's directory.mk file
 include $(patsubst %, $(FW_SRC_DIR)/%/directory.mk, $(FW_MODULES))

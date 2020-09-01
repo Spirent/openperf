@@ -13,7 +13,7 @@
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
 
-#include "framework/dynamic/api.hpp"
+#include "modules/dynamic/api.hpp"
 
 namespace openperf::message {
 struct serialized_message;

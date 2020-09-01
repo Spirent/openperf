@@ -10,7 +10,7 @@
 
 #include "generator.hpp"
 
-#include "framework/dynamic/api.hpp"
+#include "modules/dynamic/api.hpp"
 
 namespace openperf::cpu::generator {
 

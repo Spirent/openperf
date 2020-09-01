@@ -6,7 +6,7 @@
 #include "modules/timesync/chrono.hpp"
 #include "cpu/cpu_stat.hpp"
 
-#include "framework/dynamic/api.hpp"
+#include "modules/dynamic/api.hpp"
 
 namespace openperf::cpu::model {
 

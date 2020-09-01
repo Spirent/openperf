@@ -6,7 +6,7 @@
 #include <memory>
 #include <vector>
 
-#include "dynamic/threshold.hpp"
+#include "threshold.hpp"
 
 namespace swagger::v1::model {
 class DynamicResultsConfig;

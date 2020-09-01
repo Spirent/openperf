@@ -3,7 +3,7 @@
 
 #include "framework/config/op_config_utils.hpp"
 #include "framework/core/op_core.h"
-#include "framework/dynamic/api.hpp"
+#include "modules/dynamic/api.hpp"
 #include "framework/message/serialized_message.hpp"
 #include "modules/api/api_route_handler.hpp"
 

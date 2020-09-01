@@ -16,8 +16,9 @@ SOURCES := main.c
 OBJECTS := $(call op_generate_objects,$(SOURCES),$(BUILD_DIR))
 
 BUILD_DEPS := \
-	cpu \
 	block \
+	cpu \
+	dynamic \
 	memory \
 	packet_analyzer \
 	packet_capture \
