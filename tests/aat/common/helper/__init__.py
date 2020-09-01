@@ -27,12 +27,25 @@ from common.helper.capture import (make_capture_config,
 from common.helper.modules import (check_modules_exists)
 
 # block.py
-from common.helper.block import (get_dynamic_results_fields,
-                                generator_model,
-                                file_model,
-                                bulk_start_model,
-                                bulk_stop_model,
-                                wait_for_file_initialization_done)
+from common.helper.block import (get_block_dynamic_results_fields,
+                                 block_generator_model,
+                                 file_model,
+                                 bulk_start_model,
+                                 bulk_stop_model,
+                                 wait_for_file_initialization_done)
 
-# block.py
-from common.helper.tvlp import (tvlp_model, tvlp_block_profile_model)
+# memory.py
+from common.helper.memory import (get_memory_dynamic_results_fields,
+                                  memory_generator_model,
+                                  wait_for_buffer_initialization_done)
+
+# cpu.py
+from common.helper.cpu import (cpu_generator_model,
+                                get_cpu_dynamic_results_fields)
+
+# tvlp.py
+from common.helper.tvlp import (tvlp_model,
+                                tvlp_block_profile_model,
+                                tvlp_memory_profile_model,
+                                tvlp_cpu_profile_model)
+
