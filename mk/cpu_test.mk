@@ -70,7 +70,7 @@ else
 	endif
 endif
 
-CPU_TEST_FLAGS := -mpclmul $(addprefix -D,$(CPU_TEST_DEFINES))
+CPU_TEST_FLAGS := $(addprefix -D,$(CPU_TEST_DEFINES))
 CPU_TEST_LIBRARY := openperf_cpu_test
 CPU_TEST_TARGET := $(CPU_TEST_LIB_DIR)/lib$(CPU_TEST_LIBRARY).a
 
