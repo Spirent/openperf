@@ -1,5 +1,5 @@
 FW_DEPENDS += libzmq
-FW_LDLIBS += -pthread
+FW_LDLIBS += -pthread -ldl
 
 FW_SOURCES += \
 	core/op_cpuset.c \
