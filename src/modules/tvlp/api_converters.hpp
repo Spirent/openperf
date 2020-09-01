@@ -170,7 +170,7 @@ static swagger::TvlpConfiguration to_swagger(const config_t& config)
     }
     if (config.profile().cpu) {
         auto cpu = std::make_shared<swagger::TvlpProfile_cpu>();
-        auto cpu_vector = config.profile().memory.value();
+        auto cpu_vector = config.profile().cpu.value();
         std::transform(
             cpu_vector.begin(),
             cpu_vector.end(),
@@ -189,7 +189,7 @@ static swagger::TvlpConfiguration to_swagger(const config_t& config)
     }
     if (config.profile().packet) {
         auto packet = std::make_shared<swagger::TvlpProfile_packet>();
-        auto packet_vector = config.profile().memory.value();
+        auto packet_vector = config.profile().packet.value();
         std::transform(
             packet_vector.begin(),
             packet_vector.end(),

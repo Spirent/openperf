@@ -95,16 +95,19 @@ api_reply server::handle_request(const request::tvlp::create& request)
 
     if (auto id_check =
             config::op_config_validate_id_string(request.data->id());
-        !id_check)
+        !id_check) {
         return to_error(reply::error_data::INVALID_ID);
+    }
 
     auto result = m_controller_stack->create(*request.data);
     if (!result) {
         return (
             to_error(reply::error_data::BAD_REQUEST_ERROR, 0, result.error()));
     }
+
     auto reply = reply::tvlp::item{
         .data = std::make_unique<tvlp_config_t>(*result.value())};
+
     return reply;
 }
 
