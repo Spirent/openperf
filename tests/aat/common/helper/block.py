@@ -1,7 +1,7 @@
 import client.api
 import client.models
 
-def get_dynamic_results_fields():
+def get_block_dynamic_results_fields():
     fields = []
     swagger_types = client.models.BlockGeneratorStats.swagger_types
     for (name, type) in swagger_types.items():
@@ -20,7 +20,7 @@ def config_model():
     config.pattern = "random"
     return config
 
-def generator_model(resource_id = None):
+def block_generator_model(resource_id = None):
     bg = client.models.BlockGenerator()
     bg.id = ''
     bg.resource_id = resource_id
