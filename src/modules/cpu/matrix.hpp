@@ -6,21 +6,29 @@
 
 namespace openperf::cpu::internal {
 
-ISPC_FUNCTION_WRAPPER_INIT(
-    void, multiplicate_matrix_double, double*, double*, double*, uint32_t);
-ISPC_FUNCTION_WRAPPER_INIT(
-    void, multiplicate_matrix_float, float*, float*, float*, uint32_t);
+ISPC_FUNCTION_WRAPPER_INIT(void,
+                           multiplicate_matrix_double,
+                           const double[],
+                           const double[],
+                           double[],
+                           uint32_t);
+ISPC_FUNCTION_WRAPPER_INIT(void,
+                           multiplicate_matrix_float,
+                           const float[],
+                           const float[],
+                           float[],
+                           uint32_t);
 ISPC_FUNCTION_WRAPPER_INIT(void,
                            multiplicate_matrix_uint32,
-                           uint32_t*,
-                           uint32_t*,
-                           uint32_t*,
+                           const uint32_t[],
+                           const uint32_t[],
+                           uint32_t[],
                            uint32_t);
 ISPC_FUNCTION_WRAPPER_INIT(void,
                            multiplicate_matrix_uint64,
-                           uint64_t*,
-                           uint64_t*,
-                           uint64_t*,
+                           const uint64_t[],
+                           const uint64_t[],
+                           uint64_t[],
                            uint32_t);
 
 } // namespace openperf::cpu::internal
