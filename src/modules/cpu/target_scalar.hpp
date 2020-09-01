@@ -13,7 +13,7 @@ private:
 
     std::vector<T> matrix_a;
     std::vector<T> matrix_b;
-    std::vector<T> matrix_r;
+    mutable std::vector<T> matrix_r;
 
 public:
     target_scalar()
@@ -34,14 +34,13 @@ public:
 
     uint64_t operation() const override
     {
-        auto& mx_r = const_cast<target_scalar<T>*>(this)->matrix_r;
         for (size_t i = 0; i < size; i++) {
             for (size_t j = 0; j < size; j++) {
                 T sum = 0;
                 for (size_t k = 0; k < size; k++) {
                     sum += matrix_a[i * size + k] * matrix_b[k * size + j];
                 }
-                mx_r[i * size + j] = sum;
+                matrix_r[i * size + j] = sum;
             }
         }
 

@@ -9,14 +9,14 @@ namespace openperf::cpu::internal {
 
 template <class T> class target_ispc : public target
 {
-    using function_t = void (*)(T*, T*, T*, uint32_t);
+    using function_t = void (*)(const T[], const T[], T[], uint32_t);
 
 private:
     constexpr static size_t size = 32;
 
     std::vector<T> matrix_a;
     std::vector<T> matrix_b;
-    std::vector<T> matrix_r;
+    mutable std::vector<T> matrix_r;
     function_t m_operation;
 
 public:
@@ -44,11 +44,7 @@ public:
 
     uint64_t operation() const override
     {
-        auto cthis = const_cast<target_ispc*>(this);
-        m_operation(cthis->matrix_a.data(),
-                    cthis->matrix_b.data(),
-                    cthis->matrix_r.data(),
-                    size);
+        m_operation(matrix_a.data(), matrix_b.data(), matrix_r.data(), size);
         return 1;
     }
 };

@@ -69,7 +69,7 @@ else
 	endif
 endif
 
-CPU_FLAGS := -mpclmul $(addprefix -D,$(CPU_DEFINES))
+CPU_FLAGS := $(addprefix -D,$(CPU_DEFINES))
 CPU_LIBRARY := openperf_cpu
 CPU_TARGET := $(CPU_LIB_DIR)/lib$(CPU_LIBRARY).a
 
