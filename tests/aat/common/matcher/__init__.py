@@ -70,4 +70,5 @@ from common.matcher.tvlp import be_valid_tvlp_configuration
 from common.matcher.tvlp import be_valid_block_tvlp_profile
 from common.matcher.tvlp import be_valid_memory_tvlp_profile
 from common.matcher.tvlp import be_valid_cpu_tvlp_profile
+from common.matcher.tvlp import be_valid_packet_tvlp_profile
 from common.matcher.tvlp import be_valid_tvlp_result
