@@ -16,8 +16,7 @@ def get_cpu_dynamic_results_fields(generator_config):
 
     return fields
 
-
-def cpu_generator_model(api_client, running = False, id = ''):
+def config_model():
     core_config_target = client.models.CpuGeneratorCoreConfigTargets()
     core_config_target.instruction_set = 'scalar'
     core_config_target.data_type = 'float32';
@@ -30,8 +29,11 @@ def cpu_generator_model(api_client, running = False, id = ''):
     config = client.models.CpuGeneratorConfig()
     config.cores = [core_config]
 
+    return config
+
+def cpu_generator_model(api_client, running = False, id = ''):
     gen = client.models.CpuGenerator()
     gen.running = running
-    gen.config = config
+    gen.config = config_model()
     gen.id = id
     return gen

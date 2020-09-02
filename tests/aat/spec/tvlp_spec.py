@@ -9,34 +9,39 @@ from expects.matchers import Matcher
 from common import Config, Service
 from common.helper import check_modules_exists
 
-# Block generator
+# Generators
 from common.helper import (check_modules_exists,
                            file_model,
                            bulk_start_model,
                            bulk_stop_model,
                            wait_for_file_initialization_done)
 
+from common.helper.packet import get_first_port_id
 
-from common.matcher import (be_valid_block_file,
+from common.matcher import (has_location,
+                            raise_api_exception,
+                            be_valid_block_file,
                             be_valid_block_generator,
                             be_valid_block_generator_result,
                             be_valid_memory_generator,
                             be_valid_memory_generator_result,
                             be_valid_cpu_generator,
                             be_valid_cpu_generator_result,
-                            has_location,
-                            raise_api_exception)
+                            be_valid_packet_generator,
+                            be_valid_packet_generator_result)
 
 # TVLP
 from common.helper import (tvlp_model,
                            tvlp_block_profile_model,
                            tvlp_memory_profile_model,
-                           tvlp_cpu_profile_model)
+                           tvlp_cpu_profile_model,
+                           tvlp_packet_profile_model)
 
 from common.matcher import (be_valid_tvlp_configuration,
                             be_valid_block_tvlp_profile,
                             be_valid_memory_tvlp_profile,
                             be_valid_cpu_tvlp_profile,
+                            be_valid_packet_tvlp_profile,
                             be_valid_tvlp_result)
 
 
@@ -60,12 +65,14 @@ with description('TVLP,', 'tvlp') as self:
             self.block_api = client.api.BlockGeneratorApi(self.service.client())
             self.memory_api = client.api.MemoryGeneratorApi(self.service.client())
             self.cpu_api = client.api.CpuGeneratorApi(self.service.client())
+            self.packet_api = client.api.PacketGeneratorsApi(self.service.client())
             self.tvlp_api = client.api.TVLPApi(self.service.client())
             if not check_modules_exists(self.service.client(), 'tvlp'):
                 self.skip()
             self._block_linked = check_modules_exists(self.service.client(), 'block')
             self._memory_linked = check_modules_exists(self.service.client(), 'memory')
             self._cpu_linked = check_modules_exists(self.service.client(), 'cpu')
+            self._packet_linked = check_modules_exists(self.service.client(), 'packet-generator')
 
         with description('create,'):
             with description("succeeds,"):
@@ -77,6 +84,9 @@ with description('TVLP,', 'tvlp') as self:
                         t.profile.memory = tvlp_memory_profile_model(1, 100000000)
                     if self._cpu_linked:
                         t.profile.cpu = tvlp_cpu_profile_model(1, 100000000)
+                    if self._packet_linked:
+                        t.profile.packet = tvlp_packet_profile_model(1, 100000000, get_first_port_id(self.service.client()))
+
                     self._config = self.tvlp_api.create_tvlp_configuration_with_http_info(t)
 
                 with it('code Created'):
@@ -103,6 +113,11 @@ with description('TVLP,', 'tvlp') as self:
                         self.skip()
                     expect(self._config[0].profile.cpu).to(be_valid_cpu_tvlp_profile)
 
+                with it('has a valid packet profile'):
+                    if not self._packet_linked:
+                        self.skip()
+                    expect(self._config[0].profile.packet).to(be_valid_packet_tvlp_profile)
+
             with description("no profile entries,"):
                 with it('returns 400'):
                     expect(lambda: self.tvlp_api.create_tvlp_configuration(tvlp_model())).to(raise_api_exception(400))
@@ -117,6 +132,15 @@ with description('TVLP,', 'tvlp') as self:
                         t.profile.block.series[0].resource_id = None
                         expect(lambda: self.tvlp_api.create_tvlp_configuration(t)).to(raise_api_exception(400))
 
+                with description('packet,'):
+                    with it('returns 400'):
+                        if not self._packet_linked:
+                            self.skip()
+                        t = tvlp_model()
+                        t.profile.packet = tvlp_packet_profile_model(1, 100000000, "tmp")
+                        t.profile.packet.series[0].target_id = None
+                        expect(lambda: self.tvlp_api.create_tvlp_configuration(t)).to(raise_api_exception(400))
+
         with description('list,'):
             with before.each:
                 t = tvlp_model()
@@ -126,6 +150,9 @@ with description('TVLP,', 'tvlp') as self:
                     t.profile.memory = tvlp_memory_profile_model(1, 100000000)
                 if self._cpu_linked:
                     t.profile.cpu = tvlp_cpu_profile_model(1, 100000000)
+                if self._packet_linked:
+                    t.profile.packet = tvlp_packet_profile_model(1, 100000000, get_first_port_id(self.service.client()))
+
                 self._config = self.tvlp_api.create_tvlp_configuration_with_http_info(t)
 
             with it('succeeds'):
@@ -145,6 +172,8 @@ with description('TVLP,', 'tvlp') as self:
                         t.profile.memory = tvlp_memory_profile_model(1, 100000000)
                     if self._cpu_linked:
                         t.profile.cpu = tvlp_cpu_profile_model(1, 100000000)
+                    if self._packet_linked:
+                        t.profile.packet = tvlp_packet_profile_model(1, 100000000, get_first_port_id(self.service.client()))
                     self._config = self.tvlp_api.create_tvlp_configuration(t)
 
                 with it('succeeds'):
@@ -168,6 +197,8 @@ with description('TVLP,', 'tvlp') as self:
                         t.profile.memory = tvlp_memory_profile_model(1, 100000000)
                     if self._cpu_linked:
                         t.profile.cpu = tvlp_cpu_profile_model(1, 100000000)
+                    if self._packet_linked:
+                        t.profile.packet = tvlp_packet_profile_model(1, 100000000, get_first_port_id(self.service.client()))
                     self._config = self.tvlp_api.create_tvlp_configuration(t)
 
                 with it('succeeds'):
@@ -197,6 +228,8 @@ with description('TVLP,', 'tvlp') as self:
                     t.profile.memory = tvlp_memory_profile_model(1, 100000000)
                 if self._cpu_linked:
                     t.profile.cpu = tvlp_cpu_profile_model(1, 100000000)
+                if self._packet_linked:
+                    t.profile.packet = tvlp_packet_profile_model(1, 100000000, get_first_port_id(self.service.client()))
                 self._config = self.tvlp_api.create_tvlp_configuration(t)
 
             with description('by existing id,'):
@@ -245,6 +278,8 @@ with description('TVLP,', 'tvlp') as self:
                     t.profile.memory = tvlp_memory_profile_model(1, 100000000)
                 if self._cpu_linked:
                     t.profile.cpu = tvlp_cpu_profile_model(1, 100000000)
+                if self._packet_linked:
+                    t.profile.packet = tvlp_packet_profile_model(1, 100000000, get_first_port_id(self.service.client()))
                 self._config = self.tvlp_api.create_tvlp_configuration(t)
 
                 result = self.tvlp_api.start_tvlp_configuration_with_http_info(self._config.id)
@@ -277,6 +312,8 @@ with description('TVLP,', 'tvlp') as self:
                     t.profile.memory = tvlp_memory_profile_model(1, 100000000)
                 if self._cpu_linked:
                     t.profile.cpu = tvlp_cpu_profile_model(1, 100000000)
+                if self._packet_linked:
+                    t.profile.packet = tvlp_packet_profile_model(1, 100000000, get_first_port_id(self.service.client()))
                 self._config = self.tvlp_api.create_tvlp_configuration(t)
 
                 self._result = self.tvlp_api.start_tvlp_configuration_with_http_info(self._config.id)
@@ -316,6 +353,8 @@ with description('TVLP,', 'tvlp') as self:
                     t.profile.memory = tvlp_memory_profile_model(1, 100000000)
                 if self._cpu_linked:
                     t.profile.cpu = tvlp_cpu_profile_model(1, 100000000)
+                if self._packet_linked:
+                    t.profile.packet = tvlp_packet_profile_model(1, 100000000, get_first_port_id(self.service.client()))
                 self._config = self.tvlp_api.create_tvlp_configuration(t)
 
                 result = self.tvlp_api.start_tvlp_configuration_with_http_info(self._config.id)
@@ -346,6 +385,13 @@ with description('TVLP,', 'tvlp') as self:
                 for result in self._result.cpu:
                     expect(result).to(be_valid_cpu_generator_result)
 
+            with it('has a valid packet results'):
+                if not self._packet_linked:
+                    self.skip()
+                expect(self._result.packet).not_to(be_empty)
+                for result in self._result.packet:
+                    expect(result).to(be_valid_packet_generator_result)
+
         with description('delete results,'):
             with before.each:
                 file = self.block_api.create_block_file(file_model(1024, '/tmp/foo'))
@@ -360,6 +406,8 @@ with description('TVLP,', 'tvlp') as self:
                     t.profile.memory = tvlp_memory_profile_model(1, 100000000)
                 if self._cpu_linked:
                     t.profile.cpu = tvlp_cpu_profile_model(1, 100000000)
+                if self._packet_linked:
+                    t.profile.packet = tvlp_packet_profile_model(1, 100000000, get_first_port_id(self.service.client()))
                 self._config = self.tvlp_api.create_tvlp_configuration(t)
 
                 self._result = self.tvlp_api.start_tvlp_configuration_with_http_info(self._config.id)
@@ -397,8 +445,7 @@ with description('TVLP,', 'tvlp') as self:
 
             try:
                 for gen in self.block_api.list_block_generators():
-                    if gen.running:
-                        self.block_api.stop_block_generator(gen.id)
+                    self.block_api.stop_block_generator(gen.id)
                     self.block_api.delete_block_generator(gen.id)
             except AttributeError:
                 pass
@@ -417,15 +464,8 @@ with description('TVLP,', 'tvlp') as self:
 
             try:
                 for gen in self.memory_api.list_memory_generators():
-                    if gen.running:
-                        self.memory_api.stop_memory_generator(gen.id)
+                    self.memory_api.stop_memory_generator(gen.id)
                     self.memory_api.delete_memory_generator(gen.id)
-            except AttributeError:
-                pass
-
-            try:
-                for file in self.memory_api.list_memory_files():
-                    self.memory_api.delete_memory_file(file.id)
             except AttributeError:
                 pass
 
@@ -452,6 +492,12 @@ with description('TVLP,', 'tvlp') as self:
             try:
                 for res in self.cpu_api.list_cpu_generator_results():
                     self.cpu_api.delete_cpu_generator_results(res.id)
+            except AttributeError:
+                pass
+
+            try:
+                for gen in self.packet_api.list_packet_generators():
+                    self.packet_api.delete_packet_generators()
             except AttributeError:
                 pass
 

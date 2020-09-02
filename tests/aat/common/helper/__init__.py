@@ -14,8 +14,7 @@ from common.helper.interface import (empty_interface,
                                      make_interface_protocols)
 
 # traffic.py
-from common.helper.traffic import (make_generator_config,
-                                   make_traffic_template)
+from common.helper.traffic import make_traffic_template
 
 # capture.py
 from common.helper.capture import (make_capture_config,
@@ -41,11 +40,20 @@ from common.helper.memory import (get_memory_dynamic_results_fields,
 
 # cpu.py
 from common.helper.cpu import (cpu_generator_model,
-                                get_cpu_dynamic_results_fields)
+                               get_cpu_dynamic_results_fields)
+
+# packet.py
+from common.helper.packet import (get_first_port_id,
+                                  default_traffic_packet_template_with_seq_modifiers,
+                                  default_traffic_packet_template_with_list_modifiers,
+                                  packet_generator_config,
+                                  packet_generator_model,
+                                  packet_generator_models)
 
 # tvlp.py
 from common.helper.tvlp import (tvlp_model,
                                 tvlp_block_profile_model,
                                 tvlp_memory_profile_model,
-                                tvlp_cpu_profile_model)
+                                tvlp_cpu_profile_model,
+                                tvlp_packet_profile_model)
 

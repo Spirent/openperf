@@ -15,13 +15,11 @@ public:
     ~packet_tvlp_worker_t() = default;
 
 protected:
-    tl::expected<std::string, std::string>
-    send_create(const nlohmann::json&, const std::string&) override;
-    tl::expected<stat_pair_t, std::string>
-    send_start(const std::string&) override;
+    tl::expected<std::string, std::string> send_create(const nlohmann::json&,
+                                                       const std::string&) override;
+    tl::expected<stat_pair_t, std::string> send_start(const std::string&) override;
     tl::expected<void, std::string> send_stop(const std::string&) override;
-    tl::expected<nlohmann::json, std::string>
-    send_stat(const std::string&) override;
+    tl::expected<nlohmann::json, std::string> send_stat(const std::string&) override;
     tl::expected<void, std::string> send_delete(const std::string&) override;
 };
 
