@@ -52,8 +52,6 @@ public:
 #define ISPC_FUNCTION_WRAPPER_INIT_FUNCTION_DATA(f)                            \
     {                                                                          \
         {instruction_set::SCALAR, scalar::f},                                  \
-            {instruction_set::AUTO,                                            \
-             (ispc::automatic_enabled ? simd::f : nullptr)},                   \
             {instruction_set::SSE2,                                            \
              (ispc::sse2_enabled ? simd::f##_sse2 : nullptr)},                 \
             {instruction_set::SSE4,                                            \

@@ -1,6 +1,5 @@
-
 #include <cinttypes>
-#include "../matrix.hpp"
+#include "cpu/matrix.hpp"
 
 namespace openperf::cpu::internal::scalar {
 

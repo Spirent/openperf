@@ -1,5 +1,5 @@
 #
-# Makefile component for block code
+# Makefile component for CPU generator code
 #
 
 CPU_REQ_VARS := \

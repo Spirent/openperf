@@ -252,7 +252,6 @@ bool available(instruction_set t)
      */
     switch (t) {
     case instruction_set::SCALAR:
-    case instruction_set::AUTO:
         /* No checks are needed for scalar or auto code */
         return (true);
     case instruction_set::SSE2:
