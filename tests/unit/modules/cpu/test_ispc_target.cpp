@@ -1,33 +1,33 @@
-
 #include <random>
 #include <vector>
 #include <algorithm>
-#include <iostream>
+
+#define ISPC_TARGET_SSE2
+#define ISPC_TARGET_SSE4
+#define ISPC_TARGET_AVX
+#define ISPC_TARGET_AVX2
+#define ISPC_TARGET_AVX512SKX
 
 #include "catch.hpp"
 #include "cpu/matrix.hpp"
-#include "cpu/instruction_set.hpp"
-#include "cpu/function_wrapper.hpp"
 
 using openperf::cpu::instruction_set;
 using namespace openperf::cpu::internal;
 
-template <typename T> void matrix_print(const T* m, int size)
-{
-    for (int i = 0; i < size * size; i++) {
-        std::cout << m[i] << "\t";
-        if ((i + 1) % size == 0) std::cout << std::endl;
-    }
-    std::cout << std::endl;
-}
+using function_t = void (*)(const uint32_t[],
+                            const uint32_t[],
+                            uint32_t[],
+                            uint32_t);
 
-using function_t = void (*)(uint32_t*, uint32_t*, uint32_t*, uint32_t);
 auto wrapper = function_wrapper<function_t>();
 
 TEST_CASE("CPU matrix multiplication", "[cpu]")
 {
     SECTION("SCALAR")
     {
+        REQUIRE(enabled(instruction_set::SCALAR));
+        REQUIRE(available(instruction_set::SCALAR));
+
         // Matrix A:
         // {12, 52, 49, 20},
         // {94, 59, 19, 58},
@@ -70,8 +70,6 @@ TEST_CASE("CPU matrix multiplication", "[cpu]")
         scalar::multiplicate_matrix_uint32(
             matrix_a.data(), matrix_b.data(), matrix_c.data(), 4);
 
-        // matrix_print(matrix_c.data(), 4);
-        // matrix_print(matrix_r.data(), 4);
         REQUIRE(std::equal(matrix_c.begin(), matrix_c.end(), matrix_r.begin()));
     }
 
@@ -95,50 +93,61 @@ TEST_CASE("CPU matrix multiplication", "[cpu]")
 
         std::generate(matrix_a.begin(), matrix_a.end(), get_random);
         std::generate(matrix_b.begin(), matrix_b.end(), get_random);
-        scalar::multiplicate_matrix_uint32(
-            matrix_a.data(), matrix_b.data(), matrix_r.data(), matrix_size);
 
-        auto instruction_list = {instruction_set::SCALAR,
-                                 instruction_set::SSE2,
+        std::string benchmark_name = "Multiplicate matrix "
+                                     + std::to_string(matrix_size) + "x"
+                                     + std::to_string(matrix_size);
+
+        BENCHMARK(benchmark_name + " SCALAR")
+        {
+            scalar::multiplicate_matrix_uint32(
+                matrix_a.data(), matrix_b.data(), matrix_r.data(), matrix_size);
+        }
+
+        auto instruction_list = {instruction_set::SSE2,
                                  instruction_set::SSE4,
                                  instruction_set::AVX,
                                  instruction_set::AVX2,
                                  instruction_set::AVX512};
 
+        bool vector_test_was_executed = false;
         for (auto set : instruction_list) {
+            auto instruction = std::string(to_string(set));
+            std::for_each(instruction.begin(), instruction.end(), [](auto& c) {
+                c = ::toupper(c);
+            });
+
             if (!enabled(set)) {
-                WARN("Instruction set " << to_string(set) << " not enabled");
+                WARN("Instruction set " << instruction << " not enabled");
                 continue;
             }
 
             if (!available(set)) {
                 WARN("Skipping "
-                     << to_string(set)
+                     << instruction
                      << " function tests due to lack of host CPU support.");
                 continue;
             }
 
             if (auto mul = wrapper.function(set); mul != nullptr) {
+                vector_test_was_executed = true;
                 std::fill(matrix_c.begin(), matrix_c.end(), 0);
 
-                std::string benchmark_name = "Multiplicate matrix "
-                                             + std::to_string(matrix_size) + "x"
-                                             + std::to_string(matrix_size) + " "
-                                             + std::string(to_string(set));
-
-                BENCHMARK(benchmark_name)
+                BENCHMARK(benchmark_name + " " + instruction)
                 {
-                    return mul(matrix_a.data(),
-                               matrix_b.data(),
-                               matrix_c.data(),
-                               matrix_size);
+                    mul(matrix_a.data(),
+                        matrix_b.data(),
+                        matrix_c.data(),
+                        matrix_size);
                 }
 
                 REQUIRE(std::equal(
-                    matrix_c.begin(), matrix_c.end(), matrix_r.begin()));
+                    matrix_r.begin(), matrix_r.end(), matrix_c.begin()));
             } else {
-                WARN("Instruction set " << to_string(set) << " wasn't tested");
+                WARN("Instruction set " << instruction << " wasn't tested");
             }
         }
+
+        REQUIRE(vector_test_was_executed);
     }
 }

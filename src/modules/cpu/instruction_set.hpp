@@ -12,7 +12,6 @@ namespace openperf::cpu {
 enum class instruction_set : uint8_t {
     NONE = 0,
     SCALAR,
-    AUTO,
     SSE2,
     SSE4,
     AVX,
@@ -33,7 +32,6 @@ constexpr std::string_view to_string(instruction_set t)
     constexpr auto instruction_set_names =
         associative_array<instruction_set, std::string_view>(
             std::pair(instruction_set::SCALAR, "scalar"),
-            std::pair(instruction_set::AUTO, "auto"),
             std::pair(instruction_set::SSE2, "sse2"),
             std::pair(instruction_set::SSE4, "sse4"),
             std::pair(instruction_set::AVX, "avx"),
@@ -67,7 +65,6 @@ constexpr bool enabled(instruction_set t)
 {
     constexpr auto sets_enabled = associative_array<instruction_set, bool>(
         std::pair(instruction_set::SCALAR, true),
-        std::pair(instruction_set::AUTO, ispc::automatic_enabled),
         std::pair(instruction_set::SSE2, ispc::sse2_enabled),
         std::pair(instruction_set::SSE4, ispc::sse4_enabled),
         std::pair(instruction_set::AVX, ispc::avx_enabled),
