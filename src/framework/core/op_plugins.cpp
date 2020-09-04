@@ -1,6 +1,6 @@
-#include <assert.h>
+#include <cassert>
 #include <dlfcn.h>
-#include <limits.h>
+#include <climits>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <filesystem>
@@ -13,7 +13,7 @@
 namespace openperf::core {
 
 static std::optional<std::filesystem::path>
-find_plugin_modules_path(int argc, char* const argv[])
+find_plugin_modules_path(int argc __attribute__((unused)), char* const argv[])
 {
     auto path = std::filesystem::canonical(std::filesystem::path(argv[0]))
                     .remove_filename();
@@ -92,13 +92,13 @@ void op_modules_load(int argc, char* const argv[])
         auto path = plugin_modules_path.value();
         path += std::string("/") + entry;
         auto handle = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
-        if (handle == 0) {
+        if (!handle) {
             OP_LOG(OP_LOG_CRITICAL, "Failed to load plugin: %s\n", dlerror());
             assert(false);
         }
 
         auto reg = (op_module*)dlsym(handle, "op_plugin_module_registration");
-        if (reg == 0) {
+        if (!reg) {
             /* This should never happen unless registration process was changed
              */
             OP_LOG(OP_LOG_ERROR, "Missing module registration in plugin \n");
