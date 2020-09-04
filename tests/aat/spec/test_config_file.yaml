@@ -3,6 +3,10 @@ core:
     level: debug
 
 modules:
+  plugins:
+    load:
+      - "libopenperf_tvlp.so"
+
   api:
     port: 9000
 

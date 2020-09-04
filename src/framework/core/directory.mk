@@ -1,5 +1,5 @@
 FW_DEPENDS += libzmq
-FW_LDLIBS += -pthread -ldl
+FW_LDLIBS += -pthread
 
 FW_SOURCES += \
 	core/op_cpuset.c \
@@ -10,18 +10,18 @@ FW_SOURCES += \
 	core/op_log.c \
 	core/op_modules.c \
 	core/op_options.c \
+	core/op_plugins.cpp \
 	core/op_socket.c \
 	core/op_task.c \
 	core/op_version.c
 
 ifeq ($(PLATFORM), linux)
-	FW_LDLIBS += -rdynamic
+	FW_LDLIBS += -rdynamic -ldl
 	FW_SOURCES += \
 	core/op_event_loop_epoll.c \
 	core/op_exit_backtrace.c \
 	core/op_thread_linux.c \
-	core/op_cpuset_linux.c \
-	core/op_modules_linux.c
+	core/op_cpuset_linux.c
 else ifeq ($(PLATFORM), darwin)
 	FW_SOURCES += \
 	core/op_event_loop_kqueue.c \

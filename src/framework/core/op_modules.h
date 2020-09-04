@@ -59,11 +59,6 @@ struct op_module
 };
 
 /**
- * Load module libraries
- */
-void op_modules_load();
-
-/**
  * Register a module
  *
  * @param[in] module
