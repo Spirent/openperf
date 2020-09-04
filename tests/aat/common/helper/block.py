@@ -1,5 +1,6 @@
 import client.api
 import client.models
+import time
 
 def get_block_dynamic_results_fields():
     fields = []
