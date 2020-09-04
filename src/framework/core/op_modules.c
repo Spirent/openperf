@@ -14,17 +14,16 @@
 #include "core/op_options.h"
 #include "config/op_config_file.hpp"
 
-MAKE_OPTION_DATA(
-    plugins,
-    NULL,
-    MAKE_OPT("Specifies path to plugin modules",
-             "modules.plugins.path",
-             'm',
-             OP_OPTION_TYPE_STRING),
-    MAKE_OPT("Quoted, comma separated plugin module file names",
-             "modules.plugins.load",
-             'L',
-             OP_OPTION_TYPE_LIST), );
+MAKE_OPTION_DATA(plugins,
+                 NULL,
+                 MAKE_OPT("Specifies path to plugin modules",
+                          "modules.plugins.path",
+                          'm',
+                          OP_OPTION_TYPE_STRING),
+                 MAKE_OPT("Quoted, comma separated plugin module file names",
+                          "modules.plugins.load",
+                          'L',
+                          OP_OPTION_TYPE_LIST), );
 
 REGISTER_CLI_OPTIONS(plugins)
 

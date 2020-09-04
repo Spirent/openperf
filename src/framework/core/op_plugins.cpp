@@ -15,24 +15,24 @@ namespace openperf::core {
 static std::optional<std::filesystem::path>
 find_plugin_modules_path(int argc, char* const argv[])
 {
-    auto path = std::filesystem::canonical(std::filesystem::path(argv[0])).remove_filename();
+    auto path = std::filesystem::canonical(std::filesystem::path(argv[0]))
+                    .remove_filename();
     path += "../plugins";
     path = std::filesystem::canonical(path);
 
-    if (!std::filesystem::exists(path))
-        return std::nullopt;
+    if (!std::filesystem::exists(path)) return std::nullopt;
 
     return path;
 }
 
-static std::optional<std::filesystem::path> find_plugin_path(int argc, char* const argv[])
+static std::optional<std::filesystem::path> find_plugin_path(int argc,
+                                                             char* const argv[])
 {
     for (int idx = 0; idx < argc - 1; idx++) {
         if (strcmp(argv[idx], "--modules.plugins.path") == 0
             || strcmp(argv[idx], "-m") == 0) {
             auto path = std::filesystem::path(argv[idx + 1]);
-            if (!std::filesystem::exists(path))
-                return std::nullopt;
+            if (!std::filesystem::exists(path)) return std::nullopt;
             return path;
         }
     }
@@ -41,16 +41,17 @@ static std::optional<std::filesystem::path> find_plugin_path(int argc, char* con
     char arg_string[PATH_MAX];
     if (op_config_file_get_value_str(
             "modules.plugins.path", arg_string, PATH_MAX)) {
-        auto path = std::filesystem::canonical(std::filesystem::path(arg_string));
-        if (!std::filesystem::exists(path))
-            return std::nullopt;
+        auto path =
+            std::filesystem::canonical(std::filesystem::path(arg_string));
+        if (!std::filesystem::exists(path)) return std::nullopt;
         return path;
     }
 
     return find_plugin_modules_path(argc, argv);
 }
 
-std::optional<std::vector<std::string>> find_plugins_files_list_option(int argc, char* const argv[])
+std::optional<std::vector<std::string>>
+find_plugins_files_list_option(int argc, char* const argv[])
 {
     for (int idx = 0; idx < argc - 1; idx++) {
         if (strcmp(argv[idx], "--modules.plugins.load") == 0
@@ -60,9 +61,7 @@ std::optional<std::vector<std::string>> find_plugins_files_list_option(int argc,
 
             auto plugins = std::string(argv[idx + 1]);
             std::stringstream ss(plugins);
-            while (std::getline(ss, p, ',')) {
-                res.push_back(p);
-            }
+            while (std::getline(ss, p, ',')) { res.push_back(p); }
             return res;
         }
     }
@@ -70,7 +69,6 @@ std::optional<std::vector<std::string>> find_plugins_files_list_option(int argc,
     /* Check if configuration file has a plugin files list option. */
     return config::file::op_config_get_param<OP_OPTION_TYPE_LIST>(
         "modules.plugins.load");
-
 }
 
 extern "C" {
@@ -78,16 +76,17 @@ extern "C" {
 void op_modules_load(int argc, char* const argv[])
 {
     auto plugin_files = find_plugins_files_list_option(argc, argv);
-    if (!plugin_files)
-        return;
+    if (!plugin_files) return;
 
     auto plugin_modules_path = find_plugin_path(argc, argv);
-    if (!plugin_modules_path){
+    if (!plugin_modules_path) {
         OP_LOG(OP_LOG_CRITICAL, "Plugins path does not exists\n");
         assert(false);
     }
 
-    OP_LOG(OP_LOG_INFO, "Plugin modules path %s\n", plugin_modules_path.value().c_str());
+    OP_LOG(OP_LOG_INFO,
+           "Plugin modules path %s\n",
+           plugin_modules_path.value().c_str());
 
     for (auto& entry : plugin_files.value()) {
         auto path = plugin_modules_path.value();
@@ -116,4 +115,4 @@ void op_modules_load(int argc, char* const argv[])
 }
 }
 
-}
+} // namespace openperf::core
