@@ -2,12 +2,6 @@
 #include <vector>
 #include <algorithm>
 
-#define ISPC_TARGET_SSE2
-#define ISPC_TARGET_SSE4
-#define ISPC_TARGET_AVX
-#define ISPC_TARGET_AVX2
-#define ISPC_TARGET_AVX512SKX
-
 #include "catch.hpp"
 #include "cpu/matrix.hpp"
 
