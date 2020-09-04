@@ -33,8 +33,8 @@ public:
     void results(const tvlp_modules_results_t& value) { m_results = value; };
 
 protected:
-    std::string m_id = "";
-    std::string m_tvlp_id = "";
+    std::string m_id;
+    std::string m_tvlp_id;
 
     tvlp_modules_results_t m_results;
 };
