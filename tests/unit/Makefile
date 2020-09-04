@@ -44,7 +44,9 @@ $(call op_include_dependencies,$(TEST_DEPENDS))
 OP_CONFIG_OPTS += --enable-static=yes --enable-shared=no
 OP_CPPFLAGS += $(addprefix -I,$(sort $(OP_INC_DIRS)))
 OP_LDFLAGS += $(addprefix -L,$(sort $(OP_LIB_DIRS)))
+ifeq ($(PLATFORM), linux)
 OP_LDLIBS += -ldl
+endif
 
 # Build rules
 $(eval $(call op_generate_build_rules,$(TEST_SOURCES),,TEST_OBJ_DIR,TEST_DEPENDS,TEST_FLAGS))
