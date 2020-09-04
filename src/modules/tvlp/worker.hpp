@@ -55,13 +55,14 @@ protected:
     send_create(const nlohmann::json& config,
                 const std::string& resource_id) = 0;
     virtual tl::expected<stat_pair_t, std::string>
-    send_start(const std::string& id) = 0;
-    virtual tl::expected<void, std::string>
-    send_stop(const std::string& id) = 0;
+    send_start(const std::string& id);
+    virtual tl::expected<void, std::string> send_stop(const std::string& id);
     virtual tl::expected<nlohmann::json, std::string>
-    send_stat(const std::string& id) = 0;
-    virtual tl::expected<void, std::string>
-    send_delete(const std::string& id) = 0;
+    send_stat(const std::string& id);
+    virtual tl::expected<void, std::string> send_delete(const std::string& id);
+
+    virtual std::string generator_endpoint() = 0;
+    virtual std::string generator_results_endpoint() = 0;
 
     tvlp_worker_state_t m_state;
     std::string m_error;
