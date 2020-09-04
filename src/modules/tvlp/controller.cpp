@@ -66,6 +66,8 @@ controller_t::controller_t(const model::tvlp_configuration_t& model)
 std::shared_ptr<model::tvlp_result_t>
 controller_t::start(const time_point& start_time)
 {
+    if (is_running()) return m_result;
+
     auto modules_results = model::tvlp_modules_results_t{};
 
     if (m_profile.block) {
