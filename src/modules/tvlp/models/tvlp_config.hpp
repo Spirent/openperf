@@ -51,7 +51,7 @@ public:
     std::string error() const { return m_error; };
 
 protected:
-    std::string m_id = "";
+    std::string m_id;
     tvlp_state_t m_state = READY;
 
     time_point m_start_time = time_point::min();
@@ -59,7 +59,7 @@ protected:
     duration m_current_offset = duration::zero();
 
     tvlp_profile_t m_profile;
-    std::string m_error = "";
+    std::string m_error;
 };
 
 } // namespace openperf::tvlp::model

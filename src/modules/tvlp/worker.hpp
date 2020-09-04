@@ -64,7 +64,7 @@ protected:
     send_delete(const std::string& id) = 0;
 
     tvlp_worker_state_t m_state;
-    std::string m_error = "";
+    std::string m_error;
     model::json_vector m_result;
     std::atomic<model::json_vector*> m_result_atomic;
     worker_future m_scheduler_thread;
