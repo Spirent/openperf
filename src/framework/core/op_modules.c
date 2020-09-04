@@ -12,36 +12,21 @@
 #include "core/op_modules.h"
 #include "core/op_common.h"
 #include "core/op_options.h"
+#include "config/op_config_file.hpp"
 
-static struct op_options_data plugin_path_option = {
-    .name = "PLUGIN",
-    .init = NULL,
-    .callback = NULL,
-    .options =
-        {
-            {"Specifies path to plugin modules",
+MAKE_OPTION_DATA(
+    plugins,
+    NULL,
+    MAKE_OPT("Specifies path to plugin modules",
              "modules.plugins.path",
              'm',
-             OP_OPTION_TYPE_STRING},
-            {0, 0, 0, 0},
-        },
-};
-REGISTER_OPTIONS(plugin_path_option)
-
-static struct op_options_data plugin_list_option = {
-    .name = "PLUGIN",
-    .init = NULL,
-    .callback = NULL,
-    .options =
-        {
-            {"Quoted, comma separated plugin module file names",
+             OP_OPTION_TYPE_STRING),
+    MAKE_OPT("Quoted, comma separated plugin module file names",
              "modules.plugins.load",
              'L',
-             OP_OPTION_TYPE_LIST},
-            {0, 0, 0, 0},
-        },
-};
-REGISTER_OPTIONS(plugin_list_option)
+             OP_OPTION_TYPE_LIST), );
+
+REGISTER_CLI_OPTIONS(plugins)
 
 static SLIST_HEAD(op_modules_list, op_module)
     op_modules_list_head = SLIST_HEAD_INITIALIZER(op_modules_list_head);
