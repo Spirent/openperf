@@ -1,7 +1,7 @@
 #include "packet.hpp"
+#include "api/api_internal_client.hpp"
 #include "swagger/converters/packet_generator.hpp"
 #include "swagger/v1/model/PacketGenerator.h"
-#include "swagger/v1/model/PacketGeneratorResult.h"
 
 namespace openperf::tvlp::internal::worker {
 
@@ -21,7 +21,7 @@ packet_tvlp_worker_t::send_create(const nlohmann::json& config,
         nlohmann::json::parse(config.dump()).get<PacketGeneratorConfig>());
     gen.setConfig(blk_conf);
     auto result = openperf::api::client::internal_api_post(
-        "/packet/generators", gen.toJson().dump(), INTERNAL_REQUEST_TIMEOUT);
+        m_generator_endpoint, gen.toJson().dump(), INTERNAL_REQUEST_TIMEOUT);
 
     if (result.first < Pistache::Http::Code::Ok
         || result.first >= Pistache::Http::Code::Already_Reported)
@@ -29,47 +29,6 @@ packet_tvlp_worker_t::send_create(const nlohmann::json& config,
 
     auto pg = nlohmann::json::parse(result.second).get<PacketGenerator>();
     return pg.getId();
-}
-tl::expected<stat_pair_t, std::string>
-packet_tvlp_worker_t::send_start(const std::string& id)
-{
-    auto result = openperf::api::client::internal_api_post(
-        "/packet/generators/" + id + "/start", "", INTERNAL_REQUEST_TIMEOUT);
-    if (result.first < Pistache::Http::Code::Ok
-        || result.first >= Pistache::Http::Code::Already_Reported)
-        return tl::make_unexpected(result.second);
-    auto stat = nlohmann::json::parse(result.second);
-    return std::pair(stat.get<PacketGeneratorResult>().getId(), stat);
-}
-tl::expected<void, std::string>
-packet_tvlp_worker_t::send_stop(const std::string& id)
-{
-    auto result = openperf::api::client::internal_api_post(
-        "/packet/generators/" + id + "/stop", "", INTERNAL_REQUEST_TIMEOUT);
-    if (result.first < Pistache::Http::Code::Ok
-        || result.first >= Pistache::Http::Code::Already_Reported)
-        return tl::make_unexpected(result.second);
-    return {};
-}
-tl::expected<nlohmann::json, std::string>
-packet_tvlp_worker_t::send_stat(const std::string& id)
-{
-    auto result = openperf::api::client::internal_api_get(
-        "/packet/generator-results/" + id, INTERNAL_REQUEST_TIMEOUT);
-    if (result.first < Pistache::Http::Code::Ok
-        || result.first >= Pistache::Http::Code::Already_Reported)
-        return tl::make_unexpected(result.second);
-    return nlohmann::json::parse(result.second);
-}
-tl::expected<void, std::string>
-packet_tvlp_worker_t::send_delete(const std::string& id)
-{
-    auto result = openperf::api::client::internal_api_del(
-        "/packet/generators/" + id, INTERNAL_REQUEST_TIMEOUT);
-    if (result.first < Pistache::Http::Code::Ok
-        || result.first >= Pistache::Http::Code::Already_Reported)
-        return tl::make_unexpected(result.second);
-    return {};
 }
 
 } // namespace openperf::tvlp::internal::worker
