@@ -112,7 +112,7 @@ void generator::config(const generator_config& config)
     for (size_t core = 0; core < config.cores.size(); ++core) {
         auto core_conf = config.cores.at(core);
         for (const auto& target : core_conf.targets)
-            if (!is_supported(target.set))
+            if (!available(target.set) || !enabled(target.set))
                 throw std::runtime_error("Instruction set "
                                          + std::string(to_string(target.set))
                                          + " is not supported");
@@ -188,17 +188,6 @@ void generator::reset()
     m_result_id = core::to_string(core::uuid::random());
 
     if (m_running) m_controller.resume();
-}
-
-// Methods : private
-bool generator::is_supported(cpu::instruction_set iset)
-{
-    switch (iset) {
-    case cpu::instruction_set::SCALAR:
-        return true;
-    default:
-        return false;
-    }
 }
 
 } // namespace openperf::cpu::generator

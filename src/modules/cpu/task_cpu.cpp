@@ -1,5 +1,6 @@
 #include "task_cpu.hpp"
 #include "target_scalar.hpp"
+#include "target_ispc.hpp"
 
 #include "framework/core/op_log.h"
 
@@ -37,7 +38,7 @@ void task_cpu::reset()
 }
 
 // Methods : public
-[[clang::optnone]] task_cpu_stat_ptr task_cpu::spin()
+task_cpu_stat_ptr task_cpu::spin()
 {
     if (m_last_run.time_since_epoch() == 0ns) {
         m_last_run = chronometer::now();
@@ -112,7 +113,7 @@ void task_cpu::reset()
 }
 
 // Methods : private
-[[clang::optnone]] void task_cpu::config(const task_cpu_config& conf)
+void task_cpu::config(const task_cpu_config& conf)
 {
     assert(0.0 < conf.utilization && conf.utilization <= 100.0);
     OP_LOG(OP_LOG_DEBUG, "CPU Task configuring");
@@ -151,17 +152,32 @@ task_cpu::target_ptr task_cpu::make_target(cpu::instruction_set iset,
     case cpu::instruction_set::SCALAR:
         switch (dtype) {
         case cpu::data_type::INT32:
-            return std::make_unique<target_scalar<uint32_t>>(dtype);
+            return std::make_unique<target_scalar<uint32_t>>();
         case cpu::data_type::INT64:
-            return std::make_unique<target_scalar<uint64_t>>(dtype);
+            return std::make_unique<target_scalar<uint64_t>>();
         case cpu::data_type::FLOAT32:
-            return std::make_unique<target_scalar<float>>(dtype);
+            return std::make_unique<target_scalar<float>>();
         case cpu::data_type::FLOAT64:
-            return std::make_unique<target_scalar<double>>(dtype);
+            return std::make_unique<target_scalar<double>>();
+        }
+    case cpu::instruction_set::SSE2:
+    case cpu::instruction_set::SSE4:
+    case cpu::instruction_set::AVX:
+    case cpu::instruction_set::AVX2:
+    case cpu::instruction_set::AVX512:
+        switch (dtype) {
+        case cpu::data_type::INT32:
+            return std::make_unique<target_ispc<uint32_t>>(iset);
+        case cpu::data_type::INT64:
+            return std::make_unique<target_ispc<uint64_t>>(iset);
+        case cpu::data_type::FLOAT32:
+            return std::make_unique<target_ispc<float>>(iset);
+        case cpu::data_type::FLOAT64:
+            return std::make_unique<target_ispc<double>>(iset);
         }
     default:
         throw std::runtime_error("Unknown instruction set "
-                                 + std::to_string((int)iset));
+                                 + std::string(to_string(iset)));
     }
 }
 

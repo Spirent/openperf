@@ -14,7 +14,14 @@ CPU_SOURCES += \
 	handler.cpp \
 	init.cpp \
 	server.cpp \
-	task_cpu.cpp
+	task_cpu.cpp \
+	scalar/matrix.cpp \
+	ispc/matrix.ispc
+
+ifeq ($(ARCH),x86_64)
+	CPU_SOURCES += instruction_set_x86.cpp
+	CPU_TEST_SOURCES += instruction_set_x86.cpp
+endif
 
 ifeq ($(PLATFORM), linux)
 	CPU_SOURCES += cpu_linux.cpp
@@ -28,4 +35,8 @@ $(CPU_OBJ_DIR)/init.o: $(CPU_UNVERSIONED_FILES)
 $(CPU_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 	-DBUILD_COMMIT="\"$(GIT_COMMIT)\"" \
 	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
-	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\"" \
+	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\""
+
+CPU_TEST_SOURCES += \
+	scalar/matrix.cpp \
+	ispc/matrix.ispc

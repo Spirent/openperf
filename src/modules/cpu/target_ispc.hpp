@@ -1,22 +1,26 @@
-#ifndef _OP_CPU_TARGET_SCALAR_HPP_
-#define _OP_CPU_TARGET_SCALAR_HPP_
+#ifndef _OP_CPU_TARGET_ISPC_HPP_
+#define _OP_CPU_TARGET_ISPC_HPP_
 
 #include <vector>
 #include "target.hpp"
+#include "matrix.hpp"
 
 namespace openperf::cpu::internal {
 
-template <class T> class target_scalar : public target
+template <class T> class target_ispc : public target
 {
+    using function_t = void (*)(const T[], const T[], T[], uint32_t);
+
 private:
     constexpr static size_t size = 32;
 
     std::vector<T> matrix_a;
     std::vector<T> matrix_b;
     mutable std::vector<T> matrix_r;
+    function_t m_operation;
 
 public:
-    target_scalar()
+    target_ispc(cpu::instruction_set iset)
     {
         matrix_a.resize(size * size);
         matrix_b.resize(size * size);
@@ -28,26 +32,23 @@ public:
             matrix_a[i] = row * col;
             matrix_b[i] = static_cast<T>(size * size) / (row * col + 1);
         }
+
+        auto functions = function_wrapper<function_t>();
+        m_operation = functions.function(iset);
+
+        if (m_operation == nullptr)
+            throw std::runtime_error("Instruction set not supported");
     }
 
-    ~target_scalar() override = default;
+    ~target_ispc() override = default;
 
     uint64_t operation() const override
     {
-        for (size_t i = 0; i < size; i++) {
-            for (size_t j = 0; j < size; j++) {
-                T sum = 0;
-                for (size_t k = 0; k < size; k++) {
-                    sum += matrix_a[i * size + k] * matrix_b[k * size + j];
-                }
-                matrix_r[i * size + j] = sum;
-            }
-        }
-
+        m_operation(matrix_a.data(), matrix_b.data(), matrix_r.data(), size);
         return 1;
     }
 };
 
 } // namespace openperf::cpu::internal
 
-#endif // _OP_CPU_TARGET_SCALAR_HPP_
+#endif // _OP_CPU_TARGET_ISPC_HPP_
