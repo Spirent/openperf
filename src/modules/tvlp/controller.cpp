@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include "json.hpp"
 
 #include "framework/core/op_core.h"
@@ -72,19 +73,23 @@ controller_t::start(const time_point& start_time)
 
     if (m_profile.block) {
         modules_results.block = model::json_vector();
-        m_block->start(start_time);
+        // Starting already running worker should never happen
+        assert(m_block->start(start_time));
     }
     if (m_profile.memory) {
         modules_results.memory = model::json_vector();
-        m_memory->start(start_time);
+        // Starting already running worker should never happen
+        assert(m_memory->start(start_time));
     }
     if (m_profile.cpu) {
         modules_results.cpu = model::json_vector();
-        m_cpu->start(start_time);
+        // Starting already running worker should never happen
+        assert(m_cpu->start(start_time));
     }
     if (m_profile.packet) {
         modules_results.packet = model::json_vector();
-        m_packet->start(start_time);
+        // Starting already running worker should never happen
+        assert(m_packet->start(start_time));
     }
 
     m_start_time = start_time;

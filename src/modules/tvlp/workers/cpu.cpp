@@ -23,8 +23,7 @@ cpu_tvlp_worker_t::send_create(const nlohmann::json& config,
     auto result = openperf::api::client::internal_api_post(
         m_generator_endpoint, gen.toJson().dump(), INTERNAL_REQUEST_TIMEOUT);
 
-    if (result.first < Pistache::Http::Code::Ok
-        || result.first >= Pistache::Http::Code::Already_Reported)
+    if (result.first != Pistache::Http::Code::Created)
         return tl::make_unexpected(result.second);
 
     auto cg = nlohmann::json::parse(result.second).get<CpuGenerator>();
