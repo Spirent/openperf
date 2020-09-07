@@ -31,10 +31,10 @@ Functional unit of OpenPerf memory module, providing an ability for memory I/O l
     * **buffer_size** - size of buffer, shared between read/write threads, to perform read/write operations respectively.
     * **read_size** - size of block (in bytes) to perform read operations from shared buffer.
     * **read_threads** - number of simulataneously executed read threads of generator.
-    * **reads_per_sec** - number of reads per second for all executed read threads.
+    * **reads_per_sec** - total number of reads per second for all executed read threads.
     * **write_size** - size of block (in bytes) to perform write operations to shared buffer.
     * **write_threads** - number of simulataneously executed write threads of generator.
-    * **writes_per_sec** - number of reads per second for all executed write threads.
+    * **writes_per_sec** - total number of writes per second for all executed write threads.
     * **pattern** - pattern of I/O operations, available values are:
         * **random**
         * **sequential**
