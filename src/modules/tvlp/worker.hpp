@@ -32,7 +32,8 @@ static const std::chrono::seconds INTERNAL_REQUEST_TIMEOUT = 5s;
 
 class tvlp_worker_t
 {
-    using worker_future = std::future<tl::expected<void, std::string>>;
+    using worker_future =
+        std::future<tl::expected<model::json_vector, std::string>>;
 
 public:
     tvlp_worker_t() = delete;
@@ -40,7 +41,8 @@ public:
     explicit tvlp_worker_t(const model::tvlp_module_profile_t&);
     virtual ~tvlp_worker_t();
 
-    void start(const realtime::time_point& start_time = realtime::now());
+    tl::expected<void, std::string>
+    start(const realtime::time_point& start_time = realtime::now());
     void stop();
     model::tvlp_state_t state() const;
     std::optional<std::string> error() const;
@@ -48,9 +50,6 @@ public:
     model::json_vector results() const;
 
 protected:
-    tl::expected<void, std::string>
-    schedule(realtime::time_point start_time,
-             const model::tvlp_module_profile_t& profile);
     virtual tl::expected<std::string, std::string>
     send_create(const nlohmann::json& config,
                 const std::string& resource_id) = 0;
@@ -64,10 +63,15 @@ protected:
     virtual std::string generator_endpoint() = 0;
     virtual std::string generator_results_endpoint() = 0;
 
+private:
+    void fetch_future_results();
+    tl::expected<model::json_vector, std::string>
+    schedule(realtime::time_point start_time,
+             const model::tvlp_module_profile_t& profile);
+
     tvlp_worker_state_t m_state;
     std::string m_error;
-    model::json_vector m_result;
-    std::atomic<model::json_vector*> m_result_atomic;
+    std::shared_ptr<model::json_vector> m_result_ptr;
     worker_future m_scheduler_thread;
     model::tvlp_module_profile_t m_profile;
 };
