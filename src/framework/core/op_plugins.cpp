@@ -28,60 +28,31 @@ find_plugin_modules_path(int argc __attribute__((unused)), char* const argv[])
 static std::optional<std::filesystem::path> find_plugin_path(int argc,
                                                              char* const argv[])
 {
-    for (int idx = 0; idx < argc - 1; idx++) {
-        if (strcmp(argv[idx], "--modules.plugins.path") == 0
-            || strcmp(argv[idx], "-m") == 0) {
-            auto path = std::filesystem::path(argv[idx + 1]);
-            if (!std::filesystem::exists(path)) return std::nullopt;
-            return path;
-        }
-    }
+    auto modules = config::file::op_config_get_param<OP_OPTION_TYPE_STRING>(
+        "modules.plugins.path");
 
-    /* Check if configuration file has a plugin path option. */
-    char arg_string[PATH_MAX];
-    if (op_config_file_get_value_str(
-            "modules.plugins.path", arg_string, PATH_MAX)) {
-        auto path =
-            std::filesystem::canonical(std::filesystem::path(arg_string));
-        if (!std::filesystem::exists(path)) return std::nullopt;
-        return path;
-    }
+    if (modules) { return std::filesystem::canonical(modules.value()); }
 
     return find_plugin_modules_path(argc, argv);
 }
 
-std::optional<std::vector<std::string>>
-find_plugins_files_list_option(int argc, char* const argv[])
+static std::optional<std::vector<std::string>> find_plugins_files_list_option()
 {
-    for (int idx = 0; idx < argc - 1; idx++) {
-        if (strcmp(argv[idx], "--modules.plugins.load") == 0
-            || strcmp(argv[idx], "-L") == 0) {
-            std::vector<std::string> res;
-            std::string p;
-
-            auto plugins = std::string(argv[idx + 1]);
-            std::stringstream ss(plugins);
-            while (std::getline(ss, p, ',')) { res.push_back(p); }
-            return res;
-        }
-    }
-
-    /* Check if configuration file has a plugin files list option. */
     return config::file::op_config_get_param<OP_OPTION_TYPE_LIST>(
         "modules.plugins.load");
 }
 
 extern "C" {
 
-void op_modules_load(int argc, char* const argv[])
+int op_modules_load(int argc, char* const argv[])
 {
-    auto plugin_files = find_plugins_files_list_option(argc, argv);
-    if (!plugin_files) return;
+    auto plugin_files = find_plugins_files_list_option();
+    if (!plugin_files) return 0;
 
     auto plugin_modules_path = find_plugin_path(argc, argv);
     if (!plugin_modules_path) {
         OP_LOG(OP_LOG_CRITICAL, "Plugins path does not exists\n");
-        assert(false);
+        return 1;
     }
 
     OP_LOG(OP_LOG_INFO,
@@ -101,9 +72,11 @@ void op_modules_load(int argc, char* const argv[])
         if (!reg) {
             /* This should never happen unless registration process was changed
              */
-            OP_LOG(OP_LOG_ERROR, "Missing module registration in plugin \n");
+            OP_LOG(OP_LOG_ERROR,
+                   "Missing module registration in plugin %s\n",
+                   entry.c_str());
             dlclose(handle);
-            assert(false);
+            return 1;
         }
 
         OP_LOG(OP_LOG_INFO,
@@ -112,6 +85,8 @@ void op_modules_load(int argc, char* const argv[])
                reg->info.id,
                reg->info.description);
     }
+
+    return 0;
 }
 }
 

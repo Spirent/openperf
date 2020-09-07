@@ -71,7 +71,9 @@ void op_init(void* context, int argc, char* argv[])
     }
 
     /* Load plugin modules */
-    op_modules_load(argc, argv);
+    if (op_modules_load(argc, argv)) {
+        op_exit("Plugin modules loading failed!");
+    }
 
     /* Initialize all modules */
     if (op_modules_pre_init(context) != 0 || op_modules_init(context) != 0
