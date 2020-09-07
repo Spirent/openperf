@@ -19,7 +19,7 @@ namespace model {
 
 MemoryGeneratorConfig::MemoryGeneratorConfig()
 {
-    m_Buffer_size = 0;
+    m_Buffer_size = 0L;
     m_Reads_per_sec = 0;
     m_Read_size = 0;
     m_Read_threads = 0;
@@ -70,11 +70,11 @@ void MemoryGeneratorConfig::fromJson(nlohmann::json& val)
 }
 
 
-int32_t MemoryGeneratorConfig::getBufferSize() const
+int64_t MemoryGeneratorConfig::getBufferSize() const
 {
     return m_Buffer_size;
 }
-void MemoryGeneratorConfig::setBufferSize(int32_t value)
+void MemoryGeneratorConfig::setBufferSize(int64_t value)
 {
     m_Buffer_size = value;
     
