@@ -13,7 +13,8 @@ cpu_tvlp_worker_t::cpu_tvlp_worker_t(
 
 tl::expected<std::string, std::string>
 cpu_tvlp_worker_t::send_create(const nlohmann::json& config,
-                               const std::string& resource_id)
+                               const std::string& resource_id
+                               __attribute__((unused)))
 {
     CpuGenerator gen;
     auto blk_conf = std::make_shared<CpuGeneratorConfig>();
