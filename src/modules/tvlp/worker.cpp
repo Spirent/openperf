@@ -12,19 +12,25 @@ tvlp_worker_t::tvlp_worker_t(const model::tvlp_module_profile_t& profile)
 {
     m_state.state.store(model::READY);
     m_state.offset.store(duration::zero());
-    m_result_atomic.store(&m_result);
+    m_result_ptr = std::make_shared<model::json_vector>();
 }
 
 tvlp_worker_t::~tvlp_worker_t() { stop(); }
 
-void tvlp_worker_t::start(const realtime::time_point& start_time)
+tl::expected<void, std::string>
+tvlp_worker_t::start(const realtime::time_point& start_time)
 {
+    auto state = m_state.state.load();
+    if (state == model::RUNNING || state == model::COUNTDOWN) {
+        return tl::make_unexpected("Worker is already in running state");
+    }
+
     if (m_scheduler_thread.valid()) m_scheduler_thread.wait();
     m_state.offset = duration::zero();
     m_state.state =
         start_time > ref_clock::now() ? model::COUNTDOWN : model::RUNNING;
     m_state.stopped = false;
-    m_result.clear();
+    m_result_ptr->clear();
     m_scheduler_thread = std::async(
         std::launch::async,
         [this](realtime::time_point tp, model::tvlp_module_profile_t p) {
@@ -32,6 +38,8 @@ void tvlp_worker_t::start(const realtime::time_point& start_time)
         },
         start_time,
         m_profile);
+
+    return {};
 }
 
 void tvlp_worker_t::stop()
@@ -48,13 +56,24 @@ model::tvlp_state_t tvlp_worker_t::state() const
     return m_state.state.load();
 }
 
+void tvlp_worker_t::fetch_future_results()
+{
+    auto state = m_state.state.load();
+    if (state == model::RUNNING || state == model::COUNTDOWN) { return; }
+
+    if (m_scheduler_thread.valid()) {
+        auto res = m_scheduler_thread.get();
+        if (res)
+            *m_result_ptr = res.value();
+        else
+            m_error = res.error();
+    }
+}
+
 std::optional<std::string> tvlp_worker_t::error() const
 {
     if (m_state.state.load() != model::ERROR) return std::nullopt;
-    if (m_scheduler_thread.valid()) {
-        auto res = const_cast<worker_future*>(&m_scheduler_thread)->get();
-        const_cast<tvlp_worker_t*>(this)->m_error = res.error();
-    }
+    const_cast<tvlp_worker_t*>(this)->fetch_future_results();
     return m_error;
 }
 
@@ -62,11 +81,34 @@ duration tvlp_worker_t::offset() const { return m_state.offset.load(); }
 
 model::json_vector tvlp_worker_t::results() const
 {
-    if (m_state.state.load() == model::ERROR) return model::json_vector();
-    return *m_result_atomic;
+    auto state = m_state.state.load();
+    if (state == model::ERROR) return model::json_vector();
+
+    const_cast<tvlp_worker_t*>(this)->fetch_future_results();
+    if (state == model::READY) return *m_result_ptr;
+
+    auto result_ptr =
+        const_cast<std::shared_ptr<model::json_vector>*>(&m_result_ptr);
+    std::shared_ptr<model::json_vector> result_copy =
+        std::make_shared<model::json_vector>();
+    auto old_ptr = std::atomic_exchange(result_ptr, result_copy);
+    auto result = *old_ptr;
+    std::atomic_exchange(result_ptr, old_ptr);
+
+    return result;
 }
 
-tl::expected<void, std::string>
+void store_results(std::shared_ptr<model::json_vector>& m_result_ptr,
+                   const model::json_vector& result)
+{
+    std::shared_ptr<model::json_vector> result_copy =
+        std::make_shared<model::json_vector>(result);
+    auto old_ptr = std::atomic_exchange(&m_result_ptr, result_copy);
+    *old_ptr = result;
+    std::atomic_exchange(&m_result_ptr, old_ptr);
+}
+
+tl::expected<model::json_vector, std::string>
 tvlp_worker_t::schedule(realtime::time_point start_time,
                         const model::tvlp_module_profile_t& profile)
 {
@@ -76,7 +118,7 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
     for (auto now = realtime::now(); now < start_time; now = realtime::now()) {
         if (m_state.stopped.load()) {
             m_state.state.store(model::READY);
-            return {};
+            return results;
         }
         duration sleep_time = std::min(start_time - now, THRESHOLD);
         std::this_thread::sleep_for(sleep_time);
@@ -87,7 +129,7 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
     for (auto entry : profile) {
         if (m_state.stopped.load()) {
             m_state.state.store(model::READY);
-            return {};
+            return results;
         }
 
         // Create generator
@@ -109,14 +151,14 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
 
         // Add new statistics
         results.push_back(start_result.value().second);
-        *m_result_atomic = results;
+        store_results(m_result_ptr, results);
 
         // Wait until profile entry done
         auto started = ref_clock::now();
         for (auto now = started; now < end_time; now = ref_clock::now()) {
             if (m_state.stopped.load()) {
                 m_state.state.store(model::READY);
-                return {};
+                return results;
             }
 
             // Update statistics
@@ -126,7 +168,7 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
                 return tl::make_unexpected(stat_result.error());
             }
             results.back() = stat_result.value();
-            *m_result_atomic = results;
+            store_results(m_result_ptr, results);
 
             m_state.offset.store(total_offset + now - started);
             duration sleep_time = std::min(end_time - now, THRESHOLD);
@@ -149,7 +191,7 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
             return tl::make_unexpected(stat_result.error());
         }
         results.back() = stat_result.value();
-        *m_result_atomic = results;
+        store_results(m_result_ptr, results);
 
         // Delete generator
         if (auto res = send_delete(gen_id); !res) {
@@ -158,7 +200,7 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
         }
     }
     m_state.state.store(model::READY);
-    return {};
+    return results;
 }
 
 tl::expected<stat_pair_t, std::string>
