@@ -23,6 +23,10 @@ void from_json(const nlohmann::json& j, PacketCapture& capture)
         capture.setActive(j["active"]);
     }
 
+    if (j.find("direction") != j.end() && !j["direction"].is_null()) {
+        capture.setDirection(j["direction"]);
+    }
+
     if (j.find("config") != j.end() && !j["config"].is_null()) {
         auto config = std::make_shared<PacketCaptureConfig>();
         config->fromJson(const_cast<nlohmann::json&>(j["config"]));
