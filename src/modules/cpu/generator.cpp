@@ -1,3 +1,5 @@
+#include <future>
+
 #include "generator.hpp"
 #include "cpu.hpp"
 
@@ -96,16 +98,49 @@ generator::~generator()
     m_controller.clear();
 }
 
+std::vector<uint16_t> detect_cores()
+{
+    auto f = std::async(std::launch::async, [] {
+        std::vector<uint16_t> result;
+
+        cpu_set_t cpuset;
+        auto cores_total = internal::cpu_cores();
+        for (uint16_t core = 0; core < cores_total; core++) {
+            CPU_SET(core, &cpuset);
+        }
+        int s = op_thread_set_affinity_mask(&cpuset);
+        if (s != 0) {
+            OP_LOG(OP_LOG_ERROR, "Failed to set affinity");
+            return result;
+        }
+
+        s = op_thread_get_affinity_mask(&cpuset);
+        if (s != 0) {
+            OP_LOG(OP_LOG_ERROR, "Failed to get affinity");
+            return result;
+        }
+
+        for (uint16_t core = 0; core < cores_total; core++) {
+            if (CPU_ISSET(core, &cpuset)) result.push_back(core);
+        }
+        return result;
+    });
+
+    return f.get();
+}
+
 // Methods : public
 void generator::config(const generator_config& config)
 {
     m_controller.pause();
 
-    auto cores_count = internal::cpu_cores();
-    if (static_cast<int32_t>(config.cores.size()) > cores_count)
+    auto available_cores = detect_cores();
+    OP_LOG(OP_LOG_DEBUG, "Detected %zu cores", available_cores.size());
+
+    if (config.cores.size() > available_cores.size())
         throw std::runtime_error(
             "Could not configure more cores than available ("
-            + std::to_string(cores_count) + ").");
+            + std::to_string(available_cores.size()) + ").");
 
     m_stat = {config.cores.size()};
 
@@ -125,8 +160,8 @@ void generator::config(const generator_config& config)
         auto task = internal::task_cpu{core_conf};
         m_controller.add(std::move(task),
                          NAME_PREFIX + std::to_string(m_serial_number) + "_c"
-                             + std::to_string(core + 1),
-                         core);
+                             + std::to_string(available_cores.at(core)),
+                         available_cores.at(core));
     }
 
     m_config = config;
