@@ -8,7 +8,7 @@ extern "C" {
 /**
  * Load module libraries
  */
-int op_modules_load(int argc, char* const argv[]);
+int op_modules_load();
 
 #ifdef __cplusplus
 }
