@@ -51,8 +51,8 @@ public:
     /// <summary>
     /// Memory size constraint. The buffer can never be larger than the value specified (in bytes)
     /// </summary>
-    int32_t getBufferSize() const;
-    void setBufferSize(int32_t value);
+    int64_t getBufferSize() const;
+    void setBufferSize(int64_t value);
         /// <summary>
     /// Number of read operations to perform per second
     /// </summary>
@@ -90,7 +90,7 @@ public:
     void setPattern(std::string value);
     
 protected:
-    int32_t m_Buffer_size;
+    int64_t m_Buffer_size;
 
     int32_t m_Reads_per_sec;
 
