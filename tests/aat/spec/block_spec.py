@@ -77,7 +77,7 @@ def wait_for_file_initialization_done(api_client, file_id, timeout):
 
 class has_location(Matcher):
     def __init__(self, expected):
-        self._expected = CONFIG.service().base_url + expected
+        self._expected = expected
 
     def _match(self, subject):
         expect(subject).to(have_key('Location'))

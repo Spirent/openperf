@@ -101,18 +101,6 @@ enum Http::Code to_code(const api::reply_error& error)
     }
 }
 
-static std::optional<std::string>
-maybe_get_host_uri(const request_type& request)
-{
-    if (request.headers().has<Http::Header::Host>()) {
-        auto host_header = request.headers().get<Http::Header::Host>();
-        return ("http://" + host_header->host() + ":"
-                + host_header->port().toString());
-    }
-
-    return (std::nullopt);
-}
-
 static std::string concatenate(const std::vector<std::string>& strings)
 {
     return (std::accumulate(
@@ -327,11 +315,8 @@ void handler::create_file(const Rest::Request& request,
             assert(!reply->files.empty());
             response.headers().add<Http::Header::ContentType>(
                 MIME(Application, Json));
-            if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
-                response.headers().add<Http::Header::Location>(
-                    *uri + request.resource() + "/"
-                    + reply->files.front()->id());
-            }
+            response.headers().add<Http::Header::Location>(
+                request.resource() + "/" + reply->files.front()->id());
             response.send(
                 Http::Code::Created,
                 api::to_swagger(*reply->files.front())->toJson().dump());
@@ -486,13 +471,8 @@ void handler::create_generator(const Rest::Request& request,
             assert(!reply->generators.empty());
             response.headers().add<Http::Header::ContentType>(
                 MIME(Application, Json));
-
-            if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
-                response.headers().add<Http::Header::Location>(
-                    *uri + request.resource() + "/"
-                    + reply->generators.front()->id());
-            }
-
+            response.headers().add<Http::Header::Location>(
+                request.resource() + "/" + reply->generators.front()->id());
             response.send(
                 Http::Code::Created,
                 api::to_swagger(*reply->generators.front())->toJson().dump());
@@ -627,13 +607,8 @@ void handler::start_generator(const Rest::Request& request,
             std::get_if<api::reply_block_generator_results>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
-
-        if (auto uri = maybe_get_host_uri(request); uri.has_value()) {
-            response.headers().add<Http::Header::Location>(
-                *uri + "/block-generator-results/"
-                + reply->results.front()->id());
-        }
-
+        response.headers().add<Http::Header::Location>(
+            "/block-generator-results/" + reply->results.front()->id());
         response.send(
             Http::Code::Created,
             api::to_swagger(*reply->results.front())->toJson().dump());
