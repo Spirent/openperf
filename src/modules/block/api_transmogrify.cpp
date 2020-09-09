@@ -15,82 +15,84 @@ message::serialized_message serialize_request(request_msg&& msg)
         (message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
-                 [&](const request_block_device_list&) { return (0); },
-                 [&](const request_block_device& blkdevice) {
+                 [&](const request_block_device_list&) -> bool { return (0); },
+                 [&](const request_block_device& blkdevice) -> bool {
                      return message::push(serialized, blkdevice.id);
                  },
-                 [&](const request_block_device_init& blkdevice) {
+                 [&](const request_block_device_init& blkdevice) -> bool {
                      return message::push(serialized, blkdevice.id);
                  },
-                 [&](const request_block_file_list&) { return (0); },
-                 [&](const request_block_file& blkfile) {
+                 [&](const request_block_file_list&) -> bool { return (0); },
+                 [&](const request_block_file& blkfile) -> bool {
                      return message::push(serialized, blkfile.id);
                  },
-                 [&](request_block_file_add& blkfile) {
+                 [&](request_block_file_add& blkfile) -> bool {
                      return message::push(serialized,
                                           std::move(blkfile.source));
                  },
-                 [&](const request_block_file_del& blkfile) {
+                 [&](const request_block_file_del& blkfile) -> bool {
                      return message::push(serialized, blkfile.id);
                  },
-                 [&](request_block_file_bulk_add& request) {
+                 [&](request_block_file_bulk_add& request) -> bool {
                      return message::push(serialized, request.files);
                  },
-                 [&](request_block_file_bulk_del& request) {
+                 [&](request_block_file_bulk_del& request) -> bool {
                      return message::push(
                          serialized,
                          std::make_unique<request_block_file_bulk_del>(
                              std::move(request)));
                  },
-                 [&](const request_block_generator_list&) { return (0); },
-                 [&](const request_block_generator& blkgenerator) {
+                 [&](const request_block_generator_list&) -> bool {
+                     return (0);
+                 },
+                 [&](const request_block_generator& blkgenerator) -> bool {
                      return message::push(serialized, blkgenerator.id);
                  },
-                 [&](request_block_generator_add& blkgenerator) {
+                 [&](request_block_generator_add& blkgenerator) -> bool {
                      return message::push(serialized,
                                           std::move(blkgenerator.source));
                  },
-                 [&](const request_block_generator_del& blkgenerator) {
+                 [&](const request_block_generator_del& blkgenerator) -> bool {
                      return message::push(serialized, blkgenerator.id);
                  },
-                 [&](request_block_generator_bulk_add& request) {
+                 [&](request_block_generator_bulk_add& request) -> bool {
                      return message::push(serialized, request.generators);
                  },
-                 [&](request_block_generator_bulk_del& request) {
+                 [&](request_block_generator_bulk_del& request) -> bool {
                      return message::push(
                          serialized,
                          std::make_unique<request_block_generator_bulk_del>(
                              std::move(request)));
                  },
-                 [&](request_block_generator_start& start) {
-                     message::push(serialized, start.id);
-                     return message::push(
-                         serialized,
-                         std::make_unique<dynamic::configuration>(
-                             std::move(start.dynamic_results)));
+                 [&](request_block_generator_start& start) -> bool {
+                     return message::push(serialized, start.id)
+                            || message::push(
+                                serialized,
+                                std::make_unique<dynamic::configuration>(
+                                    std::move(start.dynamic_results)));
                  },
-                 [&](const request_block_generator_stop& blkgenerator) {
+                 [&](const request_block_generator_stop& blkgenerator) -> bool {
                      return message::push(serialized, blkgenerator.id);
                  },
-                 [&](request_block_generator_bulk_start& request) {
+                 [&](request_block_generator_bulk_start& request) -> bool {
                      return message::push(
                          serialized,
                          std::make_unique<request_block_generator_bulk_start>(
                              std::move(request)));
                  },
-                 [&](request_block_generator_bulk_stop& request) {
+                 [&](request_block_generator_bulk_stop& request) -> bool {
                      return message::push(
                          serialized,
                          std::make_unique<request_block_generator_bulk_stop>(
                              std::move(request)));
                  },
-                 [&](const request_block_generator_result_list&) {
+                 [&](const request_block_generator_result_list&) -> bool {
                      return (0);
                  },
-                 [&](const request_block_generator_result& result) {
+                 [&](const request_block_generator_result& result) -> bool {
                      return message::push(serialized, result.id);
                  },
-                 [&](const request_block_generator_result_del& result) {
+                 [&](const request_block_generator_result_del& result) -> bool {
                      return message::push(serialized, result.id);
                  }),
              msg));

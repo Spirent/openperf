@@ -19,45 +19,45 @@ serialized_msg serialize(api_request&& msg)
         (openperf::message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
-                 [&](request::generator::create& create) {
+                 [&](request::generator::create& create) -> bool {
                      return openperf::message::push(
                          serialized,
                          std::make_unique<request::generator::create>(
                              std::move(create)));
                  },
-                 [&](request::generator::start& start) {
-                     openperf::message::push(serialized, start.id);
-                     return openperf::message::push(
-                         serialized,
-                         std::make_unique<dynamic::configuration>(
-                             std::move(start.dynamic_results)));
+                 [&](request::generator::start& start) -> bool {
+                     return openperf::message::push(serialized, start.id)
+                            || openperf::message::push(
+                                serialized,
+                                std::make_unique<dynamic::configuration>(
+                                    std::move(start.dynamic_results)));
                  },
-                 [&](request::generator::bulk::create& create) {
+                 [&](request::generator::bulk::create& create) -> bool {
                      return openperf::message::push(
                          serialized,
                          std::make_unique<request::generator::bulk::create>(
                              std::move(create)));
                  },
-                 [&](request::generator::bulk::start& start) {
-                     openperf::message::push(
-                         serialized,
-                         std::make_unique<decltype(start.ids)>(
-                             std::move(start.ids)));
+                 [&](request::generator::bulk::start& start) -> bool {
                      return openperf::message::push(
-                         serialized,
-                         std::make_unique<dynamic::configuration>(
-                             std::move(start.dynamic_results)));
+                                serialized,
+                                std::make_unique<decltype(start.ids)>(
+                                    std::move(start.ids)))
+                            || openperf::message::push(
+                                serialized,
+                                std::make_unique<dynamic::configuration>(
+                                    std::move(start.dynamic_results)));
                  },
-                 [&](request::generator::bulk::id_list& list) {
+                 [&](request::generator::bulk::id_list& list) -> bool {
                      return openperf::message::push(
                          serialized,
                          std::make_unique<request::generator::bulk::id_list>(
                              std::move(list)));
                  },
-                 [&](const id_message& msg) {
+                 [&](const id_message& msg) -> bool {
                      return openperf::message::push(serialized, msg.id);
                  },
-                 [&](const message&) { return 0; }),
+                 [&](const message&) -> bool { return 0; }),
              msg));
     if (error) { throw std::bad_alloc(); }
 
@@ -71,43 +71,46 @@ serialized_msg serialize(api_reply&& msg)
         (openperf::message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
-                 [&](reply::generator::list& list) {
+                 [&](reply::generator::list& list) -> bool {
                      return openperf::message::push(
                          serialized,
                          std::make_unique<reply::generator::list>(
                              std::move(list)));
                  },
-                 [&](reply::generator::item& item) {
-                     openperf::message::push(serialized, item.id);
-                     openperf::message::push(serialized, item.is_running);
-                     openperf::message::push(serialized, item.config);
-                     return openperf::message::push(serialized,
-                                                    item.init_percent_complete);
+                 [&](reply::generator::item& item) -> bool {
+                     return openperf::message::push(serialized, item.id)
+                            || openperf::message::push(serialized,
+                                                       item.is_running)
+                            || openperf::message::push(serialized, item.config)
+                            || openperf::message::push(
+                                serialized, item.init_percent_complete);
                  },
-                 [&](reply::statistic::list& list) {
+                 [&](reply::statistic::list& list) -> bool {
                      return openperf::message::push(
                          serialized,
                          std::make_unique<reply::statistic::list>(
                              std::move(list)));
                  },
-                 [&](reply::statistic::item& item) {
-                     openperf::message::push(serialized, item.id);
-                     openperf::message::push(serialized, item.generator_id);
-                     openperf::message::push(serialized, item.stat);
-                     return openperf::message::push(
-                         serialized,
-                         std::make_unique<dynamic::results>(
-                             std::move(item.dynamic_results)));
+                 [&](reply::statistic::item& item) -> bool {
+                     return openperf::message::push(serialized, item.id)
+                            || openperf::message::push(serialized,
+                                                       item.generator_id)
+                            || openperf::message::push(serialized, item.stat)
+                            || openperf::message::push(
+                                serialized,
+                                std::make_unique<dynamic::results>(
+                                    std::move(item.dynamic_results)));
                  },
-                 [&](const reply::info& info) {
+                 [&](const reply::info& info) -> bool {
                      return openperf::message::push(serialized, info);
                  },
-                 [&](reply::error& error) {
-                     openperf::message::push(serialized, error.type);
-                     openperf::message::push(serialized, error.value);
-                     return openperf::message::push(serialized, error.message);
+                 [&](reply::error& error) -> bool {
+                     return openperf::message::push(serialized, error.type)
+                            || openperf::message::push(serialized, error.value)
+                            || openperf::message::push(serialized,
+                                                       error.message);
                  },
-                 [&](const message&) { return 0; }),
+                 [&](const message&) -> bool { return 0; }),
              msg));
     if (error) { throw std::bad_alloc(); }
 

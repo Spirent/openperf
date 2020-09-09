@@ -15,53 +15,56 @@ serialized_msg serialize_request(request_msg&& msg)
         (message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
-                 [&](const request_cpu_generator_list&) { return 0; },
-                 [&](const request_cpu_generator& cpu_generator) {
+                 [&](const request_cpu_generator_list&) -> bool { return 0; },
+                 [&](const request_cpu_generator& cpu_generator) -> bool {
                      return message::push(serialized, cpu_generator.id);
                  },
-                 [&](request_cpu_generator_add& cpu_generator) {
+                 [&](request_cpu_generator_add& cpu_generator) -> bool {
                      return message::push(serialized,
                                           std::move(cpu_generator.source));
                  },
-                 [&](const request_cpu_generator_del& cpu_generator) {
+                 [&](const request_cpu_generator_del& cpu_generator) -> bool {
                      return message::push(serialized, cpu_generator.id);
                  },
-                 [&](request_cpu_generator_bulk_add& request) {
+                 [&](request_cpu_generator_bulk_add& request) -> bool {
                      return message::push(serialized, request.generators);
                  },
-                 [&](request_cpu_generator_bulk_del& request) {
+                 [&](request_cpu_generator_bulk_del& request) -> bool {
                      return message::push(serialized, request.ids);
                  },
-                 [&](request_cpu_generator_start& request) {
-                     message::push(serialized, request.id);
-                     return message::push(
-                         serialized,
-                         std::make_unique<dynamic::configuration>(
-                             std::move(request.dynamic_results)));
+                 [&](request_cpu_generator_start& request) -> bool {
+                     return message::push(serialized, request.id)
+                            || message::push(
+                                serialized,
+                                std::make_unique<dynamic::configuration>(
+                                    std::move(request.dynamic_results)));
                  },
-                 [&](const request_cpu_generator_stop& cpu_generator) {
+                 [&](const request_cpu_generator_stop& cpu_generator) -> bool {
                      return message::push(serialized, cpu_generator.id);
                  },
-                 [&](request_cpu_generator_bulk_start& request) {
-                     message::push(serialized,
-                                   std::make_unique<decltype(request.ids)>(
-                                       std::move(request.ids)));
+                 [&](request_cpu_generator_bulk_start& request) -> bool {
                      return message::push(
-                         serialized,
-                         std::make_unique<dynamic::configuration>(
-                             std::move(request.dynamic_results)));
+                                serialized,
+                                std::make_unique<decltype(request.ids)>(
+                                    std::move(request.ids)))
+                            || message::push(
+                                serialized,
+                                std::make_unique<dynamic::configuration>(
+                                    std::move(request.dynamic_results)));
                  },
-                 [&](request_cpu_generator_bulk_stop& request) {
+                 [&](request_cpu_generator_bulk_stop& request) -> bool {
                      return message::push(serialized, request.ids);
                  },
-                 [&](const request_cpu_generator_result_list&) { return 0; },
-                 [&](const request_cpu_generator_result& result) {
+                 [&](const request_cpu_generator_result_list&) -> bool {
+                     return 0;
+                 },
+                 [&](const request_cpu_generator_result& result) -> bool {
                      return message::push(serialized, result.id);
                  },
-                 [&](const request_cpu_generator_result_del& result) {
+                 [&](const request_cpu_generator_result_del& result) -> bool {
                      return message::push(serialized, result.id);
                  },
-                 [&](const request_cpu_info&) { return 0; }),
+                 [&](const request_cpu_info&) -> bool { return 0; }),
              msg));
     if (error) { throw std::bad_alloc(); }
 
