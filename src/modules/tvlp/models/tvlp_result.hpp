@@ -4,10 +4,11 @@
 #include <optional>
 #include <string>
 #include "json.hpp"
+#include "immer/flex_vector.hpp"
 
 namespace openperf::tvlp::model {
 
-using json_vector = std::vector<nlohmann::json>;
+using json_vector = immer::flex_vector<nlohmann::json>;
 
 struct tvlp_modules_results_t
 {

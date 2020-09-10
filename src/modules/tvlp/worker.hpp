@@ -32,8 +32,7 @@ static const std::chrono::seconds INTERNAL_REQUEST_TIMEOUT = 5s;
 
 class tvlp_worker_t
 {
-    using worker_future =
-        std::future<tl::expected<model::json_vector, std::string>>;
+    using worker_future = std::future<tl::expected<void, std::string>>;
 
 public:
     tvlp_worker_t() = delete;
@@ -64,16 +63,19 @@ protected:
     virtual std::string generator_results_endpoint() = 0;
 
 private:
-    void fetch_future_results();
-    tl::expected<model::json_vector, std::string>
+    tl::expected<void, std::string>
     schedule(realtime::time_point start_time,
              const model::tvlp_module_profile_t& profile);
 
     tvlp_worker_state_t m_state;
     std::string m_error;
-    std::shared_ptr<model::json_vector> m_result_ptr;
+    std::atomic<model::json_vector*> m_result;
     worker_future m_scheduler_thread;
     model::tvlp_module_profile_t m_profile;
+
+    enum class result_store_operation { ADD = 0, UPDATE };
+    void store_results(const nlohmann::json& result,
+                       result_store_operation operation);
 };
 
 } // namespace openperf::tvlp::internal::worker
