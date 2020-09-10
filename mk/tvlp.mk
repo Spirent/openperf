@@ -18,7 +18,7 @@ OP_LIB_DIRS += $(TVLP_LIB_DIR)
 TVLP_SOURCES :=
 TVLP_DEPENDS :=
 TVLP_LDLIBS := -lswagger_v1_model
-TVLP_FLAGS:= -fPIC
+TVLP_FLAGS:= -fPIC -Wno-shadow
 
 include $(TVLP_SRC_DIR)/directory.mk
 
