@@ -13,11 +13,10 @@ TVLP_LIB_DIR := $(OP_BUILD_ROOT)/plugins
 
 OP_INC_DIRS += $(OP_ROOT)/src/modules
 OP_LIB_DIRS += $(TVLP_LIB_DIR)
-#OP_CPPFLAGS += -fPIC
 
 TVLP_SOURCES :=
 TVLP_DEPENDS :=
-TVLP_LDLIBS := -lswagger_v1_model
+TVLP_LDLIBS :=
 TVLP_FLAGS:= -fPIC -Wno-shadow
 
 include $(TVLP_SRC_DIR)/directory.mk
