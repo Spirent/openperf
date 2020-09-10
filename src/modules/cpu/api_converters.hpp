@@ -2,6 +2,7 @@
 #define _OP_CPU_API_CONVERTERS_HPP_
 
 #include <json.hpp>
+#include <tl/expected.hpp>
 
 #include "api.hpp"
 
@@ -24,6 +25,9 @@ void from_json(const nlohmann::json&, BulkStopCpuGeneratorsRequest&);
 namespace openperf::cpu::api {
 
 namespace swagger = ::swagger::v1::model;
+
+tl::expected<bool, std::vector<std::string>>
+is_valid(const swagger::CpuGeneratorConfig&);
 
 model::generator from_swagger(const swagger::CpuGenerator&);
 request_cpu_generator_bulk_add

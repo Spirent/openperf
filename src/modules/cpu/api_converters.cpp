@@ -15,6 +15,37 @@ std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
     return os.str();
 }
 
+tl::expected<bool, std::vector<std::string>>
+is_valid(const swagger::CpuGeneratorCoreConfig& config)
+{
+    auto errors = std::vector<std::string>();
+
+    if (config.getUtilization() < 0 || 100 < config.getUtilization()) {
+        errors.emplace_back("Utilization value is not valid");
+    }
+
+    if (!errors.empty()) return tl::make_unexpected(std::move(errors));
+    return true;
+}
+
+tl::expected<bool, std::vector<std::string>>
+is_valid(const swagger::CpuGeneratorConfig& config)
+{
+    auto errors = std::vector<std::string>();
+
+    auto cores = const_cast<swagger::CpuGeneratorConfig&>(config).getCores();
+    for (auto& core : cores) {
+        if (auto err = is_valid(*core); !err) {
+            std::copy(err.error().begin(),
+                      err.error().end(),
+                      std::back_inserter(errors));
+        }
+    }
+
+    if (!errors.empty()) return tl::make_unexpected(std::move(errors));
+    return true;
+}
+
 model::generator from_swagger(const swagger::CpuGenerator& generator)
 {
     generator_config config;
