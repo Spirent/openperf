@@ -10,7 +10,7 @@ $(call op_check_vars,$(SWAGGER_REQ_VARS))
 SWAGGER_SOURCES :=
 SWAGGER_INCLUDES :=
 SWAGGER_DEPENDS :=
-SWAGGER_FLAGS := -fPIC
+SWAGGER_FLAGS :=
 
 SWAGGER_SRC_DIR := $(OP_ROOT)/src/swagger
 SWAGGER_OBJ_DIR := $(OP_BUILD_ROOT)/obj/swagger
@@ -24,7 +24,7 @@ SWAGGER_TARGET := $(SWAGGER_LIB_DIR)/libswagger_v1_model.a
 
 OP_INC_DIRS += $(addprefix $(SWAGGER_SRC_DIR)/,$(SWAGGER_INCLUDES))
 OP_LIB_DIRS += $(SWAGGER_LIB_DIR)
-OP_LDLIBS += -lswagger_v1_model
+OP_LDLIBS += -Wl,--whole-archive -lswagger_v1_model
 
 # Load dependencies
 -include $(SWAGGER_OBJECTS:.o=.d)
