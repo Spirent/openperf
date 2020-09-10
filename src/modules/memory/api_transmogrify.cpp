@@ -57,7 +57,7 @@ serialized_msg serialize(api_request&& msg)
                  [&](const id_message& msg) -> bool {
                      return openperf::message::push(serialized, msg.id);
                  },
-                 [&](const message&) -> bool { return 0; }),
+                 [&](const message&) -> bool { return false; }),
              msg));
     if (error) { throw std::bad_alloc(); }
 
@@ -110,7 +110,7 @@ serialized_msg serialize(api_reply&& msg)
                             || openperf::message::push(serialized,
                                                        error.message);
                  },
-                 [&](const message&) -> bool { return 0; }),
+                 [&](const message&) -> bool { return false; }),
              msg));
     if (error) { throw std::bad_alloc(); }
 

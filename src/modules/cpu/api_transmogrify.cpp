@@ -15,7 +15,9 @@ serialized_msg serialize_request(request_msg&& msg)
         (message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
-                 [&](const request_cpu_generator_list&) -> bool { return 0; },
+                 [&](const request_cpu_generator_list&) -> bool {
+                     return false;
+                 },
                  [&](const request_cpu_generator& cpu_generator) -> bool {
                      return message::push(serialized, cpu_generator.id);
                  },
@@ -56,7 +58,7 @@ serialized_msg serialize_request(request_msg&& msg)
                      return message::push(serialized, request.ids);
                  },
                  [&](const request_cpu_generator_result_list&) -> bool {
-                     return 0;
+                     return false;
                  },
                  [&](const request_cpu_generator_result& result) -> bool {
                      return message::push(serialized, result.id);
@@ -64,7 +66,7 @@ serialized_msg serialize_request(request_msg&& msg)
                  [&](const request_cpu_generator_result_del& result) -> bool {
                      return message::push(serialized, result.id);
                  },
-                 [&](const request_cpu_info&) -> bool { return 0; }),
+                 [&](const request_cpu_info&) -> bool { return false; }),
              msg));
     if (error) { throw std::bad_alloc(); }
 

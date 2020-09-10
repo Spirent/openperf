@@ -15,14 +15,16 @@ message::serialized_message serialize_request(request_msg&& msg)
         (message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
-                 [&](const request_block_device_list&) -> bool { return (0); },
+                 [&](const request_block_device_list&) -> bool {
+                     return false;
+                 },
                  [&](const request_block_device& blkdevice) -> bool {
                      return message::push(serialized, blkdevice.id);
                  },
                  [&](const request_block_device_init& blkdevice) -> bool {
                      return message::push(serialized, blkdevice.id);
                  },
-                 [&](const request_block_file_list&) -> bool { return (0); },
+                 [&](const request_block_file_list&) -> bool { return false; },
                  [&](const request_block_file& blkfile) -> bool {
                      return message::push(serialized, blkfile.id);
                  },
@@ -43,7 +45,7 @@ message::serialized_message serialize_request(request_msg&& msg)
                              std::move(request)));
                  },
                  [&](const request_block_generator_list&) -> bool {
-                     return (0);
+                     return false;
                  },
                  [&](const request_block_generator& blkgenerator) -> bool {
                      return message::push(serialized, blkgenerator.id);
@@ -87,7 +89,7 @@ message::serialized_message serialize_request(request_msg&& msg)
                              std::move(request)));
                  },
                  [&](const request_block_generator_result_list&) -> bool {
-                     return (0);
+                     return false;
                  },
                  [&](const request_block_generator_result& result) -> bool {
                      return message::push(serialized, result.id);
