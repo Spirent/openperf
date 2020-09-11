@@ -85,8 +85,6 @@ utilization_time cpu_thread_time()
                             .utilization = time_user + time_system};
 }
 
-uint16_t cpu_cores() { return sysconf(_SC_NPROCESSORS_CONF); }
-
 uint16_t cpu_cache_line_size() { return sysconf(_SC_LEVEL1_DCACHE_LINESIZE); }
 
 std::string cpu_architecture()

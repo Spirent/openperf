@@ -4,6 +4,7 @@
 #include "cpu.hpp"
 
 #include "framework/core/op_uuid.hpp"
+#include "framework/core/op_cpuset.h"
 
 namespace openperf::cpu::generator {
 
@@ -103,11 +104,7 @@ std::vector<uint16_t> detect_cores()
     auto f = std::async(std::launch::async, [] {
         std::vector<uint16_t> result;
 
-        cpu_set_t cpuset;
-        auto cores_total = internal::cpu_cores();
-        for (uint16_t core = 0; core < cores_total; core++) {
-            CPU_SET(core, &cpuset);
-        }
+        auto cpuset = op_cpuset_all();
         int s = op_thread_set_affinity_mask(&cpuset);
         if (s != 0) {
             OP_LOG(OP_LOG_ERROR, "Failed to set affinity");
@@ -120,8 +117,8 @@ std::vector<uint16_t> detect_cores()
             return result;
         }
 
-        for (uint16_t core = 0; core < cores_total; core++) {
-            if (CPU_ISSET(core, &cpuset)) result.push_back(core);
+        for (uint16_t core = 0; core < op_cpuset_size(cpuset); core++) {
+            if (op_cpuset_get(cpuset, core)) result.push_back(core);
         }
         return result;
     });

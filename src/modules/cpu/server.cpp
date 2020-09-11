@@ -248,7 +248,7 @@ reply_msg server::handle_request(const request_cpu_info&)
 {
     auto info = std::make_unique<cpu_info_t>();
     info->architecture = cpu_architecture();
-    info->cores = cpu_cores();
+    info->cores = op_get_cpu_count();
     info->cache_line_size = cpu_cache_line_size();
 
     return reply_cpu_info{.info = std::move(info)};

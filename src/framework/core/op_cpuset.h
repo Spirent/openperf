@@ -4,9 +4,15 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void* op_cpuset_t;
 
 op_cpuset_t op_cpuset_create(void);
+
+op_cpuset_t op_cpuset_all(void);
 
 int op_cpuset_from_string(op_cpuset_t cpuset, const char* str);
 
@@ -124,5 +130,9 @@ inline int op_cpuset_get_next(op_cpuset_t cpuset, size_t* cpu)
  *   The number of cpus or 0 if fail.
  */
 size_t op_get_cpu_count(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _OP_CPUSET_H_ */
