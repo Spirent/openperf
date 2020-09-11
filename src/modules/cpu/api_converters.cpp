@@ -21,7 +21,9 @@ is_valid(const swagger::CpuGeneratorCoreConfig& config)
     auto errors = std::vector<std::string>();
 
     if (config.getUtilization() < 0 || 100 < config.getUtilization()) {
-        errors.emplace_back("Utilization value is not valid");
+        errors.emplace_back("Utilization value '"
+                            + std::to_string(config.getUtilization())
+                            + "' is not valid");
     }
 
     if (!errors.empty()) return tl::make_unexpected(std::move(errors));
