@@ -101,6 +101,10 @@ generator::~generator()
 
 std::vector<uint16_t> detect_cores()
 {
+    // It is required to change thread affinity in order to be able to detect
+    // available cores. Affinity of the current thread could be already set and
+    // we should not touch it therefore this will be performed in a separate
+    // thread.
     auto f = std::async(std::launch::async, [] {
         std::vector<uint16_t> result;
 
