@@ -109,13 +109,13 @@ std::vector<uint16_t> detect_cores()
         std::vector<uint16_t> result;
 
         auto cpuset = op_cpuset_all();
-        int s = op_thread_set_affinity_mask(&cpuset);
+        int s = op_thread_set_affinity_mask(cpuset);
         if (s != 0) {
             OP_LOG(OP_LOG_ERROR, "Failed to set affinity");
             return result;
         }
 
-        s = op_thread_get_affinity_mask(&cpuset);
+        s = op_thread_get_affinity_mask(cpuset);
         if (s != 0) {
             OP_LOG(OP_LOG_ERROR, "Failed to get affinity");
             return result;
