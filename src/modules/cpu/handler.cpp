@@ -3,18 +3,15 @@
 
 #include "framework/config/op_config_utils.hpp"
 #include "framework/core/op_core.h"
-#include "modules/dynamic/api.hpp"
 #include "framework/message/serialized_message.hpp"
 #include "modules/api/api_route_handler.hpp"
+#include "modules/dynamic/api.hpp"
 
-namespace opneperf::cpu {
+namespace openperf::cpu {
 
 using namespace Pistache;
 using namespace swagger::v1::model;
 using json = nlohmann::json;
-
-namespace dynamic = openperf::dynamic;
-namespace api = openperf::cpu::api;
 
 class handler : public openperf::api::route::handler::registrar<handler>
 {
@@ -330,7 +327,7 @@ void handler::start_generator(const Rest::Request& request,
     } else {
         response.send(Http::Code::Internal_Server_Error);
     }
-} // namespace opneperf::cpu
+}
 
 void handler::stop_generator(const Rest::Request& request,
                              Http::ResponseWriter response)
@@ -509,4 +506,4 @@ void handler::get_cpu_info(const Rest::Request&, Http::ResponseWriter response)
     }
 }
 
-} // namespace opneperf::cpu
+} // namespace openperf::cpu
