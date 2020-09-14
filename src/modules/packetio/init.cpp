@@ -59,7 +59,7 @@ struct service
     void start()
     {
         m_service = std::thread([this]() {
-            op_thread_setname("op_packetio");
+            op_thread_setname("op_pio");
 
             struct op_event_callbacks callbacks = {.on_read =
                                                        handle_zmq_shutdown};
