@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <future>
 
 #include <net/if.h>
 
@@ -322,8 +323,13 @@ eal::eal(std::vector<std::string>&& args,
         throw std::runtime_error("Failed to set DPDK log stream");
     }
 
-    int parsed_or_err =
-        rte_eal_init(static_cast<int>(eal_args.size() - 1), eal_args.data());
+    /* Initialize the EAL in a separate thread, because an initialization code
+     * changes the current thread affinity mask
+     */
+    int parsed_or_err = std::async(rte_eal_init,
+                                   static_cast<int>(eal_args.size() - 1),
+                                   eal_args.data())
+                            .get();
     if (parsed_or_err < 0) {
         throw std::runtime_error("Failed to initialize DPDK");
     }
