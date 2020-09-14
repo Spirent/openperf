@@ -37,9 +37,9 @@ is_valid(const swagger::CpuGeneratorConfig& config)
 
     auto cores = const_cast<swagger::CpuGeneratorConfig&>(config).getCores();
     for (auto& core : cores) {
-        if (auto err = is_valid(*core); !err) {
-            std::copy(err.error().begin(),
-                      err.error().end(),
+        if (auto result = is_valid(*core); !result) {
+            std::copy(result.error().begin(),
+                      result.error().end(),
                       std::back_inserter(errors));
         }
     }
