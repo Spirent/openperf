@@ -99,43 +99,16 @@ generator::~generator()
     m_controller.clear();
 }
 
-std::vector<uint16_t> detect_cores()
-{
-    // It is required to change thread affinity in order to be able to detect
-    // available cores. Affinity of the current thread could be already set and
-    // we should not touch it therefore this will be performed in a separate
-    // thread.
-    auto f = std::async(std::launch::async, [] {
-        std::vector<uint16_t> result;
-
-        auto cpuset = op_cpuset_all();
-        int s = op_thread_set_affinity_mask(cpuset);
-        if (s != 0) {
-            OP_LOG(OP_LOG_ERROR, "Failed to set affinity");
-            return result;
-        }
-
-        s = op_thread_get_affinity_mask(cpuset);
-        if (s != 0) {
-            OP_LOG(OP_LOG_ERROR, "Failed to get affinity");
-            return result;
-        }
-
-        for (uint16_t core = 0; core < op_cpuset_size(cpuset); core++) {
-            if (op_cpuset_get(cpuset, core)) result.push_back(core);
-        }
-        return result;
-    });
-
-    return f.get();
-}
-
 // Methods : public
 void generator::config(const generator_config& config)
 {
     m_controller.pause();
 
-    auto available_cores = detect_cores();
+    // It is required to change thread affinity in order to be able to detect
+    // available cores. Affinity of the current thread could be already set and
+    // we should not touch it therefore this will be performed in a separate
+    // thread.
+    auto available_cores = std::async(op_get_cpu_online).get();
     OP_LOG(OP_LOG_DEBUG, "Detected %zu cores", available_cores.size());
 
     if (config.cores.size() > available_cores.size())
