@@ -19,12 +19,12 @@ class generator : public model::generator
 private:
     std::string m_result_id;
     const uint16_t m_serial_number;
-    controller m_controller;
 
     cpu_stat m_stat;
     std::atomic<cpu_stat*> m_stat_ptr;
 
     dynamic::spool<cpu_stat> m_dynamic;
+    controller m_controller;
 
 public:
     generator(const model::generator&);
