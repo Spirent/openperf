@@ -76,9 +76,9 @@ generator::generator(const model::generator& generator_model)
     : model::generator(generator_model)
     , m_result_id(core::to_string(core::uuid::random()))
     , m_serial_number(++serial_counter)
-    , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
     , m_stat_ptr(&m_stat)
     , m_dynamic(get_field)
+    , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
 {
     generator::config(generator_model.config());
     m_controller.start<task_cpu_stat*>([this](const task_cpu_stat& stat) {
