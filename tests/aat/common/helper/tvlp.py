@@ -5,10 +5,12 @@ import common.helper.memory as memory
 import common.helper.cpu as cpu
 import common.helper.packet as packet
 
+
 def tvlp_model():
     tc = client.models.TvlpConfiguration()
     tc.profile = client.models.TvlpProfile()
     return tc
+
 
 def tvlp_block_profile_model(entries, length, resource_id):
     tp = client.models.TvlpProfileBlock([])
@@ -20,6 +22,7 @@ def tvlp_block_profile_model(entries, length, resource_id):
         tp.series.append(ps)
     return tp
 
+
 def tvlp_memory_profile_model(entries, length):
     tp = client.models.TvlpProfileMemory([])
     for i in range(entries):
@@ -29,6 +32,7 @@ def tvlp_memory_profile_model(entries, length):
         tp.series.append(ps)
     return tp
 
+
 def tvlp_cpu_profile_model(entries, length):
     tp = client.models.TvlpProfileCpu([])
     for i in range(entries):
@@ -37,6 +41,7 @@ def tvlp_cpu_profile_model(entries, length):
         ps.config = cpu.config_model()
         tp.series.append(ps)
     return tp
+
 
 def tvlp_packet_profile_model(entries, length, target_id):
     tp = client.models.TvlpProfilePacket([])
