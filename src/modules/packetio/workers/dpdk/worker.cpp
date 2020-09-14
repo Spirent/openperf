@@ -1067,7 +1067,7 @@ public:
 
 int main(void* void_args)
 {
-    op_thread_setname(("op_worker_" + std::to_string(rte_lcore_id())).c_str());
+    op_thread_setname(("op_pio_dpdk" + std::to_string(rte_lcore_id())).c_str());
 
     auto args = reinterpret_cast<main_args*>(void_args);
 
