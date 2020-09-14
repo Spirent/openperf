@@ -63,9 +63,9 @@ block_generator::block_generator(
     const std::vector<virtual_device_stack*>& vdev_stack_list)
     : model::block_generator(generator_model)
     , m_serial_number(++serial_counter)
-    , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
     , m_vdev_stack_list(vdev_stack_list)
     , m_dynamic(get_field)
+    , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
 {
     m_controller.start<task_stat_t>([this](const task_stat_t& stat) {
         auto elapsed_time = stat.updated - m_start_time;

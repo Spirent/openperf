@@ -25,7 +25,6 @@ private:
 
 private:
     uint16_t m_serial_number;
-    framework::generator::controller m_controller;
 
     task_synchronizer m_synchronizer;
     std::string m_statistics_id;
@@ -36,6 +35,7 @@ private:
     chronometer::time_point m_start_time;
 
     dynamic::spool<model::block_generator_result> m_dynamic;
+    framework::generator::controller m_controller;
 
 public:
     block_generator(const model::block_generator& generator_model,

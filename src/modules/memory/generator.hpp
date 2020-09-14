@@ -61,11 +61,11 @@ private:
     time_point m_run_time_milestone;
     std::atomic_int32_t m_init_percent_complete;
 
-    controller m_controller;
     memory_stat m_stat;
     std::atomic<memory_stat*> m_stat_ptr;
 
     dynamic::spool<memory_stat> m_dynamic;
+    controller m_controller;
 
 public:
     // Constructors & Destructor

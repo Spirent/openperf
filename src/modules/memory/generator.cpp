@@ -77,9 +77,9 @@ std::optional<double> get_field(const memory_stat& stat, std::string_view name)
 generator::generator()
     : m_buffer{.ptr = nullptr, .size = 0}
     , m_serial_number(++serial_counter)
-    , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
     , m_stat_ptr(&m_stat)
     , m_dynamic(get_field)
+    , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
 {
     m_controller.start<memory_stat>([this](const memory_stat& stat) {
         auto elapsed_time = m_run_time;
