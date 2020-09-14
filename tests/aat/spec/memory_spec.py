@@ -128,10 +128,8 @@ with description('Memory Generator Module', 'memory') as self:
                     with it('has same config'):
                         if (not self._model.id):
                             self._model.id = self._result[0].id
+                        self._model.init_percent_complete = self._result[0].init_percent_complete
                         expect(self._result[0]).to(equal(self._model))
-
-                    with it('buffer initialization started'):
-                        expect(self._result[0].init_percent_complete).to(be(0))
 
                 with description('with empty ID'):
                     with before.all:
