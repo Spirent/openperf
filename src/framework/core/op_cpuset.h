@@ -41,6 +41,18 @@ void op_cpuset_or(op_cpuset_t dest, op_cpuset_t src);
 bool op_cpuset_equal(op_cpuset_t a, op_cpuset_t b);
 
 /**
+ * Get number of cpus.
+ *
+ * @return
+ *   The number of cpus or 0 if fail.
+ */
+size_t op_get_cpu_count(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+/**
  * Set all bits in specified range to specified value.
  *
  * @param cpuset
@@ -122,17 +134,5 @@ inline int op_cpuset_get_next(op_cpuset_t cpuset, size_t* cpu)
     }
     return -1;
 }
-
-/**
- * Get number of cpus.
- *
- * @return
- *   The number of cpus or 0 if fail.
- */
-size_t op_get_cpu_count(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _OP_CPUSET_H_ */

@@ -24,4 +24,40 @@ int op_thread_get_affinity_mask(op_cpuset_t cpuset);
 }
 #endif
 
+#ifdef __cplusplus
+#include <vector>
+inline std::vector<uint16_t> op_get_cpu_online()
+{
+    auto current_cpuset = op_cpuset_create();
+    auto test_cpuset = op_cpuset_all();
+
+    try {
+        if (op_thread_get_affinity_mask(current_cpuset))
+            throw std::runtime_error("Failed to get affinity");
+
+        if (op_thread_set_affinity_mask(test_cpuset))
+            throw std::runtime_error("Failed to set affinity");
+
+        if (op_thread_get_affinity_mask(test_cpuset))
+            throw std::runtime_error("Failed to get affinity");
+
+        if (op_thread_set_affinity_mask(current_cpuset))
+            throw std::runtime_error("Failed to set affinity");
+    } catch (const std::runtime_error&) {
+        op_cpuset_delete(current_cpuset);
+        op_cpuset_delete(test_cpuset);
+        throw;
+    }
+
+    std::vector<uint16_t> core_list;
+    for (uint16_t core = 0; core < op_cpuset_size(test_cpuset); core++) {
+        if (op_cpuset_get(test_cpuset, core)) core_list.push_back(core);
+    }
+
+    op_cpuset_delete(current_cpuset);
+    op_cpuset_delete(test_cpuset);
+    return core_list;
+}
+#endif
+
 #endif /* _OP_THREAD_H_ */
