@@ -2,6 +2,7 @@ import client.api
 import client.models
 import time
 
+
 def get_memory_dynamic_results_fields():
     fields = []
     swagger_types = client.models.MemoryGeneratorStats.swagger_types
@@ -10,6 +11,7 @@ def get_memory_dynamic_results_fields():
             fields.append('read.' + name)
             fields.append('write.' + name)
     return fields
+
 
 def config_model():
     config = client.models.MemoryGeneratorConfig()
@@ -23,6 +25,7 @@ def config_model():
     config.pattern = 'sequential'
     return config
 
+
 def memory_generator_model(api_client, id = ''):
     gen = client.models.MemoryGenerator()
     gen.running = False
@@ -30,6 +33,7 @@ def memory_generator_model(api_client, id = ''):
     gen.id = id
     gen.init_percent_complete = 0
     return gen
+
 
 def wait_for_buffer_initialization_done(api_client, generator_id, timeout):
     for i in range(timeout * 10):

@@ -36,6 +36,7 @@ SEQ_MODIFIER_PACKET = [
     'udp'
 ]
 
+
 LIST_MODIFIER_PACKET = [
     {'ethernet': {'source': '10:94:00:00:aa:bb',
                   'destination': '10:94:00:00:bb:cc'}},
@@ -58,6 +59,7 @@ LIST_MODIFIER_PACKET = [
     'udp'
 ]
 
+
 GENERATOR_CONFIG_DEFAULT = {
     'duration': {'continuous': True},
     'load': {'rate': 10},
@@ -75,6 +77,7 @@ GENERATOR_CONFIG_DEFAULT = {
         }
     ]
 }
+
 
 def get_first_port_id(api_client):
     ports_api = client.api.PortsApi(api_client)
@@ -104,6 +107,7 @@ def default_traffic_packet_template_with_list_modifiers(permute_flag=None):
 
     return model
 
+
 def packet_generator_config(**kwargs):
     duration_config = kwargs['duration'] if 'duration' in kwargs else DURATION_CONFIG
     load_config = kwargs['load'] if 'load' in kwargs else LOAD_CONFIG
@@ -118,8 +122,10 @@ def packet_generator_config(**kwargs):
 
     return config
 
+
 def config_model():
     return packet_generator_config(**GENERATOR_CONFIG_DEFAULT)
+
 
 def packet_generator_model(api_client):
     config = packet_generator_config(**GENERATOR_CONFIG_DEFAULT)

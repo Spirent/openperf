@@ -3,6 +3,7 @@ from expects import *
 import client.api
 import client.models
 
+
 def check_modules_exists(api_client, *modules):
     api = client.api.ModulesApi(api_client)
     op_modules = api.list_modules()

@@ -2,6 +2,7 @@ import client.api
 import client.models
 import time
 
+
 def get_block_dynamic_results_fields():
     fields = []
     swagger_types = client.models.BlockGeneratorStats.swagger_types
@@ -10,6 +11,7 @@ def get_block_dynamic_results_fields():
             fields.append('read.' + name)
             fields.append('write.' + name)
     return fields
+
 
 def config_model():
     config = client.models.BlockGeneratorConfig()
@@ -20,6 +22,7 @@ def config_model():
     config.write_size = 1
     config.pattern = "random"
     return config
+
 
 def block_generator_model(resource_id = None):
     bg = client.models.BlockGenerator()
@@ -50,6 +53,7 @@ def bulk_stop_model(ids):
     bsbgr = client.models.BulkStopBlockGeneratorsRequest()
     bsbgr.ids = ids
     return bsbgr
+
 
 def wait_for_file_initialization_done(api_client, file_id, timeout):
     for i in range(timeout * 10):
