@@ -61,7 +61,7 @@ def wait_for_tvlp_state(api_client, id, state, timeout):
 with description('TVLP,', 'tvlp') as self:
     with description('REST API,'):
         with before.all:
-            self.service = Service(CONFIG.service())
+            self.service = Service(CONFIG.service('tvlp'))
             self.process = self.service.start()
             self.block_api = client.api.BlockGeneratorApi(self.service.client())
             self.memory_api = client.api.MemoryGeneratorApi(self.service.client())
