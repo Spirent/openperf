@@ -5,7 +5,7 @@
 #include "core/op_log.h"
 #include "core/op_modules.h"
 #include "core/op_options.h"
-
+#include "core/op_plugins.hpp"
 #include "config/op_config_file.hpp"
 
 /*
@@ -69,6 +69,9 @@ void op_init(void* context, int argc, char* argv[])
     if (op_options_init() != 0 || op_options_parse(argc, argv) != 0) {
         op_exit("Option parsing failed!");
     }
+
+    /* Load plugin modules */
+    if (op_modules_load()) { op_exit("Plugin modules loading failed!"); }
 
     /* Initialize all modules */
     if (op_modules_pre_init(context) != 0 || op_modules_init(context) != 0

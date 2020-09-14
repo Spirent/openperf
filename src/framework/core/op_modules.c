@@ -3,10 +3,29 @@
 #include <ctype.h>
 #include <regex.h>
 #include <errno.h>
+#include <dlfcn.h>
+#include <limits.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 #include "core/op_log.h"
 #include "core/op_modules.h"
 #include "core/op_common.h"
+#include "core/op_options.h"
+#include "config/op_config_file.hpp"
+
+MAKE_OPTION_DATA(plugins,
+                 NULL,
+                 MAKE_OPT("Specifies path to plugin modules",
+                          "modules.plugins.path",
+                          'm',
+                          OP_OPTION_TYPE_STRING),
+                 MAKE_OPT("Quoted, comma separated plugin module file names",
+                          "modules.plugins.load",
+                          'L',
+                          OP_OPTION_TYPE_LIST), );
+
+REGISTER_CLI_OPTIONS(plugins)
 
 static SLIST_HEAD(op_modules_list, op_module)
     op_modules_list_head = SLIST_HEAD_INITIALIZER(op_modules_list_head);

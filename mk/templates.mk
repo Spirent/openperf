@@ -135,6 +135,11 @@ define op_link_shared_library
 	$(strip $(OP_CXX) -shared -o $@ $(OP_LDOPTS) $(OP_LDFLAGS) $(3) $(2) $(OP_LDLIBS))
 endef
 
+define op_link_plugin
+	@mkdir -p $(dir $(1))
+	$(strip $(OP_CXX) -fPIC -shared -o $@ $(3) $(2))
+endef
+
 define op_link_static_library
 	$(strip $(OP_AR) $(OP_ARFLAGS) $(3) $(1) $(2))
 endef

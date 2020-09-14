@@ -18,8 +18,12 @@ RUN apt-get clean && \
     apt-get update && \
     apt-get install -y --no-install-recommends libnuma1 libcap2
 
-COPY --from=devimg /root/project/build/openperf-linux-x86_64-testing/bin/openperf /usr/local/bin/openperf
+RUN mkdir -p /opt/openperf/bin
+RUN mkdir -p /opt/openperf/plugins
+
+COPY --from=devimg /root/project/build/openperf-linux-x86_64-testing/bin/openperf /opt/openperf/bin/openperf
+COPY --from=devimg /root/project/build/openperf-linux-x86_64-testing/plugins/* /opt/openperf/plugins
 COPY --from=devimg /root/project/config.yaml /etc/openperf/config.yaml
 
 EXPOSE 9000
-CMD /usr/local/bin/openperf -c /etc/openperf/config.yaml
+CMD /opt/openperf/bin/openperf -c /etc/openperf/config.yaml

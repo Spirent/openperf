@@ -10,12 +10,13 @@ FW_SOURCES += \
 	core/op_log.c \
 	core/op_modules.c \
 	core/op_options.c \
+	core/op_plugins.cpp \
 	core/op_socket.c \
 	core/op_task.c \
 	core/op_version.c
 
 ifeq ($(PLATFORM), linux)
-	FW_LDLIBS += -rdynamic
+	FW_LDLIBS += -rdynamic -ldl
 	FW_SOURCES += \
 	core/op_event_loop_epoll.c \
 	core/op_exit_backtrace.c \
