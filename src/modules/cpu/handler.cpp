@@ -9,7 +9,7 @@
 
 #include "swagger/converters/cpu.hpp"
 
-namespace opneperf::cpu {
+namespace openperf::cpu {
 
 using namespace Pistache;
 using namespace swagger::v1::model;
@@ -519,4 +519,4 @@ void handler::get_cpu_info(const Rest::Request&, Http::ResponseWriter response)
     }
 }
 
-} // namespace opneperf::cpu
+} // namespace openperf::cpu
