@@ -9,9 +9,8 @@
 
 #include "swagger/converters/block.hpp"
 
-namespace opneperf::block {
+namespace openperf::block {
 
-namespace api = openperf::block::api;
 using namespace swagger::v1::model;
 using namespace Pistache;
 using request_type = Pistache::Rest::Request;
@@ -763,4 +762,4 @@ void handler::delete_generator_result(const Rest::Request& request,
     }
 }
 
-} // namespace opneperf::block
+} // namespace openperf::block
