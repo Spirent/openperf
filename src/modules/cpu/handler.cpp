@@ -174,6 +174,17 @@ void handler::create_generator(const Rest::Request& request,
     try {
         auto generator_model = json::parse(request.body()).get<CpuGenerator>();
 
+        if (auto ok = api::is_valid(*generator_model.getConfig()); !ok) {
+            throw json::other_error::create(
+                0,
+                std::accumulate(
+                    ok.error().begin(),
+                    ok.error().end(),
+                    std::string{},
+                    [](auto& acc, auto& s) { return acc += " " + s; })
+                    .c_str());
+        }
+
         auto api_request = api::request_cpu_generator_add{
             std::make_unique<api::cpu_generator_t>(
                 api::from_swagger(generator_model))};
