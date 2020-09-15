@@ -149,7 +149,7 @@ reply_msg server::handle_request(const request_block_file_bulk_del& request)
     if (auto failed = std::count_if(
             request.ids.begin(),
             request.ids.end(),
-            [&](auto& id) { return !m_file_stack->delete_block_file(*id); });
+            [&](auto& id) { return !m_file_stack->delete_block_file(id); });
         failed > 0)
         return to_error(api::error_type::CUSTOM_ERROR,
                         0,
@@ -256,7 +256,7 @@ server::handle_request(const request_block_generator_bulk_del& request)
 {
     bool failed = false;
     for (const auto& id : request.ids) {
-        failed = !m_generator_stack->delete_block_generator(*id) || failed;
+        failed = !m_generator_stack->delete_block_generator(id) || failed;
     }
     if (failed)
         return to_error(api::error_type::CUSTOM_ERROR,
@@ -270,7 +270,7 @@ reply_msg server::handle_request(const request_block_generator_start& request)
 {
     try {
         auto result = m_generator_stack->start_generator(
-            request.data->id, request.data->dynamic_results);
+            request.id, request.dynamic_results);
 
         if (!result) throw std::logic_error(result.error());
         if (!result.value()) return to_error(api::error_type::NOT_FOUND);
@@ -300,9 +300,9 @@ server::handle_request(const request_block_generator_bulk_start& request)
     auto reply = reply_block_generator_results{};
 
     try {
-        for (const auto& id : request.data->ids) {
-            auto stats = m_generator_stack->start_generator(
-                id, request.data->dynamic_results);
+        for (const auto& id : request.ids) {
+            auto stats =
+                m_generator_stack->start_generator(id, request.dynamic_results);
 
             if (!stats) throw std::logic_error(stats.error());
             if (!stats.value()) {
@@ -330,7 +330,7 @@ server::handle_request(const request_block_generator_bulk_stop& request)
 {
     bool failed = false;
     for (const auto& id : request.ids) {
-        failed = !m_generator_stack->stop_generator(*id) || failed;
+        failed = !m_generator_stack->stop_generator(id) || failed;
     }
     if (failed)
         return to_error(api::error_type::CUSTOM_ERROR,

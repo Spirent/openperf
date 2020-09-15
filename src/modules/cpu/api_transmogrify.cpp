@@ -32,14 +32,25 @@ serialized_msg serialize_request(request_msg&& msg)
                  [&](request_cpu_generator_bulk_del& request) {
                      return message::push(serialized, request.ids);
                  },
-                 [&](request_cpu_generator_start& request) {
-                     return message::push(serialized, std::move(request.data));
+                 [&](request_cpu_generator_start& request) -> int {
+                     return message::push(serialized, request.id)
+                            || message::push(
+                                serialized,
+                                std::make_unique<dynamic::configuration>(
+                                    std::move(request.dynamic_results)));
                  },
                  [&](const request_cpu_generator_stop& cpu_generator) {
                      return message::push(serialized, cpu_generator.id);
                  },
-                 [&](request_cpu_generator_bulk_start& request) {
-                     return message::push(serialized, std::move(request.data));
+                 [&](request_cpu_generator_bulk_start& request) -> int {
+                     return message::push(
+                                serialized,
+                                std::make_unique<decltype(request.ids)>(
+                                    std::move(request.ids)))
+                            || message::push(
+                                serialized,
+                                std::make_unique<dynamic::configuration>(
+                                    std::move(request.dynamic_results)));
                  },
                  [&](request_cpu_generator_bulk_stop& request) {
                      return message::push(serialized, request.ids);
@@ -113,8 +124,9 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     }
     case utils::variant_index<request_msg, request_cpu_generator_start>(): {
         auto request = request_cpu_generator_start{};
-        request.data.reset(
-            message::pop<request_cpu_generator_start::start_data*>(msg));
+        request.id = message::pop_string(msg);
+        request.dynamic_results = *std::unique_ptr<dynamic::configuration>(
+            message::pop<dynamic::configuration*>(msg));
         return request;
     }
     case utils::variant_index<request_msg, request_cpu_generator_stop>(): {
@@ -123,8 +135,10 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     case utils::variant_index<request_msg,
                               request_cpu_generator_bulk_start>(): {
         auto request = request_cpu_generator_bulk_start{};
-        request.data.reset(
-            message::pop<request_cpu_generator_bulk_start::start_data*>(msg));
+        request.ids = std::move(*std::unique_ptr<decltype(request.ids)>(
+            message::pop<decltype(request.ids)*>(msg)));
+        request.dynamic_results = *std::unique_ptr<dynamic::configuration>(
+            message::pop<dynamic::configuration*>(msg));
         return request;
     }
     case utils::variant_index<request_msg, request_cpu_generator_bulk_stop>(): {

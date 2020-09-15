@@ -30,10 +30,9 @@ using namespace memory::internal;
 
 config_t from_swagger(const swagger::MemoryGeneratorConfig&);
 swagger::MemoryGeneratorConfig to_swagger(const generator::config_t&);
-swagger::MemoryGenerator to_swagger(const reply::generator::item::item_data&);
+swagger::MemoryGenerator to_swagger(const reply::generator::item&);
 swagger::MemoryGeneratorStats to_swagger(const task_memory_stat&);
-swagger::MemoryGeneratorResult
-to_swagger(const reply::statistic::item::item_data&);
+swagger::MemoryGeneratorResult to_swagger(const reply::statistic::item&);
 swagger::MemoryInfoResult to_swagger(const memory_info::info_t&);
 
 } // namespace openperf::memory::api

@@ -28,7 +28,6 @@ using device_ptr = std::unique_ptr<model::device>;
 using file_ptr = std::unique_ptr<model::file>;
 using generator_ptr = std::unique_ptr<model::block_generator>;
 using generator_result_ptr = std::unique_ptr<model::block_generator_result>;
-using string_ptr = std::unique_ptr<std::string>;
 
 static constexpr size_t err_max_length = 256;
 enum class error_type : uint8_t {
@@ -85,7 +84,7 @@ struct request_block_file_bulk_add
 
 struct request_block_file_bulk_del
 {
-    std::vector<string_ptr> ids;
+    std::vector<std::string> ids;
 };
 
 struct request_block_generator_list
@@ -113,18 +112,13 @@ struct request_block_generator_bulk_add
 
 struct request_block_generator_bulk_del
 {
-    std::vector<string_ptr> ids;
+    std::vector<std::string> ids;
 };
 
 struct request_block_generator_start
 {
-    struct start_data
-    {
-        std::string id;
-        dynamic::configuration dynamic_results;
-    };
-
-    std::unique_ptr<start_data> data;
+    std::string id;
+    dynamic::configuration dynamic_results;
 };
 
 struct request_block_generator_stop
@@ -134,18 +128,13 @@ struct request_block_generator_stop
 
 struct request_block_generator_bulk_start
 {
-    struct start_data
-    {
-        std::vector<std::string> ids;
-        dynamic::configuration dynamic_results;
-    };
-
-    std::unique_ptr<start_data> data;
+    std::vector<std::string> ids;
+    dynamic::configuration dynamic_results;
 };
 
 struct request_block_generator_bulk_stop
 {
-    std::vector<string_ptr> ids;
+    std::vector<std::string> ids;
 };
 
 struct request_block_generator_result_list

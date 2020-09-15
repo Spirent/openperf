@@ -350,10 +350,9 @@ request_block_file_bulk_add from_swagger(BulkCreateBlockFilesRequest& p_request)
 
 request_block_file_bulk_del from_swagger(BulkDeleteBlockFilesRequest& p_request)
 {
-    request_block_file_bulk_del request;
-    for (auto& id : p_request.getIds())
-        request.ids.emplace_back(std::make_unique<std::string>(id));
-    return request;
+    return request_block_file_bulk_del{
+        .ids = std::move(p_request.getIds()),
+    };
 }
 
 request_block_generator_bulk_add
@@ -369,20 +368,19 @@ from_swagger(BulkCreateBlockGeneratorsRequest& p_request)
 request_block_generator_bulk_del
 from_swagger(BulkDeleteBlockGeneratorsRequest& p_request)
 {
-    request_block_generator_bulk_del request;
-    for (auto& id : p_request.getIds())
-        request.ids.emplace_back(std::make_unique<std::string>(id));
-    return request;
+    return request_block_generator_bulk_del{
+        .ids = std::move(p_request.getIds()),
+    };
 }
 
 request_block_generator_bulk_start
 from_swagger(BulkStartBlockGeneratorsRequest& p_request)
 {
     request_block_generator_bulk_start request;
-    for (auto& id : p_request.getIds()) request.data->ids.emplace_back(id);
+    for (auto& id : p_request.getIds()) request.ids.emplace_back(id);
 
     if (p_request.dynamicResultsIsSet())
-        request.data->dynamic_results =
+        request.dynamic_results =
             dynamic::from_swagger(*p_request.getDynamicResults());
 
     return request;
@@ -391,10 +389,9 @@ from_swagger(BulkStartBlockGeneratorsRequest& p_request)
 request_block_generator_bulk_stop
 from_swagger(BulkStopBlockGeneratorsRequest& p_request)
 {
-    request_block_generator_bulk_stop request;
-    for (auto& id : p_request.getIds())
-        request.ids.emplace_back(std::make_unique<std::string>(id));
-    return request;
+    return request_block_generator_bulk_stop{
+        .ids = std::move(p_request.getIds()),
+    };
 }
 
 } // namespace openperf::block::api

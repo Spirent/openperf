@@ -87,13 +87,8 @@ struct request_cpu_generator_bulk_del
 
 struct request_cpu_generator_start
 {
-    struct start_data
-    {
-        std::string id;
-        dynamic::configuration dynamic_results;
-    };
-
-    std::unique_ptr<start_data> data;
+    std::string id;
+    dynamic::configuration dynamic_results;
 };
 
 struct request_cpu_generator_stop
@@ -103,13 +98,8 @@ struct request_cpu_generator_stop
 
 struct request_cpu_generator_bulk_start
 {
-    struct start_data
-    {
-        std::vector<std::string> ids;
-        dynamic::configuration dynamic_results;
-    };
-
-    std::unique_ptr<start_data> data;
+    std::vector<std::string> ids;
+    dynamic::configuration dynamic_results;
 };
 
 struct request_cpu_generator_bulk_stop

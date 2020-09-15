@@ -3,18 +3,15 @@
 
 #include "framework/config/op_config_utils.hpp"
 #include "framework/core/op_core.h"
-#include "modules/dynamic/api.hpp"
 #include "framework/message/serialized_message.hpp"
 #include "modules/api/api_route_handler.hpp"
+#include "modules/dynamic/api.hpp"
 
-namespace opneperf::cpu {
+namespace openperf::cpu {
 
 using namespace Pistache;
 using namespace swagger::v1::model;
 using json = nlohmann::json;
-
-namespace dynamic = openperf::dynamic;
-namespace api = openperf::cpu::api;
 
 class handler : public openperf::api::route::handler::registrar<handler>
 {
@@ -314,7 +311,7 @@ void handler::start_generator(const Rest::Request& request,
         return;
     }
 
-    api::request_cpu_generator_start::start_data data{.id = id};
+    api::request_cpu_generator_start data{.id = id};
 
     if (!request.body().empty()) {
         auto json_obj = json::parse(request.body());
@@ -324,11 +321,7 @@ void handler::start_generator(const Rest::Request& request,
         data.dynamic_results = dynamic::from_swagger(model);
     }
 
-    auto api_reply = submit_request(
-        m_socket.get(),
-        api::request_cpu_generator_start{
-            std::make_unique<api::request_cpu_generator_start::start_data>(
-                std::move(data))});
+    auto api_reply = submit_request(m_socket.get(), std::move(data));
 
     if (auto reply =
             std::get_if<api::reply_cpu_generator_results>(&api_reply)) {
@@ -382,18 +375,14 @@ void handler::bulk_start_generators(const Rest::Request& request,
         }
     }
 
-    api::request_cpu_generator_bulk_start::start_data data{
+    api::request_cpu_generator_bulk_start data{
         .ids = std::move(request_model.getIds())};
 
     if (request_model.dynamicResultsIsSet())
         data.dynamic_results =
             dynamic::from_swagger(*request_model.getDynamicResults().get());
 
-    auto api_reply = submit_request(
-        m_socket.get(),
-        api::request_cpu_generator_bulk_start{
-            std::make_unique<api::request_cpu_generator_bulk_start::start_data>(
-                std::move(data))});
+    auto api_reply = submit_request(m_socket.get(), std::move(data));
 
     if (auto reply =
             std::get_if<api::reply_cpu_generator_results>(&api_reply)) {
@@ -528,4 +517,4 @@ void handler::get_cpu_info(const Rest::Request&, Http::ResponseWriter response)
     }
 }
 
-} // namespace opneperf::cpu
+} // namespace openperf::cpu
