@@ -5,8 +5,8 @@
 
 #include "packet/type/mac_address.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/drivers/dpdk/port/filter.hpp"
+#include "packetio/drivers/dpdk/port_info.hpp"
 
 struct rte_flow;
 
@@ -60,12 +60,12 @@ add_ethernet_flow(uint16_t port_id,
      * we need to query some RSS information from the port so that we can
      * generate the correct RSS flow action.
      */
-    std::vector<uint16_t> rx_queues(model::port_info(port_id).rx_queue_count());
+    std::vector<uint16_t> rx_queues(port_info::rx_queue_count(port_id));
     std::iota(std::begin(rx_queues), std::end(rx_queues), 0);
     const auto action_rss = rte_flow_action_rss{
         .func = RTE_ETH_HASH_FUNCTION_TOEPLITZ,
         .level = 0,
-        .types = model::port_info(port_id).rss_offloads(),
+        .types = port_info::rss_offloads(port_id),
         .key_len = 0,
         .queue_num = static_cast<unsigned>(rx_queues.size()),
         .key = nullptr,

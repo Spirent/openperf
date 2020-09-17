@@ -4,8 +4,7 @@
 
 #include "core/op_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/model/physical_port.hpp"
-#include "packetio/drivers/dpdk/model/port_info.hpp"
+#include "packetio/drivers/dpdk/port_info.hpp"
 #include "packetio/drivers/dpdk/topology_utils.hpp"
 #include "packetio/stack/dpdk/net_interface.hpp"
 #include "packetio/workers/dpdk/event_loop_adapter.hpp"
@@ -56,19 +55,13 @@ static std::vector<worker::descriptor> to_worker_descriptors(
     std::vector<worker::descriptor> worker_items;
 
     for (auto& d : descriptors) {
-        assert(d.mode != queue::queue_mode::NONE);
-        switch (d.mode) {
-        case queue::queue_mode::RX:
+        assert(d.direction != queue::queue_direction::NONE);
+        switch (d.direction) {
+        case queue::queue_direction::RX:
             worker_items.emplace_back(d.worker_id,
                                       queues[d.port_id].rx(d.queue_id));
             break;
-        case queue::queue_mode::TX:
-            worker_items.emplace_back(d.worker_id,
-                                      queues[d.port_id].tx(d.queue_id));
-            break;
-        case queue::queue_mode::RXTX:
-            worker_items.emplace_back(d.worker_id,
-                                      queues[d.port_id].rx(d.queue_id));
+        case queue::queue_direction::TX:
             worker_items.emplace_back(d.worker_id,
                                       queues[d.port_id].tx(d.queue_id));
             break;
@@ -86,22 +79,9 @@ static std::vector<worker::descriptor> to_worker_descriptors(
     return (worker_items);
 }
 
-static std::vector<model::port_info> get_port_info()
-{
-    uint16_t port_id = 0;
-    std::vector<model::port_info> port_info;
-    RTE_ETH_FOREACH_DEV (port_id) {
-        port_info.emplace_back(model::port_info(port_id));
-    }
-
-    return (port_info);
-}
-
 static std::vector<queue::descriptor>
-get_queue_descriptors(std::vector<model::port_info>& port_info)
+filter_queue_descriptors(std::vector<queue::descriptor>&& q_descriptors)
 {
-    auto q_descriptors = topology::queue_distribute(port_info);
-
     /*
      * XXX: If we have only one worker thread, then everything should use the
      * direct transmit functions.  Hence, we don't need any tx queues.
@@ -112,19 +92,13 @@ get_queue_descriptors(std::vector<model::port_info>& port_info)
             std::remove_if(begin(q_descriptors),
                            end(q_descriptors),
                            [](const queue::descriptor& d) {
-                               return (d.mode == queue::queue_mode::TX);
+                               return (d.direction
+                                       == queue::queue_direction::TX);
                            }),
             end(q_descriptors));
-
-        /* Change all RXTX queues to RX only */
-        for (auto& d : q_descriptors) {
-            if (d.mode == queue::queue_mode::RXTX) {
-                d.mode = queue::queue_mode::RX;
-            }
-        }
     }
 
-    return (q_descriptors);
+    return (std::move(q_descriptors));
 }
 
 static unsigned num_workers() { return (rte_lcore_count() - 1); }
@@ -195,11 +169,11 @@ static void maybe_disable_rxq_tag_detection(const port::filter& filter)
     }
 }
 
-static void maybe_update_rxq_lro_mode(const model::port_info& info)
+static void maybe_update_rxq_lro_mode(uint16_t port_index)
 {
-    if (info.rx_offloads() & DEV_RX_OFFLOAD_TCP_LRO) {
+    if (port_info::rx_offloads(port_index) & DEV_RX_OFFLOAD_TCP_LRO) {
         auto& queues = worker::port_queues::instance();
-        auto& container = queues[info.id()];
+        auto& container = queues[port_index];
         for (uint16_t i = 0; i < container.rx_queues(); i++) {
             auto rxq = container.rx(i);
             OP_LOG(OP_LOG_DEBUG,
@@ -212,11 +186,11 @@ static void maybe_update_rxq_lro_mode(const model::port_info& info)
     }
 }
 
-bool always_has_tx_sink(const model::port_info& info)
+bool always_has_tx_sink(uint16_t port_index)
 {
     // Always need tx sink callback when using net_ring driver
     // This is used to clear the mbuf tx_sink flag so it is not seen on rx
-    return (info.driver_name() == net_ring_driver_name);
+    return (port_info::driver_name(port_index) == net_ring_driver_name);
 }
 
 worker_controller::worker_controller(void* context,
@@ -244,12 +218,13 @@ worker_controller::worker_controller(void* context,
     /* And create the periodic callback */
     setup_recycler_callback(loop, m_recycler.get());
 
-    /* We need port information to setup our workers, so get it */
-    auto port_info = get_port_info();
+    /* We need port and queue information to setup our workers */
+    auto port_indexes = topology::get_ports();
+    auto q_descriptors = topology::queue_distribute(port_indexes);
 
     /* Construct our necessary transmit schedulers and metadata */
-    for (auto& d : topology::queue_distribute(port_info)) {
-        if (d.mode == queue::queue_mode::RX) continue;
+    for (auto& d : q_descriptors) {
+        if (d.direction == queue::queue_direction::RX) continue;
         m_tx_schedulers.push_back(
             std::make_unique<tx_scheduler>(*m_tib, d.port_id, d.queue_id));
         m_tx_loads.emplace(d.worker_id, 0);
@@ -258,9 +233,9 @@ worker_controller::worker_controller(void* context,
     }
 
     /* Construct our necessary port queues */
-    auto q_descriptors = get_queue_descriptors(port_info);
+    auto portq_descriptors = filter_queue_descriptors(std::move(q_descriptors));
     auto& queues = worker::port_queues::instance();
-    queues.setup(m_fib.get(), q_descriptors);
+    queues.setup(m_fib.get(), portq_descriptors);
 
     /* Update queues to take advantage of port capabilities */
     /* XXX: queues must be setup first! */
@@ -269,13 +244,13 @@ worker_controller::worker_controller(void* context,
         std::begin(filters), std::end(filters), [](const auto& filter) {
             maybe_enable_rxq_tag_detection(*filter);
         });
-    std::for_each(std::begin(port_info),
-                  std::end(port_info),
-                  [](const auto& info) { maybe_update_rxq_lro_mode(info); });
+    std::for_each(std::begin(port_indexes),
+                  std::end(port_indexes),
+                  [](const auto& idx) { maybe_update_rxq_lro_mode(idx); });
 
     /* Distribute queues and schedulers to workers */
     m_workers->add_descriptors(to_worker_descriptors(
-        q_descriptors, m_tx_schedulers, m_tx_workers, queues));
+        portq_descriptors, m_tx_schedulers, m_tx_workers, queues));
 
     /* And start them */
     m_driver.start_all_ports();
@@ -329,11 +304,11 @@ worker_controller::operator=(worker_controller&& other) noexcept
 }
 
 static std::vector<unsigned>
-get_queue_worker_ids(queue::queue_mode type,
+get_queue_worker_ids(packet::traffic_direction direction,
                      std::optional<int> port_id = std::nullopt)
 {
-    auto port_info = get_port_info();
-    auto q_descriptors = topology::queue_distribute(port_info);
+    auto port_indexes = topology::get_ports();
+    auto q_descriptors = topology::queue_distribute(port_indexes);
 
     /* If caller gave us a port, filter out all non-matching descriptors */
     if (port_id) {
@@ -354,21 +329,21 @@ get_queue_worker_ids(queue::queue_mode type,
     std::for_each(
         std::begin(q_descriptors), std::end(q_descriptors), [&](auto& d) {
             bool match = false;
-            switch (type) {
-            case queue::queue_mode::NONE:
-                match = (d.mode == type);
+            switch (direction) {
+            case packet::traffic_direction::RX:
+                match = (d.direction == queue::queue_direction::RX);
                 break;
-            case queue::queue_mode::TX:
-            case queue::queue_mode::RX:
-                match = (d.mode == type) || (d.mode == queue::queue_mode::RXTX);
+            case packet::traffic_direction::TX:
+                match = (d.direction == queue::queue_direction::TX);
                 break;
-            case queue::queue_mode::RXTX:
-                match = (d.mode == queue::queue_mode::RX)
-                        || (d.mode == queue::queue_mode::TX)
-                        || (d.mode == queue::queue_mode::RXTX);
+            case packet::traffic_direction::RXTX:
+                match = (d.direction == queue::queue_direction::RX
+                         || d.direction == queue::queue_direction::TX);
+                break;
+            default:
                 break;
             }
-            if (match) workers.push_back(d.worker_id);
+            if (match) { workers.emplace_back(d.worker_id); }
         });
 
     /* Sort and remove any duplicates before returning */
@@ -400,29 +375,13 @@ static int get_port_index(std::string_view id,
     return (-1);
 }
 
-static queue::queue_mode to_queue_mode(packet::traffic_direction direction)
-{
-    switch (direction) {
-    case packet::traffic_direction::NONE:
-        return queue::queue_mode::NONE;
-    case packet::traffic_direction::RX:
-        return queue::queue_mode::RX;
-    case packet::traffic_direction::TX:
-        return queue::queue_mode::TX;
-    case packet::traffic_direction::RXTX:
-        return queue::queue_mode::RXTX;
-    }
-}
-
 std::vector<unsigned>
 worker_controller::get_worker_ids(packet::traffic_direction direction,
                                   std::optional<std::string_view> obj_id) const
 {
-    auto mode = to_queue_mode(direction);
-
     return (obj_id ? get_queue_worker_ids(
-                mode, get_port_index(*obj_id, m_driver, m_fib.get()))
-                   : get_queue_worker_ids(mode));
+                direction, get_port_index(*obj_id, m_driver, m_fib.get()))
+                   : get_queue_worker_ids(direction));
 }
 
 template <typename T>
@@ -445,8 +404,7 @@ worker_controller::get_transmit_function(std::string_view port_id) const
      * we transmit them directly.
      */
     const bool use_direct = rte_lcore_count() <= 2;
-    auto info = model::port_info(*port_idx);
-    if (info.driver_name() == net_ring_driver_name) {
+    if (port_info::driver_name(*port_idx) == net_ring_driver_name) {
         /*
          * For the DPDK driver, we use a portion of the mbuf private area to
          * store the lwip pbuf.  Because the net_ring driver hands transmitted
@@ -1075,7 +1033,7 @@ bool need_sink_feature(const worker::fib&,
                        size_t port_idx,
                        const port::net_ring_fixup&)
 {
-    return (model::port_info(port_idx).driver_name() == net_ring_driver_name);
+    return (port_info::driver_name(port_idx) == net_ring_driver_name);
 }
 
 template <>

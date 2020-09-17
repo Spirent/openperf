@@ -1,40 +1,37 @@
 #include "core/op_core.h"
 #include "config/op_config_file.hpp"
 
+const char op_packetio_dpdk_options[] = "modules.packetio.dpdk.options";
+const char op_packetio_dpdk_port_ids[] = "modules.packetio.dpdk.port-ids";
+const char op_packetio_dpdk_misc_worker_mask[] =
+    "modules.packetio.dpdk.misc-worker-mask";
+const char op_packetio_dpdk_rx_worker_mask[] =
+    "modules.packetio.dpdk.rx-worker-mask";
+const char op_packetio_dpdk_tx_worker_mask[] =
+    "modules.packetio.dpdk.tx-worker-mask";
+
 MAKE_OPTION_DATA(
     dpdk,
     NULL,
     MAKE_OPT("quoted, comma separated options for DPDK",
-             "modules.packetio.dpdk.options",
+             op_packetio_dpdk_options,
              'd',
              OP_OPTION_TYPE_LIST),
-    MAKE_OPT("enable test mode by creating loopback port pairs",
-             "modules.packetio.dpdk.test-mode",
-             0,
-             OP_OPTION_TYPE_NONE),
-    MAKE_OPT("number of loopback port pairs for testing, defaults to 1",
-             "modules.packetio.dpdk.test-portpairs",
-             0,
-             OP_OPTION_TYPE_LONG),
     MAKE_OPT("quoted, comma separated list of port index-id mappings in the "
              "form portX=id",
-             "modules.packetio.dpdk.port-ids",
+             op_packetio_dpdk_port_ids,
              0,
              OP_OPTION_TYPE_MAP),
-    MAKE_OPT("disable receive queue interrupts",
-             "modules.packetio.dpdk.no-rx-interrupts",
-             0,
-             OP_OPTION_TYPE_NONE),
     MAKE_OPT("specifies CPU core mask for miscellaneous threads, in hex",
-             "modules.packetio.dpdk.misc-worker-mask",
+             op_packetio_dpdk_misc_worker_mask,
              'M',
              OP_OPTION_TYPE_HEX),
     MAKE_OPT("specifies CPU core mask for receive threads, in hex",
-             "modules.packetio.dpdk.rx-worker-mask",
+             op_packetio_dpdk_rx_worker_mask,
              'R',
              OP_OPTION_TYPE_HEX),
     MAKE_OPT("specifies CPU core mask for transmit threads, in hex",
-             "modules.packetio.dpdk.tx-worker-mask",
+             op_packetio_dpdk_tx_worker_mask,
              'T',
              OP_OPTION_TYPE_HEX), );
 

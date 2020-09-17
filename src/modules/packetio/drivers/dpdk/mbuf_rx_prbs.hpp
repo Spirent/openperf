@@ -30,6 +30,9 @@ struct mbuf_rx_prbs
 
 extern uint64_t mbuf_rx_prbs_flag;
 
+constexpr auto mbuf_dynflag_rx_prbs =
+    rte_mbuf_dynflag{.name = "packetio_dynflag_rx_prbs", .flags = 0};
+
 void mbuf_rx_prbs_init();
 
 inline void

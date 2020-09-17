@@ -12,12 +12,6 @@ uint64_t mbuf_signature_flag = 0;
 
 void mbuf_signature_init()
 {
-    static constexpr auto mbuf_dynfield_signature =
-        rte_mbuf_dynfield{.name = "packetio_dynfield_signature",
-                          .size = sizeof(mbuf_signature),
-                          .align = __alignof(uint64_t),
-                          .flags = 0};
-
     auto offset = rte_mbuf_dynfield_register(&mbuf_dynfield_signature);
     if (offset < 0) {
         throw std::runtime_error(
@@ -26,9 +20,6 @@ void mbuf_signature_init()
     }
 
     mbuf_signature_offset = offset;
-
-    static constexpr auto mbuf_dynflag_signature =
-        rte_mbuf_dynflag{.name = "packetio_dynflag_signature", .flags = 0};
 
     /* Register the signature flag for any available bit */
     auto bitnum =

@@ -2,8 +2,8 @@
 #include <cassert>
 
 #include "packet/type/mac_address.hpp"
-#include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/drivers/dpdk/port/filter.hpp"
+#include "packetio/drivers/dpdk/port_info.hpp"
 
 namespace openperf::packetio::dpdk::port {
 
@@ -21,7 +21,7 @@ static unsigned get_max_mac_addresses(uint16_t port_id)
      * Ports have a "default" address that is included in this count.
      * Hence, we have 1 less than the max usable addresses.
      */
-    return (model::port_info(port_id).max_mac_addrs() - 1);
+    return (port_info::max_mac_addrs(port_id) - 1);
 }
 
 static void maybe_enable_promiscuous_mode(uint16_t port_id)

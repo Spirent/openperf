@@ -11,9 +11,6 @@ uint64_t mbuf_tx_sink_flag = 0;
 
 void mbuf_tx_init()
 {
-    static constexpr auto mbuf_dynflag_tx =
-        rte_mbuf_dynflag{.name = "packetio_dynflag_mbuf_tx_sink", .flags = 0};
-
     /* Register the tx sink mbuf flag for any available bit */
     auto bitnum = rte_mbuf_dynflag_register_bitnum(&mbuf_dynflag_tx, UINT_MAX);
     if (bitnum < 0) {

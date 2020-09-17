@@ -5,7 +5,8 @@
 #include <map>
 
 #include "core/op_log.h"
-#include "packetio/drivers/dpdk/model/port_info.hpp"
+#include "packetio/drivers/dpdk/port_info.hpp"
+#include "packetio/drivers/dpdk/topology_utils.hpp"
 
 namespace openperf::packetio::dpdk::port {
 
@@ -91,7 +92,7 @@ struct rx_callback : public callback<rx_callback<Derived>>
 
         auto arg = detail::get_callback_argument(child);
         auto& map = this->callback_map();
-        const auto q_count = model::port_info(this->port_id()).rx_queue_count();
+        const auto q_count = port_info::rx_queue_count(this->port_id());
 
         for (uint16_t q = 0; q < q_count; q++) {
             auto cb = rte_eth_add_rx_callback(
@@ -143,9 +144,8 @@ struct tx_callback : public callback<tx_callback<Derived>>
 
         auto arg = detail::get_callback_argument(child);
         auto& map = this->callback_map();
-        const auto q_count = model::port_info(this->port_id()).tx_queue_count();
 
-        for (uint16_t q = 0; q < q_count; q++) {
+        for (auto q : topology::get_tx_queues(this->port_id())) {
             auto cb = rte_eth_add_tx_callback(
                 this->port_id(), q, child.callback(), arg);
             if (!cb) {

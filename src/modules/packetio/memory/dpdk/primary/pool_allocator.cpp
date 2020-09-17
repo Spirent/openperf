@@ -5,11 +5,12 @@
 
 #include "core/op_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/model/port_info.hpp"
-#include "packetio/memory/dpdk/memp.h"
-#include "packetio/memory/dpdk/pool_allocator.hpp"
+#include "packetio/drivers/dpdk/port_info.hpp"
+#include "packetio/memory/dpdk/memory.h"
+#include "packetio/memory/dpdk/primary/mempool_fmt.h"
+#include "packetio/memory/dpdk/primary/pool_allocator.hpp"
 
-namespace openperf::packetio::dpdk {
+namespace openperf::packetio::dpdk::primary {
 
 /*
  * Per the DPDK documentation, cache size should be a divisor of pool
@@ -104,23 +105,23 @@ static rte_mempool* create_pbuf_mempool(
     return (mp);
 }
 
-pool_allocator::pool_allocator(const std::vector<model::port_info>& info,
-                               const std::map<int, queue::count>& q_counts)
+pool_allocator::pool_allocator(const std::vector<uint16_t>& port_indexes,
+                               const std::map<uint16_t, queue::count>& q_counts)
 {
     /* Base default pool size on the number and types of ports on each NUMA node
      */
     for (auto i = 0U; i < RTE_MAX_NUMA_NODES; i++) {
         auto sum = std::accumulate(
-            begin(info),
-            end(info),
+            begin(port_indexes),
+            end(port_indexes),
             0,
-            [&](unsigned lhs, const model::port_info& rhs) {
-                const auto& cursor = q_counts.find(rhs.id());
-                if (cursor == q_counts.end() || rhs.socket_id() != i) {
-                    return (lhs);
+            [&](unsigned x, const uint16_t id) {
+                const auto& cursor = q_counts.find(id);
+                if (cursor == q_counts.end() || port_info::socket_id(id) != i) {
+                    return (x);
                 }
-                return (lhs + (cursor->second.rx * rhs.rx_desc_count())
-                        + (cursor->second.tx * rhs.tx_desc_count()));
+                return (x + (cursor->second.rx * port_info::rx_desc_count(id))
+                        + (cursor->second.tx * port_info::tx_desc_count(id)));
             });
         if (sum) {
             /*
@@ -155,4 +156,4 @@ rte_mempool* pool_allocator::rx_mempool(unsigned socket_id) const
     return (found == m_default_mpools.end() ? nullptr : found->second.get());
 }
 
-} // namespace openperf::packetio::dpdk
+} // namespace openperf::packetio::dpdk::primary

@@ -10,8 +10,8 @@
 #endif
 
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/drivers/dpdk/mbuf_tx.hpp"
+#include "packetio/drivers/dpdk/port_info.hpp"
 #include "packetio/memory/dpdk/pbuf_utils.h"
 #include "packetio/stack/dpdk/net_interface.hpp"
 #include "packetio/stack/dpdk/offload_utils.hpp"
@@ -97,9 +97,8 @@ static uint16_t to_checksum_gen_flags(uint64_t tx_offloads)
 
 static uint32_t net_interface_max_gso_length(int port_id)
 {
-    auto info = model::port_info(port_id);
-    return (info.tx_offloads() & DEV_TX_OFFLOAD_TCP_TSO
-                ? info.tx_tso_segment_max() * TCP_MSS
+    return (port_info::tx_offloads(port_id) & DEV_TX_OFFLOAD_TCP_TSO
+                ? port_info::tx_tso_segment_max(port_id) * TCP_MSS
                 : TCP_MSS);
 }
 
@@ -185,10 +184,10 @@ static err_t net_interface_dpdk_init(netif* netif)
 {
     auto* ifp = reinterpret_cast<net_interface*>(netif->state);
 
-    auto info = model::port_info(ifp->port_index());
-
     /* Initialize the snmp variables and counters in the netif struct */
-    MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd, info.max_speed());
+    MIB2_INIT_NETIF(netif,
+                    snmp_ifType_ethernet_csmacd,
+                    port_info::max_speed(ifp->port_index()));
 
     netif->name[0] = ifname_0;
     netif->name[1] = ifname_1;
@@ -203,8 +202,9 @@ static err_t net_interface_dpdk_init(netif* netif)
 
     rte_eth_dev_get_mtu(ifp->port_index(), &netif->mtu);
 
-    netif->chksum_flags = (to_checksum_check_flags(info.rx_offloads())
-                           | to_checksum_gen_flags(info.tx_offloads()));
+    netif->chksum_flags =
+        (to_checksum_check_flags(port_info::rx_offloads(ifp->port_index()))
+         | to_checksum_gen_flags(port_info::tx_offloads(ifp->port_index())));
 
     OP_LOG(OP_LOG_DEBUG,
            "Interface %c%c%u: mtu = %u, offloads = 0x%04hx\n",

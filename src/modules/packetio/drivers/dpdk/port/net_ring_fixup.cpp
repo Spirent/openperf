@@ -1,7 +1,7 @@
 #include <cstring>
 
-#include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/drivers/dpdk/port/net_ring_fixup.hpp"
+#include "packetio/drivers/dpdk/port_info.hpp"
 #include "packetio/drivers/dpdk/mbuf_tx.hpp"
 
 namespace openperf::packetio::dpdk::port {
@@ -30,7 +30,7 @@ callback_net_ring_fixup::callback()
 
 static net_ring_fixup::variant_type make_net_ring_fixup(uint16_t port_id)
 {
-    if (model::port_info(port_id).driver_name() == "net_ring") {
+    if (port_info::driver_name(port_id) == "net_ring") {
         return (callback_net_ring_fixup(port_id));
     }
 

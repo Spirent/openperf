@@ -9,22 +9,26 @@
  * The generic source needs the packets to do it's job.
  */
 
-#include <memory>
-
 #include "packetio/generic_source.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/memory/dpdk/packet_pool.hpp"
 
 namespace openperf::packetio::dpdk {
 
 class tx_source
 {
-    mutable packet_pool m_pool;
+    mutable rte_mempool* m_pool;
     packet::generic_source m_source;
 
 public:
     tx_source(uint16_t port_idx, packet::generic_source source);
-    ~tx_source() = default;
+
+    tx_source(tx_source&& other) noexcept;
+    tx_source& operator=(tx_source&& other) noexcept;
+
+    tx_source(const tx_source&) = delete;
+    tx_source& operator=(const tx_source&&) = delete;
+
+    ~tx_source();
 
     std::string id() const;
     bool active() const;
