@@ -15,15 +15,6 @@ using namespace openperf::config;
 inline constexpr std::string_view program_name = "op_eal";
 inline constexpr std::string_view log_level_arg = "--log-level";
 inline constexpr std::string_view file_prefix_arg = "--file-prefix";
-inline constexpr std::string_view no_pci_arg = "--no-pci";
-
-template <typename Container, typename Thing>
-bool contains(const Container& c, const Thing& t)
-{
-    return (std::any_of(std::begin(c), std::end(c), [&](const auto& item) {
-        return (item == t);
-    }));
-}
 
 static void add_log_level_arg(enum op_log_level level,
                               std::vector<std::string>& args)
@@ -50,11 +41,6 @@ static void add_file_prefix_arg(std::string_view prefix,
     args.emplace_back(prefix);
 }
 
-static void add_no_pci_arg(std::vector<std::string>& args)
-{
-    args.emplace_back(no_pci_arg);
-}
-
 // Split portX and return just the X part.
 // Return -1 if no valid X part is found.
 static int get_port_index(std::string_view name)
@@ -71,7 +57,7 @@ static int get_port_index(std::string_view name)
 
 static int
 process_dpdk_port_ids(const std::map<std::string, std::string>& input,
-                      std::unordered_map<int, std::string>& output)
+                      std::map<uint16_t, std::string>& output)
 {
     for (auto& entry : input) {
         // split port index from "port" part.
@@ -114,46 +100,14 @@ process_dpdk_port_ids(const std::map<std::string, std::string>& input,
     return (0);
 }
 
-int dpdk_test_portpairs()
-{
-    auto result = config::file::op_config_get_param<OP_OPTION_TYPE_LONG>(
-        "modules.packetio.dpdk.test-portpairs");
-
-    return (result.value_or(dpdk_test_mode() ? 1 : 0));
-}
-
-bool dpdk_test_mode()
-{
-    auto result = config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
-        "modules.packetio.dpdk.test-mode");
-
-    return (result.value_or(false));
-}
-
-/*
- * Our list argument type splits arguments on commas, however some DPDK options
- * use commas to support key=value modifiers.  This function reconstructs the
- * commas so that arguments are parsed correctly.
- */
-static void add_dpdk_argument(std::vector<std::string>& args,
-                              std::string_view input)
-{
-    if (args.empty() || input.front() == '-'
-        || (!args.empty() && args.back().front() == '-')) {
-        args.emplace_back(input);
-    } else {
-        args.back().append("." + std::string(input));
-    }
-}
-
-std::vector<std::string> dpdk_args()
+std::vector<std::string> common_dpdk_args()
 {
     // Add name value in straight away.
     std::vector<std::string> to_return{std::string(program_name)};
 
     // Get the list from the framework.
     auto arg_list = config::file::op_config_get_param<OP_OPTION_TYPE_LIST>(
-        "modules.packetio.dpdk.options");
+        op_packetio_dpdk_options);
     if (arg_list) {
         // Walk through it and rebuild the arguments DPDK expects
         for (auto& v : *arg_list) { add_dpdk_argument(to_return, v); }
@@ -168,19 +122,16 @@ std::vector<std::string> dpdk_args()
             add_file_prefix_arg(*prefix, to_return);
         }
     }
-    if (dpdk_test_mode() && !contains(to_return, no_pci_arg)) {
-        add_no_pci_arg(to_return);
-    }
 
     return (to_return);
 }
 
-std::unordered_map<int, std::string> dpdk_id_map()
+std::map<uint16_t, std::string> dpdk_id_map()
 {
     auto src_map = config::file::op_config_get_param<OP_OPTION_TYPE_MAP>(
-        "modules.packetio.dpdk.port-ids");
+        op_packetio_dpdk_port_ids);
 
-    std::unordered_map<int, std::string> to_return;
+    std::map<uint16_t, std::string> to_return;
 
     if (!src_map) { return (to_return); }
 
@@ -192,32 +143,32 @@ std::unordered_map<int, std::string> dpdk_id_map()
     return (to_return);
 }
 
-std::optional<model::core_mask> misc_core_mask()
+std::optional<core_mask> misc_core_mask()
 {
     const auto mask = config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
-        "modules.packetio.dpdk.misc-worker-mask");
+        op_packetio_dpdk_misc_worker_mask);
 
-    if (mask) { return model::core_mask{*mask}; }
+    if (mask) { return core_mask{*mask}; }
 
     return (std::nullopt);
 }
 
-std::optional<model::core_mask> rx_core_mask()
+std::optional<core_mask> rx_core_mask()
 {
     const auto mask = config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
-        "modules.packetio.dpdk.rx-worker-mask");
+        op_packetio_dpdk_rx_worker_mask);
 
-    if (mask) { return model::core_mask{*mask}; }
+    if (mask) { return core_mask{*mask}; }
 
     return (std::nullopt);
 }
 
-std::optional<model::core_mask> tx_core_mask()
+std::optional<core_mask> tx_core_mask()
 {
     const auto mask = config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
-        "modules.packetio.dpdk.tx-worker-mask");
+        op_packetio_dpdk_tx_worker_mask);
 
-    if (mask) { return model::core_mask{*mask}; }
+    if (mask) { return core_mask{*mask}; }
 
     return (std::nullopt);
 }

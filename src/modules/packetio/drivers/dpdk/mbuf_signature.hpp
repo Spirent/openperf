@@ -54,6 +54,15 @@ struct mbuf_signature
 
 static_assert(sizeof(mbuf_signature) == 16);
 
+constexpr auto mbuf_dynfield_signature =
+    rte_mbuf_dynfield{.name = "packetio_dynfield_signature",
+                      .size = sizeof(mbuf_signature),
+                      .align = __alignof(uint64_t),
+                      .flags = 0};
+
+constexpr auto mbuf_dynflag_signature =
+    rte_mbuf_dynflag{.name = "packetio_dynflag_signature", .flags = 0};
+
 extern size_t mbuf_signature_offset;
 extern uint64_t mbuf_signature_flag;
 

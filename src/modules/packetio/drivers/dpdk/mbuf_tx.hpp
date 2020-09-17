@@ -6,6 +6,9 @@
 
 namespace openperf::packetio::dpdk {
 
+constexpr auto mbuf_dynflag_tx =
+    rte_mbuf_dynflag{.name = "packetio_dynflag_mbuf_tx_sink", .flags = 0};
+
 /** mbuf ol_flag used to indicate the mbuf should be passed to tx sink. */
 extern uint64_t mbuf_tx_sink_flag;
 

@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 
+#include "packetio/drivers/dpdk/topology_utils.hpp"
+
 namespace openperf::packetio::dpdk {
 
 template <typename RxQueue, typename TxQueue> class rxtx_queue_container
@@ -18,7 +20,7 @@ public:
             m_rxqs.push_back(std::make_unique<RxQueue>(port_id, q));
         }
 
-        for (uint16_t q = 0; q < nb_txqs; q++) {
+        for (auto q : topology::get_tx_queues(port_id)) {
             m_txqs.push_back(std::make_unique<TxQueue>(port_id, q));
         }
     }
@@ -37,14 +39,10 @@ public:
 
     uint16_t tx_queue_id(uint32_t hash) const { return (hash % m_txqs.size()); }
 
-    RxQueue* rx(uint16_t queue_id) const { return (m_rxqs.at(queue_id).get()); }
-
     RxQueue* rx(uint32_t hash) const
     {
         return (m_rxqs.at(hash % m_rxqs.size()).get());
     }
-
-    TxQueue* tx(uint16_t queue_id) const { return (m_txqs.at(queue_id).get()); }
 
     TxQueue* tx(uint32_t hash) const
     {

@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <unordered_map>
 
+#include "packetio/drivers/dpdk/port_info.hpp"
 #include "packetio/drivers/dpdk/queue_utils.hpp"
-#include "packetio/drivers/dpdk/model/port_info.hpp"
 
 namespace openperf::packetio::dpdk::topology {
 
@@ -15,6 +15,18 @@ namespace openperf::packetio::dpdk::topology {
  */
 unsigned get_stack_lcore_id();
 
+std::vector<uint16_t> get_ports();
+
+/**
+ * Use the port queue counts to generate a vector of queue
+ * descriptors based on available cores, numa nodes, and port
+ * locality. These descriptors are index based and DO NOT
+ * necessarily reflect the actual queues in use. Use the function
+ * below instead to get actual, usable queue indexes.
+ */
+std::vector<queue::descriptor>
+index_queue_distribute(const std::vector<uint16_t>& port_ids);
+
 /**
  * Generate a vector of queue descriptors based on the specified
  * port configuration.  This distribution takes into account the
@@ -22,7 +34,14 @@ unsigned get_stack_lcore_id();
  * port locality.
  */
 std::vector<queue::descriptor>
-queue_distribute(const std::vector<model::port_info>& port_info);
+queue_distribute(const std::vector<uint16_t>& port_ids);
+
+/**
+ * Retrieve a vector of transmit queue indexes for the given port.
+ * When running as a secondary process, the queue id's might not
+ * be the range [0, count).
+ */
+std::vector<uint16_t> get_tx_queues(uint16_t port_id);
 
 /**
  * Determine the most common NUMA node connected to the most ports

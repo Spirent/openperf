@@ -163,7 +163,7 @@ rx_callback<callback_rss_hasher>::rx_callback_fn callback_rss_hasher::callback()
 
 static rss_hasher::variant_type make_rss_hasher(uint16_t port_id)
 {
-    if (model::port_info(port_id).rss_offloads() == 0) {
+    if (port_info::rss_offloads(port_id) == 0) {
         return (callback_rss_hasher(port_id));
     }
 
