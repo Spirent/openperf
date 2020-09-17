@@ -2,8 +2,8 @@
 
 #include "core/op_log.h"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/model/port_info.hpp"
 #include "packetio/drivers/dpdk/port/timestamper.hpp"
+#include "packetio/drivers/dpdk/port_info.hpp"
 #include "timesync/chrono.hpp"
 #include "units/data-rates.hpp"
 
@@ -21,9 +21,8 @@ static uint32_t get_link_speed_safe(uint16_t port_id)
      * case, then return the maximum speed of the port as a
      * safe default.
      */
-    return (link.link_status == ETH_LINK_UP
-                ? link.link_speed
-                : model::port_info(port_id).max_speed());
+    return (link.link_status == ETH_LINK_UP ? link.link_speed
+                                            : port_info::max_speed(port_id));
 }
 
 static uint16_t timestamp_packets(uint16_t port_id,

@@ -1,5 +1,5 @@
-#ifndef _OP_PACKETIO_MEMORY_DPDK_POOL_ALLOCATOR_HPP_
-#define _OP_PACKETIO_MEMORY_DPDK_POOL_ALLOCATOR_HPP_
+#ifndef _OP_PACKETIO_MEMORY_DPDK_PRIMARY_POOL_ALLOCATOR_HPP_
+#define _OP_PACKETIO_MEMORY_DPDK_PRIMARY_POOL_ALLOCATOR_HPP_
 
 #include <memory>
 #include <unordered_map>
@@ -7,15 +7,14 @@
 #include "core/op_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/queue_utils.hpp"
-#include "packetio/drivers/dpdk/model/port_info.hpp"
 
-namespace openperf::packetio::dpdk {
+namespace openperf::packetio::dpdk::primary {
 
 class pool_allocator
 {
 public:
-    pool_allocator(const std::vector<model::port_info>&,
-                   const std::map<int, queue::count>&);
+    pool_allocator(const std::vector<uint16_t>&,
+                   const std::map<uint16_t, queue::count>&);
 
     rte_mempool* rx_mempool(unsigned socket_id) const;
 
@@ -39,5 +38,6 @@ private:
     std::unordered_map<unsigned, mempool_ptr> m_ref_rom_mpools;
 };
 
-} // namespace openperf::packetio::dpdk
-#endif /* _OP_PACKETIO_MEMORY_DPDK_POOL_ALLOCATOR_HPP_ */
+} // namespace openperf::packetio::dpdk::primary
+
+#endif /* _OP_PACKETIO_MEMORY_DPDK_PRIMARY_POOL_ALLOCATOR_HPP_ */

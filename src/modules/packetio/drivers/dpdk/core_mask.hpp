@@ -6,7 +6,7 @@
 
 #include "packetio/drivers/dpdk/dpdk.h"
 
-namespace openperf::packetio::dpdk::model {
+namespace openperf::packetio::dpdk {
 
 using core_mask = std::bitset<RTE_MAX_LCORE>;
 
@@ -17,6 +17,6 @@ inline std::string to_string(const core_mask& mask)
     return (out.str());
 }
 
-} // namespace openperf::packetio::dpdk::model
+} // namespace openperf::packetio::dpdk
 
 #endif /* _OP_PACKETIO_DPDK_MODEL_CORE_MASK_HPP_ */

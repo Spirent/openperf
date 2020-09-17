@@ -57,8 +57,7 @@ class _be_valid_packet_analyzer_flow_counter(Matcher):
             if counters.latency:
                 expect(counters.latency).to(be_valid_non_zero_summary_statistic)
             if counters.sequence:
-                total = (counters.sequence.dropped
-                         + counters.sequence.duplicate
+                total = (counters.sequence.duplicate
                          + counters.sequence.late
                          + counters.sequence.reordered
                          + counters.sequence.in_order)

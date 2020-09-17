@@ -1,7 +1,6 @@
-#include <algorithm>
-
 #include "core/op_log.h"
-#include "packetio/memory/dpdk/packet_pool.hpp"
+#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/memory/dpdk/mempool.hpp"
 
 namespace openperf::packetio::dpdk {
 
@@ -57,11 +56,11 @@ struct rte_mempool* create_spsc_pktmbuf_mempool(std::string_view id,
     return (mp);
 }
 
-static rte_mempool* create_mempool(std::string_view id,
-                                   unsigned numa_mode,
-                                   uint16_t packet_length,
-                                   uint16_t packet_count,
-                                   uint16_t cache_size)
+rte_mempool* mempool_acquire(std::string_view id,
+                             unsigned numa_mode,
+                             uint16_t packet_length,
+                             uint16_t packet_count,
+                             uint16_t cache_size)
 {
     static constexpr auto max_length = RTE_MEMPOOL_NAMESIZE - 1;
     auto name = "pool-" + std::string(id);
@@ -80,54 +79,10 @@ static rte_mempool* create_mempool(std::string_view id,
                                         numa_mode));
 }
 
-packet_pool::packet_pool(std::string_view id,
-                         unsigned numa_node,
-                         uint16_t packet_length,
-                         uint16_t packet_count,
-                         uint16_t cache_size)
-    : m_pool(
-        create_mempool(id, numa_node, packet_length, packet_count, cache_size),
-        [](auto p) {
-            OP_LOG(OP_LOG_DEBUG, "Deleting packet pool %s\n", p->name);
-            rte_mempool_free(p);
-        })
+void mempool_release(const rte_mempool* pool)
 {
-    if (!m_pool) {
-        throw std::runtime_error("Could not create DPDK packet pool: "
-                                 + std::string(rte_strerror(rte_errno)));
-    }
-
-    OP_LOG(OP_LOG_DEBUG,
-           "%s: %u, %u byte mbufs on NUMA socket %d\n",
-           m_pool->name,
-           m_pool->size,
-           rte_pktmbuf_data_room_size(m_pool.get()),
-           m_pool->socket_id);
-}
-
-packet::packet_buffer* packet_pool::get()
-{
-    return (reinterpret_cast<packet::packet_buffer*>(
-        rte_pktmbuf_alloc(m_pool.get())));
-}
-
-uint16_t packet_pool::get(packet::packet_buffer* packets[], uint16_t count)
-{
-    auto error = rte_pktmbuf_alloc_bulk(
-        m_pool.get(), reinterpret_cast<rte_mbuf**>(packets), count);
-    return (error ? 0 : count);
-}
-
-void packet_pool::put(packet::packet_buffer* packet)
-{
-    rte_pktmbuf_free(reinterpret_cast<rte_mbuf*>(packet));
-}
-
-void packet_pool::put(packet::packet_buffer* const packets[], uint16_t count)
-{
-    std::for_each(packets, packets + count, [](auto packet) {
-        rte_pktmbuf_free(reinterpret_cast<rte_mbuf*>(packet));
-    });
+    OP_LOG(OP_LOG_DEBUG, "Deleting packet pool %s\n", pool->name);
+    rte_mempool_free(const_cast<rte_mempool*>(pool));
 }
 
 } // namespace openperf::packetio::dpdk

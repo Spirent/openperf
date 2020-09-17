@@ -10,12 +10,12 @@
 
 namespace openperf::packetio::dpdk::topology {
 
-using cores_by_id = std::map<unsigned, model::core_mask>;
+using cores_by_id = std::map<unsigned, core_mask>;
 using ports_by_id = std::map<unsigned, std::vector<unsigned>>;
 
-static model::core_mask dpdk_mask()
+static core_mask dpdk_mask()
 {
-    auto mask = model::core_mask{};
+    auto mask = core_mask{};
     auto lcore_id = 0U;
     RTE_LCORE_FOREACH_SLAVE (lcore_id) {
         mask.set(lcore_id);
@@ -31,7 +31,7 @@ static model::core_mask dpdk_mask()
  * allow everything to work.
  */
 std::vector<queue::descriptor>
-queue_distribute(const std::vector<model::port_info>& port_info)
+index_queue_distribute(const std::vector<uint16_t>& port_ids)
 {
     /* If we have multiple cores, assign the stack to a dedicated one. */
     unsigned stack_lcore =
@@ -57,15 +57,18 @@ queue_distribute(const std::vector<model::port_info>& port_info)
      * where we have no associated workers.
      */
     ports_by_id matched_port_nodes, unmatched_port_nodes;
-    for (auto& info : port_info) {
-        if (nodes.find(info.socket_id()) != nodes.end()) {
-            matched_port_nodes[info.socket_id()].push_back(info.id());
-        } else {
-            unmatched_port_nodes[info.socket_id()].push_back(info.id());
-        }
-    }
+    std::for_each(
+        std::begin(port_ids), std::end(port_ids), [&](const auto& port_id) {
+            const auto socket_id = port_info::socket_id(port_id);
+            if (nodes.count(socket_id)) {
+                matched_port_nodes[socket_id].push_back(port_id);
+            } else {
+                unmatched_port_nodes[socket_id].push_back(port_id);
+            }
+        });
 
-    /* Log a warning if we have to assign ports to cores on different nodes */
+    /* Log a warning if we have to assign ports to cores on different nodes
+     */
     if (!unmatched_port_nodes.empty()) {
         for (auto& item : unmatched_port_nodes) {
             OP_LOG(OP_LOG_WARNING,
@@ -95,7 +98,8 @@ queue_distribute(const std::vector<model::port_info>& port_info)
     /*
      * Now generate mappings for ports based on NUMA nodes.
      * But first, we need a sorted vector of the NUMA nodes for our workers.
-     * We'll use this to help assign port queues without local cores to workers.
+     * We'll use this to help assign port queues without local cores to
+     * workers.
      */
     std::vector<unsigned> node_ids;
     for (auto& node : nodes) { node_ids.push_back(node.first); }
@@ -103,34 +107,36 @@ queue_distribute(const std::vector<model::port_info>& port_info)
     std::vector<queue::descriptor> descriptors;
     for (auto& node : nodes) {
         /*
-         * Generate a vector containing the info for all ports associated with
-         * this node.
+         * Generate a vector containing the info for all ports associated
+         * with this node.
          */
-        std::vector<model::port_info> numa_port_info;
-        std::copy_if(begin(port_info),
-                     end(port_info),
-                     std::back_inserter(numa_port_info),
-                     [&](const model::port_info& info) -> bool {
-                         return (info.socket_id() == node.first);
+        std::vector<uint16_t> numa_port_ids;
+        std::copy_if(begin(port_ids),
+                     end(port_ids),
+                     std::back_inserter(numa_port_ids),
+                     [&](uint16_t port_id) -> bool {
+                         return (port_info::socket_id(port_id) == node.first);
                      });
 
         /*
-         * Less obviously, we also want to map some of the ports that don't have
-         * local cores to this group of cores.  So, grab all ports that are on
-         * NUMA nodes congruent to this node mod the worker node count.
+         * Less obviously, we also want to map some of the ports that don't
+         * have local cores to this group of cores.  So, grab all ports that
+         * are on NUMA nodes congruent to this node mod the worker node
+         * count.
          */
         for (auto& port_node : unmatched_port_nodes) {
             auto node_id = node_ids[port_node.first % nodes.size()];
             if (node_id == node.first) {
                 std::copy(begin(port_node.second),
                           end(port_node.second),
-                          std::back_inserter(numa_port_info));
+                          std::back_inserter(numa_port_ids));
             }
         }
 
-        /* Now, generate a queue distribution for this set of ports and cores */
+        /* Now, generate a queue distribution for this set of ports and
+         * cores */
         auto node_descriptors =
-            queue::distribute_queues(numa_port_info, node.second);
+            queue::distribute_queues(numa_port_ids, node.second);
 
         descriptors.insert(std::end(descriptors),
                            std::begin(node_descriptors),
@@ -140,7 +146,7 @@ queue_distribute(const std::vector<model::port_info>& port_info)
     return (descriptors);
 }
 
-static model::core_mask get_misc_mask()
+static core_mask get_misc_mask()
 {
     /* If the user provided explicit cores, then use them */
     if (auto user_misc_mask = config::misc_core_mask()) {

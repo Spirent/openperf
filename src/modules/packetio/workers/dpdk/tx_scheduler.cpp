@@ -433,7 +433,7 @@ tx_scheduler::on_timeout(const schedule::state_blocked& blocked)
 void tx_scheduler::on_transition(const schedule::state_idle&)
 {
     assert(m_buffer.empty());
-    assert(!have_active_sources(m_tib, port_id(), queue_id()));
+    // assert(!have_active_sources(m_tib, port_id(), queue_id()));
 
     set_timer_interval(m_timerfd, idle_poll);
 }

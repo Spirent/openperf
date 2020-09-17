@@ -1,16 +1,15 @@
 #include <array>
 
-#include "packetio/drivers/dpdk/model/port_info.hpp"
+#include "packetio/drivers/dpdk/port_info.hpp"
+#include "packetio/memory/dpdk/mempool.hpp"
 #include "packetio/workers/dpdk/tx_source.hpp"
 #include "packetio/workers/dpdk/worker_api.hpp"
 
 namespace openperf::packetio::dpdk {
 
-static packet_pool make_packet_pool(uint16_t port_idx,
+static rte_mempool* get_packet_pool(uint16_t port_idx,
                                     const packet::generic_source& source)
 {
-    auto info = model::port_info(port_idx);
-
     /*
      * A note about pool and cache sizing: we want to make sure we have packets
      * available if the NIC's transmit ring is completely full, so we need our
@@ -19,17 +18,41 @@ static packet_pool make_packet_pool(uint16_t port_idx,
      * otherwise every call to retrieve buffers from the pool will bypass the
      * CPU cache and go straight to the pool.
      */
-    return (packet_pool(source.id(),
-                        info.socket_id(),
-                        source.max_packet_length() + RTE_PKTMBUF_HEADROOM,
-                        info.tx_desc_count() + 2 * worker::pkt_burst_size,
-                        2 * worker::pkt_burst_size));
+    return (mempool_acquire(source.id(),
+                            port_info::socket_id(port_idx),
+                            source.max_packet_length() + RTE_PKTMBUF_HEADROOM,
+                            port_info::tx_desc_count(port_idx)
+                                + 2 * worker::pkt_burst_size,
+                            2 * worker::pkt_burst_size));
 }
 
 tx_source::tx_source(uint16_t port_idx, packet::generic_source source)
-    : m_pool(make_packet_pool(port_idx, source))
+    : m_pool(get_packet_pool(port_idx, source))
     , m_source(std::move(source))
 {}
+
+tx_source::tx_source(tx_source&& other) noexcept
+    : m_pool(other.m_pool)
+    , m_source(std::move(other.m_source))
+{
+    /*
+     * We need to explicitly clear the other's pointer, otherwise other's
+     * destructor will release the pool for us.
+     */
+    other.m_pool = nullptr;
+}
+
+tx_source& tx_source::operator=(tx_source&& other) noexcept
+{
+    if (this != &other) {
+        m_pool = other.m_pool;
+        other.m_pool = nullptr;
+        m_source = std::move(other.m_source);
+    }
+    return (*this);
+}
+
+tx_source::~tx_source() { mempool_release(m_pool); }
 
 std::string tx_source::id() const { return (m_source.id()); }
 
@@ -55,23 +78,28 @@ packet::packets_per_hour tx_source::packet_rate() const
 uint16_t tx_source::pull(rte_mbuf* packets[], uint16_t count) const
 {
 
-    std::array<packet::packet_buffer*, worker::pkt_burst_size> tmp;
+    std::array<rte_mbuf*, worker::pkt_burst_size> tmp;
     assert(count <= tmp.size());
 
-    auto n = m_pool.get(tmp.data(),
-                        std::min(static_cast<uint16_t>(tmp.size()), count));
-
-    if (!n) {
-        // OP_LOG(OP_LOG_WARNING, "No packet buffers available for %s\n",
-        // id().c_str());
+    auto n = std::min(static_cast<uint16_t>(tmp.size()), count);
+    auto error = rte_pktmbuf_alloc_bulk(m_pool, tmp.data(), n);
+    if (error) {
+        OP_LOG(OP_LOG_WARNING,
+               "No packet buffers available for %s: %s\n",
+               id().c_str(),
+               rte_strerror(std::abs(error)));
         return (0);
     }
 
     auto m = m_source.transform(
-        tmp.data(), n, reinterpret_cast<packet::packet_buffer**>(packets));
+        reinterpret_cast<packet::packet_buffer**>(tmp.data()),
+        n,
+        reinterpret_cast<packet::packet_buffer**>(packets));
 
     /* Free any unused packet buffers */
-    if (m < n) m_pool.put(tmp.data() + m, n - m);
+    if (m < n) {
+        std::for_each(tmp.data() + m, tmp.data() + n, rte_pktmbuf_free);
+    };
 
     return (m);
 }
