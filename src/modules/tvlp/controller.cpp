@@ -7,6 +7,7 @@
 #include "controller.hpp"
 #include "workers/block.hpp"
 #include "workers/memory.hpp"
+#include "workers/cpu.hpp"
 
 namespace openperf::tvlp::internal {
 
@@ -42,13 +43,12 @@ controller_t::controller_t(void* context,
         m_memory = std::make_unique<worker::memory_tvlp_worker_t>(
             m_context, m_profile.memory.value());
     }
-    // if (m_profile.cpu) {
-    //     total_length =
-    //         std::max(total_length, get_length(m_profile.cpu.value()));
-    //     m_cpu =
-    //         std::make_unique<worker::cpu_tvlp_worker_t>(m_context,
-    //         m_profile.cpu.value());
-    // }
+    if (m_profile.cpu) {
+        total_length =
+            std::max(total_length, get_length(m_profile.cpu.value()));
+        m_cpu = std::make_unique<worker::cpu_tvlp_worker_t>(
+            m_context, m_profile.cpu.value());
+    }
     // if (m_profile.packet) {
     //     total_length =
     //         std::max(total_length, get_length(m_profile.packet.value()));
