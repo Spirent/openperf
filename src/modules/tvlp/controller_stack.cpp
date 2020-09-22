@@ -2,6 +2,10 @@
 
 namespace openperf::tvlp::internal {
 
+controller_stack::controller_stack(void* context)
+    : m_context(context)
+{}
+
 std::vector<tvlp_controller_ptr> controller_stack::list() const
 {
     std::vector<tvlp_controller_ptr> controllers_list;
@@ -23,7 +27,7 @@ controller_stack::create(const model::tvlp_configuration_t& model)
     }
 
     try {
-        auto controller = std::make_shared<controller_t>(model);
+        auto controller = std::make_shared<controller_t>(m_context, model);
         m_controllers.emplace(controller->id(), controller);
         return controller;
     } catch (const std::runtime_error& e) {

@@ -21,9 +21,11 @@ class controller_stack
 private:
     tvlp_controller_map m_controllers;
     tvlp_result_map m_results;
+    void* m_context;
 
 public:
-    controller_stack() = default;
+    controller_stack() = delete;
+    controller_stack(void* context);
 
     std::vector<tvlp_controller_ptr> list() const;
     tl::expected<tvlp_controller_ptr, std::string>

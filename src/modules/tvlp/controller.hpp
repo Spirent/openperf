@@ -20,13 +20,14 @@ class controller_t : public model::tvlp_configuration_t
 {
 private:
     static constexpr auto NAME_PREFIX = "op_tvlp";
+    void* m_context;
     std::shared_ptr<model::tvlp_result_t> m_result;
     std::unique_ptr<worker::tvlp_worker_t> m_block, m_memory, m_cpu, m_packet;
 
 public:
     // Constructors & Destructor
     controller_t() = delete;
-    explicit controller_t(const model::tvlp_configuration_t&);
+    explicit controller_t(void* context, const model::tvlp_configuration_t&);
     controller_t(const controller_t&) = delete;
     ~controller_t() = default;
 

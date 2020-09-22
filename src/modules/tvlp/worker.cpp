@@ -7,8 +7,11 @@ namespace openperf::tvlp::internal::worker {
 
 constexpr duration THRESHOLD = 100ms;
 
-tvlp_worker_t::tvlp_worker_t(const model::tvlp_module_profile_t& profile)
-    : m_profile(profile)
+tvlp_worker_t::tvlp_worker_t(void* context,
+                             const std::string endpoint,
+                             const model::tvlp_module_profile_t& profile)
+    : m_socket(op_socket_get_client(context, ZMQ_REQ, endpoint.data()))
+    , m_profile(profile)
 {
     m_state.state.store(model::READY);
     m_state.offset.store(duration::zero());
@@ -190,8 +193,10 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
     return {};
 }
 
+/*
+template <class Rt, class Rp>
 tl::expected<stat_pair_t, std::string>
-tvlp_worker_t::send_start(const std::string& id)
+tvlp_worker_t<Rt, Rp>::send_start(const std::string& id)
 {
     auto result = openperf::api::client::internal_api_post(
         generator_endpoint() + "/" + id + "/start",
@@ -204,7 +209,9 @@ tvlp_worker_t::send_start(const std::string& id)
     return std::pair(stat.at("id"), stat);
 }
 
-tl::expected<void, std::string> tvlp_worker_t::send_stop(const std::string& id)
+template <class Rt, class Rp>
+tl::expected<void, std::string>
+tvlp_worker_t<Rt, Rp>::send_stop(const std::string& id)
 {
     auto result = openperf::api::client::internal_api_post(
         generator_endpoint() + "/" + id + "/stop",
@@ -215,8 +222,9 @@ tl::expected<void, std::string> tvlp_worker_t::send_stop(const std::string& id)
     return {};
 }
 
+template <class Rt, class Rp>
 tl::expected<nlohmann::json, std::string>
-tvlp_worker_t::send_stat(const std::string& id)
+tvlp_worker_t<Rt, Rp>::send_stat(const std::string& id)
 {
     auto result = openperf::api::client::internal_api_get(
         generator_results_endpoint() + "/" + id, INTERNAL_REQUEST_TIMEOUT);
@@ -225,14 +233,29 @@ tvlp_worker_t::send_stat(const std::string& id)
     return nlohmann::json::parse(result.second);
 }
 
+template <class Rt, class Rp>
 tl::expected<void, std::string>
-tvlp_worker_t::send_delete(const std::string& id)
+tvlp_worker_t<Rt, Rp>::send_delete(const std::string& id)
 {
     auto result = openperf::api::client::internal_api_del(
         generator_endpoint() + "/" + id, INTERNAL_REQUEST_TIMEOUT);
     if (result.first != Pistache::Http::Code::No_Content)
         return tl::make_unexpected(result.second);
     return {};
+} */
+
+using namespace openperf::message;
+tl::expected<serialized_message, int>
+tvlp_worker_t::submit_request(serialized_message request)
+{
+    if (auto error = send(m_socket.get(), std::move(request)); error != 0) {
+        return tl::make_unexpected(error);
+    }
+
+    auto reply = recv(m_socket.get());
+    if (!reply) { return tl::make_unexpected(reply.error()); }
+
+    return std::move(*reply);
 }
 
 } // namespace openperf::tvlp::internal::worker

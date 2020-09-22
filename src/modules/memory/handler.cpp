@@ -17,36 +17,38 @@ std::string json_error(std::string_view msg)
     return json{{"error", msg}}.dump();
 }
 
-void response_error(Http::ResponseWriter& rsp, const reply::error& error)
+std::pair<Http::Code, std::optional<std::string>>
+to_error(const reply::error& error)
 {
     switch (error.type) {
     case reply::error::NOT_FOUND:
-        rsp.send(Http::Code::Not_Found);
-        break;
+        return std::pair(Http::Code::Not_Found, std::nullopt);
     case reply::error::EXISTS:
-        rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-        rsp.send(Http::Code::Bad_Request,
-                 json_error("Item with such ID already existst"));
-        break;
+        return std::pair(Http::Code::Bad_Request,
+                         "Item with such ID already existst");
     case reply::error::INVALID_ID:
-        rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-        rsp.send(Http::Code::Bad_Request, json_error("Invalid ID format"));
-        break;
+        return std::pair(Http::Code::Bad_Request, "Invalid ID format");
     case reply::error::ACTIVE_STAT:
-        rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-        rsp.send(Http::Code::Bad_Request,
-                 json_error("Trying to remove active statistics"));
-        break;
+        return std::pair(Http::Code::Bad_Request,
+                         "Trying to remove active statistics");
     case reply::error::NOT_INITIALIZED:
-        rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-        rsp.send(Http::Code::Bad_Request,
-                 json_error("Trying to start uninitialized generator"));
+        return std::pair(Http::Code::Bad_Request,
+                         "Trying to start uninitialized generator");
     case reply::error::CUSTOM:
-        rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
-        rsp.send(Http::Code::Bad_Request, json_error(error.message));
-        break;
+        return std::pair(Http::Code::Bad_Request, error.message);
     default:
-        rsp.send(Http::Code::Internal_Server_Error);
+        return std::pair(Http::Code::Internal_Server_Error, std::nullopt);
+    }
+}
+
+void response_error(Http::ResponseWriter& rsp, const reply::error& error)
+{
+    auto err = to_error(error);
+    if (err.second) {
+        rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
+        rsp.send(err.first, json_error(err.second.value()));
+    } else {
+        rsp.send(err.first);
     }
 }
 

@@ -7,11 +7,13 @@
 #include <future>
 #include "json.hpp"
 
+#include "framework/core/op_core.h"
 #include "framework/generator/task.hpp"
 #include "modules/timesync/chrono.hpp"
 #include "models/tvlp_config.hpp"
 #include "models/tvlp_result.hpp"
 #include "tl/expected.hpp"
+#include "message/serialized_message.hpp"
 
 namespace openperf::tvlp::internal::worker {
 
@@ -37,7 +39,9 @@ class tvlp_worker_t
 public:
     tvlp_worker_t() = delete;
     tvlp_worker_t(const tvlp_worker_t&) = delete;
-    explicit tvlp_worker_t(const model::tvlp_module_profile_t&);
+    explicit tvlp_worker_t(void*,
+                           const std::string,
+                           const model::tvlp_module_profile_t&);
     virtual ~tvlp_worker_t();
 
     tl::expected<void, std::string>
@@ -53,14 +57,21 @@ protected:
     send_create(const nlohmann::json& config,
                 const std::string& resource_id) = 0;
     virtual tl::expected<stat_pair_t, std::string>
-    send_start(const std::string& id);
-    virtual tl::expected<void, std::string> send_stop(const std::string& id);
+    send_start(const std::string& id) = 0;
+    virtual tl::expected<void, std::string>
+    send_stop(const std::string& id) = 0;
     virtual tl::expected<nlohmann::json, std::string>
-    send_stat(const std::string& id);
-    virtual tl::expected<void, std::string> send_delete(const std::string& id);
+    send_stat(const std::string& id) = 0;
+    virtual tl::expected<void, std::string>
+    send_delete(const std::string& id) = 0;
+
+    tl::expected<message::serialized_message, int>
+    submit_request(message::serialized_message request);
 
     virtual std::string generator_endpoint() = 0;
     virtual std::string generator_results_endpoint() = 0;
+
+    std::unique_ptr<void, op_socket_deleter> m_socket;
 
 private:
     tl::expected<void, std::string>
