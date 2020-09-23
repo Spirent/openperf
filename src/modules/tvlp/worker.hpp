@@ -30,8 +30,6 @@ struct tvlp_worker_state_t
     std::atomic_bool stopped;
 };
 
-static const std::chrono::seconds INTERNAL_REQUEST_TIMEOUT = 5s;
-
 class tvlp_worker_t
 {
     using worker_future = std::future<tl::expected<void, std::string>>;
