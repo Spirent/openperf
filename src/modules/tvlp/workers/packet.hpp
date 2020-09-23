@@ -11,7 +11,7 @@ public:
     packet_tvlp_worker_t() = delete;
     packet_tvlp_worker_t(const packet_tvlp_worker_t&) = delete;
     packet_tvlp_worker_t(void* context, const model::tvlp_module_profile_t&);
-    ~packet_tvlp_worker_t() = default;
+    ~packet_tvlp_worker_t();
 
 protected:
     tl::expected<std::string, std::string>

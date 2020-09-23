@@ -11,7 +11,7 @@ public:
     cpu_tvlp_worker_t() = delete;
     cpu_tvlp_worker_t(const cpu_tvlp_worker_t&) = delete;
     cpu_tvlp_worker_t(void* context, const model::tvlp_module_profile_t&);
-    ~cpu_tvlp_worker_t() = default;
+    ~cpu_tvlp_worker_t();
 
 protected:
     tl::expected<std::string, std::string>

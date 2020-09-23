@@ -40,7 +40,7 @@ public:
     tvlp_worker_t() = delete;
     tvlp_worker_t(const tvlp_worker_t&) = delete;
     explicit tvlp_worker_t(void*,
-                           const std::string,
+                           const std::string&,
                            const model::tvlp_module_profile_t&);
     virtual ~tvlp_worker_t();
 

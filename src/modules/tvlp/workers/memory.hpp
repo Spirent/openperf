@@ -11,7 +11,7 @@ public:
     memory_tvlp_worker_t() = delete;
     memory_tvlp_worker_t(const memory_tvlp_worker_t&) = delete;
     memory_tvlp_worker_t(void* context, const model::tvlp_module_profile_t&);
-    ~memory_tvlp_worker_t() = default;
+    ~memory_tvlp_worker_t();
 
 protected:
     tl::expected<std::string, std::string>

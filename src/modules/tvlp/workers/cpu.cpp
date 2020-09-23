@@ -15,6 +15,8 @@ cpu_tvlp_worker_t::cpu_tvlp_worker_t(
     void* context, const model::tvlp_module_profile_t& profile)
     : tvlp_worker_t(context, endpoint, profile){};
 
+cpu_tvlp_worker_t::~cpu_tvlp_worker_t() { stop(); }
+
 tl::expected<std::string, std::string>
 cpu_tvlp_worker_t::send_create(const nlohmann::json& config,
                                const std::string& resource_id

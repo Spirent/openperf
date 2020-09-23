@@ -11,7 +11,7 @@ public:
     block_tvlp_worker_t() = delete;
     block_tvlp_worker_t(const block_tvlp_worker_t&) = delete;
     block_tvlp_worker_t(void* context, const model::tvlp_module_profile_t&);
-    ~block_tvlp_worker_t() = default;
+    ~block_tvlp_worker_t();
 
 protected:
     tl::expected<std::string, std::string>

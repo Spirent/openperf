@@ -8,7 +8,7 @@ namespace openperf::tvlp::internal::worker {
 constexpr duration THRESHOLD = 100ms;
 
 tvlp_worker_t::tvlp_worker_t(void* context,
-                             const std::string endpoint,
+                             const std::string& endpoint,
                              const model::tvlp_module_profile_t& profile)
     : m_socket(op_socket_get_client(context, ZMQ_REQ, endpoint.data()))
     , m_profile(profile)

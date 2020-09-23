@@ -20,6 +20,8 @@ packet_tvlp_worker_t::packet_tvlp_worker_t(
     void* context, const model::tvlp_module_profile_t& profile)
     : tvlp_worker_t(context, std::string(endpoint), profile){};
 
+packet_tvlp_worker_t::~packet_tvlp_worker_t() { stop(); }
+
 tl::expected<std::string, std::string>
 packet_tvlp_worker_t::send_create(const nlohmann::json& config,
                                   const std::string& target_id)
@@ -82,7 +84,7 @@ tl::expected<nlohmann::json, std::string>
 packet_tvlp_worker_t::send_stat(const std::string& id)
 {
     auto api_reply =
-        submit_request(serialize_request(request_start_generator{id}))
+        submit_request(serialize_request(request_get_generator_result{id}))
             .and_then(deserialize_reply);
 
     if (auto r = std::get_if<reply_generator_results>(&api_reply.value())) {

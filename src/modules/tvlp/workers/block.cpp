@@ -15,6 +15,8 @@ block_tvlp_worker_t::block_tvlp_worker_t(
     : tvlp_worker_t(context, endpoint, profile)
 {}
 
+block_tvlp_worker_t::~block_tvlp_worker_t() { stop(); }
+
 tl::expected<std::string, std::string>
 block_tvlp_worker_t::send_create(const nlohmann::json& config,
                                  const std::string& resource_id)
