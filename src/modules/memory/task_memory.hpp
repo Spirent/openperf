@@ -5,6 +5,7 @@
 #include <chrono>
 
 #include "framework/generator/task.hpp"
+#include "framework/generator/pid_control.hpp"
 #include "modules/timesync/chrono.hpp"
 
 #include "io_pattern.hpp"
@@ -27,6 +28,7 @@ struct task_memory_config
 
 class task_memory : public openperf::framework::generator::task<memory_stat>
 {
+    using pid_control = openperf::framework::generator::pid_control;
     using chronometer = openperf::timesync::chrono::monotime;
 
 protected:
@@ -42,6 +44,9 @@ protected:
     task_memory_stat m_stat;
     size_t m_op_index;
     double m_avg_rate;
+
+    size_t m_rate;
+    pid_control m_pid;
 
 public:
     task_memory() = delete;
