@@ -193,57 +193,6 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
     return {};
 }
 
-/*
-template <class Rt, class Rp>
-tl::expected<stat_pair_t, std::string>
-tvlp_worker_t<Rt, Rp>::send_start(const std::string& id)
-{
-    auto result = openperf::api::client::internal_api_post(
-        generator_endpoint() + "/" + id + "/start",
-        "",
-        INTERNAL_REQUEST_TIMEOUT);
-
-    if (result.first != Pistache::Http::Code::Created)
-        return tl::make_unexpected(result.second);
-    auto stat = nlohmann::json::parse(result.second);
-    return std::pair(stat.at("id"), stat);
-}
-
-template <class Rt, class Rp>
-tl::expected<void, std::string>
-tvlp_worker_t<Rt, Rp>::send_stop(const std::string& id)
-{
-    auto result = openperf::api::client::internal_api_post(
-        generator_endpoint() + "/" + id + "/stop",
-        "",
-        INTERNAL_REQUEST_TIMEOUT);
-    if (result.first != Pistache::Http::Code::No_Content)
-        return tl::make_unexpected(result.second);
-    return {};
-}
-
-template <class Rt, class Rp>
-tl::expected<nlohmann::json, std::string>
-tvlp_worker_t<Rt, Rp>::send_stat(const std::string& id)
-{
-    auto result = openperf::api::client::internal_api_get(
-        generator_results_endpoint() + "/" + id, INTERNAL_REQUEST_TIMEOUT);
-    if (result.first != Pistache::Http::Code::Ok)
-        return tl::make_unexpected(result.second);
-    return nlohmann::json::parse(result.second);
-}
-
-template <class Rt, class Rp>
-tl::expected<void, std::string>
-tvlp_worker_t<Rt, Rp>::send_delete(const std::string& id)
-{
-    auto result = openperf::api::client::internal_api_del(
-        generator_endpoint() + "/" + id, INTERNAL_REQUEST_TIMEOUT);
-    if (result.first != Pistache::Http::Code::No_Content)
-        return tl::make_unexpected(result.second);
-    return {};
-} */
-
 using namespace openperf::message;
 tl::expected<serialized_message, int>
 tvlp_worker_t::submit_request(serialized_message request)

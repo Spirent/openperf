@@ -37,7 +37,7 @@ static enum Http::Code to_code(const reply_error& error)
     }
 }
 
-static const char* to_string(const reply_error& error)
+const char* to_string(const reply_error& error)
 {
     switch (error.info.type) {
     case error_type::NOT_FOUND:

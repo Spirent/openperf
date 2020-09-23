@@ -68,7 +68,7 @@ block_tvlp_worker_t::send_stop(const std::string& id)
     auto api_reply = submit_request(serialize_request(
                                         request_block_generator_stop{.id = id}))
                          .and_then(deserialize_reply);
-    if (auto r = std::get_if<reply_ok>(&api_reply.value())) {
+    if (std::get_if<reply_ok>(&api_reply.value())) {
         return {};
     } else if (auto error = std::get_if<reply_error>(&api_reply.value())) {
         return tl::make_unexpected(to_string(error->info));
@@ -101,7 +101,7 @@ block_tvlp_worker_t::send_delete(const std::string& id)
         submit_request(serialize_request(request_block_generator_del{.id = id}))
             .and_then(deserialize_reply);
 
-    if (auto r = std::get_if<reply_ok>(&api_reply.value())) {
+    if (std::get_if<reply_ok>(&api_reply.value())) {
         return {};
     } else if (auto error = std::get_if<reply_error>(&api_reply.value())) {
         return tl::make_unexpected(to_string(error->info));

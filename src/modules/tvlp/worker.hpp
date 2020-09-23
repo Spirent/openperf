@@ -68,9 +68,6 @@ protected:
     tl::expected<message::serialized_message, int>
     submit_request(message::serialized_message request);
 
-    virtual std::string generator_endpoint() = 0;
-    virtual std::string generator_results_endpoint() = 0;
-
     std::unique_ptr<void, op_socket_deleter> m_socket;
 
 private:

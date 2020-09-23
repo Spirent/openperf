@@ -31,7 +31,7 @@ cpu_tvlp_worker_t::send_create(const nlohmann::json& config,
                          .and_then(deserialize_reply);
 
     if (auto r = std::get_if<reply_cpu_generators>(&api_reply.value())) {
-        return to_swagger(*r->generators.front())->toJson();
+        return r->generators.front()->id();
     } else if (auto error = std::get_if<reply_error>(&api_reply.value())) {
         return tl::make_unexpected(to_string(*error->info));
     }
@@ -63,7 +63,7 @@ cpu_tvlp_worker_t::send_stop(const std::string& id)
         submit_request(serialize_request(request_cpu_generator_stop{.id = id}))
             .and_then(deserialize_reply);
 
-    if (auto r = std::get_if<reply_ok>(&api_reply.value())) {
+    if (std::get_if<reply_ok>(&api_reply.value())) {
         return {};
     } else if (auto error = std::get_if<reply_error>(&api_reply.value())) {
         return tl::make_unexpected(to_string(*error->info));
@@ -80,8 +80,7 @@ cpu_tvlp_worker_t::send_stat(const std::string& id)
                          .and_then(deserialize_reply);
 
     if (auto r = std::get_if<reply_cpu_generator_results>(&api_reply.value())) {
-        return std::pair(r->results.front()->id(),
-                         to_swagger(*r->results.front())->toJson());
+        return to_swagger(*r->results.front())->toJson();
     } else if (auto error = std::get_if<reply_error>(&api_reply.value())) {
         return tl::make_unexpected(to_string(*error->info));
     }
@@ -96,7 +95,7 @@ cpu_tvlp_worker_t::send_delete(const std::string& id)
         submit_request(serialize_request(request_cpu_generator_del{.id = id}))
             .and_then(deserialize_reply);
 
-    if (auto r = std::get_if<reply_ok>(&api_reply.value())) {
+    if (std::get_if<reply_ok>(&api_reply.value())) {
         return {};
     } else if (auto error = std::get_if<reply_error>(&api_reply.value())) {
         return tl::make_unexpected(to_string(*error->info));

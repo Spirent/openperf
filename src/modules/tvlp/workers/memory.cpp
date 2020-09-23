@@ -5,14 +5,16 @@
 #include "modules/memory/api.hpp"
 #include "modules/memory/api_converters.hpp"
 
+namespace openperf::memory::api {
+std::pair<Pistache::Http::Code, std::optional<std::string>>
+to_error(const reply::error& error);
+}
+
 namespace openperf::tvlp::internal::worker {
 
 using namespace swagger::v1::model;
 using namespace openperf::memory::api;
 using namespace Pistache;
-
-std::pair<Http::Code, std::optional<std::string>>
-to_error(const reply::error& error);
 
 memory_tvlp_worker_t::memory_tvlp_worker_t(
     void* context, const model::tvlp_module_profile_t& profile)
@@ -36,7 +38,7 @@ memory_tvlp_worker_t::send_create(const nlohmann::json& config,
         submit_request(serialize(std::move(data))).and_then(deserialize_reply);
 
     if (auto r = std::get_if<reply::generator::item>(&api_reply.value())) {
-        return to_swagger(*r).toJson();
+        return r->id;
     } else if (auto error = std::get_if<reply::error>(&api_reply.value())) {
         auto e = to_error(*error);
         if (e.second) return tl::make_unexpected(e.second.value());
@@ -69,7 +71,7 @@ memory_tvlp_worker_t::send_stop(const std::string& id)
         submit_request(serialize(request::generator::stop{{.id = id}}))
             .and_then(deserialize_reply);
 
-    if (auto r = std::get_if<reply::ok>(&api_reply.value())) {
+    if (std::get_if<reply::ok>(&api_reply.value())) {
         return {};
     } else if (auto error = std::get_if<reply::error>(&api_reply.value())) {
         auto e = to_error(*error);
@@ -87,7 +89,7 @@ memory_tvlp_worker_t::send_stat(const std::string& id)
             .and_then(deserialize_reply);
 
     if (auto r = std::get_if<reply::statistic::item>(&api_reply.value())) {
-        return std::pair(r->id, to_swagger(*r).toJson());
+        return to_swagger(*r).toJson();
     } else if (auto error = std::get_if<reply::error>(&api_reply.value())) {
         auto e = to_error(*error);
         if (e.second) return tl::make_unexpected(e.second.value());
@@ -103,7 +105,7 @@ memory_tvlp_worker_t::send_delete(const std::string& id)
         submit_request(serialize(request::generator::erase{{.id = id}}))
             .and_then(deserialize_reply);
 
-    if (auto r = std::get_if<reply::ok>(&api_reply.value())) {
+    if (std::get_if<reply::ok>(&api_reply.value())) {
         return {};
     } else if (auto error = std::get_if<reply::error>(&api_reply.value())) {
         auto e = to_error(*error);
