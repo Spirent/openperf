@@ -129,7 +129,6 @@ static uint16_t detect_prbs_errors([[maybe_unused]] uint16_t port_id,
                 const auto* mbuf = std::get<0>(item);
                 const auto offset = std::get<1>(item);
 
-                rte_pktmbuf_dump(stderr, mbuf, offset + 20);
                 scratch->segments.set(
                     nb_prbs_segs++,
                     {rte_pktmbuf_mtod_offset(mbuf, const uint8_t*, offset),
