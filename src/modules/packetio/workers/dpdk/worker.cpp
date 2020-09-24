@@ -857,7 +857,7 @@ static void run_spinning(run_args&& args)
         rte_pause();
 
         /* All queues are idle; check callbacks */
-        for (auto& event : poller.poll(0)) {
+        for (auto& event : poller.poll(1)) {
             service_event(args.loop, args.fib, event);
         }
 
