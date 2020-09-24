@@ -13,6 +13,7 @@
 namespace openperf::tvlp::internal {
 
 using namespace std::chrono_literals;
+using duration = std::chrono::nanoseconds;
 
 controller_t::controller_t(void* context,
                            const model::tvlp_configuration_t& model)
@@ -95,7 +96,7 @@ controller_t::start(const time_point& start_time)
     }
 
     m_start_time = start_time;
-    if (start_time > realtime::now())
+    if (start_time > timesync::chrono::realtime::now())
         m_state = model::COUNTDOWN;
     else
         m_state = model::RUNNING;
@@ -145,7 +146,7 @@ void controller_t::update()
         return worker.results();
     };
 
-    m_error = "";
+    m_error.clear();
     m_current_offset = duration::zero();
     m_state = model::READY;
     model::tvlp_modules_results_t modules_results;

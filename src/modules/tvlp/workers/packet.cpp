@@ -6,10 +6,6 @@
 #include "swagger/v1/model/TxFlow.h"
 #include "modules/packet/generator/api.hpp"
 
-namespace openperf::packet::generator::api {
-const char* to_string(const reply_error& error);
-}
-
 namespace openperf::tvlp::internal::worker {
 
 using namespace swagger::v1::model;

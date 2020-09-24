@@ -6,7 +6,8 @@ controller_stack::controller_stack(void* context)
     : m_context(context)
 {}
 
-std::vector<tvlp_controller_ptr> controller_stack::list() const
+std::vector<controller_stack::tvlp_controller_ptr>
+controller_stack::list() const
 {
     std::vector<tvlp_controller_ptr> controllers_list;
     for (const auto& c_pair : m_controllers) {
@@ -17,7 +18,7 @@ std::vector<tvlp_controller_ptr> controller_stack::list() const
     return controllers_list;
 }
 
-tl::expected<tvlp_controller_ptr, std::string>
+tl::expected<controller_stack::tvlp_controller_ptr, std::string>
 controller_stack::create(const model::tvlp_configuration_t& model)
 {
     if (get(model.id())) {
@@ -35,7 +36,7 @@ controller_stack::create(const model::tvlp_configuration_t& model)
     }
 }
 
-tl::expected<tvlp_controller_ptr, std::string>
+tl::expected<controller_stack::tvlp_controller_ptr, std::string>
 controller_stack::get(const std::string& id) const
 {
     if (m_controllers.count(id)) {
@@ -64,7 +65,7 @@ tl::expected<void, std::string> controller_stack::erase(const std::string& id)
     return {};
 }
 
-tl::expected<tvlp_result_ptr, std::string>
+tl::expected<controller_stack::tvlp_result_ptr, std::string>
 controller_stack::start(const std::string& id, const time_point& start_time)
 {
     auto controller = get(id);
@@ -93,7 +94,7 @@ tl::expected<void, std::string> controller_stack::stop(const std::string& id)
     return {};
 }
 
-std::vector<tvlp_result_ptr> controller_stack::results() const
+std::vector<controller_stack::tvlp_result_ptr> controller_stack::results() const
 {
     std::vector<tvlp_result_ptr> result_list;
     for (const auto& pair : m_results) {
@@ -103,7 +104,7 @@ std::vector<tvlp_result_ptr> controller_stack::results() const
     return result_list;
 }
 
-tl::expected<tvlp_result_ptr, std::string>
+tl::expected<controller_stack::tvlp_result_ptr, std::string>
 controller_stack::result(const std::string& id) const
 {
     if (!m_results.count(id)) {

@@ -302,6 +302,7 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg);
 tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
 
 reply_error to_error(error_type type, int value = 0);
+const char* to_string(const reply_error& error);
 
 generator_ptr to_swagger(const source&);
 

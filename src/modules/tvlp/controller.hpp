@@ -11,13 +11,10 @@
 
 namespace openperf::tvlp::internal {
 
-using framework_controller = openperf::framework::generator::controller;
-using duration = std::chrono::nanoseconds;
-using time_point = std::chrono::time_point<timesync::chrono::realtime>;
-using realtime = timesync::chrono::realtime;
-
 class controller_t : public model::tvlp_configuration_t
 {
+    using time_point = std::chrono::time_point<timesync::chrono::realtime>;
+
 private:
     static constexpr auto NAME_PREFIX = "op_tvlp";
     void* m_context;

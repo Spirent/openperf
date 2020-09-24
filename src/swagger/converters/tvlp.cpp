@@ -23,8 +23,8 @@ void from_json(const nlohmann::json& j, TvlpProfile_cpu& cpu_profile)
 
     cpu_profile.getSeries().clear();
     for (auto& item : val["series"]) {
-        auto newItem = std::make_shared<TvlpProfile_cpu_series>();
-        from_json(item, *newItem);
+        auto newItem = std::make_shared<TvlpProfile_cpu_series>(
+            item.get<TvlpProfile_cpu_series>());
         cpu_profile.getSeries().push_back(newItem);
     }
 }
@@ -47,8 +47,8 @@ void from_json(const nlohmann::json& j, TvlpProfile_block& block_profile)
 
     block_profile.getSeries().clear();
     for (auto& item : val["series"]) {
-        auto newItem = std::make_shared<TvlpProfile_block_series>();
-        from_json(item, *newItem);
+        auto newItem = std::make_shared<TvlpProfile_block_series>(
+            item.get<TvlpProfile_block_series>());
         block_profile.getSeries().push_back(newItem);
     }
 }
@@ -72,8 +72,8 @@ void from_json(const nlohmann::json& j, TvlpProfile_memory& memory_profile)
     memory_profile.getSeries().clear();
     if (val.find("series") != val.end()) {
         for (auto& item : val["series"]) {
-            auto newItem = std::make_shared<TvlpProfile_memory_series>();
-            from_json(item, *newItem);
+            auto newItem = std::make_shared<TvlpProfile_memory_series>(
+                item.get<TvlpProfile_memory_series>());
             memory_profile.getSeries().push_back(newItem);
         }
     }
@@ -99,8 +99,8 @@ void from_json(const nlohmann::json& j, TvlpProfile_packet& packet_profile)
     packet_profile.getSeries().clear();
     if (val.find("series") != val.end()) {
         for (auto& item : val["series"]) {
-            auto newItem = std::make_shared<TvlpProfile_packet_series>();
-            from_json(item, *newItem);
+            auto newItem = std::make_shared<TvlpProfile_packet_series>(
+                item.get<TvlpProfile_packet_series>());
             packet_profile.getSeries().push_back(newItem);
         }
     }
@@ -111,29 +111,29 @@ void from_json(const nlohmann::json& j, TvlpProfile& profile)
     auto val = const_cast<nlohmann::json&>(j);
     if (val.find("memory") != val.end()) {
         if (!val["memory"].is_null()) {
-            auto newItem = std::make_shared<TvlpProfile_memory>();
-            from_json(val.at("memory"), *newItem);
+            auto newItem = std::make_shared<TvlpProfile_memory>(
+                val.at("memory").get<TvlpProfile_memory>());
             profile.setMemory(newItem);
         }
     }
     if (val.find("block") != val.end()) {
         if (!val["block"].is_null()) {
-            auto newItem = std::make_shared<TvlpProfile_block>();
-            from_json(val.at("block"), *newItem);
+            auto newItem = std::make_shared<TvlpProfile_block>(
+                val.at("block").get<TvlpProfile_block>());
             profile.setBlock(newItem);
         }
     }
     if (val.find("cpu") != val.end()) {
         if (!val["cpu"].is_null()) {
-            auto newItem = std::make_shared<TvlpProfile_cpu>();
-            from_json(val.at("cpu"), *newItem);
+            auto newItem = std::make_shared<TvlpProfile_cpu>(
+                val.at("cpu").get<TvlpProfile_cpu>());
             profile.setCpu(newItem);
         }
     }
     if (val.find("packet") != val.end()) {
         if (!val["packet"].is_null()) {
-            auto newItem = std::make_shared<TvlpProfile_packet>();
-            from_json(val.at("packet"), *newItem);
+            auto newItem = std::make_shared<TvlpProfile_packet>(
+                val.at("packet").get<TvlpProfile_packet>());
             profile.setPacket(newItem);
         }
     }
@@ -143,8 +143,8 @@ void from_json(const nlohmann::json& j, TvlpConfiguration& generator)
 {
     if (j.find("id") != j.end()) generator.setId(j.at("id"));
 
-    generator.setProfile(std::make_shared<TvlpProfile>());
-    from_json(j.at("profile"), *generator.getProfile());
+    generator.setProfile(
+        std::make_shared<TvlpProfile>(j.at("profile").get<TvlpProfile>()));
 }
 
 } // namespace swagger::v1::model

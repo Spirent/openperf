@@ -10,14 +10,15 @@
 
 namespace openperf::tvlp::internal {
 
-using tvlp_controller_ptr = std::shared_ptr<controller_t>;
-using tvlp_controller_map =
-    std::unordered_map<std::string, tvlp_controller_ptr>;
-using tvlp_result_ptr = std::shared_ptr<model::tvlp_result_t>;
-using tvlp_result_map = std::unordered_map<std::string, tvlp_result_ptr>;
-
 class controller_stack
 {
+    using time_point = std::chrono::time_point<timesync::chrono::realtime>;
+    using tvlp_controller_ptr = std::shared_ptr<controller_t>;
+    using tvlp_controller_map =
+        std::unordered_map<std::string, tvlp_controller_ptr>;
+    using tvlp_result_ptr = std::shared_ptr<model::tvlp_result_t>;
+    using tvlp_result_map = std::unordered_map<std::string, tvlp_result_ptr>;
+
 private:
     tvlp_controller_map m_controllers;
     tvlp_result_map m_results;

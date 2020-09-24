@@ -4,7 +4,7 @@
 #include <json.hpp>
 
 #include "api.hpp"
-
+#include "pistache/http_defs.h"
 #include "swagger/v1/model/BulkCreateMemoryGeneratorsRequest.h"
 #include "swagger/v1/model/BulkDeleteMemoryGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartMemoryGeneratorsRequest.h"
@@ -26,6 +26,9 @@ swagger::MemoryGenerator to_swagger(const reply::generator::item&);
 swagger::MemoryGeneratorStats to_swagger(const task_memory_stat&);
 swagger::MemoryGeneratorResult to_swagger(const reply::statistic::item&);
 swagger::MemoryInfoResult to_swagger(const memory_info::info_t&);
+
+std::pair<Pistache::Http::Code, std::optional<std::string>>
+to_error(const reply::error& error);
 
 } // namespace openperf::memory::api
 

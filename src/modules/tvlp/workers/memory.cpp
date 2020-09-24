@@ -5,11 +5,6 @@
 #include "modules/memory/api.hpp"
 #include "modules/memory/api_converters.hpp"
 
-namespace openperf::memory::api {
-std::pair<Pistache::Http::Code, std::optional<std::string>>
-to_error(const reply::error& error);
-}
-
 namespace openperf::tvlp::internal::worker {
 
 using namespace swagger::v1::model;
