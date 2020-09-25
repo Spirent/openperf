@@ -271,18 +271,3 @@ def make_traffic_load(load_config):
     load.units = load_config['units'] if 'units' in load_config else 'frames'
 
     return load
-
-
-def make_generator_config(**kwargs):
-    duration_config = kwargs['duration'] if 'duration' in kwargs else DURATION_CONFIG
-    load_config = kwargs['load'] if 'load' in kwargs else LOAD_CONFIG
-    packet_config = kwargs['traffic'] if 'traffic' in kwargs else TRAFFIC_CONFIG
-
-    config = client.models.PacketGeneratorConfig()
-    config.duration = make_traffic_duration(duration_config)
-    config.load = make_traffic_load(load_config)
-    config.traffic = list(map(make_traffic_definition, packet_config))
-    config.order = kwargs['order'] if 'order' in kwargs else 'round-robin'
-    config.protocol_counters = kwargs['protocol_counters'] if 'protocol_counters' in kwargs else None
-
-    return config

@@ -7,9 +7,14 @@ from mamba import description, before, after, it
 from expects import *
 from expects.matchers import Matcher
 from common import Config, Service
-from common.helper import make_dynamic_results_config
-from common.helper import check_modules_exists
-from common.matcher import (raise_api_exception,
+from common.helper import (make_dynamic_results_config,
+                        check_modules_exists,
+                        get_memory_dynamic_results_fields,
+                        memory_generator_model,
+                        wait_for_buffer_initialization_done)
+from common.matcher import (has_location,
+                            has_json_content_type,
+                            raise_api_exception,
                             be_valid_memory_info,
                             be_valid_memory_generator,
                             be_valid_memory_generator_result,
@@ -18,62 +23,6 @@ from common.matcher import (raise_api_exception,
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                 os.environ.get('MAMBA_CONFIG', 'config.yaml')))
-
-
-def get_dynamic_results_fields():
-    fields = []
-    swagger_types = client.models.MemoryGeneratorStats.swagger_types
-    for (name, type) in swagger_types.items():
-        if type in ['int', 'float']:
-            fields.append('read.' + name)
-            fields.append('write.' + name)
-    return fields
-
-
-def generator_model(api_client, id = ''):
-    config = client.models.MemoryGeneratorConfig()
-    config.buffer_size = 1024
-    config.reads_per_sec = 128
-    config.read_size = 8
-    config.read_threads = 1
-    config.writes_per_sec = 128
-    config.write_size = 8
-    config.write_threads = 1
-    config.pattern = 'sequential'
-
-    gen = client.models.MemoryGenerator()
-    gen.running = False
-    gen.config = config
-    gen.id = id
-    gen.init_percent_complete = 0
-    return gen
-
-def wait_for_buffer_initialization_done(api_client, generator_id, timeout):
-    for i in range(timeout * 10):
-        g7r = api_client.get_memory_generator(generator_id)
-        if g7r.init_percent_complete == 100:
-            return True
-        time.sleep(.1)
-    return False
-
-class _has_json_content_type(Matcher):
-    def _match(self, request):
-        expect(request).to(have_key('Content-Type'))
-        expect(request['Content-Type']).to(equal('application/json'))
-        return True, ['is JSON content type']
-
-
-class has_location(Matcher):
-    def __init__(self, expected):
-        self._expected = expected
-
-    def _match(self, subject):
-        expect(subject).to(have_key('Location'))
-        return subject['Location'] == self._expected, []
-
-
-has_json_content_type = _has_json_content_type()
-
 
 with description('Memory Generator Module', 'memory') as self:
     with before.all:
@@ -116,8 +65,7 @@ with description('Memory Generator Module', 'memory') as self:
                         expect(self._result[1]).to(equal(201))
 
                     with it('has valid Location header'):
-                        expect(self._result[2]).to(has_location(
-                            '/memory-generators/' + self._result[0].id))
+                        expect(self._result[2]).to(has_location('/memory-generators/' + self._result[0].id))
 
                     with it('has Content-Type: application/json header'):
                         expect(self._result[2]).to(has_json_content_type)
@@ -133,7 +81,7 @@ with description('Memory Generator Module', 'memory') as self:
 
                 with description('with empty ID'):
                     with before.all:
-                        self._model = generator_model(self._api.api_client)
+                        self._model = memory_generator_model(self._api.api_client)
                         self._result = self._api.create_memory_generator_with_http_info(
                             self._model, _return_http_data_only=False)
 
@@ -143,7 +91,7 @@ with description('Memory Generator Module', 'memory') as self:
 
                 with description('with specified ID'):
                     with before.all:
-                        self._model = generator_model(
+                        self._model = memory_generator_model(
                             self._api.api_client, id='some-specified-id')
                         self._result = self._api.create_memory_generator_with_http_info(
                             self._model, _return_http_data_only=False)
@@ -153,7 +101,7 @@ with description('Memory Generator Module', 'memory') as self:
 
             with context('GET'):
                 with before.all:
-                    model = generator_model(self._api.api_client)
+                    model = memory_generator_model(self._api.api_client)
                     self._g8s = [self._api.create_memory_generator(model) for a in range(3)]
                     self._result = self._api.list_memory_generators_with_http_info(
                         _return_http_data_only=False)
@@ -175,7 +123,7 @@ with description('Memory Generator Module', 'memory') as self:
 
         with description('/memory-generators/{id}'):
             with before.all:
-                model = generator_model(self._api.api_client)
+                model = memory_generator_model(self._api.api_client)
                 g7r = self._api.create_memory_generator(model)
                 expect(g7r).to(be_valid_memory_generator)
                 self._g7r = g7r
@@ -228,7 +176,7 @@ with description('Memory Generator Module', 'memory') as self:
 
         with description('/memory-generators/{id}/start'):
             with before.all:
-                model = generator_model(self._api.api_client)
+                model = memory_generator_model(self._api.api_client)
                 g7r = self._api.create_memory_generator(model)
                 expect(g7r).to(be_valid_memory_generator)
                 self._g7r = g7r
@@ -250,8 +198,7 @@ with description('Memory Generator Module', 'memory') as self:
                         expect(self._result[1]).to(equal(201))
 
                     with it('has valid Location header'):
-                        expect(self._result[2]).to(has_location(
-                            '/memory-generator-results/' + self._result[0].id))
+                        expect(self._result[2]).to(has_location('/memory-generator-results/' + self._result[0].id))
 
                     with it('has Content-Type: application/json header'):
                         expect(self._result[2]).to(has_json_content_type)
@@ -270,7 +217,7 @@ with description('Memory Generator Module', 'memory') as self:
                     with before.all:
                         self._api.stop_memory_generator(self._g7r.id)
                         dynamic = make_dynamic_results_config(
-                            get_dynamic_results_fields())
+                            get_memory_dynamic_results_fields())
                         self._result = self._api.start_memory_generator_with_http_info(
                             self._g7r.id, dynamic_results=dynamic, _return_http_data_only=False)
 
@@ -281,8 +228,7 @@ with description('Memory Generator Module', 'memory') as self:
                         expect(self._result[1]).to(equal(201))
 
                     with it('has valid Location header'):
-                        expect(self._result[2]).to(has_location(
-                            '/memory-generator-results/' + self._result[0].id))
+                        expect(self._result[2]).to(has_location('/memory-generator-results/' + self._result[0].id))
 
                     with it('has Content-Type: application/json header'):
                         expect(self._result[2]).to(has_json_content_type)
@@ -310,7 +256,7 @@ with description('Memory Generator Module', 'memory') as self:
 
         with description('/memory-generators/{id}/stop'):
             with before.all:
-                model = generator_model(self._api.api_client)
+                model = memory_generator_model(self._api.api_client)
                 g7r = self._api.create_memory_generator(model)
                 expect(g7r).to(be_valid_memory_generator)
 
@@ -353,7 +299,7 @@ with description('Memory Generator Module', 'memory') as self:
 
         with description('/memory-generators/x/bulk-start'):
             with before.all:
-                model = generator_model(self._api.api_client)
+                model = memory_generator_model(self._api.api_client)
                 self._g8s = [self._api.create_memory_generator(model) for a in range(3)]
 
                 for a in range(3):
@@ -434,7 +380,7 @@ with description('Memory Generator Module', 'memory') as self:
 
         with description('/memory-generators/x/bulk-stop'):
             with before.all:
-                model = generator_model(
+                model = memory_generator_model(
                     self._api.api_client)
                 g8s = [self._api.create_memory_generator(model) for a in range(3)]
 

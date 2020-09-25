@@ -10,10 +10,7 @@
 
 #include "generator.hpp"
 #include "info.hpp"
-
-namespace openperf::memory {
-struct serialized_message;
-}
+#include "memory_stat.hpp"
 
 namespace openperf::memory::api {
 

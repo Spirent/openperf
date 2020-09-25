@@ -1,7 +1,9 @@
 from __future__ import absolute_import
 
 # api_exception.py
-from common.matcher.api_exception import raise_api_exception
+from common.matcher.api import has_location
+from common.matcher.api import has_json_content_type
+from common.matcher.api import raise_api_exception
 
 # dynamic.py
 from common.matcher.dynamic import be_valid_dynamic_results
@@ -62,3 +64,11 @@ from common.matcher.memory import be_valid_memory_info
 from common.matcher.cpu import be_valid_cpu_info
 from common.matcher.cpu import be_valid_cpu_generator
 from common.matcher.cpu import be_valid_cpu_generator_result
+
+# tvlp.py
+from common.matcher.tvlp import be_valid_tvlp_configuration
+from common.matcher.tvlp import be_valid_block_tvlp_profile
+from common.matcher.tvlp import be_valid_memory_tvlp_profile
+from common.matcher.tvlp import be_valid_cpu_tvlp_profile
+from common.matcher.tvlp import be_valid_packet_tvlp_profile
+from common.matcher.tvlp import be_valid_tvlp_result

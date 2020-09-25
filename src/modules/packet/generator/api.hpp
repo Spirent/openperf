@@ -302,6 +302,7 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg);
 tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
 
 reply_error to_error(error_type type, int value = 0);
+const char* to_string(const reply_error& error);
 
 generator_ptr to_swagger(const source&);
 
@@ -344,9 +345,5 @@ bool is_valid(const generator_type&, std::vector<std::string>&);
 
 } // namespace api
 } // namespace openperf::packet::generator
-
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, swagger::v1::model::PacketGenerator&);
-}
 
 #endif /* _OP_PACKET_GENERATOR_API_HPP_ */

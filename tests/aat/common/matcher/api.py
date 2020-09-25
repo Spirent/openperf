@@ -1,6 +1,21 @@
 from client.rest import ApiException
 from expects.matchers import Matcher
-from expects import expect, equal, have_keys
+from expects import expect, equal, have_keys, have_key
+
+class has_location(Matcher):
+    def __init__(self, expected):
+        self._expected = expected
+
+    def _match(self, subject):
+        expect(subject).to(have_key('Location'))
+        return subject['Location'] == self._expected, []
+
+class _has_json_content_type(Matcher):
+    def _match(self, request):
+        expect(request).to(have_key('Content-Type'))
+        expect(request['Content-Type']).to(equal('application/json'))
+        return True, ['is JSON content type']
+has_json_content_type = _has_json_content_type()
 
 class raise_api_exception(Matcher):
     def __init__(self, expected, **kwargs):

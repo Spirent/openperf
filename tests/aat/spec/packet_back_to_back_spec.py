@@ -6,7 +6,7 @@ import tempfile
 import copy
 
 from common import Config, Service
-from common.helper import (make_generator_config,
+from common.helper import (packet_generator_config,
                            make_capture_config,
                            get_capture_pcap,
                            get_pcap_packet_count)
@@ -450,7 +450,7 @@ def get_analyzer_model(api_client, analyzer_config):
 
 
 def get_generator_model(api_client, generator_config):
-    config = make_generator_config(**generator_config)
+    config = packet_generator_config(**generator_config)
 
     generator = client.models.PacketGenerator()
     generator.target_id = get_generator_port_id(api_client)

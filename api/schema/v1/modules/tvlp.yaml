@@ -1,0 +1,328 @@
+parameters:
+  id:
+    name: id
+    in: path
+    description: Unique resource identifier
+    type: string
+    format: string
+    required: true
+
+  start_time:
+    name: time
+    in: query
+    description: The ISO8601-formatted date and time to start profile replay
+    type: string
+    format: date-time
+    required: false
+
+paths:
+  /tvlp:
+    get:
+      operationId: ListTvlpConfigurations
+      tags:
+        - TVLP
+      summary: List TVLP configurations
+      description: The `tvlp` endpoint returns all of the TVLP configurations.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/TvlpConfiguration"
+    post:
+      operationId: CreateTvlpConfiguration
+      tags:
+        - TVLP
+      summary: Create a TVLP configuration
+      description: Create a new TVLP configuration
+      parameters:
+        - name: configuration
+          in: body
+          description: New TVLP configuration
+          required: true
+          schema:
+            $ref: "#/definitions/TvlpConfiguration"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI of created TVLP configuration
+              type: string
+          schema:
+            $ref: "#/definitions/TvlpConfiguration"
+
+  /tvlp/{id}:
+    get:
+      operationId: GetTvlpConfiguration
+      tags:
+        - TVLP
+      summary: Get a TVLP configuration
+      description: Returns a TVLP configuration, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/TvlpConfiguration"
+    delete:
+      operationId: DeleteTvlpConfiguration
+      tags:
+        - TVLP
+      summary: Delete a TVLP configuration
+      description: Deletes an existing TVLP configuration. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /tvlp/{id}/start:
+    post:
+      operationId: StartTvlpConfiguration
+      tags:
+        - TVLP
+      summary: Start a TVLP configuration
+      description: Start an existing TVLP configuration.
+      parameters:
+        - $ref: "#/parameters/id"
+        - $ref: "#/parameters/start_time"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI of created TVLP result
+              type: string
+          schema:
+            $ref: "#/definitions/TvlpResult"
+
+  /tvlp/{id}/stop:
+    post:
+      operationId: StopTvlpConfiguration
+      tags:
+        - TVLP
+      summary: Stop a TVLP configuration
+      description: Stop a running TVLP configuration. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /tvlp-results:
+    get:
+      operationId: ListTvlpResults
+      tags:
+        - TVLP
+      summary: List TVLP results
+      description: The `tvlp-results` endpoint returns all of the results produced by running TVLP configurations.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/TvlpResult"
+
+  /tvlp-results/{id}:
+    get:
+      operationId: GetTvlpResult
+      tags:
+        - TVLP
+      summary: Get a result from a TLVP configuration
+      description: Returns results from a TVLP configuration by result id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/TvlpResult"
+    delete:
+      operationId: DeleteTvlpResult
+      tags:
+        - TVLP
+      summary: Delete a TVLP result. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+definitions:
+  TvlpConfiguration:
+    type: object
+    description: TVLP configuration
+    properties:
+      id:
+        type: string
+        description: Unique TVLP configuration identifier
+      state:
+        type: string
+        description: |
+          TVLP configuration state
+          - ready - TVLP contains a valid configuration and is ready to be started
+          - countdown - TVLP has been given a start time in the future and is waiting to start replaying a profile
+          - running - TVLP is replaying a profile
+          - error - TVLP encountered a runtime error
+        enum:
+          - ready
+          - countdown
+          - running
+          - error
+      time:
+        type: object
+        description: read only TVLP time parameters
+        properties:
+          start:
+            type: string
+            format: date-time
+            description: The ISO8601-formatted date to start TVLP profile (only available when countdown)
+          length:
+            type: integer
+            format: int64
+            description: length of the current tvlp profile in ns
+          offset:
+            type: integer
+            format: int64
+            description: current offset in ns (only available when running)
+        required:
+          - length
+      profile:
+        $ref: "#/definitions/TvlpProfile"
+      error:
+        type: string
+        description: string describing error condition; only when state == error
+    required:
+      - id
+      - state
+      - time
+      - profile
+
+  TvlpProfile:
+    type: object
+    description: TVLP profile
+    properties:
+      memory:
+        type: object
+        properties:
+          series:
+            type: array
+            items:
+              type: object
+              description: TVLP Profile for Memory generators configuration
+              properties:
+                length:
+                  type: integer
+                  format: int64
+                  description: Length of the current operation in ns
+                config:
+                  $ref: "./memory.yaml#/definitions/MemoryGeneratorConfig"
+              required:
+                - length
+                - config
+        required:
+          - series
+      block:
+        type: object
+        properties:
+          series:
+            type: array
+            items:
+              type: object
+              description: TVLP Profile for Block generators configuration
+              properties:
+                resource_id:
+                  type: string
+                  description: Unique device or file identifier
+                length:
+                  type: integer
+                  format: int64
+                  description: Length of a current operation in ns
+                config:
+                  $ref: "./block.yaml#/definitions/BlockGeneratorConfig"
+              required:
+                - resource_id
+                - length
+                - config
+        required:
+          - series
+      cpu:
+        type: object
+        properties:
+          series:
+            type: array
+            items:
+              type: object
+              description: TVLP Profile for CPU generators configuration
+              properties:
+                length:
+                  type: integer
+                  format: int64
+                  description: Length of a current operation in ns
+                config:
+                  $ref: "./cpu.yaml#/definitions/CpuGeneratorConfig"
+              required:
+                - length
+                - config
+        required:
+          - series
+      packet:
+        type: object
+        properties:
+          series:
+            type: array
+            items:
+              type: object
+              description: TVLP Profile for Packet generators configuration
+              properties:
+                target_id:
+                  type: string
+                  description: |
+                    Specifies the unique target for packets from this generator. This
+                    id may refer to either a port or an interface id.
+                length:
+                  type: integer
+                  format: int64
+                  description: Length of a current operation in ns
+                config:
+                  $ref: "./packet/generator.yaml#/definitions/PacketGeneratorConfig"
+              required:
+                - target_id
+                - length
+                - config
+        required:
+          - series
+
+  TvlpResult:
+    type: object
+    description: TVLP result objects contain an array of generator results for each TVLP configuration step.
+    properties:
+      id:
+        type: string
+        description: Unique TVLP result identifier
+      tvlp_id:
+        type: string
+        description: TVLP configuration identifier that generated this result
+      memory:
+        type: array
+        items:
+          $ref: "./memory.yaml#/definitions/MemoryGeneratorResult"
+      block:
+        type: array
+        items:
+          $ref: "./block.yaml#/definitions/BlockGeneratorResult"
+      cpu:
+        type: array
+        items:
+          $ref: "./cpu.yaml#/definitions/CpuGeneratorResult"
+      packet:
+        type: array
+        items:
+          $ref: "./packet/generator.yaml#/definitions/PacketGeneratorResult"
+    required:
+      - id
+      - tvlp_id

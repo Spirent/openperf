@@ -6,6 +6,7 @@
 #include "message/serialized_message.hpp"
 #include "packet/generator/api.hpp"
 
+#include "swagger/converters/packet_generator.hpp"
 #include "swagger/v1/model/BulkCreatePacketGeneratorsResponse.h"
 #include "swagger/v1/model/BulkDeletePacketGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartPacketGeneratorsRequest.h"
@@ -36,7 +37,7 @@ static enum Http::Code to_code(const reply_error& error)
     }
 }
 
-static const char* to_string(const reply_error& error)
+const char* to_string(const reply_error& error)
 {
     switch (error.info.type) {
     case error_type::NOT_FOUND:

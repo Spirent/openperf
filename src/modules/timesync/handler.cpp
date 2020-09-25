@@ -9,11 +9,12 @@
 #include "message/serialized_message.hpp"
 #include "timesync/api.hpp"
 
-namespace opneperf::timesync {
+#include "swagger/converters/timesync.hpp"
+
+namespace openperf::timesync {
 
 using namespace Pistache;
 using json = nlohmann::json;
-namespace api = openperf::timesync::api;
 
 class handler : public openperf::api::route::handler::registrar<handler>
 {
@@ -275,4 +276,4 @@ void handler::delete_time_source(const Rest::Request& request,
     response.send(Http::Code::No_Content);
 }
 
-} // namespace opneperf::timesync
+} // namespace openperf::timesync

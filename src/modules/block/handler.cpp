@@ -7,9 +7,10 @@
 
 #include "modules/api/api_route_handler.hpp"
 
-namespace opneperf::block {
+#include "swagger/converters/block.hpp"
 
-namespace api = openperf::block::api;
+namespace openperf::block {
+
 using namespace swagger::v1::model;
 using namespace Pistache;
 using request_type = Pistache::Rest::Request;
@@ -761,4 +762,4 @@ void handler::delete_generator_result(const Rest::Request& request,
     }
 }
 
-} // namespace opneperf::block
+} // namespace openperf::block

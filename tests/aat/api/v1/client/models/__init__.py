@@ -175,4 +175,16 @@ from client.models.traffic_protocol_mac_modifier import TrafficProtocolMacModifi
 from client.models.traffic_protocol_mac_modifier_sequence import TrafficProtocolMacModifierSequence
 from client.models.traffic_protocol_modifier import TrafficProtocolModifier
 from client.models.traffic_protocol_modifiers import TrafficProtocolModifiers
+from client.models.tvlp_configuration import TvlpConfiguration
+from client.models.tvlp_configuration_time import TvlpConfigurationTime
+from client.models.tvlp_profile import TvlpProfile
+from client.models.tvlp_profile_block import TvlpProfileBlock
+from client.models.tvlp_profile_block_series import TvlpProfileBlockSeries
+from client.models.tvlp_profile_cpu import TvlpProfileCpu
+from client.models.tvlp_profile_cpu_series import TvlpProfileCpuSeries
+from client.models.tvlp_profile_memory import TvlpProfileMemory
+from client.models.tvlp_profile_memory_series import TvlpProfileMemorySeries
+from client.models.tvlp_profile_packet import TvlpProfilePacket
+from client.models.tvlp_profile_packet_series import TvlpProfilePacketSeries
+from client.models.tvlp_result import TvlpResult
 from client.models.tx_flow import TxFlow

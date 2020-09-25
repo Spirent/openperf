@@ -7,81 +7,25 @@ from mamba import description, before, after
 from expects import *
 from expects.matchers import Matcher
 from common import Config, Service
-from common.helper import make_dynamic_results_config
-from common.helper import check_modules_exists
+from common.helper import (make_dynamic_results_config,
+                           check_modules_exists,
+                           get_block_dynamic_results_fields,
+                           block_generator_model,
+                           file_model,
+                           bulk_start_model,
+                           bulk_stop_model,
+                           wait_for_file_initialization_done)
 from common.matcher import (be_valid_block_device,
                             be_valid_block_file,
                             be_valid_block_generator,
                             be_valid_block_generator_result,
+                            has_location,
                             raise_api_exception,
                             be_valid_dynamic_results)
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                              os.environ.get('MAMBA_CONFIG', 'config.yaml')))
-
-
-def get_dynamic_results_fields():
-    fields = []
-    swagger_types = client.models.BlockGeneratorStats.swagger_types
-    for (name, type) in swagger_types.items():
-        if type in ['int', 'float']:
-            fields.append('read.' + name)
-            fields.append('write.' + name)
-    return fields
-
-
-def generator_model(resource_id = None):
-    bg = client.models.BlockGenerator()
-    bg.id = ''
-    bg.resource_id = resource_id
-    bg.running = False
-    bg.config = client.models.BlockGeneratorConfig()
-    bg.config.queue_depth = 1
-    bg.config.reads_per_sec = 1
-    bg.config.read_size = 1
-    bg.config.writes_per_sec = 1
-    bg.config.write_size = 1
-    bg.config.pattern = "random"
-    return bg
-
-
-def file_model(file_size = None, path = None):
-    ba = client.models.BlockFile()
-    ba.id = ''
-    ba.file_size = file_size
-    ba.path = path
-    ba.init_percent_complete = 0
-    ba.state = 'none'
-    return ba
-
-
-def bulk_start_model(ids):
-    bsbgr = client.models.BulkStartBlockGeneratorsRequest()
-    bsbgr.ids = ids
-    return bsbgr
-
-
-def bulk_stop_model(ids):
-    bsbgr = client.models.BulkStopBlockGeneratorsRequest()
-    bsbgr.ids = ids
-    return bsbgr
-
-def wait_for_file_initialization_done(api_client, file_id, timeout):
-    for i in range(timeout * 10):
-        f = api_client.get_block_file(file_id)
-        if f.init_percent_complete == 100:
-            return True
-        time.sleep(.1)
-    return False
-
-class has_location(Matcher):
-    def __init__(self, expected):
-        self._expected = expected
-
-    def _match(self, subject):
-        expect(subject).to(have_key('Location'))
-        return subject['Location'] == self._expected, []
 
 with description('Block,', 'block') as self:
     with description('REST API,'):
@@ -283,7 +227,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(file.id))
+                gen = self.api.create_block_generator(block_generator_model(file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
 
@@ -301,7 +245,7 @@ with description('Block,', 'block') as self:
                     self.file = file
                     wait_for_file_initialization_done(self.api, file.id, 1)
 
-                    gen = self.api.create_block_generator(generator_model(file.id))
+                    gen = self.api.create_block_generator(block_generator_model(file.id))
                     expect(gen).to(be_valid_block_generator)
                     self.gen = gen
 
@@ -324,7 +268,7 @@ with description('Block,', 'block') as self:
                     self.file = file
                     wait_for_file_initialization_done(self.api, file.id, 1)
 
-                    self._result = self.api.create_block_generator_with_http_info(generator_model(file.id))
+                    self._result = self.api.create_block_generator_with_http_info(block_generator_model(file.id))
 
                 with it('succeeded'):
                     expect(self._result[1]).to(equal(201))
@@ -344,7 +288,7 @@ with description('Block,', 'block') as self:
                     expect(file).to(be_valid_block_file)
                     wait_for_file_initialization_done(self.api, file.id, 1)
 
-                    generator = generator_model(file.id)
+                    generator = block_generator_model(file.id)
                     generator.config.ratio = client.models.BlockGeneratorReadWriteRatio()
                     generator.config.ratio.reads = 1
                     generator.config.ratio.writes = 1
@@ -363,31 +307,31 @@ with description('Block,', 'block') as self:
 
             with description('empty source id,'):
                 with it('returns 400'):
-                    gen = generator_model()
+                    gen = block_generator_model()
                     gen.id = None
                     expect(lambda: self.api.create_block_generator(gen)).to(raise_api_exception(400))
 
             with description('non-existent source id,'):
                 with it('returns 400'):
-                    gen = generator_model()
+                    gen = block_generator_model()
                     gen.id = 'f_oo'
                     expect(lambda: self.api.create_block_generator(gen)).to(raise_api_exception(400))
 
             with description('invalid pattern'):
                 with it('returns 400'):
-                    gen = generator_model()
+                    gen = block_generator_model()
                     gen.config.pattern = 'foo'
                     expect(lambda: self.api.create_block_generator(gen)).to(raise_api_exception(400))
 
             with description('invalid resource_id'):
                 with it('returns 400'):
-                    gen = generator_model()
+                    gen = block_generator_model()
                     gen.resource_id = 'f_oo'
                     expect(lambda: self.api.create_block_generator(gen)).to(raise_api_exception(400))
 
             with description('non-existent resource_id'):
                 with it('returns 400'):
-                    gen = generator_model()
+                    gen = block_generator_model()
                     gen.resource_id = 'foo'
                     expect(lambda: self.api.create_block_generator(gen)).to(raise_api_exception(400))
 
@@ -399,7 +343,7 @@ with description('Block,', 'block') as self:
                     self.file = file
                     wait_for_file_initialization_done(self.api, file.id, 1)
 
-                    gen = self.api.create_block_generator(generator_model(file.id))
+                    gen = self.api.create_block_generator(block_generator_model(file.id))
                     expect(gen).to(be_valid_block_generator)
                     self.gen = gen
 
@@ -423,7 +367,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(self.file.id))
+                gen = self.api.create_block_generator(block_generator_model(self.file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
 
@@ -441,7 +385,7 @@ with description('Block,', 'block') as self:
 
             with description('by existing ID with Dynamic Results'):
                 with it('started'):
-                    dynamic = make_dynamic_results_config(get_dynamic_results_fields())
+                    dynamic = make_dynamic_results_config(get_block_dynamic_results_fields())
                     result = self.api.start_block_generator_with_http_info(
                         self.gen.id, dynamic_results=dynamic, _return_http_data_only=False)
                     expect(result[1]).to(equal(201))
@@ -466,7 +410,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(file.id))
+                gen = self.api.create_block_generator(block_generator_model(file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
                 self.api.start_block_generator(self.gen.id)
@@ -491,7 +435,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(file.id))
+                gen = self.api.create_block_generator(block_generator_model(file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
 
@@ -527,7 +471,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(file.id))
+                gen = self.api.create_block_generator(block_generator_model(file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
                 res = self.api.start_block_generator(gen.id)
@@ -561,7 +505,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(file.id))
+                gen = self.api.create_block_generator(block_generator_model(file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
                 res = self.api.start_block_generator(self.gen.id)
@@ -610,7 +554,7 @@ with description('Block,', 'block') as self:
                 self.file = file
                 wait_for_file_initialization_done(self.api, file.id, 1)
 
-                gen = self.api.create_block_generator(generator_model(file.id))
+                gen = self.api.create_block_generator(block_generator_model(file.id))
                 expect(gen).to(be_valid_block_generator)
                 self.gen = gen
                 res = self.api.start_block_generator(self.gen.id)

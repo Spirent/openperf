@@ -6,9 +6,13 @@ from mamba import description, before, after, it
 from expects import *
 from expects.matchers import Matcher
 from common import Config, Service
-from common.helper import make_dynamic_results_config
-from common.helper import check_modules_exists
-from common.matcher import (raise_api_exception,
+from common.helper import (make_dynamic_results_config,
+                           check_modules_exists,
+                           get_cpu_dynamic_results_fields,
+                           cpu_generator_model)
+from common.matcher import (has_location,
+                            has_json_content_type,
+                            raise_api_exception,
                             be_valid_cpu_info,
                             be_valid_cpu_generator,
                             be_valid_cpu_generator_result,
@@ -17,61 +21,6 @@ from common.matcher import (raise_api_exception,
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                 os.environ.get('MAMBA_CONFIG', 'config.yaml')))
-
-
-def get_dynamic_results_fields(generator_config):
-    fields = []
-    for (name, type) in client.models.CpuGeneratorStats.swagger_types.items():
-        if type in ['int', 'float']:
-            fields.append(name)
-
-    for i in range(len(generator_config.cores)):
-        swagger_types = client.models.CpuGeneratorCoreStats.swagger_types
-        for (name, type) in swagger_types.items():
-            if type in ['int', 'float']:
-                fields.append('cores[' + str(i) + '].' + name)
-
-    return fields
-
-
-def generator_model(api_client, running = False, id = ''):
-    core_config_target = client.models.CpuGeneratorCoreConfigTargets()
-    core_config_target.instruction_set = 'scalar'
-    core_config_target.data_type = 'float32';
-    core_config_target.weight = 1
-
-    core_config = client.models.CpuGeneratorCoreConfig()
-    core_config.utilization = 50.0
-    core_config.targets = [core_config_target]
-
-    config = client.models.CpuGeneratorConfig()
-    config.cores = [core_config]
-
-    gen = client.models.CpuGenerator()
-    gen.running = running
-    gen.config = config
-    gen.id = id
-    return gen
-
-
-class _has_json_content_type(Matcher):
-    def _match(self, request):
-        expect(request).to(have_key('Content-Type'))
-        expect(request['Content-Type']).to(equal('application/json'))
-        return True, ['is JSON content type']
-
-
-class has_location(Matcher):
-    def __init__(self, expected):
-        self._expected = expected
-
-    def _match(self, subject):
-        expect(subject).to(have_key('Location'))
-        return subject['Location'] == self._expected, []
-
-
-has_json_content_type = _has_json_content_type()
-
 
 with description('CPU Generator Module', 'cpu') as self:
     with before.all:
@@ -119,8 +68,7 @@ with description('CPU Generator Module', 'cpu') as self:
                         expect(self._result[1]).to(equal(201))
 
                     with it('has valid Location header'):
-                        expect(self._result[2]).to(has_location(
-                            '/cpu-generators/' + self._result[0].id))
+                        expect(self._result[2]).to(has_location('/cpu-generators/' + self._result[0].id))
 
                     with it('has Content-Type: application/json header'):
                         expect(self._result[2]).to(has_json_content_type)
@@ -135,7 +83,7 @@ with description('CPU Generator Module', 'cpu') as self:
 
                 with description('with empty ID'):
                     with before.all:
-                        self._model = generator_model(self._api.api_client)
+                        self._model = cpu_generator_model(self._api.api_client)
                         self._result = self._api.create_cpu_generator_with_http_info(
                             self._model, _return_http_data_only=False)
 
@@ -145,7 +93,7 @@ with description('CPU Generator Module', 'cpu') as self:
 
                 with description('with specified ID'):
                     with before.all:
-                        self._model = generator_model(
+                        self._model = cpu_generator_model(
                             self._api.api_client, id='some-specified-id')
                         self._result = self._api.create_cpu_generator_with_http_info(
                             self._model, _return_http_data_only=False)
@@ -155,7 +103,7 @@ with description('CPU Generator Module', 'cpu') as self:
 
             with context('GET'):
                 with before.all:
-                    model = generator_model(
+                    model = cpu_generator_model(
                         self._api.api_client, running = False)
                     self._g8s = [self._api.create_cpu_generator(model) for a in range(3)]
                     self._result = self._api.list_cpu_generators_with_http_info(
@@ -178,7 +126,7 @@ with description('CPU Generator Module', 'cpu') as self:
 
         with description('/cpu-generators/{id}'):
             with before.all:
-                model = generator_model(
+                model = cpu_generator_model(
                     self._api.api_client, running = False)
                 g7r = self._api.create_cpu_generator(model)
                 expect(g7r).to(be_valid_cpu_generator)
@@ -232,7 +180,7 @@ with description('CPU Generator Module', 'cpu') as self:
 
         with description('/cpu-generators/{id}/start'):
             with before.all:
-                model = generator_model(
+                model = cpu_generator_model(
                     self._api.api_client, running = False)
                 g7r = self._api.create_cpu_generator(model)
                 expect(g7r).to(be_valid_cpu_generator)
@@ -254,8 +202,7 @@ with description('CPU Generator Module', 'cpu') as self:
                         expect(self._result[1]).to(equal(201))
 
                     with it('has valid Location header'):
-                        expect(self._result[2]).to(has_location(
-                            '/cpu-generator-results/' + self._result[0].id))
+                        expect(self._result[2]).to(has_location('/cpu-generator-results/' + self._result[0].id))
 
                     with it('has Content-Type: application/json header'):
                         expect(self._result[2]).to(has_json_content_type)
@@ -272,7 +219,7 @@ with description('CPU Generator Module', 'cpu') as self:
                     with before.all:
                         self._api.stop_cpu_generator(self._g7r.id)
                         dynamic = make_dynamic_results_config(
-                            get_dynamic_results_fields(self._g7r.config))
+                            get_cpu_dynamic_results_fields(self._g7r.config))
                         self._result = self._api.start_cpu_generator_with_http_info(
                             self._g7r.id, dynamic_results=dynamic, _return_http_data_only=False)
 
@@ -283,8 +230,7 @@ with description('CPU Generator Module', 'cpu') as self:
                         expect(self._result[1]).to(equal(201))
 
                     with it('has valid Location header'):
-                        expect(self._result[2]).to(has_location(
-                            '/cpu-generator-results/' + self._result[0].id))
+                        expect(self._result[2]).to(has_location('/cpu-generator-results/' + self._result[0].id))
 
                     with it('has Content-Type: application/json header'):
                         expect(self._result[2]).to(has_json_content_type)
@@ -312,7 +258,7 @@ with description('CPU Generator Module', 'cpu') as self:
 
         with description('/cpu-generators/{id}/stop'):
             with before.all:
-                model = generator_model(
+                model = cpu_generator_model(
                     self._api.api_client, running = True)
                 g7r = self._api.create_cpu_generator(model)
                 expect(g7r).to(be_valid_cpu_generator)
@@ -348,7 +294,7 @@ with description('CPU Generator Module', 'cpu') as self:
 
         with description('/cpu-generators/x/bulk-start'):
             with before.all:
-                model = generator_model(
+                model = cpu_generator_model(
                     self._api.api_client, running = False)
                 self._g8s = [self._api.create_cpu_generator(model) for a in range(3)]
 
@@ -426,7 +372,7 @@ with description('CPU Generator Module', 'cpu') as self:
 
         with description('/cpu-generators/x/bulk-stop'):
             with before.all:
-                model = generator_model(
+                model = cpu_generator_model(
                     self._api.api_client, running = True)
                 self._g8s = [self._api.create_cpu_generator(model) for a in range(3)]
 
@@ -495,7 +441,7 @@ with description('CPU Generator Module', 'cpu') as self:
 
     with description('CPU Generator Results'):
         with before.all:
-            model = generator_model(self._api.api_client, running = False)
+            model = cpu_generator_model(self._api.api_client, running = False)
             g7r = self._api.create_cpu_generator(model)
             expect(g7r).to(be_valid_cpu_generator)
             result = self._api.start_cpu_generator(g7r.id)

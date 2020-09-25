@@ -37,6 +37,9 @@ parameters:
   dynamic_results:
     $ref: ./modules/dynamic.yaml#/parameters/dynamic_results
 
+  start_time:
+    $ref: ./modules/tvlp.yaml#/parameters/start_time
+
 tags:
   - name: Interfaces
   - name: Modules
@@ -47,6 +50,7 @@ tags:
   - name: BlockGenerator
   - name: MemoryGenerator
   - name: CpuGenerator
+  - name: TVLP
 
 basePath: /
 
@@ -357,7 +361,6 @@ paths:
   /cpu-generators/x/bulk-delete:
     $ref: ./modules/cpu.yaml#/paths/~1cpu-generators~1x~1bulk-delete
 
-
   /cpu-generators/{id}/start:
     $ref: ./modules/cpu.yaml#/paths/~1cpu-generators~1{id}~1start
 
@@ -378,6 +381,27 @@ paths:
 
   /cpu-info:
     $ref: ./modules/cpu.yaml#/paths/~1cpu-info
+
+  ###
+  # TVLP paths
+  ###
+  /tvlp:
+    $ref: ./modules/tvlp.yaml#/paths/~1tvlp
+
+  /tvlp/{id}:
+    $ref: ./modules/tvlp.yaml#/paths/~1tvlp~1{id}
+
+  /tvlp/{id}/start:
+    $ref: ./modules/tvlp.yaml#/paths/~1tvlp~1{id}~1start
+
+  /tvlp/{id}/stop:
+    $ref: ./modules/tvlp.yaml#/paths/~1tvlp~1{id}~1stop
+
+  /tvlp-results:
+    $ref: ./modules/tvlp.yaml#/paths/~1tvlp-results
+
+  /tvlp-results/{id}:
+    $ref: ./modules/tvlp.yaml#/paths/~1tvlp-results~1{id}
 
 definitions:
   Module:
@@ -711,3 +735,15 @@ definitions:
 
   TDigestCentroid:
     $ref: ./modules/dynamic.yaml#/definitions/TDigestCentroid
+
+  ###
+  # TVLP definitions
+  ###
+  TvlpConfiguration:
+    $ref: ./modules/tvlp.yaml#/definitions/TvlpConfiguration
+
+  TvlpProfile:
+    $ref: ./modules/tvlp.yaml#/definitions/TvlpProfile
+
+  TvlpResult:
+    $ref: ./modules/tvlp.yaml#/definitions/TvlpResult

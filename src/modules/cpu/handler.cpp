@@ -7,6 +7,8 @@
 #include "modules/api/api_route_handler.hpp"
 #include "modules/dynamic/api.hpp"
 
+#include "swagger/converters/cpu.hpp"
+
 namespace openperf::cpu {
 
 using namespace Pistache;
