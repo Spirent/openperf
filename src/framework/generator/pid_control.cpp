@@ -42,7 +42,7 @@ double pid_control::stop(double y)
                      / std::nano::den * m_setpoint;
     double dtime =
         static_cast<double>((now - m_start_ts).count()) / std::nano::den;
-    double Tf = m_kp ? (m_kd / m_kp) / m_n : 0.0;
+    double Tf = (m_kp != 0.0) ? (m_kd / m_kp) / m_n : 0.0;
     double bi = m_ki * dtime;
     double ad = Tf / (Tf + dtime);
     double bd = m_kd / (Tf + dtime);

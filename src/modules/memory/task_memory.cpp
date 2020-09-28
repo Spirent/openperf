@@ -168,7 +168,7 @@ memory_stat task_memory::spin()
     m_stat += stat;
 
     auto adjust = m_pid.stop(stat.operations);
-    m_rate = m_config.op_per_sec + adjust;
+    m_rate = static_cast<size_t>(m_config.op_per_sec + adjust);
     return make_stat(stat);
 }
 
