@@ -4,4 +4,5 @@
 
 FW_SOURCES += \
 	generator/controller.cpp \
-	generator/worker.cpp
+	generator/worker.cpp \
+	generator/pid_control.cpp
