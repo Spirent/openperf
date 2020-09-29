@@ -64,6 +64,8 @@ task_memory::task_memory(task_memory&& t) noexcept
     , m_stat(t.m_stat)
     , m_op_index(t.m_op_index)
     , m_avg_rate(t.m_avg_rate)
+    , m_rate(t.m_rate)
+    , m_pid(t.m_pid)
 {
     t.m_scratch = {nullptr, 0};
     t.reset();
@@ -71,6 +73,7 @@ task_memory::task_memory(task_memory&& t) noexcept
 
 task_memory::task_memory(const task_memory_config& conf)
     : m_scratch{.ptr = nullptr, .size = 0}
+    , m_pid(0.01, 0.0005, 0.0)
 {
     config(conf);
 }
@@ -96,14 +99,21 @@ void task_memory::config(const task_memory_config& msg)
         op_prbs23_fill(m_scratch.ptr, m_scratch.size);
     }
 
+    m_rate = msg.op_per_sec;
+    m_pid.reset(m_rate);
+    m_pid.max(m_rate * 2);
+
     m_config = msg;
-} // namespace openperf::memory::internal
+}
 
 void task_memory::reset()
 {
     m_avg_rate = 100000000;
     m_stat = {};
     m_op_index = 0;
+
+    m_rate = m_config.op_per_sec;
+    m_pid.reset(m_rate);
 }
 
 memory_stat task_memory::spin()
@@ -111,7 +121,9 @@ memory_stat task_memory::spin()
     /* If we have a rate to generate, then we need indexes */
     assert(m_config.op_per_sec == 0 || m_config.indexes->size() > 0);
 
-    auto tuple = calc_ops_and_sleep(m_stat, m_config.op_per_sec, m_avg_rate);
+    m_pid.start();
+
+    auto tuple = calc_ops_and_sleep(m_stat, m_rate, m_avg_rate);
     auto to_do_ops = std::get<0>(tuple);
 
     task_memory_stat stat{};
@@ -150,11 +162,13 @@ memory_stat task_memory::spin()
         to_do_ops -= spin_ops;
     }
 
-    stat.operations_target = (stat.run_time + stat.sleep_time).count()
-                             * m_config.op_per_sec / std::nano::den;
+    stat.operations_target =
+        (stat.run_time + stat.sleep_time).count() * m_rate / std::nano::den;
     stat.bytes_target = stat.operations_target * m_config.block_size;
     m_stat += stat;
 
+    auto adjust = m_pid.stop(stat.operations);
+    m_rate = static_cast<size_t>(m_config.op_per_sec + adjust);
     return make_stat(stat);
 }
 
