@@ -35,14 +35,39 @@ is_valid(const swagger::CpuGeneratorConfig& config)
 {
     auto errors = std::vector<std::string>();
 
-    auto cores = const_cast<swagger::CpuGeneratorConfig&>(config).getCores();
-    for (auto& core : cores) {
-        if (auto result = is_valid(*core); !result) {
-            std::copy(result.error().begin(),
-                      result.error().end(),
-                      std::back_inserter(errors));
+    do {
+        auto cores =
+            const_cast<swagger::CpuGeneratorConfig&>(config).getCores();
+
+        if (!cores.empty() && config.utilizationIsSet()) {
+            errors.emplace_back(
+                "Global utilization value and cores array both specified");
+            break;
         }
-    }
+
+        if (config.utilizationIsSet()) {
+            if (config.getUtilization() <= 0.0 || 100 < config.getUtilization())
+                errors.emplace_back("Global utilization value '"
+                                    + std::to_string(config.getUtilization())
+                                    + "' is not valid");
+            break;
+        }
+
+        // Check the cores configuration
+        if (cores.empty()) {
+            errors.emplace_back("Empty cores array is not allowed");
+            break;
+        }
+
+        for (auto& core : cores) {
+            if (auto result = is_valid(*core); !result) {
+                std::copy(result.error().begin(),
+                          result.error().end(),
+                          std::back_inserter(errors));
+            }
+        }
+
+    } while (false);
 
     if (!errors.empty()) return tl::make_unexpected(std::move(errors));
     return true;
