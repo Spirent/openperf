@@ -75,14 +75,17 @@ void op_cpu_fini(void* state)
     delete s;
 }
 
-REGISTER_MODULE(cpu,
-                INIT_MODULE_INFO("cpu",
-                                 "Core module comprising cpu generator stack",
-                                 openperf::cpu::module_version),
-                new openperf::cpu::service(),
-                nullptr,
-                op_cpu_init,
-                nullptr,
-                nullptr,
-                op_cpu_fini);
+static constexpr op_module_info cpu_module_info =
+    INIT_MODULE_INFO("cpu",
+                     "Core module comprising cpu generator stack",
+                     openperf::cpu::module_version);
+
+REGISTER_PLUGIN_MODULE(cpu,
+                       cpu_module_info,
+                       new openperf::cpu::service(),
+                       nullptr,
+                       op_cpu_init,
+                       nullptr,
+                       nullptr,
+                       op_cpu_fini);
 }

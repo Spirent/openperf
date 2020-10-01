@@ -10,7 +10,7 @@ $(call op_check_vars,$(CPU_REQ_VARS))
 
 CPU_SRC_DIR := $(OP_ROOT)/src/modules/cpu
 CPU_OBJ_DIR := $(OP_BUILD_ROOT)/obj/modules/cpu
-CPU_LIB_DIR := $(OP_BUILD_ROOT)/lib
+CPU_LIB_DIR := $(OP_BUILD_ROOT)/plugins
 
 OP_INC_DIRS += $(OP_ROOT)/src/modules
 OP_LIB_DIRS += $(CPU_LIB_DIR)
@@ -69,11 +69,11 @@ else
 	endif
 endif
 
-CPU_FLAGS := $(addprefix -D,$(CPU_DEFINES))
+CPU_FLAGS := -fPIC $(addprefix -D,$(CPU_DEFINES))
 CPU_LIBRARY := openperf_cpu
-CPU_TARGET := $(CPU_LIB_DIR)/lib$(CPU_LIBRARY).a
+CPU_TARGET := $(CPU_LIB_DIR)/lib$(CPU_LIBRARY).so
 
-OP_LDLIBS += -Wl,--whole-archive -l$(CPU_LIBRARY) -Wl,--no-whole-archive $(CPU_LDLIBS)
+OP_LDLIBS += -Wl,--no-whole-archive $(CPU_LDLIBS)
 
 -include $(CPU_OBJECTS:.o=.d)
 -include $(CPU_ISPC_OBJECTS:.o=.d)
@@ -113,7 +113,7 @@ $(CPU_OBJ_DIR)/%.o: $(CPU_SRC_DIR)/%.ispc
 	@sed -i -e s,\(null\),$@, $(@:.o=.d)
 
 $(CPU_TARGET): $(CPU_OBJECTS) $(CPU_ISPC_TARGET_OBJECTS) $(CPU_ISPC_OBJECTS)
-	$(call op_link_library,$@,$(CPU_OBJECTS) $(CPU_ISPC_TARGET_OBJECTS))
+	$(call op_link_plugin,$@,$(CPU_OBJECTS) $(CPU_ISPC_TARGET_OBJECTS))
 
 .PHONY: cpu
 cpu: $(CPU_TARGET)
