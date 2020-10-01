@@ -16,7 +16,8 @@ BLOCK_SOURCES += \
 	pattern_generator.cpp \
 	server.cpp \
 	task.cpp \
-	virtual_device.cpp
+	virtual_device.cpp \
+	block_options.c
 
 BLOCK_LDLIBS += -lrt
 
