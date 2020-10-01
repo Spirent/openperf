@@ -77,31 +77,36 @@ model::generator from_swagger(const swagger::CpuGenerator& generator)
 {
     generator_config config;
 
-    auto& configuration = generator.getConfig()->getCores();
-    std::transform(
-        configuration.begin(),
-        configuration.end(),
-        std::back_inserter(config.cores),
-        [](const auto& conf) {
-            task_cpu_config task_conf{
-                .utilization = conf->getUtilization(),
-            };
+    auto swagger_cpu_config = generator.getConfig();
+    if (swagger_cpu_config->utilizationIsSet()) {
+        config.utilization = swagger_cpu_config->getUtilization();
+    } else {
+        auto& configuration = swagger_cpu_config->getCores();
+        std::transform(
+            configuration.begin(),
+            configuration.end(),
+            std::back_inserter(config.cores),
+            [](const auto& conf) {
+                task_cpu_config task_conf{
+                    .utilization = conf->getUtilization(),
+                };
 
-            auto& targets = conf->getTargets();
-            std::transform(
-                targets.begin(),
-                targets.end(),
-                std::back_inserter(task_conf.targets),
-                [](const auto& t) {
-                    return target_config{
-                        .set = to_instruction_set(t->getInstructionSet()),
-                        .data_type = to_data_type(t->getDataType()),
-                        .weight = static_cast<uint>(t->getWeight()),
-                    };
-                });
+                auto& targets = conf->getTargets();
+                std::transform(
+                    targets.begin(),
+                    targets.end(),
+                    std::back_inserter(task_conf.targets),
+                    [](const auto& t) {
+                        return target_config{
+                            .set = to_instruction_set(t->getInstructionSet()),
+                            .data_type = to_data_type(t->getDataType()),
+                            .weight = static_cast<uint>(t->getWeight()),
+                        };
+                    });
 
-            return task_conf;
-        });
+                return task_conf;
+            });
+    }
 
     model::generator gen_model;
     gen_model.id(generator.getId());
@@ -133,6 +138,9 @@ from_swagger(swagger::BulkDeleteCpuGeneratorsRequest& p_request)
 std::shared_ptr<swagger::CpuGenerator> to_swagger(const model::generator& model)
 {
     auto cpu_config = std::make_shared<swagger::CpuGeneratorConfig>();
+
+    if (auto utilization = model.config().utilization)
+        cpu_config->setUtilization(utilization.value());
 
     auto cores = model.config().cores;
     std::transform(

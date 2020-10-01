@@ -1,6 +1,7 @@
 #ifndef _OP_CPU_COMMON_HPP_
 #define _OP_CPU_COMMON_HPP_
 
+#include <optional>
 #include <string_view>
 
 #include "instruction_set.hpp"
@@ -25,6 +26,7 @@ struct task_cpu_config
 
 struct generator_config
 {
+    std::optional<double> utilization;
     std::vector<task_cpu_config> cores;
 };
 
