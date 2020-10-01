@@ -327,6 +327,13 @@ definitions:
     type: object
     description: CPU Generator Configuration
     properties:
+      utilization:
+        type: number
+        description: System CPU load in percents
+        format: double
+        minimum: 0
+        exclusiveMinimum: true
+        maximum: 100
       cores:
         type: array
         minItems: 1

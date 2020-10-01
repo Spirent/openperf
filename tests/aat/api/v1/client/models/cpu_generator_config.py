@@ -31,21 +31,48 @@ class CpuGeneratorConfig(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'utilization': 'float',
         'cores': 'list[CpuGeneratorCoreConfig]'
     }
 
     attribute_map = {
+        'utilization': 'utilization',
         'cores': 'cores'
     }
 
-    def __init__(self, cores=None):  # noqa: E501
+    def __init__(self, utilization=None, cores=None):  # noqa: E501
         """CpuGeneratorConfig - a model defined in Swagger"""  # noqa: E501
 
+        self._utilization = None
         self._cores = None
         self.discriminator = None
 
+        if utilization is not None:
+            self.utilization = utilization
         if cores is not None:
             self.cores = cores
+
+    @property
+    def utilization(self):
+        """Gets the utilization of this CpuGeneratorConfig.  # noqa: E501
+
+        System CPU load in percents  # noqa: E501
+
+        :return: The utilization of this CpuGeneratorConfig.  # noqa: E501
+        :rtype: float
+        """
+        return self._utilization
+
+    @utilization.setter
+    def utilization(self, utilization):
+        """Sets the utilization of this CpuGeneratorConfig.
+
+        System CPU load in percents  # noqa: E501
+
+        :param utilization: The utilization of this CpuGeneratorConfig.  # noqa: E501
+        :type: float
+        """
+        self._utilization = utilization
 
     @property
     def cores(self):

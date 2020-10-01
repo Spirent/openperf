@@ -19,6 +19,8 @@ namespace model {
 
 CpuGeneratorConfig::CpuGeneratorConfig()
 {
+    m_Utilization = 0.0;
+    m_UtilizationIsSet = false;
     m_CoresIsSet = false;
     
 }
@@ -36,6 +38,10 @@ nlohmann::json CpuGeneratorConfig::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    if(m_UtilizationIsSet)
+    {
+        val["utilization"] = m_Utilization;
+    }
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Cores )
@@ -55,6 +61,10 @@ nlohmann::json CpuGeneratorConfig::toJson() const
 
 void CpuGeneratorConfig::fromJson(nlohmann::json& val)
 {
+    if(val.find("utilization") != val.end())
+    {
+        setUtilization(val.at("utilization"));
+    }
     {
         m_Cores.clear();
         nlohmann::json jsonArray;
@@ -81,6 +91,23 @@ void CpuGeneratorConfig::fromJson(nlohmann::json& val)
 }
 
 
+double CpuGeneratorConfig::getUtilization() const
+{
+    return m_Utilization;
+}
+void CpuGeneratorConfig::setUtilization(double value)
+{
+    m_Utilization = value;
+    m_UtilizationIsSet = true;
+}
+bool CpuGeneratorConfig::utilizationIsSet() const
+{
+    return m_UtilizationIsSet;
+}
+void CpuGeneratorConfig::unsetUtilization()
+{
+    m_UtilizationIsSet = false;
+}
 std::vector<std::shared_ptr<CpuGeneratorCoreConfig>>& CpuGeneratorConfig::getCores()
 {
     return m_Cores;

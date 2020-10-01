@@ -50,6 +50,13 @@ public:
     /// CpuGeneratorConfig members
 
     /// <summary>
+    /// System CPU load in percents
+    /// </summary>
+    double getUtilization() const;
+    void setUtilization(double value);
+    bool utilizationIsSet() const;
+    void unsetUtilization();
+    /// <summary>
     /// 
     /// </summary>
     std::vector<std::shared_ptr<CpuGeneratorCoreConfig>>& getCores();
@@ -57,6 +64,8 @@ public:
     void unsetCores();
 
 protected:
+    double m_Utilization;
+    bool m_UtilizationIsSet;
     std::vector<std::shared_ptr<CpuGeneratorCoreConfig>> m_Cores;
     bool m_CoresIsSet;
 };
