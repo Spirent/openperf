@@ -81,15 +81,16 @@ void memory_generator_fini(void* state)
     delete s;
 }
 
-REGISTER_MODULE(memgen,
-                INIT_MODULE_INFO("memory",
-                                 "Module for make memory load",
-                                 openperf::memory::module_version),
-                new openperf::memory::service(),
-                nullptr,
-                memory_generator_init,
-                nullptr,
-                memory_generator_start,
-                memory_generator_fini);
+static constexpr op_module_info memory_module_info = INIT_MODULE_INFO(
+    "memory", "Module for make memory load", openperf::memory::module_version);
+
+REGISTER_PLUGIN_MODULE(memgen,
+                       memory_module_info,
+                       new openperf::memory::service(),
+                       nullptr,
+                       memory_generator_init,
+                       nullptr,
+                       memory_generator_start,
+                       memory_generator_fini);
 
 } // extern "C"
