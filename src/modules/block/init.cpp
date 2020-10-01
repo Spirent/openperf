@@ -76,14 +76,17 @@ void op_block_fini(void* state)
     delete s;
 }
 
-REGISTER_MODULE(block,
-                INIT_MODULE_INFO("block",
-                                 "Core module comprising block generator stack",
-                                 openperf::block::module_version),
-                new openperf::block::service(),
-                nullptr,
-                op_block_init,
-                nullptr,
-                nullptr,
-                op_block_fini);
+static constexpr op_module_info block_module_info =
+    INIT_MODULE_INFO("block",
+                     "Core module comprising block generator stack",
+                     openperf::block::module_version);
+
+REGISTER_PLUGIN_MODULE(block,
+                       block_module_info,
+                       new openperf::block::service(),
+                       nullptr,
+                       op_block_init,
+                       nullptr,
+                       nullptr,
+                       op_block_fini);
 }
