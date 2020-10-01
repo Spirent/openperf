@@ -3,7 +3,9 @@
 
 #include <zmq.h>
 
+#include "config/op_config_file.hpp"
 #include "framework/core/op_core.h"
+#include "framework/core/op_thread.h"
 #include "server.hpp"
 
 namespace openperf::cpu {
@@ -41,6 +43,21 @@ struct service
     {
         m_service = std::thread([this]() {
             op_thread_setname("op_cpu");
+            auto mask =
+                openperf::config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
+                    "modules.cpu.cpu-mask");
+            if (mask) {
+                if (auto res =
+                        op_thread_set_relative_affinity_mask(mask.value());
+                    res) {
+                    op_exit("Applying CPU module affinity mask failed! %s\n",
+                            std::strerror(res));
+                }
+
+                OP_LOG(OP_LOG_DEBUG,
+                       "CPU module been configured with cpu-mask: 0x%x",
+                       mask.value());
+            }
 
             struct op_event_callbacks callbacks = {.on_read =
                                                        handle_zmq_shutdown};

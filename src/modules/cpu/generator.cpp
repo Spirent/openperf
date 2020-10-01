@@ -2,7 +2,7 @@
 
 #include "generator.hpp"
 #include "cpu.hpp"
-
+#include "config/op_config_file.hpp"
 #include "framework/core/op_uuid.hpp"
 #include "framework/core/op_cpuset.h"
 
@@ -110,6 +110,22 @@ void generator::config(const generator_config& config)
     // thread.
     auto available_cores = std::async(op_get_cpu_online).get();
     OP_LOG(OP_LOG_DEBUG, "Detected %zu cores", available_cores.size());
+
+    auto mask = openperf::config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
+        "modules.cpu.cpu-mask");
+    if (mask) {
+        std::vector<uint64_t> filtered_cores;
+        for (size_t i = 0; i < available_cores.size(); i++) {
+            if (mask.value() & (1 << i)) {
+                filtered_cores.push_back(available_cores.at(i));
+            }
+        }
+        OP_LOG(OP_LOG_DEBUG, "Filtered %zu cores", filtered_cores.size());
+        available_cores.clear();
+        std::move(filtered_cores.begin(),
+                  filtered_cores.end(),
+                  std::back_inserter(available_cores));
+    }
 
     if (config.cores.size() > available_cores.size())
         throw std::runtime_error(

@@ -16,6 +16,7 @@ CPU_SOURCES += \
 	server.cpp \
 	task_cpu.cpp \
 	scalar/matrix.cpp \
+	cpu_options.c \
 	ispc/matrix.ispc
 
 ifeq ($(ARCH),x86_64)
