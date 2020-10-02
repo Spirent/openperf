@@ -19,8 +19,10 @@ namespace model {
 
 CpuGeneratorConfig::CpuGeneratorConfig()
 {
-    m_Utilization = 0.0;
-    m_UtilizationIsSet = false;
+    m_Method = "";
+    m_MethodIsSet = false;
+    m_System = 0.0;
+    m_SystemIsSet = false;
     m_CoresIsSet = false;
     
 }
@@ -38,9 +40,13 @@ nlohmann::json CpuGeneratorConfig::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_UtilizationIsSet)
+    if(m_MethodIsSet)
     {
-        val["utilization"] = m_Utilization;
+        val["method"] = ModelBase::toJson(m_Method);
+    }
+    if(m_SystemIsSet)
+    {
+        val["system"] = m_System;
     }
     {
         nlohmann::json jsonArray;
@@ -61,9 +67,14 @@ nlohmann::json CpuGeneratorConfig::toJson() const
 
 void CpuGeneratorConfig::fromJson(nlohmann::json& val)
 {
-    if(val.find("utilization") != val.end())
+    if(val.find("method") != val.end())
     {
-        setUtilization(val.at("utilization"));
+        setMethod(val.at("method"));
+        
+    }
+    if(val.find("system") != val.end())
+    {
+        setSystem(val.at("system"));
     }
     {
         m_Cores.clear();
@@ -91,22 +102,39 @@ void CpuGeneratorConfig::fromJson(nlohmann::json& val)
 }
 
 
-double CpuGeneratorConfig::getUtilization() const
+std::string CpuGeneratorConfig::getMethod() const
 {
-    return m_Utilization;
+    return m_Method;
 }
-void CpuGeneratorConfig::setUtilization(double value)
+void CpuGeneratorConfig::setMethod(std::string value)
 {
-    m_Utilization = value;
-    m_UtilizationIsSet = true;
+    m_Method = value;
+    m_MethodIsSet = true;
 }
-bool CpuGeneratorConfig::utilizationIsSet() const
+bool CpuGeneratorConfig::methodIsSet() const
 {
-    return m_UtilizationIsSet;
+    return m_MethodIsSet;
 }
-void CpuGeneratorConfig::unsetUtilization()
+void CpuGeneratorConfig::unsetMethod()
 {
-    m_UtilizationIsSet = false;
+    m_MethodIsSet = false;
+}
+double CpuGeneratorConfig::getSystem() const
+{
+    return m_System;
+}
+void CpuGeneratorConfig::setSystem(double value)
+{
+    m_System = value;
+    m_SystemIsSet = true;
+}
+bool CpuGeneratorConfig::systemIsSet() const
+{
+    return m_SystemIsSet;
+}
+void CpuGeneratorConfig::unsetSystem()
+{
+    m_SystemIsSet = false;
 }
 std::vector<std::shared_ptr<CpuGeneratorCoreConfig>>& CpuGeneratorConfig::getCores()
 {

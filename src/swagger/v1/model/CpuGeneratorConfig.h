@@ -22,6 +22,7 @@
 #include "ModelBase.h"
 
 #include "CpuGeneratorCoreConfig.h"
+#include <string>
 #include <vector>
 
 namespace swagger {
@@ -50,22 +51,31 @@ public:
     /// CpuGeneratorConfig members
 
     /// <summary>
+    /// Configuration method
+    /// </summary>
+    std::string getMethod() const;
+    void setMethod(std::string value);
+    bool methodIsSet() const;
+    void unsetMethod();
+    /// <summary>
     /// System CPU load in percents
     /// </summary>
-    double getUtilization() const;
-    void setUtilization(double value);
-    bool utilizationIsSet() const;
-    void unsetUtilization();
+    double getSystem() const;
+    void setSystem(double value);
+    bool systemIsSet() const;
+    void unsetSystem();
     /// <summary>
-    /// 
+    /// Per CPU core load configuration
     /// </summary>
     std::vector<std::shared_ptr<CpuGeneratorCoreConfig>>& getCores();
     bool coresIsSet() const;
     void unsetCores();
 
 protected:
-    double m_Utilization;
-    bool m_UtilizationIsSet;
+    std::string m_Method;
+    bool m_MethodIsSet;
+    double m_System;
+    bool m_SystemIsSet;
     std::vector<std::shared_ptr<CpuGeneratorCoreConfig>> m_Cores;
     bool m_CoresIsSet;
 };

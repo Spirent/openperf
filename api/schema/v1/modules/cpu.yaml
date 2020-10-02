@@ -327,7 +327,13 @@ definitions:
     type: object
     description: CPU Generator Configuration
     properties:
-      utilization:
+      method:
+        type: string
+        description: Configuration method
+        enum:
+          - system
+          - cores
+      system:
         type: number
         description: System CPU load in percents
         format: double
@@ -336,9 +342,12 @@ definitions:
         maximum: 100
       cores:
         type: array
+        description: Per CPU core load configuration
         minItems: 1
         items:
           $ref: "#/definitions/CpuGeneratorCoreConfig"
+      required:
+        - method
 
   CpuGeneratorCoreConfig:
     title: CpuGeneratorCoreConfig
