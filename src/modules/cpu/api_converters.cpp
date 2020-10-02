@@ -35,28 +35,21 @@ is_valid(const swagger::CpuGeneratorConfig& config)
 {
     auto errors = std::vector<std::string>();
 
-    do {
+    auto method = config.getMethod();
+    if (!config.methodIsSet() || method.empty()) {
+        errors.emplace_back("Parameter 'method' is required.");
+    } else if (method == "system") {
+        if (config.getSystem() <= 0.0 || 100 < config.getSystem())
+            errors.emplace_back("System utilization value '"
+                                + std::to_string(config.getSystem())
+                                + "' is not valid");
+    } else if (method == "cores") {
         auto cores =
             const_cast<swagger::CpuGeneratorConfig&>(config).getCores();
-
-        if (!cores.empty() && config.utilizationIsSet()) {
-            errors.emplace_back(
-                "Global utilization value and cores array both specified");
-            break;
-        }
-
-        if (config.utilizationIsSet()) {
-            if (config.getUtilization() <= 0.0 || 100 < config.getUtilization())
-                errors.emplace_back("Global utilization value '"
-                                    + std::to_string(config.getUtilization())
-                                    + "' is not valid");
-            break;
-        }
 
         // Check the cores configuration
         if (cores.empty()) {
             errors.emplace_back("Empty cores array is not allowed");
-            break;
         }
 
         for (auto& core : cores) {
@@ -66,8 +59,9 @@ is_valid(const swagger::CpuGeneratorConfig& config)
                           std::back_inserter(errors));
             }
         }
-
-    } while (false);
+    } else {
+        errors.emplace_back("Method '" + method + "' is not available.");
+    }
 
     if (!errors.empty()) return tl::make_unexpected(std::move(errors));
     return true;
@@ -78,9 +72,10 @@ model::generator from_swagger(const swagger::CpuGenerator& generator)
     generator_config config;
 
     auto swagger_cpu_config = generator.getConfig();
-    if (swagger_cpu_config->utilizationIsSet()) {
-        config.utilization = swagger_cpu_config->getUtilization();
-    } else {
+    auto method = swagger_cpu_config->getMethod();
+    if (method == "system") {
+        config.utilization = swagger_cpu_config->getSystem();
+    } else if (method == "cores") {
         auto& configuration = swagger_cpu_config->getCores();
         std::transform(
             configuration.begin(),
@@ -139,8 +134,12 @@ std::shared_ptr<swagger::CpuGenerator> to_swagger(const model::generator& model)
 {
     auto cpu_config = std::make_shared<swagger::CpuGeneratorConfig>();
 
-    if (auto utilization = model.config().utilization)
-        cpu_config->setUtilization(utilization.value());
+    if (auto utilization = model.config().utilization) {
+        cpu_config->setMethod("system");
+        cpu_config->setSystem(utilization.value());
+    } else {
+        cpu_config->setMethod("cores");
+    }
 
     auto cores = model.config().cores;
     std::transform(
