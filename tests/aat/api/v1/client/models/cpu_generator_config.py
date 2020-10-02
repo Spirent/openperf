@@ -32,7 +32,7 @@ class CpuGeneratorConfig(object):
     """
     swagger_types = {
         'method': 'str',
-        'system': 'float',
+        'system': 'CpuGeneratorConfigSystem',
         'cores': 'list[CpuGeneratorCoreConfig]'
     }
 
@@ -83,10 +83,9 @@ class CpuGeneratorConfig(object):
     def system(self):
         """Gets the system of this CpuGeneratorConfig.  # noqa: E501
 
-        System CPU load in percents  # noqa: E501
 
         :return: The system of this CpuGeneratorConfig.  # noqa: E501
-        :rtype: float
+        :rtype: CpuGeneratorConfigSystem
         """
         return self._system
 
@@ -94,10 +93,9 @@ class CpuGeneratorConfig(object):
     def system(self, system):
         """Sets the system of this CpuGeneratorConfig.
 
-        System CPU load in percents  # noqa: E501
 
         :param system: The system of this CpuGeneratorConfig.  # noqa: E501
-        :type: float
+        :type: CpuGeneratorConfigSystem
         """
         self._system = system
 

@@ -334,12 +334,19 @@ definitions:
           - system
           - cores
       system:
-        type: number
-        description: System CPU load in percents
-        format: double
-        minimum: 0
-        exclusiveMinimum: true
-        maximum: 100
+        title: CpuGeneratorConfigSystem
+        type: object
+        description: System CPU load
+        properties:
+          utilization:
+            type: number
+            format: double
+            description: CPU utilization value in percents
+            minimum: 0
+            exclusiveMinimum: true
+            maximum: 100
+        required:
+          - utilization
       cores:
         type: array
         description: Per CPU core load configuration

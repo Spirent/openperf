@@ -21,7 +21,6 @@ CpuGeneratorConfig::CpuGeneratorConfig()
 {
     m_Method = "";
     m_MethodIsSet = false;
-    m_System = 0.0;
     m_SystemIsSet = false;
     m_CoresIsSet = false;
     
@@ -46,7 +45,7 @@ nlohmann::json CpuGeneratorConfig::toJson() const
     }
     if(m_SystemIsSet)
     {
-        val["system"] = m_System;
+        val["system"] = ModelBase::toJson(m_System);
     }
     {
         nlohmann::json jsonArray;
@@ -74,7 +73,13 @@ void CpuGeneratorConfig::fromJson(nlohmann::json& val)
     }
     if(val.find("system") != val.end())
     {
-        setSystem(val.at("system"));
+        if(!val["system"].is_null())
+        {
+            std::shared_ptr<CpuGeneratorConfigSystem> newItem(new CpuGeneratorConfigSystem());
+            newItem->fromJson(val["system"]);
+            setSystem( newItem );
+        }
+        
     }
     {
         m_Cores.clear();
@@ -119,11 +124,11 @@ void CpuGeneratorConfig::unsetMethod()
 {
     m_MethodIsSet = false;
 }
-double CpuGeneratorConfig::getSystem() const
+std::shared_ptr<CpuGeneratorConfigSystem> CpuGeneratorConfig::getSystem() const
 {
     return m_System;
 }
-void CpuGeneratorConfig::setSystem(double value)
+void CpuGeneratorConfig::setSystem(std::shared_ptr<CpuGeneratorConfigSystem> value)
 {
     m_System = value;
     m_SystemIsSet = true;
