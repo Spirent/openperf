@@ -66,6 +66,7 @@ CPU generator result represents statistics of CPU I/O operations, unique for eac
     "id": "2c9d0e5d-a1be-49d2-759d-a2fcd99961ee",
     "generator_id": "e0a5d7c2-58a4-4864-5ee4-d850346f2917",
     "timestamp": "2020-05-18T13:16:47.804564Z",
+    "start_timestamp": "2020-05-18T13:16:40.205480Z",
     "stats": {
         "available": 7011826558,
         "error": 72788,
@@ -105,6 +106,7 @@ CPU generator result represents statistics of CPU I/O operations, unique for eac
 * **active** - indicates whether the result updates periodically.
 * **generator_id** - related generator identifier.
 * **timestamp** - timestamp of the last update, in ISO 8601 format.
+* **start_timestamp** - timestamp when the related generator has been started, in ISO 8601 format.
 * **stats** - statistics.
     * **available** - available CPU time.
     * **error** - difference between wanted and actual utilization.
@@ -221,6 +223,7 @@ Response:
     "id": "7286bd27-fa5d-4fea-51f0-4f6f92285321",
     "generator_id": "0a565dac-5a7f-447b-40ec-5fa1f30fa4d0",
     "timestamp": "2020-05-18T13:51:25.891662Z",
+    "start_timestamp": "2020-05-18T13:51:25.891662Z",
     "stats": {
         "available": 0,
         "error": 0,
@@ -276,6 +279,7 @@ curl --verbose --location --request GET \
     "id": "7286bd27-fa5d-4fea-51f0-4f6f92285321",
     "generator_id": "0a565dac-5a7f-447b-40ec-5fa1f30fa4d0",
     "timestamp": "2020-05-18T13:56:54.540224Z",
+    "start_timestamp": "2020-05-18T13:51:25.891662Z",
     "stats": {
         "available": 328629204375,
         "error": 262984,

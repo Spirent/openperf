@@ -121,7 +121,8 @@ Active generator result cannot be deleted.
         "ops_actual": 10,
         "ops_target": 10
     },
-    "timestamp": "1970-01-13T00:48:40.283877Z",
+    "timestamp": "2020-04-30T00:48:40.283877Z",
+    "start_timestamp": "2020-04-30T00:48:38.891662Z",
     "write": {
         "bytes_actual": 0,
         "bytes_target": 0,
@@ -137,6 +138,7 @@ Active generator result cannot be deleted.
 * **generator_id** - block generator identifier that generated this result.
 * **active** - indicates whether the result is currently being updated.
 * **timestamp** - the ISO8601-formatted date of the last result update.
+* **start_timestamp** - timestamp when the related generator has been started, in ISO 8601 format.
 * **read** - read block I/O operation statistics.
 * **write** - write block I/O operation statistics.
     * **bytes_actual** - the actual number of bytes read or written.
@@ -239,7 +241,8 @@ Response:
         "ops_actual":0,
         "ops_target":0
     },
-    "timestamp":"1970-01-14T08:46:14.183615Z",
+    "timestamp":"2020-04-30T08:46:14.183615Z",
+    "start_timestamp":"2020-04-30T08:46:14.183615Z",
     "write": {
         "bytes_actual":0,
         "bytes_target":0,
@@ -290,6 +293,7 @@ Response:
         "ops_target": 546
     },
     "timestamp": "2020-04-30T08:59:40.301996Z",
+    "start_timestamp":"2020-04-30T08:46:14.183615Z",
     "write": {
         "bytes_actual": 2862405,
         "bytes_target": 2862405,
