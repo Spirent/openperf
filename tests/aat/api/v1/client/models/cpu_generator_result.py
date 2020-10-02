@@ -35,6 +35,7 @@ class CpuGeneratorResult(object):
         'generator_id': 'str',
         'active': 'bool',
         'timestamp': 'datetime',
+        'start_timestamp': 'datetime',
         'stats': 'CpuGeneratorStats',
         'dynamic_results': 'DynamicResults'
     }
@@ -44,17 +45,19 @@ class CpuGeneratorResult(object):
         'generator_id': 'generator_id',
         'active': 'active',
         'timestamp': 'timestamp',
+        'start_timestamp': 'start_timestamp',
         'stats': 'stats',
         'dynamic_results': 'dynamic_results'
     }
 
-    def __init__(self, id=None, generator_id=None, active=None, timestamp=None, stats=None, dynamic_results=None):  # noqa: E501
+    def __init__(self, id=None, generator_id=None, active=None, timestamp=None, start_timestamp=None, stats=None, dynamic_results=None):  # noqa: E501
         """CpuGeneratorResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._generator_id = None
         self._active = None
         self._timestamp = None
+        self._start_timestamp = None
         self._stats = None
         self._dynamic_results = None
         self.discriminator = None
@@ -64,6 +67,7 @@ class CpuGeneratorResult(object):
             self.generator_id = generator_id
         self.active = active
         self.timestamp = timestamp
+        self.start_timestamp = start_timestamp
         self.stats = stats
         if dynamic_results is not None:
             self.dynamic_results = dynamic_results
@@ -155,6 +159,28 @@ class CpuGeneratorResult(object):
         :type: datetime
         """
         self._timestamp = timestamp
+
+    @property
+    def start_timestamp(self):
+        """Gets the start_timestamp of this CpuGeneratorResult.  # noqa: E501
+
+        The ISO8601-formatted date when result has been initialized (generator has been started)  # noqa: E501
+
+        :return: The start_timestamp of this CpuGeneratorResult.  # noqa: E501
+        :rtype: datetime
+        """
+        return self._start_timestamp
+
+    @start_timestamp.setter
+    def start_timestamp(self, start_timestamp):
+        """Sets the start_timestamp of this CpuGeneratorResult.
+
+        The ISO8601-formatted date when result has been initialized (generator has been started)  # noqa: E501
+
+        :param start_timestamp: The start_timestamp of this CpuGeneratorResult.  # noqa: E501
+        :type: datetime
+        """
+        self._start_timestamp = start_timestamp
 
     @property
     def stats(self):

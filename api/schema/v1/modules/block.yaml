@@ -601,6 +601,10 @@ definitions:
         type: string
         description: The ISO8601-formatted date of the last result update
         format: date-time
+      start_timestamp:
+        type: string
+        description: The ISO8601-formatted date when result has been initialized (generator has been started)
+        format: date-time
       read:
         $ref: "#/definitions/BlockGeneratorStats"
       write:
@@ -611,6 +615,7 @@ definitions:
       - id
       - active
       - timestamp
+      - start_timestamp
       - read
       - write
 

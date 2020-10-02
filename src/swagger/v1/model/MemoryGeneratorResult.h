@@ -73,6 +73,11 @@ public:
     std::string getTimestamp() const;
     void setTimestamp(std::string value);
         /// <summary>
+    /// The ISO8601-formatted date when result has been initialized (generator has been started)
+    /// </summary>
+    std::string getStartTimestamp() const;
+    void setStartTimestamp(std::string value);
+        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<MemoryGeneratorStats> getRead() const;
@@ -98,6 +103,8 @@ protected:
     bool m_Active;
 
     std::string m_Timestamp;
+
+    std::string m_Start_timestamp;
 
     std::shared_ptr<MemoryGeneratorStats> m_Read;
 

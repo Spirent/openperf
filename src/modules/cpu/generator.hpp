@@ -15,6 +15,7 @@ namespace openperf::cpu::generator {
 class generator : public model::generator
 {
     using controller = ::openperf::framework::generator::controller;
+    using chronometer = openperf::timesync::chrono::realtime;
 
 private:
     std::string m_result_id;
@@ -22,6 +23,7 @@ private:
 
     cpu_stat m_stat;
     std::atomic<cpu_stat*> m_stat_ptr;
+    chronometer::time_point m_start_time;
 
     dynamic::spool<cpu_stat> m_dynamic;
     controller m_controller;

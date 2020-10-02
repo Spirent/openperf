@@ -24,6 +24,7 @@ MemoryGeneratorResult::MemoryGeneratorResult()
     m_Generator_idIsSet = false;
     m_Active = false;
     m_Timestamp = "";
+    m_Start_timestamp = "";
     m_Dynamic_resultsIsSet = false;
     
 }
@@ -48,6 +49,7 @@ nlohmann::json MemoryGeneratorResult::toJson() const
     }
     val["active"] = m_Active;
     val["timestamp"] = ModelBase::toJson(m_Timestamp);
+    val["start_timestamp"] = ModelBase::toJson(m_Start_timestamp);
     val["read"] = ModelBase::toJson(m_Read);
     val["write"] = ModelBase::toJson(m_Write);
     if(m_Dynamic_resultsIsSet)
@@ -69,6 +71,7 @@ void MemoryGeneratorResult::fromJson(nlohmann::json& val)
     }
     setActive(val.at("active"));
     setTimestamp(val.at("timestamp"));
+    setStartTimestamp(val.at("start_timestamp"));
     if(val.find("dynamic_results") != val.end())
     {
         if(!val["dynamic_results"].is_null())
@@ -125,6 +128,15 @@ std::string MemoryGeneratorResult::getTimestamp() const
 void MemoryGeneratorResult::setTimestamp(std::string value)
 {
     m_Timestamp = value;
+    
+}
+std::string MemoryGeneratorResult::getStartTimestamp() const
+{
+    return m_Start_timestamp;
+}
+void MemoryGeneratorResult::setStartTimestamp(std::string value)
+{
+    m_Start_timestamp = value;
     
 }
 std::shared_ptr<MemoryGeneratorStats> MemoryGeneratorResult::getRead() const

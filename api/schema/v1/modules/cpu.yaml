@@ -398,6 +398,10 @@ definitions:
         type: string
         description: The ISO8601-formatted date of the last result update
         format: date-time
+      start_timestamp:
+        type: string
+        description: The ISO8601-formatted date when result has been initialized (generator has been started)
+        format: date-time
       stats:
         $ref: "#/definitions/CpuGeneratorStats"
       dynamic_results:
@@ -406,6 +410,7 @@ definitions:
       - id
       - active
       - timestamp
+      - start_timestamp
       - stats
 
   CpuGeneratorStats:

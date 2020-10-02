@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 **generator_id** | **str** | Block generator identifier that generated this result | [optional] 
 **active** | **bool** | Indicates whether the result is currently being updated | 
 **timestamp** | **datetime** | The ISO8601-formatted date of the last result update | 
+**start_timestamp** | **datetime** | The ISO8601-formatted date when result has been initialized (generator has been started) | 
 **read** | [**BlockGeneratorStats**](BlockGeneratorStats.md) |  | 
 **write** | [**BlockGeneratorStats**](BlockGeneratorStats.md) |  | 
 **dynamic_results** | [**DynamicResults**](DynamicResults.md) |  | [optional] 

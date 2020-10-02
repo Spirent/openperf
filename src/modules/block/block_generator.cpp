@@ -203,6 +203,7 @@ block_generator::block_result_ptr block_generator::statistics() const
     stat->read_stats(to_statistics_t(m_read));
     stat->write_stats(to_statistics_t(m_write));
     stat->timestamp(std::max(m_write.updated, m_read.updated));
+    stat->start_timestamp(m_start_time);
     stat->dynamic_results(m_dynamic.result());
 
     return stat;

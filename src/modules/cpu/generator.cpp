@@ -166,6 +166,7 @@ model::generator_result generator::statistics() const
     stat.generator_id(m_id);
     stat.active(m_running);
     stat.timestamp(timesync::chrono::realtime::now());
+    stat.start_timestamp(m_start_time);
     stat.stats(*m_stat_ptr);
     stat.dynamic_results(m_dynamic.result());
 
@@ -211,6 +212,7 @@ void generator::reset()
     m_stat.clear();
 
     m_result_id = core::to_string(core::uuid::random());
+    m_start_time = chronometer::now();
 
     if (m_running) m_controller.resume();
 }
