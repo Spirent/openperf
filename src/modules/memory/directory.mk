@@ -16,7 +16,8 @@ MEMORY_SOURCES += \
 	server.cpp \
 	task_memory.cpp \
 	task_memory_read.cpp \
-	task_memory_write.cpp
+	task_memory_write.cpp \
+	memory_options.c
 
 MEMORY_VERSIONED_FILES := init.cpp
 MEMORY_UNVERSIONED_OBJECTS := \

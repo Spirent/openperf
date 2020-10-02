@@ -3,6 +3,7 @@
 
 #include "server.hpp"
 #include "framework/core/op_core.h"
+#include "config/op_config_file.hpp"
 
 namespace openperf::memory {
 
@@ -47,6 +48,21 @@ public:
     {
         m_service = std::thread([this]() {
             op_thread_setname("op_memory");
+            auto mask =
+                openperf::config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
+                    "modules.memory.cpu-mask");
+            if (mask) {
+                if (auto res =
+                        op_thread_set_relative_affinity_mask(mask.value());
+                    res) {
+                    op_exit("Applying Memory module affinity mask failed! %s\n",
+                            std::strerror(res));
+                }
+
+                OP_LOG(OP_LOG_DEBUG,
+                       "Memory module been configured with cpu-mask: 0x%x",
+                       mask.value());
+            }
 
             struct op_event_callbacks callbacks = {.on_read =
                                                        handle_zmq_shutdown};

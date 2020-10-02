@@ -58,6 +58,23 @@ inline std::vector<uint16_t> op_get_cpu_online()
     op_cpuset_delete(test_cpuset);
     return core_list;
 }
+
+inline int op_thread_set_relative_affinity_mask(unsigned cpuset_hex)
+{
+    auto cpuset = op_cpuset_create();
+    auto available_core_list = op_get_cpu_online();
+
+    for (size_t i = 0; i < available_core_list.size(); i++) {
+        if (cpuset_hex & (1 << i)) {
+            op_cpuset_set(cpuset, available_core_list.at(i), true);
+        }
+    }
+
+    auto r = op_thread_set_affinity_mask(cpuset);
+    op_cpuset_delete(cpuset);
+    return r;
+}
+
 #endif
 
 #endif /* _OP_THREAD_H_ */
