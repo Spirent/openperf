@@ -1,14 +1,12 @@
 # Time Varying Load Profile
 
-Time Varying Load Profile (TVLP) provides a mechanism to program an OpenPerf instance to perform Block,Memory,CPU and Packet modules configuration adjustments at specific times.
+Time Varying Load Profile (TVLP) provides a mechanism to program an OpenPerf instance to perform Block, Memory, CPU and Packet modules configuration adjustments at specific times.
 
 ## Configuration
 
 Configuration primarily consists of a lists of time offsets and values for configuraton options for Block, Memory, CPU and Packet generators.
 
 Additionally, clients may specify a specific UTC ISO8601-formatted time to start replaying the configured profile.
-
-After a profile has completed its run, the running flag will automatically be set to false and the state revert back to READY.
 
 ### States
 
@@ -25,27 +23,29 @@ State transitions behave as follows:
 
 ![TVLP State Diagram](../images/tvlp-state-diagram.png)
 
+After a profile has completed its run, the `state` revert back to READY.
+
 ### Keys
 
 The TVLP module responds to the following configuration keys:
 
-- **id** -- unique TVLP identifier. Leave field empty to generate unique file identificator.
-- **time.start** -- the ISO8601-formatted date to start TVLP profile. Only available when state = COUNTDOWN (read only)
-- **time.length** -- length of current tvlp profile (read only)
-- **time.offset** -- current offset. Only valid when running (read only)
-- **state** -- current TVLP module state, one of: READY, COUNTDOWN, RUNNING, or ERROR (read only)
-- **error** -- read only string describing error condition; only when state == ERROR (read only)
+- **id** -- unique TVLP identifier. Leave field empty to generate value.
+- **time.start** -- ISO8601-formatted TVLP profile start time. Only available when `state` = COUNTDOWN or RUNNING (read only)
+- **time.length** -- length of current tvlp profile in ns (read only)
+- **time.offset** -- current offset in ns. Only valid when `state` = RUNNING (read only)
+- **state** -- current TVLP profile `state`, one of: READY, COUNTDOWN, RUNNING, or ERROR (read only)
+- **error** -- read only string describing error condition; only when `state` == ERROR (read only)
 - **profile** -- TVLP profile data
 
-## TVLP Configuration diagram
+## TVLP Configuration Diagram
 
-Each module configured by TVLP module as follows:
+Each generator module configured by TVLP profile as follows:
 
 ![TVLP Configuration Diagram](../images/tvlp-scheme.png)
 
 ## TVLP Result
 
-TVLP creates new *Result* with new unique ID on each Start request. While TVLP configuration is running, the result is being updated after each generation iteration. After the Profile has completed the result receives final statistics values.
+TVLP creates new _Result_ with new unique ID on each Start request. While TVLP configuration is running, the result is being updated after each generation iteration. After the Profile has completed the result receives final statistics values.
 
 ## Commands flow
 
