@@ -136,16 +136,17 @@ void generator::config(const generator_config& config)
 
     if (m_config.utilization) {
         auto sys_util = config.utilization.value();
-        if (sys_util < 0 || 100 < sys_util) {
+        if (sys_util < 0 || 100 * available_cores.size() < sys_util) {
             throw std::runtime_error(
                 "System utilization value " + std::to_string(sys_util)
-                + " is not valid. Available values from 0 to 100 inclusive.");
+                + " is not valid. Available values from 0 to "
+                + std::to_string(100 * available_cores.size()));
         }
 
         m_config.cores.clear();
         for (size_t core = 0; core < available_cores.size(); ++core) {
             m_config.cores.emplace_back(task_cpu_config{
-                .utilization = sys_util,
+                .utilization = sys_util / available_cores.size(),
                 .targets = {1,
                             target_config{
                                 .set = instruction_set::SCALAR,

@@ -40,10 +40,11 @@ is_valid(const swagger::CpuGeneratorConfig& config)
         errors.emplace_back("Parameter 'method' is required.");
     } else if (method == "system") {
         auto utilizaton = config.getSystem()->getUtilization();
-        if (utilizaton <= 0.0 || 100 < utilizaton)
+        if (utilizaton <= 0.0) {
             errors.emplace_back("System utilization value '"
                                 + std::to_string(utilizaton)
                                 + "' is not valid");
+        }
     } else if (method == "cores") {
         auto cores =
             const_cast<swagger::CpuGeneratorConfig&>(config).getCores();
