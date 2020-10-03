@@ -34,8 +34,8 @@ class CpuGeneratorResult(object):
         'id': 'str',
         'generator_id': 'str',
         'active': 'bool',
-        'timestamp': 'datetime',
-        'start_timestamp': 'datetime',
+        'timestamp_first': 'datetime',
+        'timestamp_last': 'datetime',
         'stats': 'CpuGeneratorStats',
         'dynamic_results': 'DynamicResults'
     }
@@ -44,20 +44,20 @@ class CpuGeneratorResult(object):
         'id': 'id',
         'generator_id': 'generator_id',
         'active': 'active',
-        'timestamp': 'timestamp',
-        'start_timestamp': 'start_timestamp',
+        'timestamp_first': 'timestamp_first',
+        'timestamp_last': 'timestamp_last',
         'stats': 'stats',
         'dynamic_results': 'dynamic_results'
     }
 
-    def __init__(self, id=None, generator_id=None, active=None, timestamp=None, start_timestamp=None, stats=None, dynamic_results=None):  # noqa: E501
+    def __init__(self, id=None, generator_id=None, active=None, timestamp_first=None, timestamp_last=None, stats=None, dynamic_results=None):  # noqa: E501
         """CpuGeneratorResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._generator_id = None
         self._active = None
-        self._timestamp = None
-        self._start_timestamp = None
+        self._timestamp_first = None
+        self._timestamp_last = None
         self._stats = None
         self._dynamic_results = None
         self.discriminator = None
@@ -66,8 +66,8 @@ class CpuGeneratorResult(object):
         if generator_id is not None:
             self.generator_id = generator_id
         self.active = active
-        self.timestamp = timestamp
-        self.start_timestamp = start_timestamp
+        self.timestamp_first = timestamp_first
+        self.timestamp_last = timestamp_last
         self.stats = stats
         if dynamic_results is not None:
             self.dynamic_results = dynamic_results
@@ -139,48 +139,48 @@ class CpuGeneratorResult(object):
         self._active = active
 
     @property
-    def timestamp(self):
-        """Gets the timestamp of this CpuGeneratorResult.  # noqa: E501
+    def timestamp_first(self):
+        """Gets the timestamp_first of this CpuGeneratorResult.  # noqa: E501
 
-        The ISO8601-formatted date of the last result update  # noqa: E501
+        The ISO8601-formatted date when result has been initialized (generator has been started)  # noqa: E501
 
-        :return: The timestamp of this CpuGeneratorResult.  # noqa: E501
+        :return: The timestamp_first of this CpuGeneratorResult.  # noqa: E501
         :rtype: datetime
         """
-        return self._timestamp
+        return self._timestamp_first
 
-    @timestamp.setter
-    def timestamp(self, timestamp):
-        """Sets the timestamp of this CpuGeneratorResult.
+    @timestamp_first.setter
+    def timestamp_first(self, timestamp_first):
+        """Sets the timestamp_first of this CpuGeneratorResult.
 
-        The ISO8601-formatted date of the last result update  # noqa: E501
+        The ISO8601-formatted date when result has been initialized (generator has been started)  # noqa: E501
 
-        :param timestamp: The timestamp of this CpuGeneratorResult.  # noqa: E501
+        :param timestamp_first: The timestamp_first of this CpuGeneratorResult.  # noqa: E501
         :type: datetime
         """
-        self._timestamp = timestamp
+        self._timestamp_first = timestamp_first
 
     @property
-    def start_timestamp(self):
-        """Gets the start_timestamp of this CpuGeneratorResult.  # noqa: E501
+    def timestamp_last(self):
+        """Gets the timestamp_last of this CpuGeneratorResult.  # noqa: E501
 
-        The ISO8601-formatted date when result has been initialized (generator has been started)  # noqa: E501
+        The ISO8601-formatted date of the last result update  # noqa: E501
 
-        :return: The start_timestamp of this CpuGeneratorResult.  # noqa: E501
+        :return: The timestamp_last of this CpuGeneratorResult.  # noqa: E501
         :rtype: datetime
         """
-        return self._start_timestamp
+        return self._timestamp_last
 
-    @start_timestamp.setter
-    def start_timestamp(self, start_timestamp):
-        """Sets the start_timestamp of this CpuGeneratorResult.
+    @timestamp_last.setter
+    def timestamp_last(self, timestamp_last):
+        """Sets the timestamp_last of this CpuGeneratorResult.
 
-        The ISO8601-formatted date when result has been initialized (generator has been started)  # noqa: E501
+        The ISO8601-formatted date of the last result update  # noqa: E501
 
-        :param start_timestamp: The start_timestamp of this CpuGeneratorResult.  # noqa: E501
+        :param timestamp_last: The timestamp_last of this CpuGeneratorResult.  # noqa: E501
         :type: datetime
         """
-        self._start_timestamp = start_timestamp
+        self._timestamp_last = timestamp_last
 
     @property
     def stats(self):

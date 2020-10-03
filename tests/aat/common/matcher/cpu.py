@@ -49,7 +49,8 @@ class _be_valid_cpu_generator_result(Matcher):
         expect(result.id).not_to(be_empty)
         expect(result.generator_id).not_to(be_empty)
         expect(result.active).to(be_a(bool))
-        #expect(result.timestamp).to(be_a(datetime))
+        expect(result.timestamp_first).not_to(be_none)
+        expect(result.timestamp_last).not_to(be_none)
         expect(result.stats).to(be_a(client.models.CpuGeneratorStats))
         return True, ['is valid CPU Generator Result']
 

@@ -40,7 +40,8 @@ class _be_valid_block_generator_result(Matcher):
         expect(result.id).not_to(be_empty)
         expect(result.generator_id).not_to(be_empty)
         expect(result.active).not_to(be_none)
-        expect(result.timestamp).not_to(be_none)
+        expect(result.timestamp_first).not_to(be_none)
+        expect(result.timestamp_last).not_to(be_none)
         expect(result.read).to(be_a(client.models.BlockGeneratorStats))
         expect(result.write).to(be_a(client.models.BlockGeneratorStats))
         return True, ['is valid block generator result']

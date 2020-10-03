@@ -35,7 +35,8 @@ class _be_valid_memory_generator_result(Matcher):
         expect(result.id).not_to(be_empty)
         expect(result.generator_id).not_to(be_empty)
         expect(result.active).to(be_a(bool))
-        #expect(result.timestamp).to(be_a(datetime))
+        expect(result.timestamp_first).not_to(be_none)
+        expect(result.timestamp_last).not_to(be_none)
         expect(result.read).to(be_a(client.models.MemoryGeneratorStats))
         expect(result.write).to(be_a(client.models.MemoryGeneratorStats))
         return True, ['is valid Memory Generator Result']

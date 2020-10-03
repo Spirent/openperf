@@ -23,8 +23,8 @@ MemoryGeneratorResult::MemoryGeneratorResult()
     m_Generator_id = "";
     m_Generator_idIsSet = false;
     m_Active = false;
-    m_Timestamp = "";
-    m_Start_timestamp = "";
+    m_Timestamp_first = "";
+    m_Timestamp_last = "";
     m_Dynamic_resultsIsSet = false;
     
 }
@@ -48,8 +48,8 @@ nlohmann::json MemoryGeneratorResult::toJson() const
         val["generator_id"] = ModelBase::toJson(m_Generator_id);
     }
     val["active"] = m_Active;
-    val["timestamp"] = ModelBase::toJson(m_Timestamp);
-    val["start_timestamp"] = ModelBase::toJson(m_Start_timestamp);
+    val["timestamp_first"] = ModelBase::toJson(m_Timestamp_first);
+    val["timestamp_last"] = ModelBase::toJson(m_Timestamp_last);
     val["read"] = ModelBase::toJson(m_Read);
     val["write"] = ModelBase::toJson(m_Write);
     if(m_Dynamic_resultsIsSet)
@@ -70,8 +70,8 @@ void MemoryGeneratorResult::fromJson(nlohmann::json& val)
         
     }
     setActive(val.at("active"));
-    setTimestamp(val.at("timestamp"));
-    setStartTimestamp(val.at("start_timestamp"));
+    setTimestampFirst(val.at("timestamp_first"));
+    setTimestampLast(val.at("timestamp_last"));
     if(val.find("dynamic_results") != val.end())
     {
         if(!val["dynamic_results"].is_null())
@@ -121,22 +121,22 @@ void MemoryGeneratorResult::setActive(bool value)
     m_Active = value;
     
 }
-std::string MemoryGeneratorResult::getTimestamp() const
+std::string MemoryGeneratorResult::getTimestampFirst() const
 {
-    return m_Timestamp;
+    return m_Timestamp_first;
 }
-void MemoryGeneratorResult::setTimestamp(std::string value)
+void MemoryGeneratorResult::setTimestampFirst(std::string value)
 {
-    m_Timestamp = value;
+    m_Timestamp_first = value;
     
 }
-std::string MemoryGeneratorResult::getStartTimestamp() const
+std::string MemoryGeneratorResult::getTimestampLast() const
 {
-    return m_Start_timestamp;
+    return m_Timestamp_last;
 }
-void MemoryGeneratorResult::setStartTimestamp(std::string value)
+void MemoryGeneratorResult::setTimestampLast(std::string value)
 {
-    m_Start_timestamp = value;
+    m_Timestamp_last = value;
     
 }
 std::shared_ptr<MemoryGeneratorStats> MemoryGeneratorResult::getRead() const

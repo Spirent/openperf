@@ -387,13 +387,13 @@ definitions:
       active:
         type: boolean
         description: Indicates whether the result is currently being updated
-      timestamp:
-        type: string
-        description: The ISO8601-formatted date of the last result update
-        format: date-time
-      start_timestamp:
+      timestamp_first:
         type: string
         description: The ISO8601-formatted date when result has been initialized (generator has been started)
+        format: date-time
+      timestamp_last:
+        type: string
+        description: The ISO8601-formatted date of the last result update
         format: date-time
       read:
         $ref: "#/definitions/MemoryGeneratorStats"
@@ -404,8 +404,8 @@ definitions:
     required:
       - id
       - active
-      - timestamp
-      - start_timestamp
+      - timestamp_first
+      - timestamp_last
       - read
       - write
 

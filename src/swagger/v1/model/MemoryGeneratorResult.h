@@ -68,15 +68,15 @@ public:
     bool isActive() const;
     void setActive(bool value);
         /// <summary>
-    /// The ISO8601-formatted date of the last result update
-    /// </summary>
-    std::string getTimestamp() const;
-    void setTimestamp(std::string value);
-        /// <summary>
     /// The ISO8601-formatted date when result has been initialized (generator has been started)
     /// </summary>
-    std::string getStartTimestamp() const;
-    void setStartTimestamp(std::string value);
+    std::string getTimestampFirst() const;
+    void setTimestampFirst(std::string value);
+        /// <summary>
+    /// The ISO8601-formatted date of the last result update
+    /// </summary>
+    std::string getTimestampLast() const;
+    void setTimestampLast(std::string value);
         /// <summary>
     /// 
     /// </summary>
@@ -102,9 +102,9 @@ protected:
     bool m_Generator_idIsSet;
     bool m_Active;
 
-    std::string m_Timestamp;
+    std::string m_Timestamp_first;
 
-    std::string m_Start_timestamp;
+    std::string m_Timestamp_last;
 
     std::shared_ptr<MemoryGeneratorStats> m_Read;
 
