@@ -48,7 +48,7 @@ public:
     /// CpuGeneratorConfigSystem members
 
     /// <summary>
-    /// CPU utilization value in percents
+    /// CPU utilization value. The maximum value is (100 * core_count). 
     /// </summary>
     double getUtilization() const;
     void setUtilization(double value);

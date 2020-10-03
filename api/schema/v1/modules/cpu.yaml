@@ -341,10 +341,11 @@ definitions:
           utilization:
             type: number
             format: double
-            description: CPU utilization value in percents
+            description: >
+              CPU utilization value.
+              The maximum value is (100 * core_count).
             minimum: 0
             exclusiveMinimum: true
-            maximum: 100
         required:
           - utilization
       cores:

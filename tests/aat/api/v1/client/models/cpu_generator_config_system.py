@@ -50,7 +50,7 @@ class CpuGeneratorConfigSystem(object):
     def utilization(self):
         """Gets the utilization of this CpuGeneratorConfigSystem.  # noqa: E501
 
-        CPU utilization value in percents  # noqa: E501
+        CPU utilization value. The maximum value is (100 * core_count).   # noqa: E501
 
         :return: The utilization of this CpuGeneratorConfigSystem.  # noqa: E501
         :rtype: float
@@ -61,7 +61,7 @@ class CpuGeneratorConfigSystem(object):
     def utilization(self, utilization):
         """Sets the utilization of this CpuGeneratorConfigSystem.
 
-        CPU utilization value in percents  # noqa: E501
+        CPU utilization value. The maximum value is (100 * core_count).   # noqa: E501
 
         :param utilization: The utilization of this CpuGeneratorConfigSystem.  # noqa: E501
         :type: float
