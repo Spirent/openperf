@@ -28,6 +28,7 @@ def config_model():
     core_config.targets = [core_config_target]
 
     config = client.models.CpuGeneratorConfig()
+    config.method = "cores"
     config.cores = [core_config]
 
     return config
