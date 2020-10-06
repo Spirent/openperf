@@ -6,7 +6,6 @@
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/port_info.hpp"
 #include "packetio/drivers/dpdk/topology_utils.hpp"
-#include "packetio/stack/dpdk/net_interface.hpp"
 #include "packetio/workers/dpdk/event_loop_adapter.hpp"
 #include "packetio/workers/dpdk/port_feature_controller.tcc"
 #include "packetio/workers/dpdk/tx_source.hpp"
@@ -365,7 +364,7 @@ static int get_port_index(std::string_view id,
 
     /* Maybe it's an interface id; look it up */
     if (auto ifp = fib->find_interface(id); ifp != nullptr) {
-        return (to_interface(ifp).port_index());
+        return (driver.port_index(ifp->port_id()).value());
     }
 
     /*
@@ -406,10 +405,11 @@ worker_controller::get_transmit_function(std::string_view port_id) const
     const bool use_direct = rte_lcore_count() <= 2;
     if (port_info::driver_name(*port_idx) == net_ring_driver_name) {
         /*
-         * For the DPDK driver, we use a portion of the mbuf private area to
+         * For LwIP based stack, we use a portion of the mbuf private area to
          * store the lwip pbuf.  Because the net_ring driver hands transmitted
          * packets directly to another port, we must copy the packet before
-         * transmitting to prevent use-after-free bugs.
+         * transmitting to avoid a data race on the reference count in the
+         * private area to prevent use-after-free bugs.
          */
         return (use_direct ? to_transmit_function(worker::tx_copy_direct)
                            : to_transmit_function(worker::tx_copy_queued));
@@ -419,31 +419,37 @@ worker_controller::get_transmit_function(std::string_view port_id) const
                        : to_transmit_function(worker::tx_queued));
 }
 
-void worker_controller::add_interface(
-    std::string_view port_id, const interface::generic_interface& interface)
+tl::expected<void, int>
+worker_controller::add_interface(std::string_view port_id,
+                                 const interface::generic_interface& interface)
 {
     auto port_idx = m_driver.port_index(port_id);
     if (!port_idx) {
-        throw std::runtime_error("Port id " + std::string(port_id)
-                                 + " is unknown");
+        OP_LOG(OP_LOG_ERROR,
+               "Port id %.*s is unknown\n",
+               static_cast<int>(port_id.size()),
+               port_id.data());
+        return (tl::make_unexpected(ENODEV));
     }
 
     auto mac = mac_address(interface.mac_address());
 
     if (m_fib->find_interface(*port_idx, mac)) {
-        throw std::runtime_error(
-            "Interface with mac = " + libpacket::type::to_string(mac)
-            + " on port " + std::string(port_id) + " (idx = "
-            + std::to_string(*port_idx) + ") already exists in FIB");
+        OP_LOG(OP_LOG_ERROR,
+               "Interface with mac = %s on port %.*s (idx = %u) already exists "
+               "in FIB\n",
+               libpacket::type::to_string(mac).c_str(),
+               static_cast<int>(port_id.size()),
+               port_id.data(),
+               *port_idx);
+        return (tl::make_unexpected(EEXIST));
     }
 
     auto& filter = m_sink_features.get<port::filter>(*port_idx);
     filter.add_mac_address(mac,
                            [&]() { maybe_disable_rxq_tag_detection(filter); });
 
-    auto ifp =
-        const_cast<netif*>(std::any_cast<const netif*>(interface.data()));
-    auto to_delete = m_fib->insert_interface(*port_idx, mac, ifp);
+    auto to_delete = m_fib->insert_interface(*port_idx, mac, interface);
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
     OP_LOG(OP_LOG_DEBUG,
@@ -452,6 +458,8 @@ void worker_controller::add_interface(
            static_cast<int>(port_id.length()),
            port_id.data(),
            *port_idx);
+
+    return {};
 }
 
 void worker_controller::del_interface(
@@ -537,12 +545,11 @@ worker_controller::add_sink(packet::traffic_direction direction,
     }
 
     if (auto ifp = m_fib->find_interface(src_id)) {
-        auto& interface = dpdk::to_interface(ifp);
-        auto mac = mac_address(ifp->hwaddr);
+        auto mac = mac_address(ifp->mac_address());
+        auto port_idx = m_driver.port_index(ifp->port_id()).value();
         if (direction == packet::traffic_direction::RX
             || direction == packet::traffic_direction::RXTX) {
-            auto sinks =
-                m_fib->find_interface_rx_sinks(interface.port_index(), mac);
+            auto sinks = m_fib->find_interface_rx_sinks(port_idx, mac);
             if (!sinks) { return (tl::make_unexpected(EINVAL)); }
             if (contains_match(*sinks, sink)) {
                 return (tl::make_unexpected(EALREADY));
@@ -551,24 +558,19 @@ worker_controller::add_sink(packet::traffic_direction direction,
             OP_LOG(OP_LOG_DEBUG,
                    "Adding rx sink %s to port %s (idx = %u) interface=%s\n",
                    sink.id().c_str(),
-                   interface.port_id().c_str(),
-                   interface.port_index(),
-                   interface.id().c_str());
+                   ifp->port_id().c_str(),
+                   port_idx,
+                   ifp->id().c_str());
 
-            auto to_delete =
-                m_fib->insert_interface_sink(interface.port_index(),
-                                             mac,
-                                             ifp,
-                                             worker::fib::direction::RX,
-                                             sink);
+            auto to_delete = m_fib->insert_interface_sink(
+                port_idx, mac, worker::fib::direction::RX, sink);
 
             m_recycler->writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
         }
         if (direction == packet::traffic_direction::TX
             || direction == packet::traffic_direction::RXTX) {
-            auto sinks =
-                m_fib->find_interface_tx_sinks(interface.port_index(), mac);
+            auto sinks = m_fib->find_interface_tx_sinks(port_idx, mac);
             if (!sinks) {
                 if (direction == packet::traffic_direction::RXTX) {
                     // Remove the Rx sink if error adding Tx sink
@@ -586,21 +588,17 @@ worker_controller::add_sink(packet::traffic_direction direction,
             OP_LOG(OP_LOG_DEBUG,
                    "Adding tx sink %s to port %s (idx = %u) interface=%s\n",
                    sink.id().c_str(),
-                   interface.port_id().c_str(),
-                   interface.port_index(),
-                   interface.id().c_str());
+                   ifp->port_id().c_str(),
+                   port_idx,
+                   ifp->id().c_str());
 
-            auto to_delete =
-                m_fib->insert_interface_sink(interface.port_index(),
-                                             mac,
-                                             ifp,
-                                             worker::fib::direction::TX,
-                                             sink);
+            auto to_delete = m_fib->insert_interface_sink(
+                port_idx, mac, worker::fib::direction::TX, sink);
             m_recycler->writer_add_gc_callback(
                 [to_delete]() { delete to_delete; });
         }
 
-        m_sink_features.update(*m_fib, interface.port_index());
+        m_sink_features.update(*m_fib, port_idx);
 
         return {};
     }
@@ -647,53 +645,42 @@ void worker_controller::del_sink(packet::traffic_direction direction,
     }
 
     if (auto ifp = m_fib->find_interface(src_id)) {
-        auto& interface = dpdk::to_interface(ifp);
-        auto mac = mac_address(ifp->hwaddr);
-
+        auto mac = mac_address(ifp->mac_address());
+        auto port_idx = m_driver.port_index(ifp->port_id()).value();
         if (direction == packet::traffic_direction::RX
             || direction == packet::traffic_direction::RXTX) {
-            auto sinks =
-                m_fib->find_interface_rx_sinks(interface.port_index(), mac);
+            auto sinks = m_fib->find_interface_rx_sinks(port_idx, mac);
             if (sinks && contains_match(*sinks, sink)) {
                 OP_LOG(OP_LOG_DEBUG,
                        "Deleting rx sink %s from port %s (idx = %u) interface "
                        "%s\n",
                        sink.id().c_str(),
-                       interface.port_id().c_str(),
-                       interface.port_index(),
-                       interface.id().c_str());
+                       ifp->port_id().c_str(),
+                       port_idx,
+                       ifp->id().c_str());
 
-                auto to_delete =
-                    m_fib->remove_interface_sink(interface.port_index(),
-                                                 mac,
-                                                 ifp,
-                                                 worker::fib::direction::RX,
-                                                 sink);
+                auto to_delete = m_fib->remove_interface_sink(
+                    port_idx, mac, worker::fib::direction::RX, sink);
                 m_recycler->writer_add_gc_callback(
                     [to_delete]() { delete to_delete; });
 
-                m_sink_features.update(*m_fib, interface.port_index());
+                m_sink_features.update(*m_fib, port_idx);
             }
         }
         if (direction == packet::traffic_direction::TX
             || direction == packet::traffic_direction::RXTX) {
-            auto sinks =
-                m_fib->find_interface_tx_sinks(interface.port_index(), mac);
+            auto sinks = m_fib->find_interface_tx_sinks(port_idx, mac);
             if (sinks && contains_match(*sinks, sink)) {
                 OP_LOG(OP_LOG_DEBUG,
                        "Deleting tx sink %s from port %s (idx = %u) interface "
                        "%s\n",
                        sink.id().c_str(),
-                       interface.port_id().c_str(),
-                       interface.port_index(),
-                       interface.id().c_str());
+                       ifp->port_id().c_str(),
+                       port_idx,
+                       ifp->id().c_str());
 
-                auto to_delete =
-                    m_fib->remove_interface_sink(interface.port_index(),
-                                                 mac,
-                                                 ifp,
-                                                 worker::fib::direction::TX,
-                                                 sink);
+                auto to_delete = m_fib->remove_interface_sink(
+                    port_idx, mac, worker::fib::direction::TX, sink);
 
                 m_recycler->writer_add_gc_callback(
                     [to_delete]() { delete to_delete; });
@@ -996,7 +983,7 @@ bool interface_sink_find_if(const worker::fib& fib,
 {
     bool found = false;
     fib.visit_interface_sinks(
-        port_idx, dir, [&](netif*, const packet::generic_sink& sink) {
+        port_idx, dir, [&](const auto&, const packet::generic_sink& sink) {
             if (filter(sink)) { found = true; }
             return (!found);
         });

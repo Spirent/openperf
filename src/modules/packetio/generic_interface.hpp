@@ -129,6 +129,17 @@ public:
 
     stats_data stats() const { return m_self->stats(); }
 
+    /* Note: this function is called from a worker thread */
+    int input_packet(void* packet) const
+    {
+        return m_self->input_packet(packet);
+    }
+
+    bool operator==(const generic_interface& other) const
+    {
+        return (id() == other.id());
+    }
+
 private:
     struct interface_concept
     {
@@ -142,6 +153,7 @@ private:
         virtual config_data config() const = 0;
         virtual std::any data() const = 0;
         virtual stats_data stats() const = 0;
+        virtual int input_packet(void* packet) const = 0;
     };
 
     template <typename Interface>
@@ -181,14 +193,21 @@ private:
 
         stats_data stats() const override { return m_interface.stats(); }
 
+        int input_packet(void* packet) const override
+        {
+            return (m_interface.input_packet(packet));
+        }
+
         Interface m_interface;
     };
 
     std::shared_ptr<const interface_concept> m_self;
 };
 
-std::shared_ptr<swagger::v1::model::Interface>
+std::unique_ptr<swagger::v1::model::Interface>
 make_swagger_interface(const generic_interface&);
+
+bool is_valid(const swagger::v1::model::Interface&, std::vector<std::string>&);
 
 template <typename T>
 std::optional<T> get_optional_key(const nlohmann::json& j, const char* key)

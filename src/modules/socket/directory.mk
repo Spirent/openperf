@@ -27,7 +27,7 @@ SOCKSRV_SOURCES += \
 	server/tcp_socket.cpp \
 	server/udp_socket.cpp
 
-SOCKSRV_DEPENDS += packetio versions
+SOCKSRV_DEPENDS += packetio packet_stack versions
 SOCKSRV_LDLIBS += -lrt
 
 # Each channel object lives in shared memory and has both a client and server

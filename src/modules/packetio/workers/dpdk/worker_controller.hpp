@@ -56,8 +56,9 @@ public:
     workers::transmit_function
     get_transmit_function(std::string_view port_id) const;
 
-    void add_interface(std::string_view port_id,
-                       const interface::generic_interface& interface);
+    tl::expected<void, int>
+    add_interface(std::string_view port_id,
+                  const interface::generic_interface& interface);
     void del_interface(std::string_view port_id,
                        const interface::generic_interface& interface);
 

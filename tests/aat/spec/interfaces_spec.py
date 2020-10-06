@@ -27,7 +27,7 @@ with description('Interfaces,', 'interfaces') as self:
             service = Service(CONFIG.service())
             self.process = service.start()
             self.api = client.api.InterfacesApi(service.client())
-            if not check_modules_exists(service.client(), 'packetio'):
+            if not check_modules_exists(service.client(), 'packet-stack'):
                 self.skip()
 
         with description('list,'):
@@ -185,7 +185,7 @@ with description('Interfaces,', 'interfaces') as self:
 
                     with it('returns 405'):
                         expect(lambda: self.api.api_client.call_api('/interfaces', 'PUT')).to(raise_api_exception(405, headers={'Allow': "GET, POST"}))
-    
+
             with description('IPv6,'):
                 with description('known existing interface,'):
                     with before.each:
@@ -533,11 +533,11 @@ with description('Interfaces,', 'interfaces') as self:
                         self.cleanup = intf
 
                 with description('invalid interface ID,'):
-                    with it('returns 400'):
+                    with it('returns 404'):
                         self.intf.id = "Invalid_interface_id"
                         self.intf.port_id = "0"
                         self.intf.config.protocols[0].eth.mac_address='00:00:00:00:00:01'
-                        expect(lambda: self.api.create_interface(self.intf)).to(raise_api_exception(400))
+                        expect(lambda: self.api.create_interface(self.intf)).to(raise_api_exception(404))
 
                 with description('invalid port ID,'):
                     with it('returns 400'):

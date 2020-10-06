@@ -203,7 +203,8 @@ private:
     std::unordered_map<type_info_ref, int, hasher, equals> m_counts;
 };
 
-static bool is_valid(config_data& config, std::vector<std::string>& errors)
+static bool is_valid_config(config_data& config,
+                            std::vector<std::string>& errors)
 {
     /*
      * We use the protocol counter to tally the protocol types we have in
@@ -434,7 +435,7 @@ config_data make_config_data(const Interface& interface)
 
     std::vector<std::string> errors;
     /* Now check the actual configuration data */
-    if (!is_valid(to_return, errors)) {
+    if (!is_valid_config(to_return, errors)) {
         throw std::runtime_error(std::accumulate(
             begin(errors),
             end(errors),
@@ -612,10 +613,10 @@ make_swagger_interface_stats(const generic_interface& intf)
     return (stats);
 }
 
-std::shared_ptr<Interface>
+std::unique_ptr<Interface>
 make_swagger_interface(const generic_interface& in_intf)
 {
-    auto out_intf = std::make_shared<Interface>();
+    auto out_intf = std::make_unique<Interface>();
 
     out_intf->setId(in_intf.id());
     out_intf->setPortId(in_intf.port_id());
@@ -623,6 +624,28 @@ make_swagger_interface(const generic_interface& in_intf)
     out_intf->setStats(make_swagger_interface_stats(in_intf));
 
     return (out_intf);
+}
+
+bool is_valid(const Interface& interface, std::vector<std::string>& errors)
+{
+    auto config = config_data{};
+    if (auto if_config = interface.getConfig()) {
+        for (auto& protocol : if_config->getProtocols()) {
+            try {
+                config.protocols.emplace_back(from_swagger(protocol));
+            } catch (const std::runtime_error& e) {
+                errors.emplace_back(e.what());
+                return (false);
+            }
+        }
+    }
+
+    /* Set id field to what came in from the REST API */
+    config.id = interface.getId();
+
+    config.port_id = interface.getPortId();
+
+    return (is_valid_config(config, errors));
 }
 
 } // namespace openperf::packetio::interface

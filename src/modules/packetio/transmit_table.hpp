@@ -7,6 +7,8 @@
 #include "immer/box.hpp"
 #include "immer/flex_vector.hpp"
 
+#include "packetio/immer_utils.hpp"
+
 namespace openperf::packetio {
 
 template <typename Source> class transmit_table
@@ -48,26 +50,5 @@ private:
 };
 
 } // namespace openperf::packetio
-
-/*
- * Provide overloads to allow range based iteration of the pairs returned
- * by get_sources().  Since the lookup is done via the namespace of
- * the type, we need to add these functions to the 'immer' namespace.
- */
-namespace immer {
-
-template <typename Iterator>
-Iterator begin(const std::pair<Iterator, Iterator>& range)
-{
-    return (range.first);
-}
-
-template <typename Iterator>
-Iterator end(const std::pair<Iterator, Iterator>& range)
-{
-    return (range.second);
-}
-
-} // namespace immer
 
 #endif /* _OP_PACKETIO_TRANSMIT_TABLE_HPP_ */

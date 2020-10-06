@@ -6,6 +6,7 @@ import client.api
 import client.models
 from common import Config, Service
 from common.matcher import be_valid_stack, raise_api_exception
+from common.helper import check_modules_exists
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__), os.environ.get('MAMBA_CONFIG', 'config.yaml')))
@@ -16,6 +17,8 @@ with description('Stacks,', 'stacks') as self:
         service = Service(CONFIG.service())
         self.process = service.start()
         self.api = client.api.StacksApi(service.client())
+        if not check_modules_exists(service.client(), 'packet-stack'):
+            self.skip()
 
     with description('list,'):
         with it('returns valid stacks'):
