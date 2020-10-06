@@ -6,7 +6,6 @@
 #include "framework/generator/controller.hpp"
 #include "modules/dynamic/spool.hpp"
 
-#include "task_cpu.hpp"
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
 

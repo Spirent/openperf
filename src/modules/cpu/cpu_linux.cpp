@@ -85,6 +85,23 @@ utilization_time cpu_thread_time()
                             .utilization = time_user + time_system};
 }
 
+utilization_time cpu_process_time()
+{
+    auto ru = rusage{};
+    getrusage(RUSAGE_SELF, &ru);
+
+    auto time_system = std::chrono::seconds(ru.ru_stime.tv_sec)
+                       + std::chrono::microseconds(ru.ru_stime.tv_usec);
+
+    auto time_user = std::chrono::seconds(ru.ru_utime.tv_sec)
+                     + std::chrono::microseconds(ru.ru_utime.tv_usec);
+
+    return utilization_time{.user = time_user,
+                            .system = time_system,
+                            .steal = cpu_steal_time(),
+                            .utilization = time_user + time_system};
+}
+
 uint16_t cpu_cache_line_size() { return sysconf(_SC_LEVEL1_DCACHE_LINESIZE); }
 
 std::string cpu_architecture()
