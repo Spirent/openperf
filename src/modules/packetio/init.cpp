@@ -8,12 +8,9 @@
 
 #include "core/op_core.h"
 #include "packetio/generic_driver.hpp"
-#include "packetio/generic_stack.hpp"
 #include "packetio/generic_workers.hpp"
-#include "packetio/interface_server.hpp"
 #include "packetio/internal_server.hpp"
 #include "packetio/port_server.hpp"
-#include "packetio/stack_server.hpp"
 
 namespace openperf::packetio {
 
@@ -42,15 +39,10 @@ struct service
         m_loop = std::make_unique<openperf::core::event_loop>();
         m_driver = driver::make();
         m_workers = workers::make(context, *m_loop, *m_driver);
-        m_stack = stack::make(*m_driver, *m_workers);
         m_port_server =
             std::make_unique<port::api::server>(context, *m_loop, *m_driver);
-        m_stack_server =
-            std::make_unique<stack::api::server>(context, *m_loop, *m_stack);
-        m_if_server = std::make_unique<interface::api::server>(
-            context, *m_loop, *m_stack);
         m_internal_server = std::make_unique<internal::api::server>(
-            context, *m_loop, *m_workers);
+            context, *m_loop, *m_driver, *m_workers);
 
         m_shutdown.reset(op_socket_get_server(
             context, ZMQ_REQ, "inproc://packetio_shutdown_canary"));
@@ -78,10 +70,7 @@ struct service
     std::unique_ptr<openperf::core::event_loop> m_loop;
     std::unique_ptr<driver::generic_driver> m_driver;
     std::unique_ptr<workers::generic_workers> m_workers;
-    std::unique_ptr<stack::generic_stack> m_stack;
     std::unique_ptr<port::api::server> m_port_server;
-    std::unique_ptr<stack::api::server> m_stack_server;
-    std::unique_ptr<interface::api::server> m_if_server;
     std::unique_ptr<internal::api::server> m_internal_server;
     std::unique_ptr<void, op_socket_deleter> m_shutdown;
     std::thread m_service;
@@ -105,15 +94,16 @@ void op_packetio_fini(void* state)
     delete s;
 }
 
-REGISTER_MODULE(packetio,
-                INIT_MODULE_INFO("packetio",
-                                 "Core module comprising TCP/IP stack "
-                                 "functionality, virtual interfaces, and DPDK",
-                                 openperf::packetio::module_version),
-                new openperf::packetio::service(),
-                nullptr,
-                op_packetio_init,
-                nullptr,
-                nullptr,
-                op_packetio_fini);
+REGISTER_MODULE(
+    packetio,
+    INIT_MODULE_INFO("packetio",
+                     "Core module comprising packet source/sink handling "
+                     "for network interfaces",
+                     openperf::packetio::module_version),
+    new openperf::packetio::service(),
+    op_packetio_init,
+    nullptr,
+    nullptr,
+    nullptr,
+    op_packetio_fini);
 }

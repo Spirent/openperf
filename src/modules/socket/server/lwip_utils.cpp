@@ -5,7 +5,7 @@
 #include "socket/server/lwip_utils.hpp"
 #include "lwip/tcp.h"
 #include "lwip/priv/tcp_priv.h"
-#include "packetio/stack/netif_utils.h"
+#include "packet/stack/lwip/netif_utils.hpp"
 
 namespace openperf::socket::server {
 
@@ -99,7 +99,7 @@ do_sock_setsockopt(ip_pcb* pcb, const api::request_setsockopt& setsockopt)
                            setsockopt.optlen,
                            setsockopt.optlen);
         if (!opt) return (tl::make_unexpected(opt.error()));
-        auto idx = netif_id_match(optval);
+        auto idx = packet::stack::netif_id_match(optval);
         if (idx == NETIF_NO_INDEX) { return (tl::make_unexpected(ENODEV)); }
         pcb->netif_idx = idx;
         break;

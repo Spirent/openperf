@@ -58,5 +58,5 @@
                                      (concat root "src/framework")
                                      (concat root "src/lib")
                                      (concat root "src/modules")
-                                     (concat root "src/modules/packetio/stack/include")
+                                     (concat root "src/modules/packet/stack/include")
                                      )))))))

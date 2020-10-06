@@ -27,7 +27,7 @@ public:
 
     struct interface_sinks
     {
-        Interface* ifp;
+        Interface ifp;
         std::vector<Sink> rx_sinks;
         std::vector<Sink> tx_sinks;
     };
@@ -44,7 +44,7 @@ public:
 
     interface_map* insert_interface(uint16_t port_idx,
                                     const libpacket::type::mac_address& mac,
-                                    Interface* ifp);
+                                    Interface interface);
     interface_map* remove_interface(uint16_t port_idx,
                                     const libpacket::type::mac_address& mac);
 
@@ -54,23 +54,24 @@ public:
     interface_map*
     insert_interface_sink(uint16_t port_idx,
                           const libpacket::type::mac_address& mac,
-                          Interface* ifp,
                           direction dir,
                           Sink sink);
     interface_map*
     remove_interface_sink(uint16_t port_idx,
                           const libpacket::type::mac_address& mac,
-                          Interface* ifp,
                           direction dir,
                           Sink sink);
 
-    Interface* find_interface(uint16_t port_idx, std::string_view id) const;
-    Interface* find_interface(std::string_view id) const;
+    const Interface* find_interface(uint16_t port_idx,
+                                    std::string_view id) const;
+    const Interface* find_interface(std::string_view id) const;
 
-    Interface* find_interface(uint16_t port_idx,
-                              const libpacket::type::mac_address& mac) const;
-    Interface* find_interface(uint16_t port_idx,
-                              const uint8_t octets[mac_address_length]) const;
+    const Interface*
+    find_interface(uint16_t port_idx,
+                   const libpacket::type::mac_address& mac) const;
+    const Interface*
+    find_interface(uint16_t port_idx,
+                   const uint8_t octets[mac_address_length]) const;
 
     interface_map& get_interfaces(uint16_t port_idx) const;
 
@@ -102,7 +103,8 @@ public:
     void visit_interface_sinks(
         uint16_t port_idx,
         direction direction,
-        std::function<bool(Interface* ifp, const Sink& sink)>&& visitor) const;
+        std::function<bool(const Interface& ifp, const Sink& sink)>&& visitor)
+        const;
 
 private:
     std::array<std::atomic<interface_map*>, MaxPorts> m_interfaces;

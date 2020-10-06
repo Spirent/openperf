@@ -1,16 +1,19 @@
 #include <memory>
 #include <numeric>
 
-#include "lwip/pbuf.h"
-
 #include "core/op_core.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/port_info.hpp"
-#include "packetio/memory/dpdk/memory.h"
 #include "packetio/memory/dpdk/primary/mempool_fmt.h"
 #include "packetio/memory/dpdk/primary/pool_allocator.hpp"
 
 namespace openperf::packetio::dpdk::primary {
+
+/*
+ * Provide additional space between the mbuf header and payload for stack usage.
+ * Adjust as necessary.
+ */
+constexpr auto mempool_private_size = 64;
 
 /*
  * Per the DPDK documentation, cache size should be a divisor of pool
@@ -22,10 +25,6 @@ namespace openperf::packetio::dpdk::primary {
 
 #if RTE_MEMPOOL_CACHE_MAX_SIZE < 512
 #error "RTE_MEMPOOL_CACHE_MAX_SIZE must be at least 512"
-#endif
-
-#if RTE_MBUF_PRIV_ALIGN != MEM_ALIGNMENT
-#error "RTE_MBUF_PRIV_ALIGN and lwip's MEM_ALIGNMENT msut be equal"
 #endif
 
 static struct cache_size_map
@@ -79,21 +78,17 @@ static void log_mempool(const struct rte_mempool* mpool)
            mpool->socket_id);
 }
 
-static rte_mempool* create_pbuf_mempool(
-    const char* name, size_t size, bool cached, bool direct, int socket_id)
+static rte_mempool* create_mempool(const char* name, size_t size, int socket_id)
 {
-    static_assert(PBUF_PRIVATE_SIZE >= sizeof(struct pbuf));
-
     size_t nb_mbufs = op_min(131072, pool_size_adjust(op_max(1024U, size)));
 
-    rte_mempool* mp =
-        rte_pktmbuf_pool_create_by_ops(name,
-                                       nb_mbufs,
-                                       cached ? get_cache_size(nb_mbufs) : 0,
-                                       PBUF_PRIVATE_SIZE,
-                                       direct ? PBUF_POOL_BUFSIZE : 0,
-                                       socket_id,
-                                       "stack");
+    rte_mempool* mp = rte_pktmbuf_pool_create_by_ops(name,
+                                                     nb_mbufs,
+                                                     get_cache_size(nb_mbufs),
+                                                     mempool_private_size,
+                                                     RTE_MBUF_DEFAULT_BUF_SIZE,
+                                                     socket_id,
+                                                     "stack");
 
     if (!mp) {
         throw std::runtime_error(std::string("Could not allocate mempool = ")
@@ -105,8 +100,8 @@ static rte_mempool* create_pbuf_mempool(
     return (mp);
 }
 
-pool_allocator::pool_allocator(const std::vector<uint16_t>& port_indexes,
-                               const std::map<uint16_t, queue::count>& q_counts)
+void pool_allocator::init(const std::vector<uint16_t>& port_indexes,
+                          const std::map<uint16_t, queue::count>& q_counts)
 {
     /* Base default pool size on the number and types of ports on each NUMA node
      */
@@ -124,36 +119,27 @@ pool_allocator::pool_allocator(const std::vector<uint16_t>& port_indexes,
                         + (cursor->second.tx * port_info::tx_desc_count(id)));
             });
         if (sum) {
-            /*
-             * Create both a ref/rom and default mempool for each NUMA node with
-             * ports Note: we only use a map for the rom/ref pools for symmetry.
-             * We never actually need to look them up.
-             */
+            /* We need a mempool for this NUMA node */
             std::array<char, RTE_MEMPOOL_NAMESIZE> name_buf;
             snprintf(name_buf.data(),
                      RTE_MEMPOOL_NAMESIZE,
-                     memp_ref_rom_mempool_fmt,
+                     mempool_format.data(),
                      i);
-            m_ref_rom_mpools.emplace(
-                i,
-                create_pbuf_mempool(
-                    name_buf.data(), MEMP_NUM_PBUF, false, false, i));
-
-            snprintf(name_buf.data(),
-                     RTE_MEMPOOL_NAMESIZE,
-                     memp_default_mempool_fmt,
-                     i);
-            m_default_mpools.emplace(
-                i, create_pbuf_mempool(name_buf.data(), sum, true, true, i));
+            m_pools.emplace(i, create_mempool(name_buf.data(), sum, i));
         }
     }
 };
 
-rte_mempool* pool_allocator::rx_mempool(unsigned socket_id) const
+void pool_allocator::fini() { m_pools.clear(); }
+
+/* Grab the first memory pool less than or equal to the given socket id. */
+rte_mempool* pool_allocator::get_mempool(unsigned socket_id) const
 {
     assert(socket_id <= RTE_MAX_NUMA_NODES);
-    auto found = m_default_mpools.find(socket_id);
-    return (found == m_default_mpools.end() ? nullptr : found->second.get());
+    assert(!m_pools.empty());
+    auto cursor = m_pools.upper_bound(socket_id);
+    return (cursor == std::begin(m_pools) ? cursor->second.get()
+                                          : std::prev(cursor)->second.get());
 }
 
 } // namespace openperf::packetio::dpdk::primary

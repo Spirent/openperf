@@ -4,7 +4,7 @@
 #include "packetio/memory/dpdk/mempool.hpp"
 #include "packetio/memory/dpdk/secondary/memory_priv.h"
 
-namespace openperf::packetio::dpdk {
+namespace openperf::packetio::dpdk::mempool {
 
 static rte_mempool* get_mempool()
 {
@@ -26,11 +26,11 @@ static rte_mempool* get_mempool()
     return (pool);
 }
 
-rte_mempool* mempool_acquire(std::string_view id,
-                             unsigned numa_node,
-                             uint16_t packet_length,
-                             uint16_t packet_count,
-                             [[maybe_unused]] uint16_t cache_size)
+rte_mempool* acquire(std::string_view id,
+                     unsigned numa_node,
+                     uint16_t packet_length,
+                     uint16_t packet_count,
+                     [[maybe_unused]] uint16_t cache_size)
 {
     static rte_mempool* pool = get_mempool();
     if (!pool) { throw std::runtime_error("No memory pool available"); }
@@ -64,9 +64,11 @@ rte_mempool* mempool_acquire(std::string_view id,
     return (nullptr);
 }
 
-void mempool_release(const rte_mempool*)
+void release(const rte_mempool*)
 {
     /* No-op since secondary processes can't create mempools */
 }
 
-} // namespace openperf::packetio::dpdk
+rte_mempool* get_default(unsigned) { return (get_mempool()); }
+
+} // namespace openperf::packetio::dpdk::mempool

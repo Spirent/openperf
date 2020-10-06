@@ -8,6 +8,7 @@
 #include "tl/expected.hpp"
 
 #include "packetio/generic_event_loop.hpp"
+#include "packetio/generic_interface.hpp"
 #include "packetio/generic_sink.hpp"
 #include "packetio/generic_source.hpp"
 #include "packetio/generic_workers.hpp"
@@ -23,6 +24,27 @@ using serialized_msg = openperf::message::serialized_message;
 constexpr size_t name_length_max = 64;
 
 extern std::string_view endpoint;
+
+struct interface_data
+{
+    char port_id[name_length_max];
+    interface::generic_interface interface;
+};
+
+struct request_interface_add
+{
+    interface_data data;
+};
+
+struct request_interface_del
+{
+    interface_data data;
+};
+
+struct request_port_index
+{
+    std::string port_id;
+};
 
 struct sink_data
 {
@@ -101,6 +123,21 @@ struct reply_task_add
     std::string task_id;
 };
 
+struct request_transmit_function
+{
+    std::string port_id;
+};
+
+struct reply_port_index
+{
+    int index;
+};
+
+struct reply_transmit_function
+{
+    workers::transmit_function f;
+};
+
 struct reply_worker_ids
 {
     std::vector<unsigned> worker_ids;
@@ -114,17 +151,25 @@ struct reply_error
     int value;
 };
 
-using request_msg = std::variant<request_sink_add,
+using request_msg = std::variant<request_interface_add,
+                                 request_interface_del,
+                                 request_port_index,
+                                 request_sink_add,
                                  request_sink_del,
                                  request_source_add,
                                  request_source_del,
                                  request_source_swap,
                                  request_task_add,
                                  request_task_del,
+                                 request_transmit_function,
                                  request_worker_ids>;
 
-using reply_msg =
-    std::variant<reply_task_add, reply_worker_ids, reply_ok, reply_error>;
+using reply_msg = std::variant<reply_port_index,
+                               reply_task_add,
+                               reply_transmit_function,
+                               reply_worker_ids,
+                               reply_ok,
+                               reply_error>;
 
 serialized_msg serialize_request(request_msg&& request);
 serialized_msg serialize_reply(reply_msg&& reply);

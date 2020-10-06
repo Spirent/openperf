@@ -12,8 +12,6 @@
 
 namespace openperf::packetio::driver {
 
-using tx_burst = uint16_t (*)(int, uint32_t, void**, uint16_t);
-
 class generic_driver
 {
 public:

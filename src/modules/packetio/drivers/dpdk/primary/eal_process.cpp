@@ -100,7 +100,7 @@ static int log_link_status_change(uint16_t port_id,
 
 static void
 configure_all_ports(const std::map<uint16_t, queue::count>& port_queue_counts,
-                    const pool_allocator* allocator)
+                    const pool_allocator& allocator)
 {
     assert(rte_eal_process_type() == RTE_PROC_PRIMARY);
 
@@ -111,7 +111,7 @@ configure_all_ports(const std::map<uint16_t, queue::count>& port_queue_counts,
                       const auto& q_count = pair.second;
 
                       auto mempool =
-                          allocator->rx_mempool(port_info::socket_id(port_id));
+                          allocator.get_mempool(port_info::socket_id(port_id));
                       auto success = utils::configure_port(
                           port_id, mempool, q_count.rx, q_count.tx);
                       if (!success) {
@@ -123,7 +123,6 @@ configure_all_ports(const std::map<uint16_t, queue::count>& port_queue_counts,
 template <typename ProcessType> eal_process<ProcessType>::eal_process()
 {
     assert(rte_eal_process_type() == RTE_PROC_PRIMARY);
-    assert(!m_allocator);
 
     /* Setup our ports; retrieve the set of port indexes */
     if constexpr (detail::has_port_setup_v<ProcessType>) {
@@ -136,8 +135,8 @@ template <typename ProcessType> eal_process<ProcessType>::eal_process()
     log_idle_workers(q_descriptors);
     auto q_counts = queue::get_port_queue_counts(q_descriptors);
 
-    m_allocator = std::make_unique<pool_allocator>(port_indexes, q_counts);
-    configure_all_ports(q_counts, m_allocator.get());
+    pool_allocator::instance().init(port_indexes, q_counts);
+    configure_all_ports(q_counts, pool_allocator::instance());
 
     if constexpr (detail::has_port_callbacks_v<ProcessType>) {
         static_cast<ProcessType*>(this)->do_port_callbacks();
@@ -149,6 +148,7 @@ template <typename ProcessType> eal_process<ProcessType>::~eal_process()
     if constexpr (detail::has_cleanup_v<ProcessType>) {
         static_cast<ProcessType*>(this)->do_cleanup();
     }
+    pool_allocator::instance().fini();
     rte_eal_cleanup();
 }
 
@@ -156,10 +156,10 @@ template <typename ProcessType>
 std::optional<port::generic_port>
 eal_process<ProcessType>::get_port(uint16_t port_idx, std::string_view id) const
 {
-    assert(m_allocator);
-
-    return (physical_port(
-        port_idx, id, m_allocator->rx_mempool(port_info::socket_id(port_idx))));
+    return (physical_port(port_idx,
+                          id,
+                          pool_allocator::instance().get_mempool(
+                              port_info::socket_id(port_idx))));
 }
 
 template <typename ProcessType>

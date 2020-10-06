@@ -7,9 +7,9 @@
 #include <variant>
 
 #include "core/op_core.h"
-#include "lwip/netif.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/forwarding_table.hpp"
+#include "packetio/generic_interface.hpp"
 #include "packetio/generic_sink.hpp"
 #include "packetio/transmit_table.hpp"
 #include "packetio/workers/dpdk/tx_source.hpp"
@@ -26,8 +26,9 @@ namespace worker {
 
 static constexpr uint16_t pkt_burst_size = 64;
 
-using fib =
-    packetio::forwarding_table<netif, packet::generic_sink, RTE_MAX_ETHPORTS>;
+using fib = packetio::forwarding_table<interface::generic_interface,
+                                       packet::generic_sink,
+                                       RTE_MAX_ETHPORTS>;
 using tib = packetio::transmit_table<dpdk::tx_source>;
 using recycler = utils::recycle::depot<RTE_MAX_LCORE>;
 

@@ -18,12 +18,12 @@ static rte_mempool* get_packet_pool(uint16_t port_idx,
      * otherwise every call to retrieve buffers from the pool will bypass the
      * CPU cache and go straight to the pool.
      */
-    return (mempool_acquire(source.id(),
-                            port_info::socket_id(port_idx),
-                            source.max_packet_length() + RTE_PKTMBUF_HEADROOM,
-                            port_info::tx_desc_count(port_idx)
-                                + 2 * worker::pkt_burst_size,
-                            2 * worker::pkt_burst_size));
+    return (mempool::acquire(source.id(),
+                             port_info::socket_id(port_idx),
+                             source.max_packet_length() + RTE_PKTMBUF_HEADROOM,
+                             port_info::tx_desc_count(port_idx)
+                                 + 2 * worker::pkt_burst_size,
+                             2 * worker::pkt_burst_size));
 }
 
 tx_source::tx_source(uint16_t port_idx, packet::generic_source source)
@@ -52,7 +52,7 @@ tx_source& tx_source::operator=(tx_source&& other) noexcept
     return (*this);
 }
 
-tx_source::~tx_source() { mempool_release(m_pool); }
+tx_source::~tx_source() { mempool::release(m_pool); }
 
 std::string tx_source::id() const { return (m_source.id()); }
 

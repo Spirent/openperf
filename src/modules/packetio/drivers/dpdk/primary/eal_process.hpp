@@ -12,8 +12,6 @@ namespace openperf::packetio::dpdk::primary {
 
 template <typename ProcessType> class eal_process
 {
-    std::unique_ptr<pool_allocator> m_allocator;
-
 public:
     eal_process();
     ~eal_process();

@@ -23,6 +23,7 @@ BUILD_DEPS := \
 	packet_analyzer \
 	packet_capture \
 	packet_generator \
+	packet_stack \
 	socket_server \
 	timesync \
 	tvlp

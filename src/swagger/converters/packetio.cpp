@@ -9,8 +9,6 @@ void from_json(const nlohmann::json& j, Interface& interface)
 {
     if (j.find("id") != j.end() && !j["id"].is_null()) {
         interface.setId(j["id"]);
-    } else {
-        interface.setId(openperf::packetio::empty_id_string);
     }
 
     interface.setPortId(j.at("port_id"));
@@ -30,11 +28,7 @@ void from_json(const nlohmann::json& j, Interface& interface)
 
 void from_json(const nlohmann::json& j, Port& port)
 {
-    if (j.find("id") != j.end() && !j["id"].is_null()) {
-        port.setId(j["id"]);
-    } else {
-        port.setId(openperf::packetio::empty_id_string);
-    }
+    if (j.find("id") != j.end() && !j["id"].is_null()) { port.setId(j["id"]); }
 
     port.setKind(j.at("kind"));
 

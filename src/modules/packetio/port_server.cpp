@@ -120,7 +120,13 @@ reply_msg server::handle_request(const request_list_ports& request)
 
 reply_msg server::handle_request(const request_create_port& request)
 {
-    const auto id = request.port->getId();
+    /* Fill in id if user did not */
+    if (request.port->getId().empty()) {
+        request.port->setId(core::to_string(core::uuid::random()));
+    }
+
+    auto id = request.port->getId();
+
     auto result = m_driver.create_port(id, make_config_data(*request.port));
     if (!result) {
         return (

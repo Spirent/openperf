@@ -1,8 +1,9 @@
 #include "core/op_log.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/memory/dpdk/mempool.hpp"
+#include "packetio/memory/dpdk/primary/pool_allocator.hpp"
 
-namespace openperf::packetio::dpdk {
+namespace openperf::packetio::dpdk::mempool {
 
 /*
  * Convert nb_mbufs to a Mersenne number, as those are the
@@ -56,11 +57,11 @@ struct rte_mempool* create_spsc_pktmbuf_mempool(std::string_view id,
     return (mp);
 }
 
-rte_mempool* mempool_acquire(std::string_view id,
-                             unsigned numa_mode,
-                             uint16_t packet_length,
-                             uint16_t packet_count,
-                             uint16_t cache_size)
+rte_mempool* acquire(std::string_view id,
+                     unsigned numa_mode,
+                     uint16_t packet_length,
+                     uint16_t packet_count,
+                     uint16_t cache_size)
 {
     static constexpr auto max_length = RTE_MEMPOOL_NAMESIZE - 1;
     auto name = "pool-" + std::string(id);
@@ -79,10 +80,15 @@ rte_mempool* mempool_acquire(std::string_view id,
                                         numa_mode));
 }
 
-void mempool_release(const rte_mempool* pool)
+void release(const rte_mempool* pool)
 {
     OP_LOG(OP_LOG_DEBUG, "Deleting packet pool %s\n", pool->name);
     rte_mempool_free(const_cast<rte_mempool*>(pool));
 }
 
-} // namespace openperf::packetio::dpdk
+rte_mempool* get_default(unsigned numa_node)
+{
+    return (primary::pool_allocator::instance().get_mempool(numa_node));
+}
+
+} // namespace openperf::packetio::dpdk::mempool

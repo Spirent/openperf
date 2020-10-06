@@ -1,0 +1,6 @@
+# Disable clang-format for files in this directory because the .c files were
+# ported from LwIP and it is easier to compare changes if the files aren't
+# reformatted
+
+DisableFormat: true
+SortIncludes: false
