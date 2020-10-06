@@ -215,10 +215,10 @@ void block_generator::reset()
     m_controller.reset();
     m_dynamic.reset();
 
+    m_start_time = chronometer::now();
     m_read = {.operation = task_operation::READ};
     m_write = {.operation = task_operation::WRITE};
     m_statistics_id = core::to_string(core::uuid::random());
-    m_start_time = chronometer::now();
 
     if (m_running) m_controller.resume();
 }

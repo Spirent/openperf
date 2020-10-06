@@ -1,4 +1,4 @@
-from expects import expect, be_a, be_empty, be_none
+from expects import expect, be_a, be_empty, be_none, be_below_or_equal
 from expects.matchers import Matcher
 
 import client.models
@@ -42,6 +42,7 @@ class _be_valid_block_generator_result(Matcher):
         expect(result.active).not_to(be_none)
         expect(result.timestamp_first).not_to(be_none)
         expect(result.timestamp_last).not_to(be_none)
+        expect(result.timestamp_first).to(be_below_or_equal(result.timestamp_last))
         expect(result.read).to(be_a(client.models.BlockGeneratorStats))
         expect(result.write).to(be_a(client.models.BlockGeneratorStats))
         return True, ['is valid block generator result']

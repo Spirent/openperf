@@ -6,7 +6,7 @@ Name | Type | Description | Notes
 **id** | **str** | Unique generator result identifier | 
 **generator_id** | **str** | Memory generator identifier that generated this result | [optional] 
 **active** | **bool** | Indicates whether the result is currently being updated | 
-**timestamp_first** | **datetime** | The ISO8601-formatted date when result has been initialized (generator has been started) | 
+**timestamp_first** | **datetime** | The ISO8601-formatted start time of the generator | 
 **timestamp_last** | **datetime** | The ISO8601-formatted date of the last result update | 
 **read** | [**MemoryGeneratorStats**](MemoryGeneratorStats.md) |  | 
 **write** | [**MemoryGeneratorStats**](MemoryGeneratorStats.md) |  | 

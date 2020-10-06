@@ -389,7 +389,7 @@ definitions:
         description: Indicates whether the result is currently being updated
       timestamp_first:
         type: string
-        description: The ISO8601-formatted date when result has been initialized (generator has been started)
+        description: The ISO8601-formatted start time of the generator
         format: date-time
       timestamp_last:
         type: string

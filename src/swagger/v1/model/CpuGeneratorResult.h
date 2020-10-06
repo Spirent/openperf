@@ -68,7 +68,7 @@ public:
     bool isActive() const;
     void setActive(bool value);
         /// <summary>
-    /// The ISO8601-formatted date when result has been initialized (generator has been started)
+    /// The ISO8601-formatted start time of the generator
     /// </summary>
     std::string getTimestampFirst() const;
     void setTimestampFirst(std::string value);

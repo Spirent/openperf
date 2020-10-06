@@ -121,8 +121,8 @@ Active generator result cannot be deleted.
         "ops_actual": 10,
         "ops_target": 10
     },
-    "timestamp": "2020-04-30T00:48:40.283877Z",
-    "start_timestamp": "2020-04-30T00:48:38.891662Z",
+    "timestamp_last": "2020-04-30T00:48:40.283877Z",
+    "timestamp_first": "2020-04-30T00:48:38.891662Z",
     "write": {
         "bytes_actual": 0,
         "bytes_target": 0,
@@ -241,8 +241,8 @@ Response:
         "ops_actual":0,
         "ops_target":0
     },
-    "timestamp":"2020-04-30T08:46:14.183615Z",
-    "start_timestamp":"2020-04-30T08:46:14.183615Z",
+    "timestamp_last":"2020-04-30T08:46:14.183615Z",
+    "timestamp_first":"2020-04-30T08:46:14.183615Z",
     "write": {
         "bytes_actual":0,
         "bytes_target":0,
@@ -292,8 +292,8 @@ Response:
         "ops_actual": 546,
         "ops_target": 546
     },
-    "timestamp": "2020-04-30T08:59:40.301996Z",
-    "start_timestamp":"2020-04-30T08:46:14.183615Z",
+    "timestamp_last": "2020-04-30T08:59:40.301996Z",
+    "timestamp_first":"2020-04-30T08:46:14.183615Z",
     "write": {
         "bytes_actual": 2862405,
         "bytes_target": 2862405,

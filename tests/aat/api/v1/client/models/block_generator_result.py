@@ -146,7 +146,7 @@ class BlockGeneratorResult(object):
     def timestamp_first(self):
         """Gets the timestamp_first of this BlockGeneratorResult.  # noqa: E501
 
-        The ISO8601-formatted date when result has been initialized (generator has been started)  # noqa: E501
+        The ISO8601-formatted start time of the generator  # noqa: E501
 
         :return: The timestamp_first of this BlockGeneratorResult.  # noqa: E501
         :rtype: datetime
@@ -157,7 +157,7 @@ class BlockGeneratorResult(object):
     def timestamp_first(self, timestamp_first):
         """Sets the timestamp_first of this BlockGeneratorResult.
 
-        The ISO8601-formatted date when result has been initialized (generator has been started)  # noqa: E501
+        The ISO8601-formatted start time of the generator  # noqa: E501
 
         :param timestamp_first: The timestamp_first of this BlockGeneratorResult.  # noqa: E501
         :type: datetime
