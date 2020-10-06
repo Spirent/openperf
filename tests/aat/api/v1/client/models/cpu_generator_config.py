@@ -31,26 +31,79 @@ class CpuGeneratorConfig(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'method': 'str',
+        'system': 'CpuGeneratorConfigSystem',
         'cores': 'list[CpuGeneratorCoreConfig]'
     }
 
     attribute_map = {
+        'method': 'method',
+        'system': 'system',
         'cores': 'cores'
     }
 
-    def __init__(self, cores=None):  # noqa: E501
+    def __init__(self, method=None, system=None, cores=None):  # noqa: E501
         """CpuGeneratorConfig - a model defined in Swagger"""  # noqa: E501
 
+        self._method = None
+        self._system = None
         self._cores = None
         self.discriminator = None
 
+        if method is not None:
+            self.method = method
+        if system is not None:
+            self.system = system
         if cores is not None:
             self.cores = cores
+
+    @property
+    def method(self):
+        """Gets the method of this CpuGeneratorConfig.  # noqa: E501
+
+        Configuration method  # noqa: E501
+
+        :return: The method of this CpuGeneratorConfig.  # noqa: E501
+        :rtype: str
+        """
+        return self._method
+
+    @method.setter
+    def method(self, method):
+        """Sets the method of this CpuGeneratorConfig.
+
+        Configuration method  # noqa: E501
+
+        :param method: The method of this CpuGeneratorConfig.  # noqa: E501
+        :type: str
+        """
+        self._method = method
+
+    @property
+    def system(self):
+        """Gets the system of this CpuGeneratorConfig.  # noqa: E501
+
+
+        :return: The system of this CpuGeneratorConfig.  # noqa: E501
+        :rtype: CpuGeneratorConfigSystem
+        """
+        return self._system
+
+    @system.setter
+    def system(self, system):
+        """Sets the system of this CpuGeneratorConfig.
+
+
+        :param system: The system of this CpuGeneratorConfig.  # noqa: E501
+        :type: CpuGeneratorConfigSystem
+        """
+        self._system = system
 
     @property
     def cores(self):
         """Gets the cores of this CpuGeneratorConfig.  # noqa: E501
 
+        Per CPU core load configuration  # noqa: E501
 
         :return: The cores of this CpuGeneratorConfig.  # noqa: E501
         :rtype: list[CpuGeneratorCoreConfig]
@@ -61,6 +114,7 @@ class CpuGeneratorConfig(object):
     def cores(self, cores):
         """Sets the cores of this CpuGeneratorConfig.
 
+        Per CPU core load configuration  # noqa: E501
 
         :param cores: The cores of this CpuGeneratorConfig.  # noqa: E501
         :type: list[CpuGeneratorCoreConfig]

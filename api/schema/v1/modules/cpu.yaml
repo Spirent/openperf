@@ -327,11 +327,35 @@ definitions:
     type: object
     description: CPU Generator Configuration
     properties:
+      method:
+        type: string
+        description: Configuration method
+        enum:
+          - system
+          - cores
+      system:
+        title: CpuGeneratorConfigSystem
+        type: object
+        description: System CPU load
+        properties:
+          utilization:
+            type: number
+            format: double
+            description: >
+              CPU utilization value.
+              The maximum value is (100 * core_count).
+            minimum: 0
+            exclusiveMinimum: true
+        required:
+          - utilization
       cores:
         type: array
+        description: Per CPU core load configuration
         minItems: 1
         items:
           $ref: "#/definitions/CpuGeneratorCoreConfig"
+      required:
+        - method
 
   CpuGeneratorCoreConfig:
     title: CpuGeneratorCoreConfig

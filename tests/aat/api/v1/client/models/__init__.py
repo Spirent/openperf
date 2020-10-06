@@ -59,6 +59,7 @@ from client.models.bulk_stop_packet_captures_request import BulkStopPacketCaptur
 from client.models.bulk_stop_packet_generators_request import BulkStopPacketGeneratorsRequest
 from client.models.cpu_generator import CpuGenerator
 from client.models.cpu_generator_config import CpuGeneratorConfig
+from client.models.cpu_generator_config_system import CpuGeneratorConfigSystem
 from client.models.cpu_generator_core_config import CpuGeneratorCoreConfig
 from client.models.cpu_generator_core_config_targets import CpuGeneratorCoreConfigTargets
 from client.models.cpu_generator_core_stats import CpuGeneratorCoreStats

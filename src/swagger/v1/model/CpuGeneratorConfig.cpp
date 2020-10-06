@@ -19,6 +19,9 @@ namespace model {
 
 CpuGeneratorConfig::CpuGeneratorConfig()
 {
+    m_Method = "";
+    m_MethodIsSet = false;
+    m_SystemIsSet = false;
     m_CoresIsSet = false;
     
 }
@@ -36,6 +39,14 @@ nlohmann::json CpuGeneratorConfig::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    if(m_MethodIsSet)
+    {
+        val["method"] = ModelBase::toJson(m_Method);
+    }
+    if(m_SystemIsSet)
+    {
+        val["system"] = ModelBase::toJson(m_System);
+    }
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Cores )
@@ -55,6 +66,21 @@ nlohmann::json CpuGeneratorConfig::toJson() const
 
 void CpuGeneratorConfig::fromJson(nlohmann::json& val)
 {
+    if(val.find("method") != val.end())
+    {
+        setMethod(val.at("method"));
+        
+    }
+    if(val.find("system") != val.end())
+    {
+        if(!val["system"].is_null())
+        {
+            std::shared_ptr<CpuGeneratorConfigSystem> newItem(new CpuGeneratorConfigSystem());
+            newItem->fromJson(val["system"]);
+            setSystem( newItem );
+        }
+        
+    }
     {
         m_Cores.clear();
         nlohmann::json jsonArray;
@@ -81,6 +107,40 @@ void CpuGeneratorConfig::fromJson(nlohmann::json& val)
 }
 
 
+std::string CpuGeneratorConfig::getMethod() const
+{
+    return m_Method;
+}
+void CpuGeneratorConfig::setMethod(std::string value)
+{
+    m_Method = value;
+    m_MethodIsSet = true;
+}
+bool CpuGeneratorConfig::methodIsSet() const
+{
+    return m_MethodIsSet;
+}
+void CpuGeneratorConfig::unsetMethod()
+{
+    m_MethodIsSet = false;
+}
+std::shared_ptr<CpuGeneratorConfigSystem> CpuGeneratorConfig::getSystem() const
+{
+    return m_System;
+}
+void CpuGeneratorConfig::setSystem(std::shared_ptr<CpuGeneratorConfigSystem> value)
+{
+    m_System = value;
+    m_SystemIsSet = true;
+}
+bool CpuGeneratorConfig::systemIsSet() const
+{
+    return m_SystemIsSet;
+}
+void CpuGeneratorConfig::unsetSystem()
+{
+    m_SystemIsSet = false;
+}
 std::vector<std::shared_ptr<CpuGeneratorCoreConfig>>& CpuGeneratorConfig::getCores()
 {
     return m_Cores;

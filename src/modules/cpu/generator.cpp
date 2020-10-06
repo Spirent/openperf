@@ -127,24 +127,56 @@ void generator::config(const generator_config& config)
                   std::back_inserter(available_cores));
     }
 
-    if (config.cores.size() > available_cores.size())
+    m_config = config;
+    if (m_config.cores.size() > available_cores.size()) {
         throw std::runtime_error(
             "Could not configure more cores than available ("
             + std::to_string(available_cores.size()) + ").");
+    }
 
-    m_stat = {config.cores.size()};
+    if (m_config.utilization) {
+        auto sys_util = config.utilization.value();
+        if (sys_util < 0 || 100 * available_cores.size() < sys_util) {
+            throw std::runtime_error(
+                "System utilization value " + std::to_string(sys_util)
+                + " is not valid. Available values from 0 to "
+                + std::to_string(100 * available_cores.size()));
+        }
 
-    for (size_t core = 0; core < config.cores.size(); ++core) {
-        auto core_conf = config.cores.at(core);
-        for (const auto& target : core_conf.targets)
-            if (!available(target.set) || !enabled(target.set))
+        m_config.cores.clear();
+        for (size_t core = 0; core < available_cores.size(); ++core) {
+            m_config.cores.emplace_back(task_cpu_config{
+                .utilization = sys_util / available_cores.size(),
+                .targets = {1,
+                            target_config{
+                                .set = instruction_set::SCALAR,
+                                .data_type = data_type::INT32,
+                                .weight = 1,
+                            }},
+            });
+        }
+    }
+
+    m_stat = {m_config.cores.size()};
+    for (size_t core = 0; core < m_config.cores.size(); ++core) {
+        auto core_conf = m_config.cores.at(core);
+        for (const auto& target : core_conf.targets) {
+            if (!available(target.set) || !enabled(target.set)) {
                 throw std::runtime_error("Instruction set "
                                          + std::string(to_string(target.set))
                                          + " is not supported");
+            }
+        }
 
         m_stat.cores[core].targets.resize(core_conf.targets.size());
 
         if (core_conf.utilization == 0.0) continue;
+        if (core_conf.utilization < 0.0 || 100.0 < core_conf.utilization) {
+            throw std::runtime_error(
+                "Core utilization value "
+                + std::to_string(core_conf.utilization)
+                + " is not valid. Available values from 0 to 100 inclusive.");
+        }
 
         core_conf.core = core;
         auto task = internal::task_cpu{core_conf};
@@ -153,8 +185,6 @@ void generator::config(const generator_config& config)
                              + std::to_string(available_cores.at(core)),
                          available_cores.at(core));
     }
-
-    m_config = config;
 
     if (m_running) m_controller.resume();
 }
