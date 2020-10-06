@@ -7,6 +7,7 @@
 
 #include "core/op_core.h"
 #include "packetio/generic_event_loop.hpp"
+#include "packetio/generic_interface.hpp"
 #include "packetio/generic_sink.hpp"
 #include "packetio/generic_source.hpp"
 #include "packetio/generic_workers.hpp"
@@ -48,6 +49,18 @@ public:
     get_worker_rx_ids(std::optional<std::string_view> obj_id = std::nullopt);
     tl::expected<std::vector<unsigned>, int>
     get_worker_tx_ids(std::optional<std::string_view> obj_id = std::nullopt);
+
+    tl::expected<int, int> get_port_index(std::string_view port_id);
+
+    tl::expected<workers::transmit_function, int>
+    get_transmit_function(std::string_view port_id);
+
+    tl::expected<void, int>
+    add_interface(std::string_view port_id,
+                  interface::generic_interface interface);
+    tl::expected<void, int>
+    del_interface(std::string_view port_id,
+                  interface::generic_interface interface);
 
     tl::expected<void, int> add_sink(packet::traffic_direction direction,
                                      std::string_view src_id,

@@ -12,7 +12,6 @@ namespace swagger::v1::model {
 class Interface;
 class Port;
 
-void from_json(const nlohmann::json&, Interface&);
 void from_json(const nlohmann::json&, Port&);
 
 } // namespace swagger::v1::model

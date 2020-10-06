@@ -6,16 +6,23 @@
 
 struct rte_mempool;
 
-namespace openperf::packetio::dpdk {
+namespace openperf::packetio::dpdk::mempool {
 
-rte_mempool* mempool_acquire(std::string_view id,
-                             unsigned numa_node,
-                             uint16_t packet_length,
-                             uint16_t packet_count,
-                             uint16_t cache_size);
+/*
+ * The next two functions are intended for acquiring/releasing memory pools for
+ * transmit purposes.
+ */
+rte_mempool* acquire(std::string_view id,
+                     unsigned numa_node,
+                     uint16_t packet_length,
+                     uint16_t packet_count,
+                     uint16_t cache_size);
 
-void mempool_release(const rte_mempool*);
+void release(const rte_mempool*);
 
-} // namespace openperf::packetio::dpdk
+/* Grab a default memory pool for the specified numa node */
+rte_mempool* get_default(unsigned numa_node);
+
+} // namespace openperf::packetio::dpdk::mempool
 
 #endif /* _OP_PACKETIO_MEMORY_DPDK_MEMPOOL_HPP_ */

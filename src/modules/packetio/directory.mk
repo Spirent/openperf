@@ -5,8 +5,6 @@ PIO_DEPENDS += expected framework packet swagger_model versions
 
 PIO_SOURCES += \
 	init.cpp \
-	interface_handler.cpp \
-	interface_server.cpp \
 	interface_utils.cpp \
 	internal_client.cpp \
 	internal_transmogrify.cpp \
@@ -14,13 +12,9 @@ PIO_SOURCES += \
 	port_handler.cpp \
 	port_server.cpp \
 	port_utils.cpp \
-	stack_handler.cpp \
-	stack_server.cpp \
-	stack_utils.cpp
 
 include $(PIO_SRC_DIR)/drivers/directory.mk
 include $(PIO_SRC_DIR)/memory/directory.mk
-include $(PIO_SRC_DIR)/stack/directory.mk
 include $(PIO_SRC_DIR)/workers/directory.mk
 
 PIO_VERSIONED_FILES := init.cpp

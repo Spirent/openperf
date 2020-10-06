@@ -44,26 +44,13 @@ $(call op_include_dependencies,$(PIO_DEPENDS))
 PIO_FLAGS += -Wno-register
 
 ###
-# We link the lwip compilation objects directly into the packetio target.  At the
-# moment, packetio can't really function without lwIP and the lwIP configuration
-# file is part of the packetio module, so the two are *very* tightly coupled.
-###
-include $(OP_ROOT)/mk/lwip.mk
-
-LWIP_REQ_VARS := \
-	LWIP_OBJECTS
-$(call op_check_vars,$(LWIP_REQ_VARS))
-
-###
 # Build rules
 ###
 $(eval $(call op_generate_build_rules,$(PIO_SOURCES),PIO_SRC_DIR,PIO_OBJ_DIR,PIO_DEPENDS,PIO_FLAGS))
 $(eval $(call op_generate_clean_rules,packetio,PIO_TARGET,PIO_OBJECTS))
 
-$(PIO_TARGET): $(PIO_OBJECTS) $(LWIP_OBJECTS)
-	$(call op_link_library,$@,$(PIO_OBJECTS) $(LWIP_OBJECTS))
+$(PIO_TARGET): $(PIO_OBJECTS)
+	$(call op_link_library,$@,$(PIO_OBJECTS))
 
 .PHONY: packetio
 packetio: $(PIO_TARGET)
-
-clean_packetio: clean_lwip

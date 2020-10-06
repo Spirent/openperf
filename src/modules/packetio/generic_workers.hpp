@@ -78,10 +78,11 @@ public:
         return (m_self->get_transmit_function(port_id));
     }
 
-    void add_interface(std::string_view port_id,
-                       interface::generic_interface interface)
+    tl::expected<void, int>
+    add_interface(std::string_view port_id,
+                  interface::generic_interface interface)
     {
-        m_self->add_interface(port_id, interface);
+        return (m_self->add_interface(port_id, interface));
     }
 
     void del_interface(std::string_view port_id,
@@ -175,8 +176,9 @@ private:
                        std::optional<std::string_view> obj_id) const = 0;
         virtual transmit_function
         get_transmit_function(std::string_view port_id) const = 0;
-        virtual void add_interface(std::string_view port_id,
-                                   interface::generic_interface interface) = 0;
+        virtual tl::expected<void, int>
+        add_interface(std::string_view port_id,
+                      interface::generic_interface interface) = 0;
         virtual void del_interface(std::string_view port_id,
                                    interface::generic_interface interface) = 0;
         virtual tl::expected<void, int>
@@ -224,10 +226,11 @@ private:
             return (m_workers.get_transmit_function(port_id));
         }
 
-        void add_interface(std::string_view port_id,
-                           interface::generic_interface interface) override
+        tl::expected<void, int>
+        add_interface(std::string_view port_id,
+                      interface::generic_interface interface) override
         {
-            m_workers.add_interface(port_id, interface);
+            return (m_workers.add_interface(port_id, interface));
         }
 
         void del_interface(std::string_view port_id,

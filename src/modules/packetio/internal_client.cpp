@@ -71,6 +71,94 @@ client::get_worker_tx_ids(std::optional<std::string_view> obj_id)
     return get_worker_ids(packet::traffic_direction::TX, obj_id);
 }
 
+tl::expected<int, int> client::get_port_index(std::string_view port_id)
+{
+    auto request = request_port_index{std::string(port_id)};
+    auto reply = do_request(m_socket.get(), request);
+    if (!reply) { return (tl::make_unexpected(reply.error())); }
+
+    if (auto port_index = std::get_if<reply_port_index>(&reply.value())) {
+        return (port_index->index);
+    } else if (auto error = std::get_if<reply_error>(&reply.value())) {
+        return (tl::make_unexpected(error->value));
+    }
+
+    return (tl::make_unexpected(EBADMSG));
+}
+
+tl::expected<workers::transmit_function, int>
+client::get_transmit_function(std::string_view port_id)
+{
+    auto request = request_transmit_function{std::string(port_id)};
+    auto reply = do_request(m_socket.get(), request);
+    if (!reply) { return (tl::make_unexpected(reply.error())); }
+
+    if (auto transmit_function =
+            std::get_if<reply_transmit_function>(&reply.value())) {
+        return (transmit_function->f);
+    } else if (auto error = std::get_if<reply_error>(&reply.value())) {
+        return (tl::make_unexpected(error->value));
+    }
+
+    return (tl::make_unexpected(EBADMSG));
+}
+
+tl::expected<void, int>
+client::add_interface(std::string_view port_id,
+                      interface::generic_interface interface)
+{
+    if (port_id.length() > name_length_max) {
+        OP_LOG(OP_LOG_ERROR,
+               "Port ID, %.*s, is too big\n",
+               static_cast<int>(port_id.length()),
+               port_id.data());
+        return (tl::make_unexpected(ENOMEM));
+    }
+
+    auto request =
+        request_interface_add{.data = {.interface = std::move(interface)}};
+    std::copy_n(port_id.data(), port_id.length(), request.data.port_id);
+
+    auto reply = do_request(m_socket.get(), request);
+    if (!reply) { return (tl::make_unexpected(reply.error())); }
+
+    if (auto success = std::get_if<reply_ok>(&reply.value())) {
+        return {};
+    } else if (auto error = std::get_if<reply_error>(&reply.value())) {
+        return (tl::make_unexpected(error->value));
+    }
+
+    return (tl::make_unexpected(EBADMSG));
+}
+
+tl::expected<void, int>
+client::del_interface(std::string_view port_id,
+                      interface::generic_interface interface)
+{
+    if (port_id.length() > name_length_max) {
+        OP_LOG(OP_LOG_ERROR,
+               "Port ID, %.*s, is too big\n",
+               static_cast<int>(port_id.length()),
+               port_id.data());
+        return (tl::make_unexpected(ENOMEM));
+    }
+
+    auto request =
+        request_interface_del{.data = {.interface = std::move(interface)}};
+    std::copy_n(port_id.data(), port_id.length(), request.data.port_id);
+
+    auto reply = do_request(m_socket.get(), request);
+    if (!reply) { return (tl::make_unexpected(reply.error())); }
+
+    if (auto success = std::get_if<reply_ok>(&reply.value())) {
+        return {};
+    } else if (auto error = std::get_if<reply_error>(&reply.value())) {
+        return (tl::make_unexpected(error->value));
+    }
+
+    return (tl::make_unexpected(EBADMSG));
+}
+
 tl::expected<void, int> client::add_sink(packet::traffic_direction direction,
                                          std::string_view src_id,
                                          packet::generic_sink sink)

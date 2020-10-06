@@ -6,8 +6,6 @@
 #include <vector>
 
 #include <zmq.h>
-#include "lwip/netif.h"
-#include "lwip/snmp.h"
 
 #include "core/op_log.h"
 #include "core/op_thread.h"
@@ -16,7 +14,6 @@
 #include "packetio/drivers/dpdk/mbuf_signature.hpp"
 #include "packetio/drivers/dpdk/mbuf_tx.hpp"
 #include "packetio/drivers/dpdk/queue_utils.hpp"
-#include "packetio/memory/dpdk/pbuf_utils.h"
 #include "packetio/workers/dpdk/callback.hpp"
 #include "packetio/workers/dpdk/epoll_poller.hpp"
 #include "packetio/workers/dpdk/event_loop_adapter.hpp"
@@ -101,10 +98,18 @@ static bool all_pollable(const std::vector<task_ptr>& tasks)
  * This interface pointer is only valid for unicast packets during parts of the
  * rx dispatch.
  */
-static void rx_mbuf_set_ifp(rte_mbuf* mbuf, netif* ifp)
+template <typename T> static void rx_mbuf_set_tag(rte_mbuf* mbuf, T* tag)
 {
-    mbuf->userdata = ifp;
+    mbuf->userdata = const_cast<std::remove_const_t<T>*>(tag);
 }
+
+template <typename T> T* rx_mbuf_get_tag(rte_mbuf* mbuf)
+{
+    assert(mbuf->userdata != nullptr);
+    return (static_cast<T*>(mbuf->userdata));
+}
+
+static void rx_mbuf_clear_tag(rte_mbuf* mbuf) { mbuf->userdata = nullptr; }
 
 /**
  * Get the interface pointer the mbuf will be dispatchd to.
@@ -112,9 +117,9 @@ static void rx_mbuf_set_ifp(rte_mbuf* mbuf, netif* ifp)
  * This interface pointer is only valid for unicast packets during parts of the
  * rx dispatch.
  */
-netif* rx_mbuf_get_ifp(rte_mbuf* mbuf)
+static bool rx_mbuf_has_tag(rte_mbuf* mbuf)
 {
-    return reinterpret_cast<netif*>(mbuf->userdata);
+    return (mbuf->userdata != nullptr);
 }
 
 /**
@@ -137,7 +142,6 @@ static std::pair<uint16_t, uint16_t> rx_resolve_interfaces(const fib* fib,
      * performance.  This series of loops is inteded to keep the cache filled
      * with pending data.
      */
-
     utils::prefetch_for_each(
         incoming,
         incoming + n,
@@ -149,7 +153,7 @@ static std::pair<uint16_t, uint16_t> rx_resolve_interfaces(const fib* fib,
             auto eth = rte_pktmbuf_mtod(mbuf, struct rte_ether_hdr*);
             if (rte_is_unicast_ether_addr(&eth->d_addr)) {
                 auto ifp = fib->find_interface(port_id, eth->d_addr.addr_bytes);
-                rx_mbuf_set_ifp(mbuf, ifp);
+                rx_mbuf_set_tag(mbuf, ifp);
                 if (ifp) {
                     to_stack[nb_to_stack++] = mbuf;
                 } else {
@@ -158,7 +162,7 @@ static std::pair<uint16_t, uint16_t> rx_resolve_interfaces(const fib* fib,
                 }
             } else {
                 to_stack[nb_to_stack++] = mbuf;
-                rx_mbuf_set_ifp(mbuf, nullptr);
+                rx_mbuf_clear_tag(mbuf);
             }
         },
         mbuf_prefetch_offset);
@@ -170,7 +174,6 @@ static std::pair<uint16_t, uint16_t> rx_resolve_interfaces(const fib* fib,
  * Dispatch unicast packets to sinks on the interface.
  */
 static void rx_interface_sink_push_unicast_burst(
-    netif* ifp,
     const std::vector<packet::generic_sink>& sinks,
     rte_mbuf* incoming[],
     uint16_t n)
@@ -179,10 +182,7 @@ static void rx_interface_sink_push_unicast_burst(
         if (!sink.active()) { continue; }
 
         OP_LOG(OP_LOG_TRACE,
-               "Dispatching packets to interface %c%c%u sink %s\n",
-               ifp->name[0],
-               ifp->name[1],
-               ifp->num,
+               "Dispatching packets to interface sink %s\n",
                sink.id().c_str());
         sink.push(reinterpret_cast<packet::packet_buffer* const*>(incoming), n);
     }
@@ -206,10 +206,7 @@ static void rx_interface_sink_push_multicast_burst(const fib* fib,
         for (auto& sink : entry->rx_sinks) {
             if (sink.active()) {
                 OP_LOG(OP_LOG_TRACE,
-                       "Dispatching packets to interface %c%c%u sink %s\n",
-                       ifp->name[0],
-                       ifp->name[1],
-                       ifp->num,
+                       "Dispatching packets to interface sink %s\n",
                        sink.id().c_str());
                 sink.push(
                     reinterpret_cast<packet::packet_buffer* const*>(incoming),
@@ -278,14 +275,14 @@ rx_interface_sink_dispatch(const fib* fib,
                 } else {
                     // Store interface pointers to avoid multiple lookups for
                     // the same packet
-                    rx_mbuf_set_ifp(mbuf, last_entry->ifp);
+                    rx_mbuf_set_tag(mbuf, std::addressof(last_entry->ifp));
                     to_stack[nb_to_stack++] = mbuf;
                 }
             } else {
                 // Multicast packets don't need to match anything
                 // They will be delivered to all sinks on the port.
                 to_stack[nb_to_stack++] = mbuf;
-                rx_mbuf_set_ifp(mbuf, nullptr);
+                rx_mbuf_clear_tag(mbuf);
             }
             if (!burst || std::get<IFP_SINKS>(*burst) != last_entry) {
                 // Start a new burst
@@ -301,8 +298,7 @@ rx_interface_sink_dispatch(const fib* fib,
     std::for_each(bursts.data(), bursts.data() + nbursts, [&](auto& tuple) {
         auto entry = std::get<IFP_SINKS>(tuple);
         if (entry) {
-            rx_interface_sink_push_unicast_burst(entry->ifp,
-                                                 entry->rx_sinks,
+            rx_interface_sink_push_unicast_burst(entry->rx_sinks,
                                                  to_stack
                                                      + std::get<START>(tuple),
                                                  std::get<COUNT>(tuple));
@@ -326,25 +322,22 @@ static void rx_stack_dispatch(const fib* fib,
     std::array<rte_mbuf*, pkt_burst_size> unicast, nunicast;
 
     // Split up the unicast and non-unicast packets
-    auto [unicast_last, nunicast_last] = std::partition_copy(
-        incoming, incoming + n, unicast.data(), nunicast.data(), [](auto mbuf) {
-            // Unicast packets should have a non null interace
-            return rx_mbuf_get_ifp(mbuf);
-        });
+    auto [unicast_last, nunicast_last] =
+        std::partition_copy(incoming,
+                            incoming + n,
+                            unicast.data(),
+                            nunicast.data(),
+                            [](auto* mbuf) -> bool {
+                                // Unicast packets should have a non null
+                                // interace
+                                return rx_mbuf_has_tag(mbuf);
+                            });
 
     // Dispatch unicast packets
-    std::for_each(unicast.data(), unicast_last, [](auto mbuf) {
-        auto ifp = rx_mbuf_get_ifp(mbuf);
-        rx_mbuf_set_ifp(mbuf, nullptr); // Clear just to be safe
-
-        OP_LOG(OP_LOG_TRACE,
-               "Dispatching unicast packet to %c%c%u\n",
-               ifp->name[0],
-               ifp->name[1],
-               ifp->num);
-
-        if (ifp->input(packetio_memory_pbuf_synchronize(mbuf), ifp) != ERR_OK) {
-            MIB2_STATS_NETIF_INC_ATOMIC(ifp, ifindiscards);
+    std::for_each(unicast.data(), unicast_last, [](auto* mbuf) {
+        auto* ifp = rx_mbuf_get_tag<interface::generic_interface>(mbuf);
+        rx_mbuf_clear_tag(mbuf);
+        if (ifp->input_packet(reinterpret_cast<void*>(mbuf))) {
             rte_pktmbuf_free(mbuf);
         }
     });
@@ -356,23 +349,13 @@ static void rx_stack_dispatch(const fib* fib,
      * packet buffer.  This allows each receiving interface to adjust
      * their payload pointers as necessary while parsing the headers.
      */
-    std::for_each(nunicast.data(), nunicast_last, [&](auto mbuf) {
+    std::for_each(nunicast.data(), nunicast_last, [&](auto* mbuf) {
         for (auto&& [idx, entry] : fib->get_interfaces(rxq->port_id())) {
-            auto ifp = entry->ifp;
-
-            OP_LOG(OP_LOG_TRACE,
-                   "Dispatching non-unicast packet to %c%c%u\n",
-                   ifp->name[0],
-                   ifp->name[1],
-                   ifp->num);
-
-            auto clone = rte_pktmbuf_clone(mbuf, mbuf->pool);
-            if (!clone
-                || ifp->input(packetio_memory_pbuf_synchronize(clone), ifp)
-                       != ERR_OK) {
-                MIB2_STATS_NETIF_INC_ATOMIC(ifp, ifindiscards);
-                rte_pktmbuf_free(
-                    clone); /* Note: this free handles null correctly */
+            auto& ifp = entry->ifp;
+            if (auto* clone = rte_pktmbuf_clone(mbuf, mbuf->pool)) {
+                if (ifp.input_packet(reinterpret_cast<void*>(clone))) {
+                    rte_pktmbuf_free(clone);
+                }
             }
         }
         rte_pktmbuf_free(mbuf);
@@ -468,7 +451,7 @@ static void rx_interface_dispatch(const fib* fib,
 
     /* ... and free all the non-stack packets */
     std::for_each(to_free.data(), to_free.data() + nb_to_free, [](auto mbuf) {
-        rx_mbuf_set_ifp(mbuf, nullptr); // Clear just to be safe
+        rx_mbuf_clear_tag(mbuf); // Clear just to be safe
         rte_pktmbuf_free(mbuf);
     });
 }
