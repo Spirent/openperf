@@ -17,7 +17,7 @@ task_cpu_system::task_cpu_system(uint16_t core,
                                  double utilization)
     : m_utilization(utilization / 100.0)
     , m_core_count(core_count)
-    , m_pid(1, 0.0005, 0.000)
+    , m_pid(0.9, 0.0005, 0.000)
 {
     assert(0.0 < utilization && utilization <= 100.0);
     OP_LOG(OP_LOG_DEBUG, "CPU Task configuring");

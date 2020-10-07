@@ -39,6 +39,11 @@ public:
     bool running() const override { return model::generator::running(); }
 
     model::generator_result statistics() const;
+
+private:
+    void config_system_mode(double utilization, const std::vector<uint16_t>&);
+    void config_cores_mode(const generator_config&,
+                           const std::vector<uint16_t>&);
 };
 
 } // namespace openperf::cpu::generator
