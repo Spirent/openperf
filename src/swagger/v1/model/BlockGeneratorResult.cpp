@@ -23,7 +23,8 @@ BlockGeneratorResult::BlockGeneratorResult()
     m_Generator_id = "";
     m_Generator_idIsSet = false;
     m_Active = false;
-    m_Timestamp = "";
+    m_Timestamp_first = "";
+    m_Timestamp_last = "";
     m_Dynamic_resultsIsSet = false;
     
 }
@@ -47,7 +48,8 @@ nlohmann::json BlockGeneratorResult::toJson() const
         val["generator_id"] = ModelBase::toJson(m_Generator_id);
     }
     val["active"] = m_Active;
-    val["timestamp"] = ModelBase::toJson(m_Timestamp);
+    val["timestamp_first"] = ModelBase::toJson(m_Timestamp_first);
+    val["timestamp_last"] = ModelBase::toJson(m_Timestamp_last);
     val["read"] = ModelBase::toJson(m_Read);
     val["write"] = ModelBase::toJson(m_Write);
     if(m_Dynamic_resultsIsSet)
@@ -68,7 +70,8 @@ void BlockGeneratorResult::fromJson(nlohmann::json& val)
         
     }
     setActive(val.at("active"));
-    setTimestamp(val.at("timestamp"));
+    setTimestampFirst(val.at("timestamp_first"));
+    setTimestampLast(val.at("timestamp_last"));
     if(val.find("dynamic_results") != val.end())
     {
         if(!val["dynamic_results"].is_null())
@@ -118,13 +121,22 @@ void BlockGeneratorResult::setActive(bool value)
     m_Active = value;
     
 }
-std::string BlockGeneratorResult::getTimestamp() const
+std::string BlockGeneratorResult::getTimestampFirst() const
 {
-    return m_Timestamp;
+    return m_Timestamp_first;
 }
-void BlockGeneratorResult::setTimestamp(std::string value)
+void BlockGeneratorResult::setTimestampFirst(std::string value)
 {
-    m_Timestamp = value;
+    m_Timestamp_first = value;
+    
+}
+std::string BlockGeneratorResult::getTimestampLast() const
+{
+    return m_Timestamp_last;
+}
+void BlockGeneratorResult::setTimestampLast(std::string value)
+{
+    m_Timestamp_last = value;
     
 }
 std::shared_ptr<BlockGeneratorStats> BlockGeneratorResult::getRead() const

@@ -43,4 +43,9 @@ task_memory_stat::timestamp_t memory_stat::timestamp() const
     return std::max(read.timestamp, write.timestamp);
 }
 
+task_memory_stat::timestamp_t memory_stat::start_timestamp() const
+{
+    return m_start_timestamp;
+}
+
 } // namespace openperf::memory::internal

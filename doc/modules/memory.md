@@ -61,7 +61,8 @@ Memory generator result represents statistics of memory I/O operations, unique f
         "ops_actual": 10,
         "ops_target": 10
     },
-    "timestamp": "2020-05-05T01:28:50.754598866Z",
+    "timestamp_first": "2020-05-05T01:28:48.171817866Z",
+    "timestamp_last": "2020-05-05T01:28:50.754598866Z",
     "write": {
         "bytes_actual": 0,
         "bytes_target": 0,
@@ -76,7 +77,8 @@ Memory generator result represents statistics of memory I/O operations, unique f
 * **id** - unique identifier of result.
 * **active** - indicates whether the result updates periodically.
 * **generator_id** - related generator identifier.
-* **timestamp** - timestamp of the last update, in ISO 8601 format.
+* **timestamp_last** - timestamp of the last update, in ISO 8601 format.
+* **timestamp_first** - timestamp when the related generator has been started, in ISO 8601 format.
 * **read** - read operations statistics.
     * **bytes_actual** - the actual number of bytes read or written.
     * **bytes_target** - the intented number of bytes read of written.
@@ -169,7 +171,8 @@ Response:
     "active": true,
     "id": "ee5af272-76c7-425f-6a81-eca0d46c7000",
     "generator_id": "9ab6d6a8-6319-4ef5-4fc5-cf30f76e71c2",
-    "timestamp": "2020-05-05T06:19:42.205480294Z",
+    "timestamp_last": "2020-05-05T06:19:42.205480294Z",
+    "timestamp_first": "2020-05-05T06:19:42.205480294Z",
     "read": {
         "bytes_actual": 240,
         "bytes_target": 240,
@@ -223,7 +226,8 @@ curl --verbose --location --request GET \
     "active": false,
     "id": "ee5af272-76c7-425f-6a81-eca0d46c7000",
     "generator_id": "9ab6d6a8-6319-4ef5-4fc5-cf30f76e71c2",
-    "timestamp": "2020-05-05T06:32:41.65198337Z",
+    "timestamp_last": "2020-05-05T06:32:41.65198337Z",
+    "timestamp_first": "2020-05-05T06:19:42.205480294Z",
     "read": {
         "bytes_actual": 31142712,
         "bytes_target": 31142712,

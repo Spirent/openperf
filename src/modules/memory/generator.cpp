@@ -210,6 +210,8 @@ void generator::reset()
     m_controller.reset();
     m_dynamic.reset();
     m_stat = {};
+    m_stat.read.timestamp = m_stat.m_start_timestamp;
+    m_stat.write.timestamp = m_stat.m_start_timestamp;
 
     if (!was_paused) m_controller.resume();
 }

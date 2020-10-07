@@ -19,6 +19,7 @@ class block_generator : public model::block_generator
 {
     using block_result_ptr = std::shared_ptr<model::block_generator_result>;
     using chronometer = openperf::timesync::chrono::realtime;
+    using time_point = timesync::chrono::realtime::time_point;
 
 private:
     static constexpr auto NAME_PREFIX = "op_block";

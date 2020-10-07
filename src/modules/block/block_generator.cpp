@@ -203,6 +203,7 @@ block_generator::block_result_ptr block_generator::statistics() const
     stat->read_stats(to_statistics_t(m_read));
     stat->write_stats(to_statistics_t(m_write));
     stat->timestamp(std::max(m_write.updated, m_read.updated));
+    stat->start_timestamp(m_start_time);
     stat->dynamic_results(m_dynamic.result());
 
     return stat;
@@ -214,10 +215,10 @@ void block_generator::reset()
     m_controller.reset();
     m_dynamic.reset();
 
+    m_start_time = chronometer::now();
     m_read = {.operation = task_operation::READ};
     m_write = {.operation = task_operation::WRITE};
     m_statistics_id = core::to_string(core::uuid::random());
-    m_start_time = chronometer::now();
 
     if (m_running) m_controller.resume();
 }

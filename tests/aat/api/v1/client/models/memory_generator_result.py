@@ -34,7 +34,8 @@ class MemoryGeneratorResult(object):
         'id': 'str',
         'generator_id': 'str',
         'active': 'bool',
-        'timestamp': 'datetime',
+        'timestamp_first': 'datetime',
+        'timestamp_last': 'datetime',
         'read': 'MemoryGeneratorStats',
         'write': 'MemoryGeneratorStats',
         'dynamic_results': 'DynamicResults'
@@ -44,19 +45,21 @@ class MemoryGeneratorResult(object):
         'id': 'id',
         'generator_id': 'generator_id',
         'active': 'active',
-        'timestamp': 'timestamp',
+        'timestamp_first': 'timestamp_first',
+        'timestamp_last': 'timestamp_last',
         'read': 'read',
         'write': 'write',
         'dynamic_results': 'dynamic_results'
     }
 
-    def __init__(self, id=None, generator_id=None, active=None, timestamp=None, read=None, write=None, dynamic_results=None):  # noqa: E501
+    def __init__(self, id=None, generator_id=None, active=None, timestamp_first=None, timestamp_last=None, read=None, write=None, dynamic_results=None):  # noqa: E501
         """MemoryGeneratorResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._generator_id = None
         self._active = None
-        self._timestamp = None
+        self._timestamp_first = None
+        self._timestamp_last = None
         self._read = None
         self._write = None
         self._dynamic_results = None
@@ -66,7 +69,8 @@ class MemoryGeneratorResult(object):
         if generator_id is not None:
             self.generator_id = generator_id
         self.active = active
-        self.timestamp = timestamp
+        self.timestamp_first = timestamp_first
+        self.timestamp_last = timestamp_last
         self.read = read
         self.write = write
         if dynamic_results is not None:
@@ -139,26 +143,48 @@ class MemoryGeneratorResult(object):
         self._active = active
 
     @property
-    def timestamp(self):
-        """Gets the timestamp of this MemoryGeneratorResult.  # noqa: E501
+    def timestamp_first(self):
+        """Gets the timestamp_first of this MemoryGeneratorResult.  # noqa: E501
 
-        The ISO8601-formatted date of the last result update  # noqa: E501
+        The ISO8601-formatted start time of the generator  # noqa: E501
 
-        :return: The timestamp of this MemoryGeneratorResult.  # noqa: E501
+        :return: The timestamp_first of this MemoryGeneratorResult.  # noqa: E501
         :rtype: datetime
         """
-        return self._timestamp
+        return self._timestamp_first
 
-    @timestamp.setter
-    def timestamp(self, timestamp):
-        """Sets the timestamp of this MemoryGeneratorResult.
+    @timestamp_first.setter
+    def timestamp_first(self, timestamp_first):
+        """Sets the timestamp_first of this MemoryGeneratorResult.
+
+        The ISO8601-formatted start time of the generator  # noqa: E501
+
+        :param timestamp_first: The timestamp_first of this MemoryGeneratorResult.  # noqa: E501
+        :type: datetime
+        """
+        self._timestamp_first = timestamp_first
+
+    @property
+    def timestamp_last(self):
+        """Gets the timestamp_last of this MemoryGeneratorResult.  # noqa: E501
 
         The ISO8601-formatted date of the last result update  # noqa: E501
 
-        :param timestamp: The timestamp of this MemoryGeneratorResult.  # noqa: E501
+        :return: The timestamp_last of this MemoryGeneratorResult.  # noqa: E501
+        :rtype: datetime
+        """
+        return self._timestamp_last
+
+    @timestamp_last.setter
+    def timestamp_last(self, timestamp_last):
+        """Sets the timestamp_last of this MemoryGeneratorResult.
+
+        The ISO8601-formatted date of the last result update  # noqa: E501
+
+        :param timestamp_last: The timestamp_last of this MemoryGeneratorResult.  # noqa: E501
         :type: datetime
         """
-        self._timestamp = timestamp
+        self._timestamp_last = timestamp_last
 
     @property
     def read(self):

@@ -43,11 +43,16 @@ struct task_memory_stat
 
 struct memory_stat
 {
+    using clock = openperf::timesync::chrono::realtime;
+    using timestamp_t = clock::time_point;
+
     bool active;
+    timestamp_t m_start_timestamp = clock::now();
     task_memory_stat read;
     task_memory_stat write;
 
     task_memory_stat::timestamp_t timestamp() const;
+    task_memory_stat::timestamp_t start_timestamp() const;
 };
 
 } // namespace openperf::memory::internal

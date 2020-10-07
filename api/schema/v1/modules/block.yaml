@@ -597,7 +597,11 @@ definitions:
       active:
         type: boolean
         description: Indicates whether the result is currently being updated
-      timestamp:
+      timestamp_first:
+        type: string
+        description: The ISO8601-formatted start time of the generator
+        format: date-time
+      timestamp_last:
         type: string
         description: The ISO8601-formatted date of the last result update
         format: date-time
@@ -610,7 +614,8 @@ definitions:
     required:
       - id
       - active
-      - timestamp
+      - timestamp_first
+      - timestamp_last
       - read
       - write
 

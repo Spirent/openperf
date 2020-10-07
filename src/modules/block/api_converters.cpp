@@ -187,8 +187,10 @@ to_swagger(const model::block_generator_result& p_gen_result)
     gen_res->setId(p_gen_result.id());
     gen_res->setGeneratorId(p_gen_result.generator_id());
     gen_res->setActive(p_gen_result.is_active());
-    gen_res->setTimestamp(
+    gen_res->setTimestampLast(
         to_rfc3339(p_gen_result.timestamp().time_since_epoch()));
+    gen_res->setTimestampFirst(
+        to_rfc3339(p_gen_result.start_timestamp().time_since_epoch()));
 
     auto to_statistics_t =
         [](const model::block_generator_result::statistics_t& gen_stat) {

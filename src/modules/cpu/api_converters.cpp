@@ -223,7 +223,9 @@ to_swagger(const model::generator_result& result)
     gen->setId(result.id());
     gen->setGeneratorId(result.generator_id());
     gen->setActive(result.active());
-    gen->setTimestamp(to_rfc3339(result.timestamp().time_since_epoch()));
+    gen->setTimestampLast(to_rfc3339(result.timestamp().time_since_epoch()));
+    gen->setTimestampFirst(
+        to_rfc3339(result.start_timestamp().time_since_epoch()));
     gen->setStats(cpu_stats);
     gen->setDynamicResults(std::make_shared<swagger::DynamicResults>(
         dynamic::to_swagger(result.dynamic_results())));
