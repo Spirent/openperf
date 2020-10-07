@@ -54,7 +54,6 @@ task_cpu_system::task_cpu_system(uint16_t core,
 task_cpu_system::task_cpu_system(task_cpu_system&& other) noexcept
     : m_config(std::move(other.m_config))
     , m_time(other.m_time)
-    //, m_error(other.m_error)
     , m_last_run(other.m_last_run)
     , m_util_time(other.m_util_time)
     , m_utilization(other.m_utilization)
@@ -62,11 +61,7 @@ task_cpu_system::task_cpu_system(task_cpu_system&& other) noexcept
     , m_pid(other.m_pid)
 {}
 
-void task_cpu_system::reset()
-{
-    // m_error = 0ns;
-    m_last_run = chronometer::time_point();
-}
+void task_cpu_system::reset() { m_last_run = chronometer::time_point(); }
 
 // Methods : public
 task_cpu_stat_ptr task_cpu_system::spin()
@@ -104,16 +99,9 @@ task_cpu_stat_ptr task_cpu_system::spin()
 
     std::this_thread::sleep_for(time_diff.utilization * (1.0 - m_utilization)
                                 / m_utilization);
-    // std::this_thread::sleep_for((time_diff.utilization - m_error)
-    //                            * (1.0 - m_utilization) / m_utilization);
 
     auto time_of_run = chronometer::now();
     auto available = time_of_run - m_last_run;
-
-    // m_error =
-    //    std::chrono::nanoseconds((uint64_t)(available.count() *
-    //    m_utilization))
-    //    - time_diff.utilization + m_error;
 
     stat.available = available;
     stat.utilization = time_diff.utilization;
@@ -130,7 +118,6 @@ task_cpu_stat_ptr task_cpu_system::spin()
     m_last_run = time_of_run;
     m_util_time = cpu_util;
 
-    // m_error = 0ns;
     m_available += stat.available;
 
     auto cpu_time = internal::cpu_process_time() - m_start;

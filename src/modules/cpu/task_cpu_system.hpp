@@ -33,7 +33,6 @@ private:
     target_scalar<uint32_t> m_target;
 
     std::chrono::nanoseconds m_time;
-    // std::chrono::nanoseconds m_error;
     timesync::chrono::monotime::time_point m_last_run;
     utilization_time m_util_time;
 
