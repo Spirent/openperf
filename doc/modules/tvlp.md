@@ -4,7 +4,7 @@ Time Varying Load Profile (TVLP) provides a mechanism to program an OpenPerf ins
 
 ## Configuration
 
-Configuration primarily consists of a lists of time offsets and values for configuraton options for Block, Memory, CPU and Packet generators.
+Configuration primarily consists of lists of time offsets and values for configuraton options for Block, Memory, CPU and Packet generators.
 
 Additionally, clients may specify a specific UTC ISO8601-formatted time to start replaying the configured profile.
 
@@ -25,9 +25,9 @@ State transitions behave as follows:
 
 After a profile has completed its run, the `state` revert back to READY.
 
-### Keys
+### Properties
 
-The TVLP module responds to the following configuration keys:
+The TVLP module responds to the following configuration properties:
 
 - **id** -- unique TVLP identifier. Leave field empty to generate value.
 - **time.start** -- ISO8601-formatted TVLP profile start time. Only available when `state` = COUNTDOWN or RUNNING (read only)
