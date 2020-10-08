@@ -2,6 +2,9 @@
 
 #include <iomanip>
 #include <sstream>
+#include <variant>
+
+#include "framework/utils/overloaded_visitor.hpp"
 
 namespace openperf::cpu::api {
 
@@ -20,7 +23,7 @@ is_valid(const swagger::CpuGeneratorCoreConfig& config)
 {
     auto errors = std::vector<std::string>();
 
-    if (config.getUtilization() < 0 || 100 < config.getUtilization()) {
+    if (config.getUtilization() <= 0 || 100 < config.getUtilization()) {
         errors.emplace_back("Utilization value '"
                             + std::to_string(config.getUtilization())
                             + "' is not valid");
@@ -135,49 +138,59 @@ from_swagger(swagger::BulkDeleteCpuGeneratorsRequest& p_request)
 
 std::shared_ptr<swagger::CpuGenerator> to_swagger(const model::generator& model)
 {
-    auto cpu_config = std::make_shared<swagger::CpuGeneratorConfig>();
-
-    auto config = model.config();
-    if (auto utilization = std::get_if<double>(&config)) {
-        cpu_config->setMethod("system");
-
-        auto system = std::make_shared<swagger::CpuGeneratorConfigSystem>();
-        system->setUtilization(*utilization);
-        cpu_config->setSystem(system);
-    } else if (auto cores = std::get_if<cores_config>(&config)) {
-        cpu_config->setMethod("cores");
-
-        std::transform(
-            cores->begin(),
-            cores->end(),
-            std::back_inserter(cpu_config->getCores()),
-            [](const auto& core_config) {
-                auto conf = std::make_shared<swagger::CpuGeneratorCoreConfig>();
-                conf->setUtilization(core_config.utilization);
-
-                std::transform(
-                    core_config.targets.begin(),
-                    core_config.targets.end(),
-                    std::back_inserter(conf->getTargets()),
-                    [](const auto& t) {
-                        auto target = std::make_shared<
-                            swagger::CpuGeneratorCoreConfig_targets>();
-                        target->setDataType(
-                            std::string(to_string(t.data_type)));
-                        target->setInstructionSet(
-                            std::string(to_string(t.set)));
-                        target->setWeight(t.weight);
-                        return target;
-                    });
-
-                return conf;
-            });
-    }
-
     auto gen = std::make_shared<swagger::CpuGenerator>();
     gen->setId(model.id());
     gen->setRunning(model.running());
-    gen->setConfig(cpu_config);
+    gen->setConfig(std::visit(
+        utils::overloaded_visitor(
+            [](double utilization) {
+                auto cpu_config =
+                    std::make_shared<swagger::CpuGeneratorConfig>();
+                cpu_config->setMethod("system");
+
+                auto system =
+                    std::make_shared<swagger::CpuGeneratorConfigSystem>();
+                system->setUtilization(utilization);
+                cpu_config->setSystem(system);
+
+                return cpu_config;
+            },
+            [](const cores_config& cores) {
+                auto cpu_config =
+                    std::make_shared<swagger::CpuGeneratorConfig>();
+                cpu_config->setMethod("cores");
+
+                std::transform(
+                    cores.begin(),
+                    cores.end(),
+                    std::back_inserter(cpu_config->getCores()),
+                    [](const auto& core_config) {
+                        auto conf =
+                            std::make_shared<swagger::CpuGeneratorCoreConfig>();
+                        conf->setUtilization(core_config.utilization);
+
+                        std::transform(
+                            core_config.targets.begin(),
+                            core_config.targets.end(),
+                            std::back_inserter(conf->getTargets()),
+                            [](const auto& t) {
+                                auto target = std::make_shared<
+                                    swagger::CpuGeneratorCoreConfig_targets>();
+                                target->setDataType(
+                                    std::string(to_string(t.data_type)));
+                                target->setInstructionSet(
+                                    std::string(to_string(t.set)));
+                                target->setWeight(t.weight);
+                                return target;
+                            });
+
+                        return conf;
+                    });
+
+                return cpu_config;
+            }),
+        model.config()));
+
     return gen;
 }
 

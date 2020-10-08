@@ -3,12 +3,10 @@
 #include "framework/core/op_log.h"
 
 #include <thread>
-#include <iomanip>
 
 namespace openperf::cpu::internal {
 
 using namespace std::chrono_literals;
-
 constexpr auto QUANTA = 100ms;
 
 // Constructors & Destructor
@@ -71,10 +69,9 @@ task_cpu_stat_ptr task_cpu_system::spin()
         m_last_run = chronometer::now();
         m_util_time = cpu_thread_time();
         m_start = cpu_process_time();
-        // m_pid.start();
     }
-    m_pid.start();
 
+    m_pid.start();
     auto time_frame = static_cast<uint64_t>(std::max(
         m_time.count() * 1.0,
         std::chrono::duration_cast<std::chrono::nanoseconds>(QUANTA).count()
@@ -114,9 +111,8 @@ task_cpu_stat_ptr task_cpu_system::spin()
     stat.steal = time_diff.steal;
     stat.core = m_config.core;
 
-    stat.error = std::chrono::nanoseconds(static_cast<uint64_t>(
-                     stat.available.count() * m_utilization))
-                 - stat.utilization;
+    stat.error = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        stat.available * m_utilization - stat.utilization);
     stat.load = stat.utilization * 1.0 / stat.available;
 
     m_last_run = time_of_run;
@@ -139,19 +135,7 @@ task_cpu_stat_ptr task_cpu_system::spin()
         m_config.utilization / 100.0);
 
     m_pid.reset(target_util);
-    if (m_config.core == 5) {
-        std::cout << std::setw(2) << m_config.core
-                  << " SYS: " << util_by_core * m_core_count * 100.0
-                  << ", CORE: " << util_by_core * 100.0
-                  << ", LOAD: " << stat.load * 100.0
-                  << ", UTIL: " << m_utilization * 100.0
-                  << ", NEW_UTIL: " << target_util * 100.0
-                  << ", ADJ: " << adjust << std::endl;
-    }
-
-    // m_utilization = target_util;
     m_utilization = target_util + adjust;
-    // m_pid.start();
 
     // NOTE: clang-tidy static analysis cause an error when used simply:
     // return std::make_unique<task_cpu_stat>();

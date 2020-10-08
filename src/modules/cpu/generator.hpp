@@ -24,6 +24,7 @@ private:
 
     dynamic::spool<cpu_stat> m_dynamic;
     controller m_controller;
+    uint16_t m_core_count;
 
 public:
     generator(const model::generator&);
@@ -39,10 +40,6 @@ public:
     bool running() const override { return model::generator::running(); }
 
     model::generator_result statistics() const;
-
-private:
-    void config_mode(double utilization, const std::vector<uint16_t>&);
-    void config_mode(const cores_config&, const std::vector<uint16_t>&);
 };
 
 } // namespace openperf::cpu::generator
