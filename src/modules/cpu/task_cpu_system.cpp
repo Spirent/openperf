@@ -17,7 +17,7 @@ task_cpu_system::task_cpu_system(uint16_t core,
                                  double utilization)
     : m_utilization(utilization / 100.0)
     , m_core_count(core_count)
-    , m_pid(0.9, 0.0005, 0.000)
+    , m_pid(0.9, 0.05, 0.0)
 {
     assert(0.0 < utilization && utilization <= 100.0);
     OP_LOG(OP_LOG_DEBUG, "CPU Task configuring");
@@ -40,7 +40,6 @@ task_cpu_system::task_cpu_system(uint16_t core,
     m_pid.reset(m_utilization);
     m_pid.max(1.0);
     m_pid.min(0.0);
-    m_available = 0ns;
 
     // Measure the target run time, needed for planning
     auto runs_for_measure = 5;
@@ -59,6 +58,7 @@ task_cpu_system::task_cpu_system(task_cpu_system&& other) noexcept
     , m_utilization(other.m_utilization)
     , m_core_count(other.m_core_count)
     , m_pid(other.m_pid)
+    , m_available(other.m_available)
 {}
 
 void task_cpu_system::reset() { m_last_run = chronometer::time_point(); }
@@ -67,14 +67,16 @@ void task_cpu_system::reset() { m_last_run = chronometer::time_point(); }
 task_cpu_stat_ptr task_cpu_system::spin()
 {
     if (m_last_run.time_since_epoch() == 0ns) {
+        m_available = 0ns;
         m_last_run = chronometer::now();
         m_util_time = cpu_thread_time();
         m_start = cpu_process_time();
-        m_pid.start();
+        // m_pid.start();
     }
+    m_pid.start();
 
     auto time_frame = static_cast<uint64_t>(std::max(
-        static_cast<double>(m_time.count()),
+        m_time.count() * 1.0,
         std::chrono::duration_cast<std::chrono::nanoseconds>(QUANTA).count()
             * m_utilization));
 
@@ -97,8 +99,10 @@ task_cpu_stat_ptr task_cpu_system::spin()
     auto cpu_util = cpu_thread_time();
     auto time_diff = cpu_util - m_util_time;
 
-    std::this_thread::sleep_for(time_diff.utilization * (1.0 - m_utilization)
-                                / m_utilization);
+    std::this_thread::sleep_for(std::min(
+        time_diff.utilization * (1.0 - m_utilization) / m_utilization,
+        std::chrono::duration_cast<std::chrono::duration<double, std::nano>>(
+            QUANTA)));
 
     auto time_of_run = chronometer::now();
     auto available = time_of_run - m_last_run;
@@ -110,8 +114,8 @@ task_cpu_stat_ptr task_cpu_system::spin()
     stat.steal = time_diff.steal;
     stat.core = m_config.core;
 
-    stat.error = std::chrono::nanoseconds(
-                     (uint64_t)(stat.available.count() * m_utilization))
+    stat.error = std::chrono::nanoseconds(static_cast<uint64_t>(
+                     stat.available.count() * m_utilization))
                  - stat.utilization;
     stat.load = stat.utilization * 1.0 / stat.available;
 
@@ -124,24 +128,30 @@ task_cpu_stat_ptr task_cpu_system::spin()
     auto cpu_actual = cpu_time.utilization - cpu_time.steal;
     if (cpu_actual < 0ns) cpu_actual = 0ns;
 
-    auto util = static_cast<double>(cpu_actual.count())
-                / (m_core_count * m_available.count());
-    auto adjust = m_pid.stop(util);
+    auto util_by_core =
+        cpu_actual.count() * 1.0 / (m_core_count * m_available.count());
+    auto adjust =
+        m_pid.stop(stat.load * stat.available.count() / std::nano::den);
 
-    // if (m_config.core == 1) {
-    //    std::cout << "CPU_ACT: " << cpu_actual.count()
-    //              << ", M_AVAIL: " << m_available.count()
-    //              << ", CORES: " << m_core_count << std::endl;
-    //    std::cout << std::setw(2) << m_config.core
-    //              << " > REAL UTILIZATION: " << util * 100.0
-    //              << ", LOAD: " << stat.load * 100.0
-    //              << ", UTIL: " << m_utilization * 100.0 << " -> "
-    //              << m_config.utilization << " + " << adjust * 100.0 << " -> "
-    //              << m_config.utilization + adjust * 100.0
-    //              << ", ADJ: " << adjust << std::endl;
-    //}
-    m_utilization = m_config.utilization / 100.0 + adjust;
-    m_pid.start();
+    auto target_util = std::min(
+        std::max(m_utilization + (m_config.utilization / 100.0 - util_by_core),
+                 0.0),
+        m_config.utilization / 100.0);
+
+    m_pid.reset(target_util);
+    if (m_config.core == 5) {
+        std::cout << std::setw(2) << m_config.core
+                  << " SYS: " << util_by_core * m_core_count * 100.0
+                  << ", CORE: " << util_by_core * 100.0
+                  << ", LOAD: " << stat.load * 100.0
+                  << ", UTIL: " << m_utilization * 100.0
+                  << ", NEW_UTIL: " << target_util * 100.0
+                  << ", ADJ: " << adjust << std::endl;
+    }
+
+    // m_utilization = target_util;
+    m_utilization = target_util + adjust;
+    // m_pid.start();
 
     // NOTE: clang-tidy static analysis cause an error when used simply:
     // return std::make_unique<task_cpu_stat>();
