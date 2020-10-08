@@ -89,7 +89,7 @@ generator::generator(const model::generator& generator_model)
         m_stat_ptr = &stat_copy;
         m_stat += stat;
 
-        if (m_config.utilization) {
+        if (std::holds_alternative<double>(m_config)) {
             auto process_stat = internal::cpu_process_time();
             m_stat.utilization = process_stat.utilization;
             m_stat.system = process_stat.system;
@@ -138,10 +138,9 @@ void generator::config(const generator_config& config)
                   std::back_inserter(available_cores));
     }
 
-    if (config.utilization)
-        config_system_mode(config.utilization.value(), available_cores);
-    else
-        config_cores_mode(config, available_cores);
+    std::visit([this, &available_cores](
+                   auto&& arg) { config_mode(arg, available_cores); },
+               config);
 
     if (m_running) m_controller.resume();
 }
@@ -203,8 +202,8 @@ void generator::reset()
 }
 
 // Methods : private
-void generator::config_system_mode(double utilization,
-                                   const std::vector<uint16_t>& available_cores)
+void generator::config_mode(double utilization,
+                            const std::vector<uint16_t>& available_cores)
 {
     if (utilization < 0 || 100 * available_cores.size() < utilization) {
         throw std::runtime_error(
@@ -213,13 +212,12 @@ void generator::config_system_mode(double utilization,
             + std::to_string(100 * available_cores.size()));
     }
 
-    m_config = {.utilization = utilization};
+    m_config = utilization;
     m_stat = {available_cores.size()};
     for (uint16_t core = 0; core < available_cores.size(); ++core) {
         auto task = internal::task_cpu_system(
             core, available_cores.size(), utilization / available_cores.size());
 
-        m_config.cores.push_back(task.config());
         m_stat.cores[core].targets.resize(task.config().targets.size());
         m_controller.add(std::move(task),
                          NAME_PREFIX + std::to_string(m_serial_number) + "_c"
@@ -228,19 +226,19 @@ void generator::config_system_mode(double utilization,
     }
 }
 
-void generator::config_cores_mode(const generator_config& config,
-                                  const std::vector<uint16_t>& available_cores)
+void generator::config_mode(const cores_config& cores,
+                            const std::vector<uint16_t>& available_cores)
 {
-    if (config.cores.size() > available_cores.size()) {
+    if (cores.size() > available_cores.size()) {
         throw std::runtime_error(
             "Could not configure more cores than available ("
             + std::to_string(available_cores.size()) + ").");
     }
 
-    m_config = config;
-    m_stat = {m_config.cores.size()};
-    for (size_t core = 0; core < m_config.cores.size(); ++core) {
-        auto core_conf = m_config.cores.at(core);
+    m_config = cores;
+    m_stat = {cores.size()};
+    for (size_t core = 0; core < cores.size(); ++core) {
+        auto core_conf = cores.at(core);
         for (const auto& target : core_conf.targets) {
             if (!available(target.set) || !enabled(target.set)) {
                 throw std::runtime_error("Instruction set "

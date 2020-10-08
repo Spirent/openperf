@@ -3,6 +3,7 @@
 
 #include <optional>
 #include <string_view>
+#include <variant>
 
 #include "instruction_set.hpp"
 
@@ -24,11 +25,8 @@ struct task_cpu_config
     std::vector<target_config> targets;
 };
 
-struct generator_config
-{
-    std::optional<double> utilization;
-    std::vector<task_cpu_config> cores;
-};
+using cores_config = std::vector<task_cpu_config>;
+using generator_config = std::variant<double, cores_config>;
 
 constexpr cpu::data_type to_data_type(std::string_view value)
 {

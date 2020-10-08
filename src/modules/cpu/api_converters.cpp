@@ -76,13 +76,14 @@ model::generator from_swagger(const swagger::CpuGenerator& generator)
     auto swagger_cpu_config = generator.getConfig();
     auto method = swagger_cpu_config->getMethod();
     if (method == "system") {
-        config.utilization = swagger_cpu_config->getSystem()->getUtilization();
+        config = swagger_cpu_config->getSystem()->getUtilization();
     } else if (method == "cores") {
+        config = cores_config{};
         auto& configuration = swagger_cpu_config->getCores();
         std::transform(
             configuration.begin(),
             configuration.end(),
-            std::back_inserter(config.cores),
+            std::back_inserter(std::get<cores_config>(config)),
             [](const auto& conf) {
                 task_cpu_config task_conf{
                     .utilization = conf->getUtilization(),
@@ -136,40 +137,42 @@ std::shared_ptr<swagger::CpuGenerator> to_swagger(const model::generator& model)
 {
     auto cpu_config = std::make_shared<swagger::CpuGeneratorConfig>();
 
-    if (auto utilization = model.config().utilization) {
+    auto config = model.config();
+    if (auto utilization = std::get_if<double>(&config)) {
         cpu_config->setMethod("system");
 
         auto system = std::make_shared<swagger::CpuGeneratorConfigSystem>();
-        system->setUtilization(utilization.value());
+        system->setUtilization(*utilization);
         cpu_config->setSystem(system);
-    } else {
+    } else if (auto cores = std::get_if<cores_config>(&config)) {
         cpu_config->setMethod("cores");
+
+        std::transform(
+            cores->begin(),
+            cores->end(),
+            std::back_inserter(cpu_config->getCores()),
+            [](const auto& core_config) {
+                auto conf = std::make_shared<swagger::CpuGeneratorCoreConfig>();
+                conf->setUtilization(core_config.utilization);
+
+                std::transform(
+                    core_config.targets.begin(),
+                    core_config.targets.end(),
+                    std::back_inserter(conf->getTargets()),
+                    [](const auto& t) {
+                        auto target = std::make_shared<
+                            swagger::CpuGeneratorCoreConfig_targets>();
+                        target->setDataType(
+                            std::string(to_string(t.data_type)));
+                        target->setInstructionSet(
+                            std::string(to_string(t.set)));
+                        target->setWeight(t.weight);
+                        return target;
+                    });
+
+                return conf;
+            });
     }
-
-    auto cores = model.config().cores;
-    std::transform(
-        cores.begin(),
-        cores.end(),
-        std::back_inserter(cpu_config->getCores()),
-        [](const auto& core_config) {
-            auto conf = std::make_shared<swagger::CpuGeneratorCoreConfig>();
-            conf->setUtilization(core_config.utilization);
-
-            std::transform(
-                core_config.targets.begin(),
-                core_config.targets.end(),
-                std::back_inserter(conf->getTargets()),
-                [](const auto& t) {
-                    auto target = std::make_shared<
-                        swagger::CpuGeneratorCoreConfig_targets>();
-                    target->setDataType(std::string(to_string(t.data_type)));
-                    target->setInstructionSet(std::string(to_string(t.set)));
-                    target->setWeight(t.weight);
-                    return target;
-                });
-
-            return conf;
-        });
 
     auto gen = std::make_shared<swagger::CpuGenerator>();
     gen->setId(model.id());
