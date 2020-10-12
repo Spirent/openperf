@@ -141,9 +141,9 @@ template <size_t Octets> struct field
     template <typename T>
     std::enable_if_t<Octets <= sizeof(T), T> load() const noexcept
     {
-        T tmp;
+        auto tmp = T{};
         const auto ptr = octets.data();
-        std::copy_n(ptr, sizeof(T), reinterpret_cast<uint8_t*>(&tmp));
+        std::copy_n(ptr, octets.size(), reinterpret_cast<uint8_t*>(&tmp));
         return (bswap(tmp) >> ((sizeof(T) - Octets) * CHAR_BIT));
     }
 
