@@ -81,25 +81,49 @@ with description('CPU Generator Module', 'cpu') as self:
                             self._model.id = self._result[0].id
                         expect(self._result[0]).to(equal(self._model))
 
-                with description('with empty ID'):
-                    with before.all:
-                        self._model = cpu_generator_model(self._api.api_client)
-                        self._result = self._api.create_cpu_generator_with_http_info(
-                            self._model, _return_http_data_only=False)
+                with description('method cores'):
+                    with description('with empty ID'):
+                        with before.all:
+                            self._model = cpu_generator_model(self._api.api_client,
+                                method='cores')
+                            self._result = self._api.create_cpu_generator_with_http_info(
+                                self._model, _return_http_data_only=False)
 
-                    with included_context('create generator'):
-                        with it('random ID assigned'):
-                            expect(self._result[0].id).not_to(be_empty)
+                        with included_context('create generator'):
+                            with it('random ID assigned'):
+                                expect(self._result[0].id).not_to(be_empty)
 
-                with description('with specified ID'):
-                    with before.all:
-                        self._model = cpu_generator_model(
-                            self._api.api_client, id='some-specified-id')
-                        self._result = self._api.create_cpu_generator_with_http_info(
-                            self._model, _return_http_data_only=False)
+                    with description('with specified ID'):
+                        with before.all:
+                            self._model = cpu_generator_model(
+                                self._api.api_client, id='some-specified-id')
+                            self._result = self._api.create_cpu_generator_with_http_info(
+                                self._model, _return_http_data_only=False)
 
-                    with included_context('create generator'):
-                        pass
+                        with included_context('create generator'):
+                            pass
+
+                with description('method system'):
+                    with description('with empty ID'):
+                        with before.all:
+                            self._model = cpu_generator_model(self._api.api_client,
+                                method='system')
+                            self._result = self._api.create_cpu_generator_with_http_info(
+                                self._model, _return_http_data_only=False)
+
+                        with included_context('create generator'):
+                            with it('random ID assigned'):
+                                expect(self._result[0].id).not_to(be_empty)
+
+                    with description('with specified ID'):
+                        with before.all:
+                            self._model = cpu_generator_model(
+                                self._api.api_client, id='some-specified-id')
+                            self._result = self._api.create_cpu_generator_with_http_info(
+                                self._model, _return_http_data_only=False)
+
+                        with included_context('create generator'):
+                            pass
 
             with context('GET'):
                 with before.all:

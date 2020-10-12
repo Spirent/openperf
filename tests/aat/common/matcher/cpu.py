@@ -2,6 +2,16 @@ from expects import expect, be_a, be_empty, be_none
 from expects.matchers import Matcher
 import client.models
 
+class be_in_list(Matcher):
+    def __init__(self, expected):
+        self._expected = expected
+
+    def _match(self, request):
+        expect(request).not_to(be_empty)
+        if request in self._expected:
+            return True, ['Value in list']
+        return False, ['Value not in list']
+
 class _be_valid_cpu_info(Matcher):
     def _match(self, info):
         expect(info).to(be_a(client.models.CpuInfoResult))
@@ -21,10 +31,20 @@ class _be_valid_cpu_generator(Matcher):
 class _be_valid_cpu_generator_config(Matcher):
     def _match(self, conf):
         expect(conf).to(be_a(client.models.CpuGeneratorConfig))
-        expect(conf.cores).to(be_a(list))
-        for c in conf.cores:
-            expect(c).to(be_valid_cpu_generator_core_config)
+        expect(conf.method).to(be_in_list(['system', 'cores']))
+        if conf.method == 'cores':
+            expect(conf.cores).to(be_a(list))
+            for core in conf.cores:
+                expect(core).to(be_valid_cpu_generator_core_config)
+        elif conf.method == 'system':
+            expect(conf.system).to(be_valid_cpu_generator_system_config)
         return True, ['is valid CPU Generator Configuration']
+
+class _be_valid_cpu_generator_system_config(Matcher):
+    def _match(self, conf):
+        expect(conf).to(be_a(client.models.CpuGeneratorSystemConfig))
+        expect(conf.utilization).to(be_a(float))
+        return True, ['is valid CPU Generator System Configuration']
 
 class _be_valid_cpu_generator_core_config(Matcher):
     def _match(self, conf):
@@ -56,6 +76,7 @@ class _be_valid_cpu_generator_result(Matcher):
 be_valid_cpu_info = _be_valid_cpu_info()
 be_valid_cpu_generator = _be_valid_cpu_generator()
 be_valid_cpu_generator_config = _be_valid_cpu_generator_config()
+be_valid_cpu_generator_system_config = _be_valid_cpu_generator_system_config()
 be_valid_cpu_generator_core_config = _be_valid_cpu_generator_core_config()
 be_valid_cpu_generator_core_config_targets = _be_valid_cpu_generator_core_config_targets()
 be_valid_cpu_generator_result = _be_valid_cpu_generator_result()
