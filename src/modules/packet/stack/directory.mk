@@ -4,7 +4,7 @@
 
 $(call op_check_vars, OP_PACKETIO_DRIVER)
 
-STACK_DEPENDS += framework
+STACK_DEPENDS += framework packetio
 STACK_INCLUDES += lwip/include
 
 STACK_SOURCES += \

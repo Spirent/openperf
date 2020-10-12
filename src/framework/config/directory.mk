@@ -2,7 +2,7 @@
 # Makefile component for YAML based configuration files
 #
 
-CFGFILE_DEPENDS += yaml_cpp
+CFGFILE_DEPENDS += expected yaml_cpp
 
 CFGFILE_SOURCES += \
 	op_config_file.cpp \
