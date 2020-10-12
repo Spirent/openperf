@@ -32,7 +32,7 @@ class CpuGeneratorConfig(object):
     """
     swagger_types = {
         'method': 'str',
-        'system': 'CpuGeneratorConfigSystem',
+        'system': 'CpuGeneratorSystemConfig',
         'cores': 'list[CpuGeneratorCoreConfig]'
     }
 
@@ -85,7 +85,7 @@ class CpuGeneratorConfig(object):
 
 
         :return: The system of this CpuGeneratorConfig.  # noqa: E501
-        :rtype: CpuGeneratorConfigSystem
+        :rtype: CpuGeneratorSystemConfig
         """
         return self._system
 
@@ -95,7 +95,7 @@ class CpuGeneratorConfig(object):
 
 
         :param system: The system of this CpuGeneratorConfig.  # noqa: E501
-        :type: CpuGeneratorConfigSystem
+        :type: CpuGeneratorSystemConfig
         """
         self._system = system
 

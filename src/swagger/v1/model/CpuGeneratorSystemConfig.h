@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * CpuGeneratorConfigSystem.h
+ * CpuGeneratorSystemConfig.h
  *
  * System CPU load
  */
 
-#ifndef CpuGeneratorConfigSystem_H_
-#define CpuGeneratorConfigSystem_H_
+#ifndef CpuGeneratorSystemConfig_H_
+#define CpuGeneratorSystemConfig_H_
 
 
 #include "ModelBase.h"
@@ -29,12 +29,12 @@ namespace model {
 /// <summary>
 /// System CPU load
 /// </summary>
-class  CpuGeneratorConfigSystem
+class  CpuGeneratorSystemConfig
     : public ModelBase
 {
 public:
-    CpuGeneratorConfigSystem();
-    virtual ~CpuGeneratorConfigSystem();
+    CpuGeneratorSystemConfig();
+    virtual ~CpuGeneratorSystemConfig();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -45,7 +45,7 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// CpuGeneratorConfigSystem members
+    /// CpuGeneratorSystemConfig members
 
     /// <summary>
     /// CPU utilization value. The maximum value is (100 * core_count). 
@@ -62,4 +62,4 @@ protected:
 }
 }
 
-#endif /* CpuGeneratorConfigSystem_H_ */
+#endif /* CpuGeneratorSystemConfig_H_ */

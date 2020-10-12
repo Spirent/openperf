@@ -11,28 +11,28 @@
 */
 
 
-#include "CpuGeneratorConfigSystem.h"
+#include "CpuGeneratorSystemConfig.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-CpuGeneratorConfigSystem::CpuGeneratorConfigSystem()
+CpuGeneratorSystemConfig::CpuGeneratorSystemConfig()
 {
     m_Utilization = 0.0;
     
 }
 
-CpuGeneratorConfigSystem::~CpuGeneratorConfigSystem()
+CpuGeneratorSystemConfig::~CpuGeneratorSystemConfig()
 {
 }
 
-void CpuGeneratorConfigSystem::validate()
+void CpuGeneratorSystemConfig::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json CpuGeneratorConfigSystem::toJson() const
+nlohmann::json CpuGeneratorSystemConfig::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -42,18 +42,18 @@ nlohmann::json CpuGeneratorConfigSystem::toJson() const
     return val;
 }
 
-void CpuGeneratorConfigSystem::fromJson(nlohmann::json& val)
+void CpuGeneratorSystemConfig::fromJson(nlohmann::json& val)
 {
     setUtilization(val.at("utilization"));
     
 }
 
 
-double CpuGeneratorConfigSystem::getUtilization() const
+double CpuGeneratorSystemConfig::getUtilization() const
 {
     return m_Utilization;
 }
-void CpuGeneratorConfigSystem::setUtilization(double value)
+void CpuGeneratorSystemConfig::setUtilization(double value)
 {
     m_Utilization = value;
     

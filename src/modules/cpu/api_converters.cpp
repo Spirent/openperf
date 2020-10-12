@@ -149,7 +149,7 @@ std::shared_ptr<swagger::CpuGenerator> to_swagger(const model::generator& model)
                 cpu_config->setMethod("system");
 
                 auto system =
-                    std::make_shared<swagger::CpuGeneratorConfigSystem>();
+                    std::make_shared<swagger::CpuGeneratorSystemConfig>();
                 system->setUtilization(utilization);
                 cpu_config->setSystem(system);
 
