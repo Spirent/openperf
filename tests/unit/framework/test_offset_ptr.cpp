@@ -106,7 +106,7 @@ TEST_CASE("basic functionality for offset_ptr", "[offset_ptr]")
             REQUIRE(sum == 25);
         }
 
-        delete x.get();
+        delete[] x.get();
     }
 
     SECTION("pointer works with standard library,")
@@ -123,7 +123,7 @@ TEST_CASE("basic functionality for offset_ptr", "[offset_ptr]")
             }
         }
 
-        delete x.get();
+        delete[] x.get();
     }
 
     SECTION("can use with structures,")
