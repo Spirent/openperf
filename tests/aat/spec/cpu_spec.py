@@ -213,31 +213,37 @@ with description('CPU Generator Module', 'cpu') as self:
             with after.all:
                 self._api.delete_cpu_generator(self._g7r.id)
 
+            with shared_context('start generator'):
+                with it('is not running'):
+                    expect(self._g7r.running).to(be_false)
+
+                with it('started'):
+                    expect(self._result[1]).to(equal(201))
+
+                with it('has valid Location header'):
+                    expect(self._result[2]).to(has_location('/cpu-generator-results/' + self._result[0].id))
+
+                with it('has Content-Type: application/json header'):
+                    expect(self._result[2]).to(has_json_content_type)
+
+                with it('returned valid result'):
+                    expect(self._result[0]).to(be_valid_cpu_generator_result)
+                    expect(self._result[0].active).to(be_true)
+                    expect(self._result[0].generator_id).to(equal(self._g7r.id))
+
+                with it('is running'):
+                    g7r = self._api.get_cpu_generator(self._g7r.id)
+                    expect(g7r).to(be_valid_cpu_generator)
+                    expect(g7r.running).to(be_true)
+
             with context('POST'):
                 with description('by existing ID'):
                     with before.all:
                         self._result = self._api.start_cpu_generator_with_http_info(
                             self._g7r.id, _return_http_data_only=False)
 
-                    with it('is not running'):
-                        expect(self._g7r.running).to(be_false)
-
-                    with it('started'):
-                        expect(self._result[1]).to(equal(201))
-
-                    with it('has valid Location header'):
-                        expect(self._result[2]).to(has_location('/cpu-generator-results/' + self._result[0].id))
-
-                    with it('has Content-Type: application/json header'):
-                        expect(self._result[2]).to(has_json_content_type)
-
-                    with it('returned valid result'):
-                        expect(self._result[0]).to(be_valid_cpu_generator_result)
-
-                    with it('is running'):
-                        g7r = self._api.get_cpu_generator(self._g7r.id)
-                        expect(g7r).to(be_valid_cpu_generator)
-                        expect(g7r.running).to(be_true)
+                    with included_context('start generator'):
+                        pass
 
                 with description('by existing ID with Dynamic Results'):
                     with before.all:
@@ -247,28 +253,9 @@ with description('CPU Generator Module', 'cpu') as self:
                         self._result = self._api.start_cpu_generator_with_http_info(
                             self._g7r.id, dynamic_results=dynamic, _return_http_data_only=False)
 
-                    with it('is not running'):
-                        expect(self._g7r.running).to(be_false)
-
-                    with it('started'):
-                        expect(self._result[1]).to(equal(201))
-
-                    with it('has valid Location header'):
-                        expect(self._result[2]).to(has_location('/cpu-generator-results/' + self._result[0].id))
-
-                    with it('has Content-Type: application/json header'):
-                        expect(self._result[2]).to(has_json_content_type)
-
-                    with it('returned valid result'):
-                        expect(self._result[0]).to(be_valid_cpu_generator_result)
-                        expect(self._result[0].active).to(be_true)
-                        expect(self._result[0].generator_id).to(equal(self._g7r.id))
-                        expect(self._result[0].dynamic_results).to(be_valid_dynamic_results)
-
-                    with it('is running'):
-                        g7r = self._api.get_cpu_generator(self._g7r.id)
-                        expect(g7r).to(be_valid_cpu_generator)
-                        expect(g7r.running).to(be_true)
+                    with included_context('start generator'):
+                        with it('has valid dynamic results'):
+                            expect(self._result[0].dynamic_results).to(be_valid_dynamic_results)
 
                 with description('by non-existent ID'):
                     with it('not found (404)'):
