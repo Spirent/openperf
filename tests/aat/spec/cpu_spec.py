@@ -303,6 +303,38 @@ with description('CPU Generator Module', 'cpu') as self:
                         expr = lambda: self._api.start_cpu_generator('bad_id')
                         expect(expr).to(raise_api_exception(400))
 
+        with description('/cpu-generators/x/bulk-create'):
+            with description('POST'):
+                with before.all:
+                    self._models = [
+                        cpu_generator_model(self._api.api_client, method='system'),
+                        cpu_generator_model(self._api.api_client, method='cores')
+                    ]
+                    request = client.models.BulkCreateCpuGeneratorsRequest(self._models)
+                    self._result = self._api.bulk_create_cpu_generators_with_http_info(
+                        request, _return_http_data_only=False)
+
+                with after.all:
+                    for g7r in self._result[0]:
+                        self._api.delete_cpu_generator(g7r.id)
+
+                with it('created'):
+                    expect(self._result[1]).to(equal(200))
+
+                with it('has Content-Type: application/json header'):
+                    expect(self._result[2]).to(has_json_content_type)
+
+                with it('returned valid generator list'):
+                    for g7r in self._result[0]:
+                        expect(g7r).to(be_valid_cpu_generator)
+
+                with it('has same config'):
+                    for idx in range(len(self._models)):
+                        model = self._models[idx]
+                        if (not model.id):
+                            model.id = self._result[0][idx].id
+                        expect(self._result[0][idx]).to(equal(model))
+
         with description('/cpu-generators/x/bulk-start'):
             with before.all:
                 model = cpu_generator_model(

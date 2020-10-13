@@ -17,7 +17,7 @@ def get_cpu_dynamic_results_fields(generator_config):
     return fields
 
 
-def config_model(method):
+def config_model(method='cores'):
     config = client.models.CpuGeneratorConfig()
     config.method = method
 
