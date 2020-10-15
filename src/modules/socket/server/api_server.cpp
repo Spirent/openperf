@@ -276,7 +276,15 @@ int server::do_client_init(event_loop& loop, int fd)
      * handler.
      */
     auto init = std::get<api::request_init>(request);
-    if (m_handlers.find(init.pid) == m_handlers.end()) {
+
+    /*
+     * We can receive duplicates inits if the client launches itself
+     * with `exec` or friends. This happens when using taskset and probably
+     * in other situation as well.  Hence, just log a warning if we see
+     * a duplicate client.
+     */
+    bool is_new = m_handlers.count(init.pid) == 0;
+    if (is_new) {
         OP_LOG(OP_LOG_INFO,
                "New connection received from pid %d, %s\n",
                init.pid,
@@ -284,23 +292,17 @@ int server::do_client_init(event_loop& loop, int fd)
         m_handlers.emplace(init.pid,
                            std::make_unique<api_handler>(
                                loop, m_shm.base(), *(allocator()), init.pid));
-        auto shm_info = api::shared_memory_descriptor{.size = m_shm.size()};
-        strncpy(
-            shm_info.name, m_shm.name().data(), api::shared_memory_name_length);
-        reply = api::reply_init{.pid = getpid(),
-                                .shm_info = std::make_optional(shm_info)};
-    } else {
-        /*
-         * We have already responded to an init request for this pid.
-         * Since the client should already have the shared memory
-         * data, don't return it again.
-         */
-        reply = api::reply_init{.pid = getpid(), .shm_info = std::nullopt};
     }
+
+    auto shm_info = api::shared_memory_descriptor{.size = m_shm.size()};
+    strncpy(shm_info.name, m_shm.name().data(), api::shared_memory_name_length);
+    reply = api::reply_init{.pid = getpid(),
+                            .shm_info = std::make_optional(shm_info)};
 
     if (send(fd, &reply, sizeof(reply), 0) > 0) {
         OP_LOG(OP_LOG_DEBUG,
-               "Initialized client from pid %d, %s\n",
+               "Initialized %s client from pid %d, %s\n",
+               is_new ? "new" : "duplicate",
                init.pid,
                to_string(init.tid).c_str());
 
