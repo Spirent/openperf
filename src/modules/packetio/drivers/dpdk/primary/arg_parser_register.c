@@ -3,6 +3,7 @@
 
 const char op_packetio_dpdk_no_rx_irqs[] =
     "modules.packetio.dpdk.no-rx-interrupts";
+const char op_packetio_dpdk_no_lro[] = "modules.packetio.dpdk.no-lro";
 const char op_packetio_dpdk_test_mode[] = "modules.packetio.dpdk.test-mode";
 const char op_packetio_dpdk_test_portpairs[] =
     "modules.packetio.dpdk.test-portpairs";
@@ -20,6 +21,10 @@ MAKE_OPTION_DATA(
              OP_OPTION_TYPE_LONG),
     MAKE_OPT("disable receive queue interrupts",
              op_packetio_dpdk_no_rx_irqs,
+             0,
+             OP_OPTION_TYPE_NONE),
+    MAKE_OPT("disable large receive offload",
+             op_packetio_dpdk_no_lro,
              0,
              OP_OPTION_TYPE_NONE), );
 
