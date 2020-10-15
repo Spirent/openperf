@@ -95,8 +95,10 @@ generator::generator()
         if (m_read.config.threads) {
             auto& rstat = m_stat.read;
             rstat.operations_target =
-                elapsed_time.count() * m_read.config.op_per_sec
-                * std::min(m_read.config.block_size, 1UL) / std::nano::den;
+                elapsed_time.count()
+                * static_cast<uint64_t>(
+                    m_read.config.op_per_sec
+                    * std::min(m_read.config.block_size, 1UL) / std::nano::den);
             rstat.bytes_target =
                 rstat.operations_target * m_read.config.block_size;
         }
@@ -104,8 +106,11 @@ generator::generator()
         if (m_write.config.threads) {
             auto& wstat = m_stat.write;
             wstat.operations_target =
-                elapsed_time.count() * m_write.config.op_per_sec
-                * std::min(m_write.config.block_size, 1UL) / std::nano::den;
+                elapsed_time.count()
+                * static_cast<uint64_t>(
+                    m_write.config.op_per_sec
+                    * std::min(m_write.config.block_size, 1UL)
+                    / std::nano::den);
             wstat.bytes_target =
                 wstat.operations_target * m_write.config.block_size;
         }
