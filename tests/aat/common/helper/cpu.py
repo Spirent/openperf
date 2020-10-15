@@ -17,26 +17,32 @@ def get_cpu_dynamic_results_fields(generator_config):
     return fields
 
 
-def config_model():
-    core_config_target = client.models.CpuGeneratorCoreConfigTargets()
-    core_config_target.instruction_set = 'scalar'
-    core_config_target.data_type = 'float32';
-    core_config_target.weight = 1
-
-    core_config = client.models.CpuGeneratorCoreConfig()
-    core_config.utilization = 50.0
-    core_config.targets = [core_config_target]
-
+def config_model(method='cores'):
     config = client.models.CpuGeneratorConfig()
-    config.method = "cores"
-    config.cores = [core_config]
+    config.method = method
+
+    if method == 'cores':
+        core_config_target = client.models.CpuGeneratorCoreConfigTargets()
+        core_config_target.instruction_set = 'scalar'
+        core_config_target.data_type = 'float32';
+        core_config_target.weight = 1
+
+        core_config = client.models.CpuGeneratorCoreConfig()
+        core_config.utilization = 50.0
+        core_config.targets = [core_config_target]
+
+        config.cores = [core_config]
+    elif method == 'system':
+        system_config = client.models.CpuGeneratorSystemConfig()
+        system_config.utilization = 25.0
+        config.system = system_config
 
     return config
 
 
-def cpu_generator_model(api_client, running = False, id = ''):
+def cpu_generator_model(api_client, running = False, id = '', method = 'cores'):
     gen = client.models.CpuGenerator()
     gen.running = running
-    gen.config = config_model()
+    gen.config = config_model(method)
     gen.id = id
     return gen

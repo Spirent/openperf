@@ -334,7 +334,7 @@ definitions:
           - system
           - cores
       system:
-        title: CpuGeneratorConfigSystem
+        title: CpuGeneratorSystemConfig
         type: object
         description: System CPU load
         properties:

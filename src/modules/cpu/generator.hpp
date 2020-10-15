@@ -6,7 +6,6 @@
 #include "framework/generator/controller.hpp"
 #include "modules/dynamic/spool.hpp"
 
-#include "task_cpu.hpp"
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
 
@@ -27,6 +26,7 @@ private:
 
     dynamic::spool<cpu_stat> m_dynamic;
     controller m_controller;
+    uint16_t m_core_count;
 
 public:
     generator(const model::generator&);

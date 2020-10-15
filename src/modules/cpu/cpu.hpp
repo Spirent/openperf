@@ -56,6 +56,7 @@ struct utilization_time
 };
 
 utilization_time cpu_thread_time();
+utilization_time cpu_process_time();
 std::chrono::nanoseconds cpu_steal_time();
 
 uint16_t cpu_cache_line_size();

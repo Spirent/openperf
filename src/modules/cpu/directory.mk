@@ -15,6 +15,7 @@ CPU_SOURCES += \
 	init.cpp \
 	server.cpp \
 	task_cpu.cpp \
+	task_cpu_system.cpp \
 	scalar/matrix.cpp \
 	cpu_options.c \
 	ispc/matrix.ispc

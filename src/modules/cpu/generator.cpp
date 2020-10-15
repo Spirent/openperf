@@ -2,6 +2,9 @@
 
 #include "generator.hpp"
 #include "cpu.hpp"
+#include "task_cpu.hpp"
+#include "task_cpu_system.hpp"
+
 #include "config/op_config_file.hpp"
 #include "framework/core/op_uuid.hpp"
 #include "framework/core/op_cpuset.h"
@@ -71,6 +74,81 @@ std::optional<double> get_field(const cpu_stat& stat, std::string_view name)
     return std::nullopt;
 }
 
+auto config_mode(double utilization, uint16_t core_count)
+{
+    if (utilization <= 0 || 100 * core_count < utilization) {
+        throw std::runtime_error("System utilization value "
+                                 + std::to_string(utilization)
+                                 + " is not valid. Available values from 0 to "
+                                 + std::to_string(100 * core_count));
+    }
+
+    std::vector<internal::task_cpu_system> tasks;
+    for (uint16_t core = 0; core < core_count; ++core) {
+        tasks.emplace_back(core, core_count, utilization / core_count);
+    }
+
+    return tasks;
+}
+
+auto config_mode(const cores_config& cores, uint16_t core_count)
+{
+    if (cores.size() > core_count) {
+        throw std::runtime_error(
+            "Could not configure more cores than available ("
+            + std::to_string(core_count) + ").");
+    }
+
+    std::vector<internal::task_cpu> tasks;
+    for (size_t core = 0; core < cores.size(); ++core) {
+        auto core_conf = cores.at(core);
+        for (const auto& target : core_conf.targets) {
+            if (!available(target.set) || !enabled(target.set)) {
+                throw std::runtime_error("Instruction set "
+                                         + std::string(to_string(target.set))
+                                         + " is not supported");
+            }
+        }
+
+        if (core_conf.utilization <= 0.0 || 100.0 < core_conf.utilization) {
+            throw std::runtime_error("Core utilization value "
+                                     + std::to_string(core_conf.utilization)
+                                     + " is not valid. Available values "
+                                       "from 0 to 100 inclusive.");
+        }
+
+        core_conf.core = core;
+        tasks.emplace_back(core_conf);
+    }
+
+    return tasks;
+}
+
+std::vector<uint16_t> available_cores()
+{
+    // It is required to change thread affinity in order to be able to detect
+    // available cores. Affinity of the current thread could be already set and
+    // we should not touch it therefore this will be performed in a separate
+    // thread.
+    auto cores = std::async(op_get_cpu_online).get();
+    OP_LOG(OP_LOG_DEBUG, "Detected %zu cores", cores.size());
+
+    auto mask = openperf::config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
+        "modules.cpu.cpu-mask");
+    if (mask) {
+        std::vector<uint16_t> filtered_cores;
+        for (size_t i = 0; i < cores.size(); i++) {
+            if (mask.value() & (1 << i)) {
+                filtered_cores.push_back(cores.at(i));
+            }
+        }
+        OP_LOG(OP_LOG_DEBUG, "Filtered %zu cores", filtered_cores.size());
+        return filtered_cores;
+    }
+
+    return cores;
+}
+
 // Constructors & Destructor
 generator::generator(const model::generator& generator_model)
     : model::generator(generator_model)
@@ -86,7 +164,19 @@ generator::generator(const model::generator& generator_model)
         m_stat_ptr = &stat_copy;
         m_stat += stat;
 
-        if (m_stat.steal == 0ns) m_stat.steal = internal::cpu_steal_time();
+        if (std::holds_alternative<double>(m_config)) {
+            auto utilization = std::get<double>(m_config);
+            auto process_stat = internal::cpu_process_time();
+            m_stat.utilization = process_stat.utilization;
+            m_stat.system = process_stat.system;
+            m_stat.user = process_stat.user;
+            m_stat.steal = internal::cpu_steal_time();
+            m_stat.error = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                m_stat.available * utilization / (100.0 * m_core_count)
+                - m_stat.utilization);
+        } else {
+            if (m_stat.steal == 0ns) m_stat.steal = internal::cpu_steal_time();
+        }
 
         m_dynamic.add(m_stat);
         m_stat_ptr = &m_stat;
@@ -104,87 +194,29 @@ void generator::config(const generator_config& config)
 {
     m_controller.pause();
 
-    // It is required to change thread affinity in order to be able to detect
-    // available cores. Affinity of the current thread could be already set and
-    // we should not touch it therefore this will be performed in a separate
-    // thread.
-    auto available_cores = std::async(op_get_cpu_online).get();
-    OP_LOG(OP_LOG_DEBUG, "Detected %zu cores", available_cores.size());
+    std::visit(
+        [this](auto&& conf) {
+            auto cores = available_cores();
+            auto task_list = config_mode(conf, cores.size());
 
-    auto mask = openperf::config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
-        "modules.cpu.cpu-mask");
-    if (mask) {
-        std::vector<uint64_t> filtered_cores;
-        for (size_t i = 0; i < available_cores.size(); i++) {
-            if (mask.value() & (1 << i)) {
-                filtered_cores.push_back(available_cores.at(i));
+            m_core_count = cores.size();
+            m_config = conf;
+            m_stat = {task_list.size()};
+
+            m_controller.clear();
+            for (auto&& task : task_list) {
+                auto task_config = task.config();
+                m_stat.cores[task_config.core].targets.resize(
+                    task_config.targets.size());
+
+                m_controller.add(
+                    std::move(task),
+                    NAME_PREFIX + std::to_string(m_serial_number) + "_c"
+                        + std::to_string(cores.at(task_config.core)),
+                    cores.at(task_config.core));
             }
-        }
-        OP_LOG(OP_LOG_DEBUG, "Filtered %zu cores", filtered_cores.size());
-        available_cores.clear();
-        std::move(filtered_cores.begin(),
-                  filtered_cores.end(),
-                  std::back_inserter(available_cores));
-    }
-
-    m_config = config;
-    if (m_config.cores.size() > available_cores.size()) {
-        throw std::runtime_error(
-            "Could not configure more cores than available ("
-            + std::to_string(available_cores.size()) + ").");
-    }
-
-    if (m_config.utilization) {
-        auto sys_util = config.utilization.value();
-        if (sys_util < 0 || 100 * available_cores.size() < sys_util) {
-            throw std::runtime_error(
-                "System utilization value " + std::to_string(sys_util)
-                + " is not valid. Available values from 0 to "
-                + std::to_string(100 * available_cores.size()));
-        }
-
-        m_config.cores.clear();
-        for (size_t core = 0; core < available_cores.size(); ++core) {
-            m_config.cores.emplace_back(task_cpu_config{
-                .utilization = sys_util / available_cores.size(),
-                .targets = {1,
-                            target_config{
-                                .set = instruction_set::SCALAR,
-                                .data_type = data_type::INT32,
-                                .weight = 1,
-                            }},
-            });
-        }
-    }
-
-    m_stat = {m_config.cores.size()};
-    for (size_t core = 0; core < m_config.cores.size(); ++core) {
-        auto core_conf = m_config.cores.at(core);
-        for (const auto& target : core_conf.targets) {
-            if (!available(target.set) || !enabled(target.set)) {
-                throw std::runtime_error("Instruction set "
-                                         + std::string(to_string(target.set))
-                                         + " is not supported");
-            }
-        }
-
-        m_stat.cores[core].targets.resize(core_conf.targets.size());
-
-        if (core_conf.utilization == 0.0) continue;
-        if (core_conf.utilization < 0.0 || 100.0 < core_conf.utilization) {
-            throw std::runtime_error(
-                "Core utilization value "
-                + std::to_string(core_conf.utilization)
-                + " is not valid. Available values from 0 to 100 inclusive.");
-        }
-
-        core_conf.core = core;
-        auto task = internal::task_cpu{core_conf};
-        m_controller.add(std::move(task),
-                         NAME_PREFIX + std::to_string(m_serial_number) + "_c"
-                             + std::to_string(available_cores.at(core)),
-                         available_cores.at(core));
-    }
+        },
+        config);
 
     if (m_running) m_controller.resume();
 }

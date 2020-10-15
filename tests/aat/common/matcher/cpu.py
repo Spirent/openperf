@@ -21,10 +21,21 @@ class _be_valid_cpu_generator(Matcher):
 class _be_valid_cpu_generator_config(Matcher):
     def _match(self, conf):
         expect(conf).to(be_a(client.models.CpuGeneratorConfig))
-        expect(conf.cores).to(be_a(list))
-        for c in conf.cores:
-            expect(c).to(be_valid_cpu_generator_core_config)
+        if conf.method == 'cores':
+            expect(conf.cores).to(be_a(list))
+            for core in conf.cores:
+                expect(core).to(be_valid_cpu_generator_core_config)
+        elif conf.method == 'system':
+            expect(conf.system).to(be_valid_cpu_generator_system_config)
+        else:
+            return False, ['unknown configuration method']
         return True, ['is valid CPU Generator Configuration']
+
+class _be_valid_cpu_generator_system_config(Matcher):
+    def _match(self, conf):
+        expect(conf).to(be_a(client.models.CpuGeneratorSystemConfig))
+        expect(conf.utilization).to(be_a(float))
+        return True, ['is valid CPU Generator System Configuration']
 
 class _be_valid_cpu_generator_core_config(Matcher):
     def _match(self, conf):
@@ -58,6 +69,7 @@ class _be_valid_cpu_generator_result(Matcher):
 be_valid_cpu_info = _be_valid_cpu_info()
 be_valid_cpu_generator = _be_valid_cpu_generator()
 be_valid_cpu_generator_config = _be_valid_cpu_generator_config()
+be_valid_cpu_generator_system_config = _be_valid_cpu_generator_system_config()
 be_valid_cpu_generator_core_config = _be_valid_cpu_generator_core_config()
 be_valid_cpu_generator_core_config_targets = _be_valid_cpu_generator_core_config_targets()
 be_valid_cpu_generator_result = _be_valid_cpu_generator_result()
