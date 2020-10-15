@@ -44,6 +44,11 @@ uint32_t max_rx_pktlen(uint16_t port_id)
     return (get_info_field(port_id, &rte_eth_dev_info::max_rx_pktlen));
 }
 
+uint32_t max_lro_pkt_size(uint16_t port_id)
+{
+    return (get_info_field(port_id, &rte_eth_dev_info::max_lro_pkt_size));
+}
+
 uint32_t max_mac_addrs(uint16_t port_id)
 {
     return (get_info_field(port_id, &rte_eth_dev_info::max_mac_addrs));
