@@ -1,7 +1,7 @@
 #include <cassert>
 #include <unistd.h>
 
-#include "socket/dpdk/memcpy.hpp"
+#include "framework/utils/memcpy.hpp"
 #include "socket/circular_buffer_consumer.tcc"
 #include "socket/circular_buffer_producer.tcc"
 #include "socket/event_queue_consumer.tcc"
@@ -161,9 +161,9 @@ to_sockaddr(const dgram_channel_addr& addr)
         auto sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = addr.port();
-        dpdk::memcpy(&sa6->sin6_addr.s6_addr,
-                     &addr.addr().u_addr.ip6.addr[0],
-                     sizeof(in6_addr));
+        openperf::utils::memcpy(&sa6->sin6_addr.s6_addr,
+                                &addr.addr().u_addr.ip6.addr[0],
+                                sizeof(in6_addr));
         return (std::make_optional(sstorage));
     }
     default:
@@ -321,7 +321,8 @@ tl::expected<size_t, int> dgram_channel::recv(
         auto src = to_sockaddr(desc->address.value());
         if (src && from && fromlen) {
             auto srclen = length_of(src.value());
-            dpdk::memcpy(from, &src.value(), std::min(*fromlen, srclen));
+            openperf::utils::memcpy(
+                from, &src.value(), std::min(*fromlen, srclen));
             *fromlen = std::max(*fromlen, srclen);
         }
     }
