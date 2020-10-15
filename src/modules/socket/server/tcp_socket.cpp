@@ -334,7 +334,7 @@ int tcp_socket::do_lwip_error(int err)
      * lwIP will "conveniently" free the pbuf for us before this callback is
      * triggered, so make sure we don't.
      */
-    m_pcb.reset(nullptr);
+    [[maybe_unused]] auto* pcb = m_pcb.release();
     return (ERR_OK);
 }
 
