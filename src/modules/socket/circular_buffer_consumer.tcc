@@ -5,7 +5,7 @@
 #include <numeric>
 #include <optional>
 
-#include "socket/dpdk/memcpy.hpp"
+#include "framework/utils/memcpy.hpp"
 #include "socket/circular_buffer_consumer.hpp"
 
 namespace openperf {
@@ -145,8 +145,9 @@ size_t circular_buffer_consumer<Derived>::pread(void* ptr,
     const size_t chunk1 = std::min(to_read, len() - mask(cursor));
     const size_t chunk2 = to_read - chunk1;
 
-    dpdk::memcpy(ptr, base() + mask(cursor), chunk1);
-    dpdk::memcpy(reinterpret_cast<uint8_t*>(ptr) + chunk1, base(), chunk2);
+    openperf::utils::memcpy(ptr, base() + mask(cursor), chunk1);
+    openperf::utils::memcpy(
+        reinterpret_cast<uint8_t*>(ptr) + chunk1, base(), chunk2);
 
     return (to_read);
 }

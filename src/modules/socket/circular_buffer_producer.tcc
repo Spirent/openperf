@@ -3,7 +3,7 @@
 #include <cstring>
 #include <numeric>
 
-#include "socket/dpdk/memcpy.hpp"
+#include "framework/utils/memcpy.hpp"
 #include "socket/circular_buffer_producer.hpp"
 
 namespace openperf {
@@ -109,8 +109,8 @@ size_t circular_buffer_producer<Derived>::write(const void* ptr, size_t length)
     const size_t chunk1 = std::min(to_write, len() - mask(cursor));
     const size_t chunk2 = to_write - chunk1;
 
-    dpdk::memcpy(base() + mask(cursor), ptr, chunk1);
-    dpdk::memcpy(
+    openperf::utils::memcpy(base() + mask(cursor), ptr, chunk1);
+    openperf::utils::memcpy(
         base(), reinterpret_cast<const uint8_t*>(ptr) + chunk1, chunk2);
 
     store_write(cursor + to_write);
@@ -136,9 +136,9 @@ size_t circular_buffer_producer<Derived>::write(const iovec iov[],
 
     /* Copy full iovs before the buffer wrap */
     while (written1 + iov[iov_idx].iov_len <= chunk1 && iov_idx < iovcnt) {
-        dpdk::memcpy(base() + mask(cursor) + written1,
-                     iov[iov_idx].iov_base,
-                     iov[iov_idx].iov_len);
+        openperf::utils::memcpy(base() + mask(cursor) + written1,
+                                iov[iov_idx].iov_base,
+                                iov[iov_idx].iov_len);
         written1 += iov[iov_idx].iov_len;
         iov_idx++;
     }
@@ -168,19 +168,19 @@ size_t circular_buffer_producer<Derived>::write(const iovec iov[],
     }
 
     /* Copy the two pieces */
-    dpdk::memcpy(
+    openperf::utils::memcpy(
         base() + mask(cursor) + written1, iov[iov_idx].iov_base, piece1);
     written1 += piece1;
-    dpdk::memcpy(base(),
-                 reinterpret_cast<const uint8_t*>(iov[iov_idx].iov_base)
-                     + piece1,
-                 piece2);
+    openperf::utils::memcpy(
+        base(),
+        reinterpret_cast<const uint8_t*>(iov[iov_idx].iov_base) + piece1,
+        piece2);
     auto written2 = piece2;
     iov_idx++;
 
     /* Now finish writing iovs to the front of the buffer */
     while (written2 + iov[iov_idx].iov_len <= chunk2 && iov_idx < iovcnt) {
-        dpdk::memcpy(
+        openperf::utils::memcpy(
             base() + written2, iov[iov_idx].iov_base, iov[iov_idx].iov_len);
         written2 += iov[iov_idx].iov_len;
         iov_idx++;
