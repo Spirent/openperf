@@ -2,8 +2,12 @@
 #include <optional>
 #include <vector>
 
+#include <sched.h>
+
 #include "config/op_config_utils.hpp"
+#include "core/op_cpuset.h"
 #include "core/op_log.h"
+#include "core/op_thread.h"
 #include "core/op_uuid.hpp"
 #include "packetio/drivers/dpdk/arg_parser.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
@@ -183,7 +187,7 @@ static ssize_t eal_log_write(void* cookie __attribute__((unused)),
  * Perform the minimal amount of work necessary to load the DPDK environment
  * After this is run, we'll hand off to process specific code.
  */
-static inline void bootstrap()
+static void bootstrap()
 {
     /*
      * Create a stream so we can forward DPDK logging messages to our own
@@ -236,9 +240,47 @@ static inline void bootstrap()
     }
 }
 
+using cpuset_type = std::remove_pointer_t<op_cpuset_t>;
+
+struct cpuset_deleter
+{
+    void operator()(cpuset_type* cpuset) const { op_cpuset_delete(cpuset); }
+};
+
+using cpuset_ptr = std::unique_ptr<cpuset_type, cpuset_deleter>;
+
+static void do_bootstrap()
+{
+    /*
+     * The DPDK init process locks this thread to the first
+     * available DPDK core.  However, since this thread is going
+     * to launch other threads, we need to restore the original
+     * thread affinity mask.
+     */
+    auto cpuset = cpuset_ptr{op_cpuset_create()};
+    if (auto error = op_thread_get_affinity_mask(cpuset.get())) {
+        throw std::runtime_error("Could not retrieve CPU affinity mask: "
+                                 + std::string(strerror(error)));
+    }
+
+    bootstrap();
+
+    /* Remove all DPDK slave cores from our original affinity mask */
+    int lcore_id = 0;
+    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
+        op_cpuset_set(cpuset.get(), lcore_id, false);
+    }
+
+    /* Now restore the original cpu mask less the DPDK slave cores */
+    if (auto error = op_thread_set_affinity_mask(cpuset.get())) {
+        throw std::runtime_error("Could not set CPU affinity mask: "
+                                 + std::string(strerror(error)));
+    }
+}
+
 template <typename ProcessType> driver<ProcessType>::driver()
 {
-    bootstrap();
+    do_bootstrap();
 
     sanity_check_environment();
 
@@ -403,7 +445,7 @@ driver<ProcessType>::create_port(std::string_view id,
             rte_eth_bond_free(name.c_str());
             return tl::make_unexpected(
                 "Failed to add slave port " + std::to_string(port_idx)
-                + "to bond port " + std::to_string(id_or_error) + ": "
+                + " to bond port " + std::to_string(id_or_error) + ": "
                 + std::string(rte_strerror(std::abs(error))));
         }
         success_record.push_back(port_idx);
