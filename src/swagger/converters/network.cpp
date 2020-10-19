@@ -1,0 +1,69 @@
+#include "memory.hpp"
+
+#include "swagger/v1/model/NetworkGenerator.h"
+#include "swagger/v1/model/BulkCreateNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/BulkDeleteNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStopNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/NetworkGeneratorResult.h"
+
+namespace swagger::v1::model {
+
+void from_json(const nlohmann::json& j, NetworkGenerator& generator)
+{
+    if (j.find("id") != j.end()) { generator.setId(j.at("id")); }
+    if (j.find("running") != j.end()) { generator.setRunning(j.at("running")); }
+
+    auto gc = NetworkGeneratorConfig();
+    gc.fromJson(const_cast<nlohmann::json&>(j.at("config")));
+    generator.setConfig(std::make_shared<NetworkGeneratorConfig>(gc));
+}
+
+void from_json(const nlohmann::json& j,
+               BulkCreateNetworkGeneratorsRequest& request)
+{
+    request.getItems().clear();
+    nlohmann::json jsonArray;
+    for (auto& item : const_cast<nlohmann::json&>(j).at("items")) {
+        if (item.is_null()) {
+            continue;
+        } else {
+            std::shared_ptr<NetworkGenerator> newItem =
+                std::make_shared<NetworkGenerator>();
+            from_json(item, *newItem);
+            request.getItems().push_back(newItem);
+        }
+    }
+}
+
+void from_json(const nlohmann::json& j,
+               BulkDeleteNetworkGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j,
+               BulkStartNetworkGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j,
+               BulkStopNetworkGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j, NetworkGeneratorResult& result)
+{
+    result.fromJson(const_cast<nlohmann::json&>(j));
+
+    auto write_stats = std::make_shared<NetworkGeneratorStats>();
+    write_stats->fromJson(const_cast<nlohmann::json&>(j).at("write"));
+    result.setWrite(write_stats);
+    auto read_stats = std::make_shared<NetworkGeneratorStats>();
+    read_stats->fromJson(const_cast<nlohmann::json&>(j).at("read"));
+    result.setRead(read_stats);
+}
+
+} // namespace swagger::v1::model
