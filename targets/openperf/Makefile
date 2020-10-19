@@ -20,6 +20,7 @@ BUILD_DEPS := \
 	cpu \
 	dynamic \
 	memory \
+	network \
 	packet_analyzer \
 	packet_capture \
 	packet_generator \
