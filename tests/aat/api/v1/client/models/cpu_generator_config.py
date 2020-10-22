@@ -50,8 +50,7 @@ class CpuGeneratorConfig(object):
         self._cores = None
         self.discriminator = None
 
-        if method is not None:
-            self.method = method
+        self.method = method
         if system is not None:
             self.system = system
         if cores is not None:

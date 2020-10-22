@@ -56,9 +56,7 @@ public:
     /// </summary>
     std::string getMethod() const;
     void setMethod(std::string value);
-    bool methodIsSet() const;
-    void unsetMethod();
-    /// <summary>
+        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<CpuGeneratorSystemConfig> getSystem() const;
@@ -74,7 +72,7 @@ public:
 
 protected:
     std::string m_Method;
-    bool m_MethodIsSet;
+
     std::shared_ptr<CpuGeneratorSystemConfig> m_System;
     bool m_SystemIsSet;
     std::vector<std::shared_ptr<CpuGeneratorCoreConfig>> m_Cores;
