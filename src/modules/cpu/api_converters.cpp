@@ -39,9 +39,7 @@ is_valid(const swagger::CpuGeneratorConfig& config)
     auto errors = std::vector<std::string>();
 
     auto method = config.getMethod();
-    if (!config.methodIsSet() || method.empty()) {
-        errors.emplace_back("Parameter 'method' is required.");
-    } else if (method == "system") {
+    if (method == "system") {
         auto utilizaton = config.getSystem()->getUtilization();
         if (utilizaton <= 0.0) {
             errors.emplace_back("System utilization value '"

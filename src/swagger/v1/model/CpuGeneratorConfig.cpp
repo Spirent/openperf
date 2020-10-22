@@ -20,7 +20,6 @@ namespace model {
 CpuGeneratorConfig::CpuGeneratorConfig()
 {
     m_Method = "";
-    m_MethodIsSet = false;
     m_SystemIsSet = false;
     m_CoresIsSet = false;
     
@@ -39,10 +38,7 @@ nlohmann::json CpuGeneratorConfig::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_MethodIsSet)
-    {
-        val["method"] = ModelBase::toJson(m_Method);
-    }
+    val["method"] = ModelBase::toJson(m_Method);
     if(m_SystemIsSet)
     {
         val["system"] = ModelBase::toJson(m_System);
@@ -66,11 +62,7 @@ nlohmann::json CpuGeneratorConfig::toJson() const
 
 void CpuGeneratorConfig::fromJson(nlohmann::json& val)
 {
-    if(val.find("method") != val.end())
-    {
-        setMethod(val.at("method"));
-        
-    }
+    setMethod(val.at("method"));
     if(val.find("system") != val.end())
     {
         if(!val["system"].is_null())
@@ -114,15 +106,7 @@ std::string CpuGeneratorConfig::getMethod() const
 void CpuGeneratorConfig::setMethod(std::string value)
 {
     m_Method = value;
-    m_MethodIsSet = true;
-}
-bool CpuGeneratorConfig::methodIsSet() const
-{
-    return m_MethodIsSet;
-}
-void CpuGeneratorConfig::unsetMethod()
-{
-    m_MethodIsSet = false;
+    
 }
 std::shared_ptr<CpuGeneratorSystemConfig> CpuGeneratorConfig::getSystem() const
 {

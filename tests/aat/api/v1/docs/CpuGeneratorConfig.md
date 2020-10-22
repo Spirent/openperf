@@ -3,7 +3,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**method** | **str** | Configuration method | [optional] 
+**method** | **str** | Configuration method | 
 **system** | [**CpuGeneratorSystemConfig**](CpuGeneratorSystemConfig.md) |  | [optional] 
 **cores** | [**list[CpuGeneratorCoreConfig]**](CpuGeneratorCoreConfig.md) | Per CPU core load configuration | [optional] 
 
