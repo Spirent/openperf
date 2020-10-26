@@ -90,4 +90,4 @@ int netif_wrapper::input_packet(void* packet) const {
     return (netif_inject(const_cast<netif*>(m_netif), packet) == ERR_OK ? 0 : -1);
 }
 
-}
+} // namespace openperf::packet::stack

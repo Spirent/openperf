@@ -29,7 +29,6 @@ STACK_LIBRARY := openperf_packet_stack
 STACK_TARGET := $(STACK_LIB_DIR)/lib$(STACK_LIBRARY).a
 
 OP_INC_DIRS += $(STACK_INC_DIRS)
-#OP_LIB_DIRS += $(PIO_LIB_DIR)
 OP_LDLIBS += -Wl,--whole-archive -l$(STACK_LIBRARY) -Wl,--no-whole-archive $(STACK_LDLIBS)
 
 # Load external dependencies

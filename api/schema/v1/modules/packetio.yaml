@@ -478,7 +478,6 @@ definitions:
     type: object
     description: Port configuration
     properties:
-      #host:
       bond:
         type: object
         description: Bond-specific configuration information

@@ -137,8 +137,4 @@ bool is_valid(const swagger::v1::model::Port&, std::vector<std::string>&);
 } // namespace packetio::port::api
 } // namespace openperf
 
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, swagger::v1::model::Port&);
-}
-
 #endif /*_OP_PACKETIO_PORT_API_HPP_ */

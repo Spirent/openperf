@@ -6,6 +6,7 @@
 #include "message/serialized_message.hpp"
 #include "packetio/port_api.hpp"
 
+#include "swagger/converters/packetio.hpp"
 #include "swagger/v1/model/Port.h"
 
 namespace openperf::packetio::port::api {

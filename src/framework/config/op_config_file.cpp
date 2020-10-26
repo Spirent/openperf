@@ -207,8 +207,6 @@ static void set_data_node_value(YAML::Node& node,
         node = split_options_string(opt_data, list_delimiters);
         break;
     }
-
-    return;
 }
 
 static YAML::Node make_data_node(std::string_view opt_data,

@@ -7,6 +7,7 @@
 #include "packet/stack/api.hpp"
 #include "packetio/generic_interface.hpp"
 
+#include "swagger/converters/packet_stack.hpp"
 #include "swagger/v1/model/BulkCreateInterfacesRequest.h"
 #include "swagger/v1/model/BulkCreateInterfacesResponse.h"
 #include "swagger/v1/model/BulkDeleteInterfacesRequest.h"

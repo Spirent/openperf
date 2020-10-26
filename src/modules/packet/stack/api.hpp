@@ -129,9 +129,4 @@ std::string to_string(intf_filter_type);
 
 } // namespace openperf::packet::stack::api
 
-namespace swagger::v1::model {
-void from_json(const nlohmann::json&, swagger::v1::model::Interface&);
-void from_json(const nlohmann::json&, swagger::v1::model::Stack&);
-} // namespace swagger::v1::model
-
 #endif /* _OP_PACKET_STACK_API_HPP_ */
