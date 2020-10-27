@@ -61,6 +61,20 @@ public:
     std::string getState() const;
     void setState(std::string value);
         /// <summary>
+    /// The scale multiplier for load parameters of generators
+    /// </summary>
+    double getLoadScale() const;
+    void setLoadScale(double value);
+    bool loadScaleIsSet() const;
+    void unsetLoad_scale();
+    /// <summary>
+    /// The scale multiplier for the length of each profile entry
+    /// </summary>
+    int64_t getTimeScale() const;
+    void setTimeScale(int64_t value);
+    bool timeScaleIsSet() const;
+    void unsetTime_scale();
+    /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<TvlpConfiguration_time> getTime() const;
@@ -83,6 +97,10 @@ protected:
 
     std::string m_State;
 
+    double m_Load_scale;
+    bool m_Load_scaleIsSet;
+    int64_t m_Time_scale;
+    bool m_Time_scaleIsSet;
     std::shared_ptr<TvlpConfiguration_time> m_Time;
 
     std::shared_ptr<TvlpProfile> m_Profile;
