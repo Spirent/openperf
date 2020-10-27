@@ -6,6 +6,9 @@
 #include "swagger/v1/model/BulkStartNetworkGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopNetworkGeneratorsRequest.h"
 #include "swagger/v1/model/NetworkGeneratorResult.h"
+#include "swagger/v1/model/NetworkServer.h"
+#include "swagger/v1/model/BulkCreateNetworkServersRequest.h"
+#include "swagger/v1/model/BulkDeleteNetworkServersRequest.h"
 
 namespace swagger::v1::model {
 
@@ -64,6 +67,36 @@ void from_json(const nlohmann::json& j, NetworkGeneratorResult& result)
     auto read_stats = std::make_shared<NetworkGeneratorStats>();
     read_stats->fromJson(const_cast<nlohmann::json&>(j).at("read"));
     result.setRead(read_stats);
+}
+
+void from_json(const nlohmann::json& j, NetworkServer& server)
+{
+    if (j.find("id") != j.end()) { server.setId(j.at("id")); }
+    server.setPort(j.at("port"));
+    server.setProtocol(j.at("protocol"));
+}
+
+void from_json(const nlohmann::json& j,
+               BulkCreateNetworkServersRequest& request)
+{
+    request.getItems().clear();
+    nlohmann::json jsonArray;
+    for (auto& item : const_cast<nlohmann::json&>(j).at("items")) {
+        if (item.is_null()) {
+            continue;
+        } else {
+            std::shared_ptr<NetworkServer> newItem =
+                std::make_shared<NetworkServer>();
+            from_json(item, *newItem);
+            request.getItems().push_back(newItem);
+        }
+    }
+}
+
+void from_json(const nlohmann::json& j,
+               BulkDeleteNetworkServersRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
 }
 
 } // namespace swagger::v1::model

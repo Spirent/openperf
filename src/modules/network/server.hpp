@@ -7,13 +7,15 @@
 
 #include "api.hpp"
 #include "generator_stack.hpp"
+#include "internal_server_stack.hpp"
 
 namespace openperf::network::api {
 
 class server
 {
 private:
-    generator::generator_stack m_generator_stack;
+    internal::generator_stack m_generator_stack;
+    network::internal::server_stack m_server_stack;
     std::unique_ptr<void, op_socket_deleter> m_socket;
 
 public:
@@ -32,6 +34,12 @@ public:
     reply_msg handle_request(const request::statistic::list&);
     reply_msg handle_request(const request::statistic::get&);
     reply_msg handle_request(const request::statistic::erase&);
+    reply_msg handle_request(const request::server::list&);
+    reply_msg handle_request(const request::server::get&);
+    reply_msg handle_request(const request::server::create&);
+    reply_msg handle_request(const request::server::erase&);
+    reply_msg handle_request(const request::server::bulk::create&);
+    reply_msg handle_request(const request::server::bulk::erase&);
 };
 
 } // namespace openperf::network::api

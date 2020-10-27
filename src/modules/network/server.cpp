@@ -243,6 +243,113 @@ reply_msg server::handle_request(const request::statistic::erase& request)
     return reply::ok{};
 }
 
+reply_msg server::handle_request(const request::server::list&)
+{
+    auto reply = reply::server::list{};
+
+    auto list = m_server_stack.list();
+    std::transform(list.begin(),
+                   list.end(),
+                   std::back_inserter(reply.servers),
+                   [](const auto& i) {
+                       return std::make_unique<model::server>(
+                           model::server(*i));
+                   });
+
+    return reply;
+}
+
+reply_msg server::handle_request(const request::server::get& request)
+{
+    if (auto gen = m_server_stack.server(request.id); gen) {
+        auto reply = reply::server::list{};
+        reply.servers.emplace_back(std::make_unique<model::server>(*gen));
+
+        return reply;
+    }
+
+    return to_error(api::error_type::NOT_FOUND);
+}
+
+reply_msg server::handle_request(const request::server::create& request)
+{
+    // If user did not specify an id create one for them.
+    auto& src = request.source;
+    if (src->id().empty())
+        src->id(core::to_string(core::uuid::random()));
+    else if (!config::op_config_validate_id_string(src->id()))
+        return to_error(error_type::CUSTOM_ERROR, 0, "ID is not valid");
+
+    auto result = m_server_stack.create(*src);
+    if (!result) return to_error(error_type::CUSTOM_ERROR, 0, result.error());
+
+    auto reply = reply::server::list{};
+    reply.servers.emplace_back(
+        std::make_unique<model::server>(*result.value()));
+
+    return reply;
+}
+
+reply_msg server::handle_request(const request::server::erase& request)
+{
+    if (!config::op_config_validate_id_string(request.id))
+        return to_error(error_type::CUSTOM_ERROR, 0, "ID is not valid");
+
+    if (!m_generator_stack.erase(request.id))
+        return to_error(api::error_type::NOT_FOUND);
+
+    return reply::ok{};
+}
+
+reply_msg server::handle_request(const request::server::bulk::create& request)
+{
+    auto reply = reply::server::list{};
+
+    auto remove_created_items = [&]() -> auto
+    {
+        for (const auto& item : reply.servers) {
+            m_server_stack.erase(item->id());
+        }
+    };
+
+    for (const auto& source : request.servers) {
+        // If user did not specify an id create one for them.
+        if (source->id().empty()) {
+            source->id(core::to_string(core::uuid::random()));
+        }
+
+        if (auto id_check = config::op_config_validate_id_string(source->id());
+            !id_check) {
+            remove_created_items();
+            return (to_error(error_type::CUSTOM_ERROR, 0, "Id is not valid"));
+        }
+
+        auto result = m_server_stack.create(*source);
+        if (!result) {
+            remove_created_items();
+            return (to_error(error_type::CUSTOM_ERROR, 0, result.error()));
+        }
+        reply.servers.emplace_back(
+            std::make_unique<model::server>(*result.value()));
+    }
+
+    return reply;
+}
+
+reply_msg server::handle_request(const request::server::bulk::erase& request)
+{
+    bool failed = false;
+    for (const auto& id : request.ids) {
+        failed = !m_server_stack.erase(*id) || failed;
+    }
+    if (failed)
+        return to_error(api::error_type::CUSTOM_ERROR,
+                        0,
+                        "Some generators from the list cannot be deleted");
+
+    return api::reply::ok{};
+}
+
 static int _handle_rpc_request(const op_event_data* data, void* arg)
 {
     auto s = reinterpret_cast<server*>(arg);
