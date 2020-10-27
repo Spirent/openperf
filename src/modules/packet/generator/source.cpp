@@ -215,10 +215,13 @@ source_result* source::stop()
 {
     auto* results = m_results.exchange(nullptr, std::memory_order_acq_rel);
 
-    /* Spin until the generator has finished transmitting any last packets */
-    auto lock = flag_lock(m_busy);
+    if (results) {
+        /* Spin until the generator has stopped transmitting packets */
+        auto lock = flag_lock(m_busy);
 
-    results->stop();
+        results->stop();
+    }
+
     return (results);
 }
 
