@@ -165,9 +165,9 @@ void sink::stop()
      * packets.  I guess the proper solution is to spin on an RCU mechanism
      * here, but that seems like overkill for something so unlikely to happen...
      */
-    auto result = m_results.exchange(nullptr, std::memory_order_acq_rel);
-    result->stop();
-    /* since we don't own this pointer, we don't need to do anything with it */
+    if (auto* result = m_results.exchange(nullptr, std::memory_order_acq_rel)) {
+        result->stop();
+    }
 }
 
 bool sink::active() const
