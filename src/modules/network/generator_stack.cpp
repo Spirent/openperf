@@ -2,7 +2,7 @@
 
 #include "framework/utils/overloaded_visitor.hpp"
 
-namespace openperf::network::generator {
+namespace openperf::network::internal {
 
 std::vector<generator_stack::generator_ptr> generator_stack::list() const
 {
@@ -23,7 +23,7 @@ generator_stack::create(const model::generator& model)
                                    + " already exists.");
 
     try {
-        auto generator_ptr = std::make_shared<model::generator>(model);
+        auto generator_ptr = std::make_shared<class generator>(model);
         m_generators.emplace(generator_ptr->id(), generator_ptr);
         return generator_ptr;
     } catch (const std::runtime_error& e) {
@@ -49,7 +49,7 @@ generator_stack::statistics(const std::string& id) const
     //         utils::overloaded_visitor(
     //             [&](const generator_ptr& generator) {
     //                 return tl::make_unexpected(
-    //                     "Result not found"); // generator->statistics();
+    //                     "Result not found"); // genf erator->statistics();
     //             },
     //             [&](const model::generator_result& res) { return res; }),
     //         result);
@@ -154,4 +154,4 @@ bool generator_stack::stop_generator(const std::string& id)
     }
 }
 
-} // namespace openperf::network::generator
+} // namespace openperf::network::internal

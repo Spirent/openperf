@@ -1,5 +1,5 @@
-#ifndef _OP_CPU_GENERATOR_STACK_HPP_
-#define _OP_CPU_GENERATOR_STACK_HPP_
+#ifndef _OP_NETWORK_GENERATOR_STACK_HPP_
+#define _OP_NETWORK_GENERATOR_STACK_HPP_
 
 #include <memory>
 #include <string>
@@ -8,17 +8,16 @@
 
 #include <tl/expected.hpp>
 
-#include "models/generator.hpp"
-#include "models/generator_result.hpp"
+#include "generator.hpp"
 
 #include "modules/dynamic/api.hpp"
 
-namespace openperf::network::generator {
+namespace openperf::network::internal {
 
 class generator_stack
 {
 private:
-    using generator_ptr = std::shared_ptr<model::generator>;
+    using generator_ptr = std::shared_ptr<generator>;
     using statistic_variant =
         std::variant<generator_ptr, model::generator_result>;
 
@@ -47,6 +46,6 @@ public:
     bool stop_generator(const std::string& id);
 };
 
-} // namespace openperf::network::generator
+} // namespace openperf::network::internal
 
 #endif // _OP_CPU_GENERATOR_STACK_HPP_

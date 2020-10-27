@@ -14,6 +14,7 @@
 
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
+#include "models/server.hpp"
 
 namespace openperf::message {
 struct serialized_message;
@@ -33,9 +34,11 @@ const std::string endpoint = "inproc://openperf_network";
 
 using network_generator_t = model::generator;
 using network_generator_result_t = model::generator_result;
+using network_server_t = model::server;
 using network_generator_ptr = std::unique_ptr<network_generator_t>;
 using network_generator_result_ptr =
     std::unique_ptr<network_generator_result_t>;
+using network_server_ptr = std::unique_ptr<network_server_t>;
 using id_ptr = std::unique_ptr<std::string>;
 
 enum class error_type { NONE = 0, NOT_FOUND, ZMQ_ERROR, CUSTOM_ERROR };
@@ -101,7 +104,7 @@ struct stop
 } // namespace bulk
 } // namespace generator
 namespace statistic {
-struct list
+struct list : message
 {};
 
 struct get : id_message
@@ -110,6 +113,34 @@ struct get : id_message
 struct erase : id_message
 {};
 } // namespace statistic
+
+namespace server {
+struct list : message
+{};
+
+struct get : id_message
+{};
+
+struct create
+{
+    network_server_ptr source;
+};
+
+struct erase : id_message
+{};
+
+namespace bulk {
+struct create
+{
+    std::vector<network_server_ptr> servers;
+};
+
+struct erase
+{
+    std::vector<id_ptr> ids;
+};
+} // namespace bulk
+} // namespace server
 } // namespace request
 
 /* zmq api reply models */
@@ -127,6 +158,13 @@ struct list
     std::vector<network_generator_result_ptr> results;
 };
 } // namespace statistic
+
+namespace server {
+struct list
+{
+    std::vector<network_server_ptr> servers;
+};
+} // namespace server
 
 struct ok
 {};
@@ -148,10 +186,17 @@ using request_msg = std::variant<request::generator::list,
                                  request::generator::bulk::stop,
                                  request::statistic::list,
                                  request::statistic::get,
-                                 request::statistic::erase>;
+                                 request::statistic::erase,
+                                 request::server::list,
+                                 request::server::get,
+                                 request::server::create,
+                                 request::server::erase,
+                                 request::server::bulk::create,
+                                 request::server::bulk::erase>;
 
 using reply_msg = std::variant<reply::generator::list,
                                reply::statistic::list,
+                               reply::server::list,
                                reply::ok,
                                reply::error>;
 

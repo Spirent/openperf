@@ -15,18 +15,9 @@ serialized_msg serialize_request(request_msg&& msg)
         (openperf::message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
-                 [&](const request::generator::list&) { return 0; },
-                 [&](const request::generator::get& network_generator) {
-                     return openperf::message::push(serialized,
-                                                    network_generator.id);
-                 },
                  [&](request::generator::create& network_generator) {
                      return openperf::message::push(
                          serialized, std::move(network_generator.source));
-                 },
-                 [&](const request::generator::erase& network_generator) {
-                     return openperf::message::push(serialized,
-                                                    network_generator.id);
                  },
                  [&](request::generator::bulk::create& request) {
                      return openperf::message::push(serialized,
@@ -42,10 +33,6 @@ serialized_msg serialize_request(request_msg&& msg)
                                 std::make_unique<dynamic::configuration>(
                                     std::move(request.dynamic_results)));
                  },
-                 [&](const request::generator::stop& network_generator) {
-                     return openperf::message::push(serialized,
-                                                    network_generator.id);
-                 },
                  [&](request::generator::bulk::start& request) -> int {
                      return openperf::message::push(
                                 serialized,
@@ -59,13 +46,21 @@ serialized_msg serialize_request(request_msg&& msg)
                  [&](request::generator::bulk::stop& request) {
                      return openperf::message::push(serialized, request.ids);
                  },
-                 [&](const request::statistic::list&) { return 0; },
-                 [&](const request::statistic::get& result) {
-                     return openperf::message::push(serialized, result.id);
+                 [&](request::server::create& network_server) {
+                     return openperf::message::push(
+                         serialized, std::move(network_server.source));
                  },
-                 [&](const request::statistic::erase& result) {
-                     return openperf::message::push(serialized, result.id);
-                 }),
+                 [&](request::server::bulk::create& request) {
+                     return openperf::message::push(serialized,
+                                                    request.servers);
+                 },
+                 [&](request::server::bulk::erase& request) {
+                     return openperf::message::push(serialized, request.ids);
+                 },
+                 [&](id_message& msg) {
+                     return openperf::message::push(serialized, msg.id);
+                 },
+                 [&](const message&) { return 0; }),
              msg));
     if (error) { throw std::bad_alloc(); }
 
@@ -75,22 +70,26 @@ serialized_msg serialize_request(request_msg&& msg)
 serialized_msg serialize_reply(reply_msg&& msg)
 {
     serialized_msg serialized;
-    auto error = (openperf::message::push(serialized, msg.index())
-                  || std::visit(utils::overloaded_visitor(
-                                    [&](reply::generator::list& reply) {
-                                        return openperf::message::push(
-                                            serialized, reply.generators);
-                                    },
-                                    [&](reply::statistic::list& reply) {
-                                        return openperf::message::push(
-                                            serialized, reply.results);
-                                    },
-                                    [&](const reply::ok&) { return 0; },
-                                    [&](reply::error& error) {
-                                        return openperf::message::push(
-                                            serialized, std::move(error.info));
-                                    }),
-                                msg));
+    auto error =
+        (openperf::message::push(serialized, msg.index())
+         || std::visit(
+             utils::overloaded_visitor(
+                 [&](reply::generator::list& reply) {
+                     return openperf::message::push(serialized,
+                                                    reply.generators);
+                 },
+                 [&](reply::statistic::list& reply) {
+                     return openperf::message::push(serialized, reply.results);
+                 },
+                 [&](reply::server::list& reply) {
+                     return openperf::message::push(serialized, reply.servers);
+                 },
+                 [&](const reply::ok&) { return 0; },
+                 [&](reply::error& error) {
+                     return openperf::message::push(serialized,
+                                                    std::move(error.info));
+                 }),
+             msg));
     if (error) { throw std::bad_alloc(); }
 
     return serialized;
@@ -160,6 +159,29 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
         return request::statistic::erase{
             {.id = openperf::message::pop_string(msg)}};
     }
+    case utils::variant_index<request_msg, request::server::list>(): {
+        return request::server::list{};
+    }
+    case utils::variant_index<request_msg, request::server::create>(): {
+        auto request = request::server::create{};
+        request.source.reset(openperf::message::pop<network_server_t*>(msg));
+        return request;
+    }
+    case utils::variant_index<request_msg, request::server::get>(): {
+        return request::server::get{{.id = openperf::message::pop_string(msg)}};
+    }
+    case utils::variant_index<request_msg, request::server::erase>(): {
+        return request::server::erase{
+            {.id = openperf::message::pop_string(msg)}};
+    }
+    case utils::variant_index<request_msg, request::server::bulk::create>(): {
+        return request::server::bulk::create{
+            openperf::message::pop_unique_vector<network_server_t>(msg)};
+    }
+    case utils::variant_index<request_msg, request::server::bulk::erase>(): {
+        return request::server::bulk::erase{
+            openperf::message::pop_unique_vector<std::string>(msg)};
+    }
     }
 
     return tl::make_unexpected(EINVAL);
@@ -178,6 +200,10 @@ tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg)
         return reply::statistic::list{
             openperf::message::pop_unique_vector<network_generator_result_t>(
                 msg)};
+    }
+    case utils::variant_index<reply_msg, reply::server::list>(): {
+        return reply::server::list{
+            openperf::message::pop_unique_vector<network_server_t>(msg)};
     }
     case utils::variant_index<reply_msg, reply::ok>():
         return reply::ok{};

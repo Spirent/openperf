@@ -11,7 +11,13 @@ NETWORK_SOURCES += \
 	handler.cpp \
 	init.cpp \
 	server.cpp \
-	generator_stack.cpp
+	generator.cpp \
+	generator_stack.cpp \
+	internal_server.cpp \
+	internal_server_stack.cpp \
+
+NETWORK_SOURCES += \
+	firehose/server_tcp.cpp
 
 NETWORK_VERSIONED_FILES := init.cpp
 NETWORK_UNVERSIONED_OBJECTS := \
