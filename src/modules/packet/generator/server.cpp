@@ -686,7 +686,7 @@ reply_msg server::handle_request(const request_delete_generator_result& request)
 {
     if (auto id = to_uuid(request.id); id.has_value()) {
         if (auto result = m_results.find(*id); result != std::end(m_results)) {
-            if (!result->second->parent().active()) { m_results.erase(*id); }
+            if (!result->second->active()) { m_results.erase(*id); }
         }
     }
 
