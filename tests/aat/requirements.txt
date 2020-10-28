@@ -1,7 +1,7 @@
 ./api/v1
 durationpy
 expects
-mamba == 0.11.0
+mamba == 0.11.1
 pyyaml
 validators
 scapy
