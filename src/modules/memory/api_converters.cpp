@@ -40,7 +40,7 @@ std::string to_iso8601(const task_memory_stat::timestamp_t& ts)
                  - std::chrono::time_point_cast<std::chrono::seconds>(ts);
     std::stringstream os;
     os << std::put_time(gmtime(&t), "%FT%T") << "." << std::setfill('0')
-       << std::setw(6) << nanos.count() << "Z";
+       << std::setw(9) << nanos.count() << "Z";
 
     return os.str();
 }
