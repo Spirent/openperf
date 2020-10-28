@@ -124,9 +124,8 @@ const uint8_t* skip_layer4_headers(header::packet_type_flags flags,
         cursor = skip_header<12>(cursor, end);
         break;
     case to_number(protocol::icmp):
-        cursor = skip_header<8>(cursor, end);
-        break;
     case to_number(protocol::igmp):
+        /* 8 octets for both */
         cursor = skip_header<8>(cursor, end);
         break;
     default:

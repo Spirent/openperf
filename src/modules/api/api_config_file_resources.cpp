@@ -56,7 +56,6 @@ tl::expected<void, std::string> op_config_file_process_resources()
 
         switch (code) {
         case Pistache::Http::Code::Created:
-            break;
         case Pistache::Http::Code::Ok:
             break;
         case Pistache::Http::Code::Not_Found:

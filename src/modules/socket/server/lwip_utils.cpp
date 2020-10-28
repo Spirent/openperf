@@ -230,10 +230,11 @@ do_ip6_setsockopt(ip_pcb* pcb, const api::request_setsockopt& setsockopt)
         break;
     }
     case IPV6_RECVERR:
-        // XXX: Newer versions of ping6 expect RECVERR support
-        break;
     case IPV6_RECVHOPLIMIT:
-        // XXX: Need this for ping6 to print out ttl values
+        /*
+         * FIXME: The ping6 binary needs both of these to function; we don't
+         * actually support them, but we let clients think we do.
+         */
         break;
     case IPV6_V6ONLY: {
         auto v6only = copy_in(setsockopt.id.pid,

@@ -2,6 +2,7 @@
 #define _OP_BLOCK_VIRTUAL_DEVICE_HPP_
 
 #include <atomic>
+#include <optional>
 #include <stdexcept>
 #include <thread>
 
@@ -11,18 +12,18 @@
 
 namespace openperf::block {
 
-#define VIRTUAL_DEVICE_HEADER_TAG "This is a big, fat OP VDEV header tag!"
-#define VIRTUAL_DEVICE_HEADER_TAG_LENGTH 40
-#define VIRTUAL_DEVICE_HEADER_PAD_LENGTH                                       \
-    (512 - VIRTUAL_DEVICE_HEADER_TAG_LENGTH - sizeof(timesync::bintime)        \
-     - sizeof(size_t))
+constexpr std::string_view virtual_device_header_tag =
+    "This is a big, fat OP VDEV header tag!";
+constexpr auto virtual_device_header_pad_length =
+    512 - virtual_device_header_tag.length() - sizeof(timesync::bintime)
+    - sizeof(size_t);
 
 struct virtual_device_header
 {
-    char tag[VIRTUAL_DEVICE_HEADER_TAG_LENGTH];
+    char tag[virtual_device_header_tag.length()];
     timesync::bintime init_time;
     size_t size;
-    uint8_t pad[VIRTUAL_DEVICE_HEADER_PAD_LENGTH];
+    uint8_t pad[virtual_device_header_pad_length];
 } __attribute__((packed));
 
 struct virtual_device_descriptors
@@ -58,7 +59,7 @@ protected:
     void scrub_worker(int fd, size_t header_size, size_t file_size);
     int write_header(int fd, uint64_t file_size);
 
-    virtual void scrub_update(double p){};
+    virtual void scrub_update(double){};
     virtual void scrub_done(){};
 };
 

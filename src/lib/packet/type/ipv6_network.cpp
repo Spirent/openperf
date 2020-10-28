@@ -43,12 +43,14 @@ int compare(const ipv6_network& lhs, const ipv6_network& rhs)
         return (-1);
     } else if (lhs.address() > rhs.address()) {
         return (1);
-    } else if (lhs.prefix_length() < rhs.prefix_length()) {
-        return (-1);
-    } else if (lhs.prefix_length() > rhs.prefix_length()) {
-        return (1);
     } else {
-        return (0);
+        if (lhs.prefix_length() < rhs.prefix_length()) {
+            return (-1);
+        } else if (lhs.prefix_length() > rhs.prefix_length()) {
+            return (1);
+        } else {
+            return (0);
+        }
     }
 }
 

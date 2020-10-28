@@ -606,16 +606,14 @@ private:
             case token_type::AND:
             case token_type::OR:
             case token_type::NOT:
-                // If see a logical operator then term is done
-                done = true;
-                break;
             case token_type::EQ:
             case token_type::NEQ:
             case token_type::LT:
             case token_type::LTE:
             case token_type::GT:
             case token_type::GTE:
-                // If see comparison operator than term is done
+                // If we see a logical or comparison operator, then the term is
+                // done.
                 done = true;
                 break;
             default: {
