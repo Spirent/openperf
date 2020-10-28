@@ -19,14 +19,23 @@ packet_tvlp_worker_t::packet_tvlp_worker_t(
 packet_tvlp_worker_t::~packet_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-packet_tvlp_worker_t::send_create(const nlohmann::json& config,
-                                  const std::string& target_id)
+packet_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
 {
+    assert(entry.resource_id.has_value());
+
+    auto config = std::make_shared<PacketGeneratorConfig>(
+        nlohmann::json::parse(entry.config.dump())
+            .get<PacketGeneratorConfig>());
+
+    auto load = config->getLoad();
+    load->setBurstSize(load->getBurstSize() * entry.load_scale);
+
+    auto rate = config->getLoad()->getRate();
+    rate->setValue(rate->getValue() * entry.load_scale);
+
     PacketGenerator gen;
-    gen.setTargetId(target_id);
-    auto blk_conf = std::make_shared<PacketGeneratorConfig>(
-        nlohmann::json::parse(config.dump()).get<PacketGeneratorConfig>());
-    gen.setConfig(blk_conf);
+    gen.setTargetId(entry.resource_id.value());
+    gen.setConfig(config);
 
     auto api_request = request_create_generator{
         std::make_unique<PacketGenerator>(std::move(gen))};

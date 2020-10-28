@@ -7,9 +7,9 @@
 
 namespace openperf::tvlp::internal::worker {
 
-using namespace swagger::v1::model;
+namespace swagger = swagger::v1::model;
 using namespace openperf::memory::api;
-using namespace Pistache;
+// using namespace Pistache;
 
 memory_tvlp_worker_t::memory_tvlp_worker_t(
     void* context, const model::tvlp_module_profile_t& profile)
@@ -19,17 +19,21 @@ memory_tvlp_worker_t::memory_tvlp_worker_t(
 memory_tvlp_worker_t::~memory_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-memory_tvlp_worker_t::send_create(const nlohmann::json& config,
-                                  const std::string&)
+memory_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
 {
-    MemoryGenerator gen;
-    auto blk_conf = std::make_shared<MemoryGeneratorConfig>();
-    blk_conf->fromJson(const_cast<nlohmann::json&>(config));
-    gen.setConfig(blk_conf);
+    auto config = swagger::MemoryGeneratorConfig{};
+    config.fromJson(const_cast<nlohmann::json&>(entry.config));
 
-    request::generator::create data{.id = gen.getId(),
-                                    .is_running = gen.isRunning(),
-                                    .config = from_swagger(*gen.getConfig())};
+    // Apply Load Scale to generator configuration
+    config.setReadSize(config.getReadSize() * entry.load_scale);
+    config.setReadsPerSec(config.getReadsPerSec() * entry.load_scale);
+    config.setWriteSize(config.getWriteSize() * entry.load_scale);
+    config.setWritesPerSec(config.getWritesPerSec() * entry.load_scale);
+
+    request::generator::create data{
+        .is_running = false,
+        .config = from_swagger(config),
+    };
 
     auto api_reply =
         submit_request(serialize(std::move(data))).and_then(deserialize_reply);

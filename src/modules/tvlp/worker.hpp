@@ -45,6 +45,7 @@ public:
     tl::expected<void, std::string>
     start(const realtime::time_point& start_time = realtime::now());
     void stop();
+
     model::tvlp_state_t state() const;
     std::optional<std::string> error() const;
     duration offset() const;
@@ -52,8 +53,7 @@ public:
 
 protected:
     virtual tl::expected<std::string, std::string>
-    send_create(const nlohmann::json& config,
-                const std::string& resource_id) = 0;
+    send_create(const model::tvlp_profile_entry_t&) = 0;
     virtual tl::expected<stat_pair_t, std::string>
     send_start(const std::string& id) = 0;
     virtual tl::expected<void, std::string>

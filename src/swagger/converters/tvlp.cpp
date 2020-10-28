@@ -142,6 +142,10 @@ void from_json(const nlohmann::json& j, TvlpProfile& profile)
 void from_json(const nlohmann::json& j, TvlpConfiguration& generator)
 {
     if (j.find("id") != j.end()) generator.setId(j.at("id"));
+    if (j.find("time_scale") != j.end())
+        generator.setTimeScale(j.at("time_scale"));
+    if (j.find("load_scale") != j.end())
+        generator.setLoadScale(j.at("load_scale"));
 
     generator.setProfile(
         std::make_shared<TvlpProfile>(j.at("profile").get<TvlpProfile>()));

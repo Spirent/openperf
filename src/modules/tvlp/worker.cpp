@@ -126,14 +126,14 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
         }
 
         // Create generator
-        auto create_result = send_create(
-            entry.config, (entry.resource_id) ? entry.resource_id.value() : "");
+        auto create_result = send_create(entry);
         if (!create_result) {
             m_state.state.store(model::ERROR);
             return tl::make_unexpected(create_result.error());
         }
         auto gen_id = create_result.value();
-        auto end_time = ref_clock::now() + entry.length;
+        auto end_time = ref_clock::now()
+                        + entry.length * static_cast<long>(entry.time_scale);
 
         // Start generator
         auto start_result = send_start(gen_id);
@@ -166,7 +166,7 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
             std::this_thread::sleep_for(sleep_time);
         }
 
-        total_offset += entry.length;
+        total_offset += entry.length * static_cast<long>(entry.time_scale);
         m_state.offset.store(total_offset);
 
         // Stop generator

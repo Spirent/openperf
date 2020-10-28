@@ -59,6 +59,9 @@ static config_t from_swagger(const swagger::TvlpConfiguration& m)
 {
     auto config = config_t{};
     config.id(m.getId());
+    config.time_scale(m.timeScaleIsSet() ? m.getTimeScale() : 1);
+    config.load_scale(m.loadScaleIsSet() ? m.getLoadScale() : 1.0);
+
     profile_t profile;
     if (m.getProfile()->blockIsSet()) {
         profile.block = std::vector<profile_entry_t>();
@@ -102,6 +105,9 @@ static swagger::TvlpConfiguration to_swagger(const config_t& config)
 {
     swagger::TvlpConfiguration model;
     model.setId(config.id());
+    model.setTimeScale(config.time_scale());
+    model.setLoadScale(config.load_scale());
+
     model.setTime(std::make_shared<swagger::TvlpConfiguration_time>());
     model.getTime()->setLength(config.total_length().count());
     if (config.state() == model::RUNNING || config.state() == model::COUNTDOWN)

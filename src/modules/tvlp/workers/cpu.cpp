@@ -7,9 +7,8 @@
 
 namespace openperf::tvlp::internal::worker {
 
-using namespace swagger::v1::model;
+namespace swagger = swagger::v1::model;
 using namespace openperf::cpu::api;
-using namespace Pistache;
 
 cpu_tvlp_worker_t::cpu_tvlp_worker_t(
     void* context, const model::tvlp_module_profile_t& profile)
@@ -18,14 +17,22 @@ cpu_tvlp_worker_t::cpu_tvlp_worker_t(
 cpu_tvlp_worker_t::~cpu_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-cpu_tvlp_worker_t::send_create(const nlohmann::json& config,
-                               const std::string& resource_id
-                               __attribute__((unused)))
+cpu_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
 {
-    CpuGenerator gen;
-    auto blk_conf = std::make_shared<CpuGeneratorConfig>();
-    blk_conf->fromJson(const_cast<nlohmann::json&>(config));
-    gen.setConfig(blk_conf);
+    auto config = std::make_shared<swagger::CpuGeneratorConfig>();
+    config->fromJson(const_cast<nlohmann::json&>(entry.config));
+    if (config->getMethod() == "system") {
+        config->getSystem()->setUtilization(std::min(
+            config->getSystem()->getUtilization() * entry.load_scale, 100.0));
+    } else if (config->getMethod() == "cores") {
+        for (auto& core : config->getCores()) {
+            core->setUtilization(
+                std::min(core->getUtilization() * entry.load_scale, 100.0));
+        }
+    }
+
+    swagger::CpuGenerator gen;
+    gen.setConfig(config);
 
     auto api_request = request_cpu_generator_add{
         std::make_unique<cpu_generator_t>(from_swagger(gen))};

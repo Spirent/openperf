@@ -7,7 +7,7 @@
 
 namespace openperf::tvlp::internal::worker {
 
-using namespace swagger::v1::model;
+namespace swagger = swagger::v1::model;
 using namespace openperf::block::api;
 
 block_tvlp_worker_t::block_tvlp_worker_t(
@@ -18,14 +18,22 @@ block_tvlp_worker_t::block_tvlp_worker_t(
 block_tvlp_worker_t::~block_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-block_tvlp_worker_t::send_create(const nlohmann::json& config,
-                                 const std::string& resource_id)
+block_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
 {
-    BlockGenerator gen;
-    gen.setResourceId(resource_id);
-    auto blk_conf = std::make_shared<BlockGeneratorConfig>();
-    blk_conf->fromJson(const_cast<nlohmann::json&>(config));
-    gen.setConfig(blk_conf);
+    assert(entry.resource_id.has_value());
+
+    auto config = std::make_shared<swagger::BlockGeneratorConfig>();
+    config->fromJson(const_cast<nlohmann::json&>(entry.config));
+
+    // Apply Load Scale to generator configuration
+    config->setReadSize(config->getReadSize() * entry.load_scale);
+    config->setReadsPerSec(config->getReadsPerSec() * entry.load_scale);
+    config->setWriteSize(config->getWriteSize() * entry.load_scale);
+    config->setWritesPerSec(config->getWritesPerSec() * entry.load_scale);
+
+    swagger::BlockGenerator gen;
+    gen.setResourceId(entry.resource_id.value());
+    gen.setConfig(config);
 
     auto api_reply =
         submit_request(
