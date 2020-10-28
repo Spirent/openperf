@@ -9,6 +9,7 @@ Checks: '-*,
         modernize-make-*,
         modernize-use-*,
         -modernize-use-nodiscard,
+        -modernize-use-trailing-return-type,
         performance-*'
 CheckOptions:
   - key: bugprone-assert-side-effect.AssertMacros
