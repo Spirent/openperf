@@ -14,11 +14,11 @@ static uint16_t serial_counter = 0;
 auto to_statistics_t(const task_stat_t& task_stat)
 {
     return model::block_generator_result::statistics_t{
-        .bytes_actual = task_stat.bytes_actual,
-        .bytes_target = task_stat.bytes_target,
-        .io_errors = task_stat.errors,
-        .ops_actual = task_stat.ops_actual,
         .ops_target = task_stat.ops_target,
+        .ops_actual = task_stat.ops_actual,
+        .bytes_target = task_stat.bytes_target,
+        .bytes_actual = task_stat.bytes_actual,
+        .io_errors = task_stat.errors,
         .latency = task_stat.latency,
         .latency_min = task_stat.latency_min,
         .latency_max = task_stat.latency_max};

@@ -18,10 +18,11 @@ OP_INC_DIRS += $(YAML_INC_DIR)
 OP_LIB_DIRS += $(YAML_LIB_DIR)
 OP_LDLIBS += -lyamlcpp
 
-YAML_FLAGS := $(addprefix -I,$(YAML_INC_DIR))
 # YAML-CPP shadows variables in a few places; just silence those warnings since we're not going
 # to fix them
-YAML_FLAGS += -Wno-shadow
+OP_CPPFLAGS += -Wno-shadow
+
+YAML_FLAGS := $(addprefix -I,$(YAML_INC_DIR))
 
 ###
 # Sources, objects, targets, and dependencies

@@ -27,8 +27,8 @@ task_cpu_system::task_cpu_system(uint16_t core,
             {
                 1,
                 target_config{
-                    .data_type = cpu::data_type::INT32,
                     .set = cpu::instruction_set::SCALAR,
+                    .data_type = cpu::data_type::INT32,
                     .weight = 1,
                 },
             },

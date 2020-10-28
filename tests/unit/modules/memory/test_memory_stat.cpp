@@ -9,16 +9,16 @@ auto random_memory_stat()
 {
     static auto rnd = std::mt19937_64{};
     return task_memory_stat{
-        .timestamp = task_memory_stat::timestamp_t(
-            std::chrono::system_clock::now().time_since_epoch()),
-        .bytes = rnd(),
-        .bytes_target = rnd(),
         .operations = rnd(),
         .operations_target = rnd(),
-        .latency_max = std::chrono::nanoseconds(rnd()),
-        .latency_min = std::chrono::nanoseconds(rnd()),
+        .bytes = rnd(),
+        .bytes_target = rnd(),
         .run_time = std::chrono::nanoseconds(rnd()),
         .sleep_time = std::chrono::nanoseconds(rnd()),
+        .latency_min = std::chrono::nanoseconds(rnd()),
+        .latency_max = std::chrono::nanoseconds(rnd()),
+        .timestamp = task_memory_stat::timestamp_t(
+            std::chrono::system_clock::now().time_since_epoch()),
         .errors = rnd(),
     };
 }

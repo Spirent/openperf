@@ -53,14 +53,15 @@ task_stat_t& task_stat_t::operator+=(const task_stat_t& stat)
 static int submit_aio_op(const operation_config& op_config,
                          operation_state& op_state)
 {
+    /* XXX: Proper initialization order depends on platform! */
     op_state.aiocb = aiocb{
         .aio_fildes = op_config.fd,
-        .aio_offset = static_cast<off_t>(op_config.block_size * op_config.offset
-                                         + op_config.header_size),
+        .aio_reqprio = 0,
         .aio_buf = op_config.buffer,
         .aio_nbytes = op_config.block_size,
-        .aio_reqprio = 0,
         .aio_sigevent.sigev_notify = SIGEV_NONE,
+        .aio_offset = static_cast<off_t>(op_config.block_size * op_config.offset
+                                         + op_config.header_size),
     };
 
     /* Reset stat related variables */

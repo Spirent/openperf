@@ -166,6 +166,11 @@ public:
         , m_idx(idx)
     {}
 
+    soa_container_iterator(const soa_container_iterator& other)
+        : m_container(other.m_container)
+        , m_idx(other.m_idx)
+    {}
+
     soa_container_iterator& operator=(soa_container_iterator const& other)
     {
         m_container = other.m_container;

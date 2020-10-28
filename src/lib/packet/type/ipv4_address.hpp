@@ -17,6 +17,7 @@ public:
     ipv4_address(std::initializer_list<uint8_t>);
     ipv4_address(const uint8_t[4]) noexcept;
     ipv4_address(uint32_t) noexcept;
+    ipv4_address(const ipv4_address&) = default;
 
     /***
      * Unary operators
