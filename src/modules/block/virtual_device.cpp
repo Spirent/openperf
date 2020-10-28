@@ -27,8 +27,8 @@ int virtual_device::write_header(int fd, uint64_t file_size)
     };
 
     strncpy(header.tag,
-            VIRTUAL_DEVICE_HEADER_TAG,
-            VIRTUAL_DEVICE_HEADER_TAG_LENGTH);
+            virtual_device_header_tag.data(),
+            virtual_device_header_tag.length());
 
     return (pwrite(fd, &header, sizeof(header), 0) == sizeof(header) ? 0 : -1);
 }
@@ -81,8 +81,8 @@ tl::expected<void, std::string> virtual_device::queue_scrub()
                                    + std::string(strerror(errno)));
     } else if (read_or_err >= (int)sizeof(header)
                && strncmp(header.tag,
-                          VIRTUAL_DEVICE_HEADER_TAG,
-                          VIRTUAL_DEVICE_HEADER_TAG_LENGTH)
+                          virtual_device_header_tag.data(),
+                          virtual_device_header_tag.length())
                       == 0) {
         if (header.size >= size()) {
             // We're done since this vdev is suitable for use

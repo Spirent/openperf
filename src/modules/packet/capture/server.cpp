@@ -127,16 +127,16 @@ static std::string to_string(const request_msg& request)
                            [](const request_stop_capture& request) {
                                return ("stop capture " + request.id);
                            },
-                           [](const request_bulk_create_captures& request) {
+                           [](const request_bulk_create_captures&) {
                                return (std::string("bulk create captures"));
                            },
-                           [](const request_bulk_delete_captures& request) {
+                           [](const request_bulk_delete_captures&) {
                                return (std::string("bulk delete captures"));
                            },
-                           [](const request_bulk_start_captures& request) {
+                           [](const request_bulk_start_captures&) {
                                return (std::string("bulk start captures"));
                            },
-                           [](const request_bulk_stop_captures& request) {
+                           [](const request_bulk_stop_captures&) {
                                return (std::string("bulk stop captures"));
                            },
                            [](const request_list_capture_results&) {

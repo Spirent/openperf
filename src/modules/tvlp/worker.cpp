@@ -40,7 +40,7 @@ tvlp_worker_t::start(const realtime::time_point& start_time)
     delete m_result.exchange(new model::json_vector());
     m_scheduler_thread = std::async(
         std::launch::async,
-        [this](realtime::time_point tp, model::tvlp_module_profile_t p) {
+        [this](realtime::time_point tp, const model::tvlp_module_profile_t& p) {
             return schedule(tp, p);
         },
         start_time,
