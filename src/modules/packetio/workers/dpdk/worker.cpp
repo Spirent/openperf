@@ -250,13 +250,13 @@ rx_interface_sink_dispatch(const fib* fib,
     utils::prefetch_for_each(
         incoming,
         incoming + n,
-        [](auto mbuf) {
+        [](auto* mbuf) {
             /* prefetch mbuf payload */
             rte_prefetch0(rte_pktmbuf_mtod(mbuf, void*));
         },
-        [&](auto mbuf) {
-            auto eth = rte_pktmbuf_mtod(mbuf, struct rte_ether_hdr*);
-            auto dst_addr = &eth->d_addr;
+        [&](auto* mbuf) {
+            auto* eth = rte_pktmbuf_mtod(mbuf, struct rte_ether_hdr*);
+            auto* dst_addr = &eth->d_addr;
             bool unicast = rte_is_unicast_ether_addr(dst_addr);
 
             if (unicast) {
@@ -284,10 +284,10 @@ rx_interface_sink_dispatch(const fib* fib,
                 to_stack[nb_to_stack++] = mbuf;
                 rx_mbuf_clear_tag(mbuf);
             }
+
             if (!burst || std::get<IFP_SINKS>(*burst) != last_entry) {
                 // Start a new burst
-                burst = &bursts[nbursts++];
-                *burst = {nb_to_stack - 1, 1, last_entry};
+                bursts[nbursts++] = burst_tuple{nb_to_stack - 1, 1, last_entry};
             } else {
                 // Extend the current burst
                 ++std::get<COUNT>(*burst);
@@ -523,8 +523,7 @@ static void tx_interface_sink_dispatch(const fib* fib,
             if (sinks) {
                 // Start a new burst
                 assert(nbursts < bursts.size());
-                burst = &bursts[nbursts++];
-                *burst = {processed, 1, sinks};
+                bursts[nbursts++] = burst_tuple{processed, 1, sinks};
             } else {
                 // No sinks found, so can skip this burst
                 burst = nullptr;

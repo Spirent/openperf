@@ -35,6 +35,11 @@ public:
         , m_idx(idx)
     {}
 
+    view_iterator(const view_iterator& other)
+        : m_container(other.m_container)
+        , m_idx(other.m_idx)
+    {}
+
     view_iterator& operator=(const view_iterator& other)
     {
         m_container = other.m_container;

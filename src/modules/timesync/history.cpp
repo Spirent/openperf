@@ -54,11 +54,11 @@ void history::insert(const timestamp& ts, counter::hz f_local)
     }
 
     auto item = timesync_data{
+        .f_local = f_local,
         .Ta = ts.Ta,
         .Tb = to_ntp(ts.Tb),
         .offset_Te = static_cast<uint32_t>(offset_Te.bt_frac >> 32),
-        .offset_Tf = static_cast<uint32_t>(ts.Tf - ts.Ta),
-        .f_local = f_local};
+        .offset_Tf = static_cast<uint32_t>(ts.Tf - ts.Ta)};
 
     if (m_history.find(item) != m_history.end()) {
         throw std::invalid_argument("timestamp is a duplicate");

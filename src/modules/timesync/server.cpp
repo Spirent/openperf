@@ -142,8 +142,8 @@ reply_msg server::handle_request(const request_time_keeper&)
                  .local_freq = m_clock->local_frequency(),
                  .local_freq_error = m_clock->local_frequency_error(),
                  .offset = m_clock->offset(),
-                 .synced = m_clock->synced(),
-                 .theta = m_clock->theta()},
+                 .theta = m_clock->theta(),
+                 .synced = m_clock->synced()},
         .stats =
             {.freq_accept =
                  static_cast<int64_t>(m_clock->nb_frequency_accept()),
@@ -153,13 +153,13 @@ reply_msg server::handle_request(const request_time_keeper&)
                  static_cast<int64_t>(m_clock->nb_local_frequency_accept()),
              .local_freq_reject =
                  static_cast<int64_t>(m_clock->nb_local_frequency_reject()),
+             .theta_accept = static_cast<int64_t>(m_clock->nb_theta_accept()),
+             .theta_reject = static_cast<int64_t>(m_clock->nb_theta_reject()),
+             .timestamps = static_cast<int64_t>(m_clock->nb_timestamps()),
              .rtts = {.maximum = m_clock->rtt_maximum(),
                       .median = m_clock->rtt_median(),
                       .minimum = m_clock->rtt_minimum(),
-                      .size = static_cast<int64_t>(m_clock->rtt_size())},
-             .theta_accept = static_cast<int64_t>(m_clock->nb_theta_accept()),
-             .theta_reject = static_cast<int64_t>(m_clock->nb_theta_reject()),
-             .timestamps = static_cast<int64_t>(m_clock->nb_timestamps())},
+                      .size = static_cast<int64_t>(m_clock->rtt_size())}},
     };
 
     core::to_string(m_timecounters.front()->id)

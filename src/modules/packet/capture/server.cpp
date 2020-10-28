@@ -314,9 +314,9 @@ reply_msg server::handle_request(const request_list_captures& request)
 reply_msg server::handle_request(const request_create_capture& request)
 {
     auto config = sink_config{.source = request.capture->getSourceId(),
+                              .packet_count = 0,
                               .max_packet_size = UINT32_MAX,
-                              .duration = {},
-                              .packet_count = 0};
+                              .duration = {}};
 
     auto direction =
         capture_direction_from_string(request.capture->getDirection());

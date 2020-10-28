@@ -34,6 +34,8 @@ public:
         , m_false(t.m_false)
     {}
 
+    threshold& operator=(const threshold& t) = default;
+
     template <typename T> void append(T value)
     {
         switch (m_comparator) {

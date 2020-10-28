@@ -13,7 +13,7 @@ void test_modifier_sequence_skips(Field first,
                                   std::vector<Field>& skips)
 {
     auto config =
-        sequence_config<Field>{.first = first, .count = count, .skip = skips};
+        sequence_config<Field>{.skip = skips, .first = first, .count = count};
 
     auto rng = to_range(config);
 
@@ -29,7 +29,7 @@ template <typename Field>
 void test_modifier_sequence_stepped(Field first, unsigned count, unsigned step)
 {
     auto config = sequence_config<Field>{
-        .first = first, .count = count, .last = first + (count * step)};
+        .first = first, .last = first + (count * step), .count = count};
 
     auto rng = to_range(config);
 

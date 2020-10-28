@@ -17,6 +17,7 @@ public:
     mac_address(std::initializer_list<uint8_t>);
     mac_address(const uint8_t[6]) noexcept;
     mac_address(uint64_t) noexcept;
+    mac_address(const mac_address&) = default;
 
     /***
      * Unary operators

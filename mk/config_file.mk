@@ -31,9 +31,6 @@ OP_LDLIBS += -Wl,--whole-archive -l$(CFGFILE_LIBRARY) -Wl,--no-whole-archive $(C
 -include $(CFGFILE_OBJECTS:.o=.d)
 $(call op_include_dependencies,$(CFGFILE_DEPENDS))
 
-# Needed to shutup yaml-cpp warnings
-CFGFILE_FLAGS := -Wno-shadow
-
 ###
 # Build rules
 ###
