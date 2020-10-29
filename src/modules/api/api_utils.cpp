@@ -100,4 +100,41 @@ tl::expected<void, std::string> check_api_module_running()
     return {};
 }
 
+template <typename InputIterator, typename Function>
+void for_each_chunked(
+    InputIterator cursor,
+    InputIterator last,
+    typename std::iterator_traits<InputIterator>::difference_type chunk_size,
+    Function func)
+{
+    while (cursor < last) {
+        auto rem = std::distance(cursor, last);
+        auto len = std::min(rem, chunk_size);
+        func(cursor, len);
+        cursor += len;
+    }
+}
+
+void send_chunked_response(Pistache::Http::ResponseWriter response,
+                           Pistache::Http::Code code,
+                           const nlohmann::json& json)
+{
+    /* Note: the maximum response size is set to 1MB in api_init.cpp */
+    constexpr auto chunk_size = 64 * 1024; /* 64 kB */
+
+    auto tmp = json.dump();
+
+    response.setMime(MIME(Application, Json));
+    auto stream = response.stream(code);
+
+    for_each_chunked(
+        std::begin(tmp), std::end(tmp), chunk_size, [&](auto& it, size_t len) {
+            /* Need address of the character from the iterator */
+            stream.write(std::addressof(*it), len);
+            stream.flush();
+        });
+
+    stream.ends();
+}
+
 } // namespace openperf::api::utils
