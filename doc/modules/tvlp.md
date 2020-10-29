@@ -29,13 +29,40 @@ After a profile has completed its run, the `state` revert back to READY.
 
 The TVLP module responds to the following configuration properties:
 
-- **id** -- unique TVLP identifier. Leave field empty to generate value.
-- **time.start** -- ISO8601-formatted TVLP profile start time. Only available when `state` = COUNTDOWN or RUNNING (read only)
-- **time.length** -- length of current tvlp profile in ns (read only)
-- **time.offset** -- current offset in ns. Only valid when `state` = RUNNING (read only)
-- **state** -- current TVLP profile `state`, one of: READY, COUNTDOWN, RUNNING, or ERROR (read only)
-- **error** -- read only string describing error condition; only when `state` == ERROR (read only)
-- **profile** -- TVLP profile data
+* **id** - unique TVLP identifier. Leave field empty to generate value.
+* **load_scale** - scale multiplier for load parameters of generators.
+* **time_scale** - scale multiplier for the length of each profile entry.
+* **profile** - TVLP profile data
+* **state** - current TVLP profile `state`, one of: READY, COUNTDOWN, RUNNING, or ERROR (read only).
+* **error** - read only string describing error condition; only when `state` == ERROR (read only).
+* **time** - read-only information about execution time.
+    * **start** - ISO8601-formatted TVLP profile start time. Only available when `state` = COUNTDOWN or RUNNING (read only).
+    * **length** - length of current tvlp profile in ns (read only).
+    * **offset** - current offset in ns. Only valid when `state` = RUNNING (read only).
+
+### Load Scale
+
+The load scale multiplier is a floating point value that will be applied to next load parameters of generators.
+
+Memory Generator:
+* **read_size**
+* **reads_per_sec**
+* **write_size**
+* **writes_per_sec**
+
+Block Generator:
+* **read_size**
+* **reads_per_sec**
+* **write_size**
+* **writes_per_sec**
+
+CPU Generator:
+* **system.utilization**
+* **cores[_N_].utilization**
+
+Packet Generator:
+* **load.burst_size**
+* **load.rate.value**
 
 ## TVLP Configuration Diagram
 
