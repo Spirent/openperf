@@ -3,7 +3,7 @@
 int udp_read_callback(int fd)
 {
     ssize_t recv_or_err = 0;
-    char recv_buffer[icp_firehose_request_size];
+    char recv_buffer[firehose_request_size];
     size_t recv_length = sizeof(recv_buffer);
     char* recv_cursor = &recv_buffer[0];
     struct sockaddr_storage client_storage;
