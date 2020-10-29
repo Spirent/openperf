@@ -31,6 +31,12 @@ sink_result::sink_result(const sink& parent)
                 m_parent.protocol_counters()));
         });
 
+    /* Alert the RCU system that we will have a reader */
+    std::for_each(
+        std::begin(m_flow_shards), std::end(m_flow_shards), [](auto& shard) {
+            shard.first.writer_add_reader(api::result_reader_id);
+        });
+
     /*
      * The counter factory functions don't perform their initialization until
      * called.  The protocol counter factory was initialized above, however,
@@ -299,11 +305,8 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
     auto results = m_results.load(std::memory_order_consume);
     const auto index = m_indexes[packetio::internal::worker::get_id()];
 
-    if (m_filter) {
-        return push_filtered(*results, index, packets, packets_length);
-    }
-
-    return push_all(*results, index, packets, packets_length);
+    return (m_filter ? push_filtered(*results, index, packets, packets_length)
+                     : push_all(*results, index, packets, packets_length));
 }
 
 } // namespace openperf::packet::analyzer

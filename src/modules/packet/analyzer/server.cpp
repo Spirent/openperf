@@ -675,7 +675,8 @@ reply_msg server::handle_request(const request_list_rx_flows& request)
             std::for_each(
                 std::begin(shards), std::end(shards), [&](const auto& shard) {
                     uint16_t idx = 0;
-                    auto guard = utils::recycle::guard(shard.first, 0);
+                    auto guard = utils::recycle::guard(shard.first,
+                                                       api::result_reader_id);
                     std::transform(
                         std::begin(shard.second),
                         std::end(shard.second),
@@ -710,7 +711,7 @@ reply_msg server::handle_request(const request_get_rx_flow& request)
     }
 
     const auto& shard = result->flows()[shard_idx];
-    auto guard = utils::recycle::guard(shard.first, 0);
+    auto guard = utils::recycle::guard(shard.first, api::result_reader_id);
     auto counters = shard.second.find(hash, stream_id);
     if (!counters) { return (to_error(error_type::NOT_FOUND)); }
 

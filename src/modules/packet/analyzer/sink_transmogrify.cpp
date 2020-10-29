@@ -197,7 +197,7 @@ sum_counters(flow_counters_config config,
     auto tmp = make_counters(config);
 
     std::for_each(std::begin(src), std::end(src), [&](const auto& shard) {
-        auto guard = utils::recycle::guard(shard.first, 0);
+        auto guard = utils::recycle::guard(shard.first, api::result_reader_id);
         std::for_each(std::begin(shard.second),
                       std::end(shard.second),
                       [&](const auto& pair) {
@@ -215,7 +215,7 @@ static void to_swagger(const core::uuid& result_id,
 {
     uint16_t idx = 0;
     std::for_each(std::begin(src), std::end(src), [&](const auto& shard) {
-        auto guard = utils::recycle::guard(shard.first, 0);
+        auto guard = utils::recycle::guard(shard.first, api::result_reader_id);
         std::for_each(
             std::begin(shard.second),
             std::end(shard.second),
