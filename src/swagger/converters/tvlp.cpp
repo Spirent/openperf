@@ -116,6 +116,7 @@ void from_json(const nlohmann::json& j, TvlpProfile& profile)
             profile.setMemory(newItem);
         }
     }
+
     if (val.find("block") != val.end()) {
         if (!val["block"].is_null()) {
             auto newItem = std::make_shared<TvlpProfile_block>(
@@ -123,6 +124,7 @@ void from_json(const nlohmann::json& j, TvlpProfile& profile)
             profile.setBlock(newItem);
         }
     }
+
     if (val.find("cpu") != val.end()) {
         if (!val["cpu"].is_null()) {
             auto newItem = std::make_shared<TvlpProfile_cpu>(
@@ -130,6 +132,7 @@ void from_json(const nlohmann::json& j, TvlpProfile& profile)
             profile.setCpu(newItem);
         }
     }
+
     if (val.find("packet") != val.end()) {
         if (!val["packet"].is_null()) {
             auto newItem = std::make_shared<TvlpProfile_packet>(
@@ -142,10 +145,16 @@ void from_json(const nlohmann::json& j, TvlpProfile& profile)
 void from_json(const nlohmann::json& j, TvlpConfiguration& generator)
 {
     if (j.find("id") != j.end()) generator.setId(j.at("id"));
+
     if (j.find("time_scale") != j.end())
         generator.setTimeScale(j.at("time_scale"));
+    else
+        generator.setTimeScale(1.0);
+
     if (j.find("load_scale") != j.end())
         generator.setLoadScale(j.at("load_scale"));
+    else
+        generator.setLoadScale(1.0);
 
     generator.setProfile(
         std::make_shared<TvlpProfile>(j.at("profile").get<TvlpProfile>()));

@@ -5,8 +5,8 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** | Unique TVLP configuration identifier | 
 **state** | **str** | TVLP configuration state - ready - TVLP contains a valid configuration and is ready to be started - countdown - TVLP has been given a start time in the future and is waiting to start replaying a profile - running - TVLP is replaying a profile - error - TVLP encountered a runtime error  | 
-**load_scale** | **float** | The scale multiplier for load parameters of generators | [optional] [default to 1.0]
-**time_scale** | **float** | The scale multiplier for the length of each profile entry | [optional] [default to 1.0]
+**load_scale** | **float** | The scale multiplier for load parameters of generators | [default to 1.0]
+**time_scale** | **float** | The scale multiplier for the length of each profile entry | [default to 1.0]
 **time** | [**TvlpConfigurationTime**](TvlpConfigurationTime.md) |  | 
 **profile** | [**TvlpProfile**](TvlpProfile.md) |  | 
 **error** | **str** | string describing error condition; only when state &#x3D;&#x3D; error | [optional] 

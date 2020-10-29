@@ -22,9 +22,7 @@ TvlpConfiguration::TvlpConfiguration()
     m_Id = "";
     m_State = "";
     m_Load_scale = 0.0;
-    m_Load_scaleIsSet = false;
     m_Time_scale = 0.0;
-    m_Time_scaleIsSet = false;
     m_Error = "";
     m_ErrorIsSet = false;
     
@@ -45,14 +43,8 @@ nlohmann::json TvlpConfiguration::toJson() const
 
     val["id"] = ModelBase::toJson(m_Id);
     val["state"] = ModelBase::toJson(m_State);
-    if(m_Load_scaleIsSet)
-    {
-        val["load_scale"] = m_Load_scale;
-    }
-    if(m_Time_scaleIsSet)
-    {
-        val["time_scale"] = m_Time_scale;
-    }
+    val["load_scale"] = m_Load_scale;
+    val["time_scale"] = m_Time_scale;
     val["time"] = ModelBase::toJson(m_Time);
     val["profile"] = ModelBase::toJson(m_Profile);
     if(m_ErrorIsSet)
@@ -68,14 +60,8 @@ void TvlpConfiguration::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
     setState(val.at("state"));
-    if(val.find("load_scale") != val.end())
-    {
-        setLoadScale(val.at("load_scale"));
-    }
-    if(val.find("time_scale") != val.end())
-    {
-        setTimeScale(val.at("time_scale"));
-    }
+    setLoadScale(val.at("load_scale"));
+    setTimeScale(val.at("time_scale"));
     if(val.find("error") != val.end())
     {
         setError(val.at("error"));
@@ -110,15 +96,7 @@ double TvlpConfiguration::getLoadScale() const
 void TvlpConfiguration::setLoadScale(double value)
 {
     m_Load_scale = value;
-    m_Load_scaleIsSet = true;
-}
-bool TvlpConfiguration::loadScaleIsSet() const
-{
-    return m_Load_scaleIsSet;
-}
-void TvlpConfiguration::unsetLoad_scale()
-{
-    m_Load_scaleIsSet = false;
+    
 }
 double TvlpConfiguration::getTimeScale() const
 {
@@ -127,15 +105,7 @@ double TvlpConfiguration::getTimeScale() const
 void TvlpConfiguration::setTimeScale(double value)
 {
     m_Time_scale = value;
-    m_Time_scaleIsSet = true;
-}
-bool TvlpConfiguration::timeScaleIsSet() const
-{
-    return m_Time_scaleIsSet;
-}
-void TvlpConfiguration::unsetTime_scale()
-{
-    m_Time_scaleIsSet = false;
+    
 }
 std::shared_ptr<TvlpConfiguration_time> TvlpConfiguration::getTime() const
 {

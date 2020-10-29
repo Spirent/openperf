@@ -215,6 +215,8 @@ definitions:
       - state
       - time
       - profile
+      - load_scale
+      - time_scale
 
   TvlpProfile:
     type: object

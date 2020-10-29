@@ -68,8 +68,6 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
 {
     auto config = tvlp_configuration_t{};
     config.id(m.getId());
-    config.time_scale(m.timeScaleIsSet() ? m.getTimeScale() : 1.0);
-    config.load_scale(m.loadScaleIsSet() ? m.getLoadScale() : 1.0);
 
     tvlp_profile_t profile;
     if (m.getProfile()->blockIsSet()) {
@@ -81,6 +79,7 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
                 .config = block_entry->getConfig()->toJson()});
         }
     }
+
     if (m.getProfile()->memoryIsSet()) {
         profile.memory = std::vector<tvlp_profile_entry_t>();
         for (auto memory_entry : m.getProfile()->getMemory()->getSeries()) {
@@ -89,6 +88,7 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
                 .config = memory_entry->getConfig()->toJson()});
         }
     }
+
     if (m.getProfile()->cpuIsSet()) {
         profile.cpu = std::vector<tvlp_profile_entry_t>();
         for (auto cpu_entry : m.getProfile()->getCpu()->getSeries()) {
@@ -97,6 +97,7 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
                 .config = cpu_entry->getConfig()->toJson()});
         }
     }
+
     if (m.getProfile()->packetIsSet()) {
         profile.packet = std::vector<tvlp_profile_entry_t>();
         for (auto packet_entry : m.getProfile()->getPacket()->getSeries()) {
@@ -106,6 +107,7 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
                 .config = packet_entry->getConfig()->toJson()});
         }
     }
+
     config.profile(profile);
     return config;
 }
@@ -119,12 +121,14 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
 
     model.setTime(std::make_shared<swagger::TvlpConfiguration_time>());
     model.getTime()->setLength(config.total_length().count());
+
     if (config.state() == model::RUNNING || config.state() == model::COUNTDOWN)
         model.getTime()->setStart(
             to_rfc3339(config.start_time().time_since_epoch()));
     if (config.state() == model::RUNNING)
         model.getTime()->setOffset(config.current_offset().count());
     if (config.state() == model::ERROR) model.setError(config.error());
+
     switch (config.state()) {
     case model::READY:
         model.setState("ready");
@@ -162,6 +166,7 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
 
         model.getProfile()->setBlock(block);
     }
+
     if (config.profile().memory) {
         auto memory = std::make_shared<swagger::TvlpProfile_memory>();
         auto memory_vector = config.profile().memory.value();
@@ -183,6 +188,7 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
             });
         model.getProfile()->setMemory(memory);
     }
+
     if (config.profile().cpu) {
         auto cpu = std::make_shared<swagger::TvlpProfile_cpu>();
         auto cpu_vector = config.profile().cpu.value();
@@ -202,6 +208,7 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
             });
         model.getProfile()->setCpu(cpu);
     }
+
     if (config.profile().packet) {
         auto packet = std::make_shared<swagger::TvlpProfile_packet>();
         auto packet_vector = config.profile().packet.value();

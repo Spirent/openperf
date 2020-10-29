@@ -64,10 +64,8 @@ class TvlpConfiguration(object):
 
         self.id = id
         self.state = state
-        if load_scale is not None:
-            self.load_scale = load_scale
-        if time_scale is not None:
-            self.time_scale = time_scale
+        self.load_scale = load_scale
+        self.time_scale = time_scale
         self.time = time
         self.profile = profile
         if error is not None:
