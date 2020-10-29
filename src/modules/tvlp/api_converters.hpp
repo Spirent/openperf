@@ -59,7 +59,7 @@ static config_t from_swagger(const swagger::TvlpConfiguration& m)
 {
     auto config = config_t{};
     config.id(m.getId());
-    config.time_scale(m.timeScaleIsSet() ? m.getTimeScale() : 1);
+    config.time_scale(m.timeScaleIsSet() ? m.getTimeScale() : 1.0);
     config.load_scale(m.loadScaleIsSet() ? m.getLoadScale() : 1.0);
 
     profile_t profile;

@@ -34,7 +34,7 @@ class TvlpConfiguration(object):
         'id': 'str',
         'state': 'str',
         'load_scale': 'float',
-        'time_scale': 'int',
+        'time_scale': 'float',
         'time': 'TvlpConfigurationTime',
         'profile': 'TvlpProfile',
         'error': 'str'
@@ -50,7 +50,7 @@ class TvlpConfiguration(object):
         'error': 'error'
     }
 
-    def __init__(self, id=None, state=None, load_scale=1.0, time_scale=1, time=None, profile=None, error=None):  # noqa: E501
+    def __init__(self, id=None, state=None, load_scale=1.0, time_scale=1.0, time=None, profile=None, error=None):  # noqa: E501
         """TvlpConfiguration - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
@@ -146,7 +146,7 @@ class TvlpConfiguration(object):
         The scale multiplier for the length of each profile entry  # noqa: E501
 
         :return: The time_scale of this TvlpConfiguration.  # noqa: E501
-        :rtype: int
+        :rtype: float
         """
         return self._time_scale
 
@@ -157,7 +157,7 @@ class TvlpConfiguration(object):
         The scale multiplier for the length of each profile entry  # noqa: E501
 
         :param time_scale: The time_scale of this TvlpConfiguration.  # noqa: E501
-        :type: int
+        :type: float
         """
         self._time_scale = time_scale
 

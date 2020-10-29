@@ -23,7 +23,7 @@ TvlpConfiguration::TvlpConfiguration()
     m_State = "";
     m_Load_scale = 0.0;
     m_Load_scaleIsSet = false;
-    m_Time_scale = 0L;
+    m_Time_scale = 0.0;
     m_Time_scaleIsSet = false;
     m_Error = "";
     m_ErrorIsSet = false;
@@ -120,11 +120,11 @@ void TvlpConfiguration::unsetLoad_scale()
 {
     m_Load_scaleIsSet = false;
 }
-int64_t TvlpConfiguration::getTimeScale() const
+double TvlpConfiguration::getTimeScale() const
 {
     return m_Time_scale;
 }
-void TvlpConfiguration::setTimeScale(int64_t value)
+void TvlpConfiguration::setTimeScale(double value)
 {
     m_Time_scale = value;
     m_Time_scaleIsSet = true;

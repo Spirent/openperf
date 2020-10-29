@@ -70,8 +70,8 @@ public:
     /// <summary>
     /// The scale multiplier for the length of each profile entry
     /// </summary>
-    int64_t getTimeScale() const;
-    void setTimeScale(int64_t value);
+    double getTimeScale() const;
+    void setTimeScale(double value);
     bool timeScaleIsSet() const;
     void unsetTime_scale();
     /// <summary>
@@ -99,7 +99,7 @@ protected:
 
     double m_Load_scale;
     bool m_Load_scaleIsSet;
-    int64_t m_Time_scale;
+    double m_Time_scale;
     bool m_Time_scaleIsSet;
     std::shared_ptr<TvlpConfiguration_time> m_Time;
 

@@ -32,7 +32,9 @@ controller_t::controller_t(void* context,
 
             p.time_scale = m_time_scale;
             p.load_scale = m_load_scale;
-            total_length += p.length * m_time_scale;
+            total_length +=
+                std::chrono::duration_cast<std::chrono::nanoseconds>(
+                    p.length * m_time_scale);
         }
 
         return total_length;
