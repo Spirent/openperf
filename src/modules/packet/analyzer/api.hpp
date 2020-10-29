@@ -37,6 +37,13 @@ inline constexpr std::string_view endpoint =
     "inproc://openperf_packet_analyzer";
 
 /*
+ * We use an RCU system to handle concurrent reader/writer access
+ * for results.  Our only reader is the server thread, so we use
+ * the following explicit id instead of hard coding 0 everywhere.
+ */
+inline constexpr auto result_reader_id = 0;
+
+/*
  * Provide some sane typedefs for the swagger types we deal with.
  *
  * Note: this API is based around moving pointers between the REST API
