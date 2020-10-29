@@ -9,8 +9,6 @@
 
 namespace openperf::tvlp::api {
 
-namespace swagger = ::swagger::v1::model;
-
 std::optional<time_point> from_rfc3339(const std::string& from)
 {
     std::string date = from;
@@ -44,6 +42,26 @@ std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
     os << std::put_time(gmtime(&tv.tv_sec), "%FT%T") << "." << std::setfill('0')
        << std::setw(6) << tv.tv_usec << "Z";
     return (os.str());
+}
+
+tl::expected<bool, std::vector<std::string>>
+is_valid(const swagger::TvlpConfiguration& config)
+{
+    auto errors = std::vector<std::string>();
+    if (config.getTimeScale() <= 0.0) {
+        errors.emplace_back("Time scale value '"
+                            + std::to_string(config.getTimeScale())
+                            + "' should be greater than 0.0");
+    }
+
+    if (config.getLoadScale() <= 0.0) {
+        errors.emplace_back("Load scale value '"
+                            + std::to_string(config.getLoadScale())
+                            + "' should be greater than 0.0");
+    }
+
+    if (!errors.empty()) return tl::make_unexpected(std::move(errors));
+    return true;
 }
 
 tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)

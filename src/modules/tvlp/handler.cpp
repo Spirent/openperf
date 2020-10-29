@@ -131,29 +131,35 @@ void handler::list_tvlp(const Rest::Request&, Http::ResponseWriter response)
 void handler::create_tvlp(const Rest::Request& request,
                           Http::ResponseWriter response)
 {
-    response.headers().add<Http::Header::ContentType>(MIME(Application, Json));
     try {
         auto model =
             json::parse(request.body()).get<model::TvlpConfiguration>();
 
-        auto m = from_swagger(model);
-        auto api_reply = submit_request(
-            request::tvlp::create{.data = std::make_unique<tvlp_config_t>(m)});
+        if (auto ok = api::is_valid(model); !ok) {
+            throw json::other_error::create(
+                0,
+                std::accumulate(
+                    ok.error().begin(),
+                    ok.error().end(),
+                    std::string{},
+                    [](auto& acc, auto& s) { return acc += "; " + s; })
+                    .c_str());
+        }
+
+        auto api_reply = submit_request(request::tvlp::create{
+            .data = std::make_unique<tvlp_config_t>(from_swagger(model))});
 
         if (auto item = std::get_if<reply::tvlp::item>(&api_reply)) {
+            response.headers().add<Http::Header::ContentType>(
+                MIME(Application, Json));
             response.headers().add<Http::Header::Location>("/tvlp/"
                                                            + item->data->id());
             response.send(Http::Code::Created,
                           to_swagger(*item->data).toJson().dump());
-            return;
-        }
-
-        if (auto error = std::get_if<reply::error>(&api_reply)) {
+        } else if (auto error = std::get_if<reply::error>(&api_reply)) {
             response_error(response, *error);
-            return;
         }
     } catch (const json::exception& e) {
-
         response.send(
             Http::Code::Bad_Request,
             nlohmann::json({{"code", e.id}, {"message", e.what()}}).dump());
