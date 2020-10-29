@@ -1,13 +1,17 @@
 #include <thread>
 #include <limits>
+#include <arpa/inet.h>
 
 #include "task.hpp"
 
 #include "framework/core/op_log.h"
 #include "framework/utils/random.hpp"
+#include "internal_utils.hpp"
 
-namespace openperf::network::worker {
 
+namespace openperf::network::internal {
+
+using ref_clock = timesync::chrono::monotime;
 using namespace std::chrono_literals;
 constexpr duration TASK_SPIN_THRESHOLD = 100ms;
 
@@ -19,7 +23,6 @@ struct operation_config
     uint8_t* buffer;
     off_t offset;
     size_t header_size;
-    int (*queue_aio_op)(aiocb* aiocb);
 };
 
 task_stat_t& task_stat_t::operator+=(const task_stat_t& stat)
@@ -76,6 +79,36 @@ void network_task::reset()
     }
 }
 
+static int populate_sockaddr(union network_sockaddr& s,
+                                 const std::string& host,
+                                 uint16_t port)
+{
+    if (inet_pton(AF_INET, host.c_str(), &s.sa4.sin_addr) == 1) {
+        s.sa4.sin_family = AF_INET;
+        s.sa4.sin_port = htons(port);
+    } else if (inet_pton(AF_INET6, host.c_str(), &s.sa6.sin6_addr) == 1) {
+        s.sa6.sin6_family = AF_INET6;
+        s.sa6.sin6_port = htons(port);
+        if (ipv6_addr_is_link_local(&s.sa6.sin6_addr)) {
+            /* Need to set sin6_scope_id for link local IPv6 */
+            int ifindex;
+            if ((ifindex = ipv6_get_neighbor_ifindex(&s.sa6.sin6_addr))
+                >= 0) {
+                s.sa6.sin6_scope_id = ifindex;
+            } else {
+                OP_LOG(OP_LOG_WARNING,
+                       "Unable to find interface for link local %s\n",
+                       host.c_str());
+            }
+        }
+    } else {
+        /* host is not a valid IPv4 or IPv6 address; bail */
+        return (-EINVAL);
+    }
+
+    return (0);
+}
+
 task_stat_t network_task::spin()
 {
     if (!m_task_config.ops_per_sec || !m_task_config.block_size) {
@@ -128,6 +161,17 @@ task_stat_t network_task::worker_spin(uint64_t nb_ops,
                                       realtime::time_point deadline)
 {
     task_stat_t stat;
+
+    /* Make sure we have the right number of connections */
+    size_t connections_required =
+        m_task_config.connections - m_connections.size();
+    size_t loop_conn_attempts = 0;
+
+    while (loop_conn_attempts < connections_required) {
+        network_sockaddr server;
+        populate_sockaddr(server, m_task_config.host, m_task_config.port);
+    }
+
     return stat;
 }
 
@@ -135,11 +179,6 @@ void network_task::config(const task_config_t& p_config)
 {
     m_task_config = p_config;
     m_stat.operation = m_task_config.operation;
-
-    auto buf_len = m_task_config.queue_depth * m_task_config.block_size;
-    m_buf.resize(buf_len);
-    utils::op_prbs23_fill(m_buf.data(), m_buf.size());
-    m_aio_ops.resize(m_task_config.queue_depth);
 }
 
 int32_t network_task::calculate_rate()
@@ -181,4 +220,4 @@ int32_t network_task::calculate_rate()
     }
 }
 
-} // namespace openperf::network::worker
+} // namespace openperf::network::internal

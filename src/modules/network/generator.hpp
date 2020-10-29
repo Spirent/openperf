@@ -9,6 +9,8 @@
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
 
+#include "task.hpp"
+
 namespace openperf::network::internal {
 
 class generator : public model::generator
@@ -21,7 +23,7 @@ private:
     std::string m_result_id;
     const uint16_t m_serial_number;
 
-    generator_stat_t m_read_stat, m_write_stat;
+    task_stat_t m_read_stat, m_write_stat;
     std::atomic<generator_stat_t*> m_read_stat_ptr, m_write_stat_ptr;
     chronometer::time_point m_start_time;
 

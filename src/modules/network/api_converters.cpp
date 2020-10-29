@@ -15,20 +15,20 @@ std::string to_rfc3339(std::chrono::duration<Rep, Period> from)
     return os.str();
 }
 
-constexpr std::optional<network_server_t::protocol_t>
+constexpr std::optional<model::protocol_t>
 protocol_from_string(std::string_view str)
 {
-    if (str == "tcp") return network_server_t::protocol_t::TCP;
-    if (str == "udp") return network_server_t::protocol_t::UDP;
+    if (str == "tcp") return model::protocol_t::TCP;
+    if (str == "udp") return model::protocol_t::UDP;
     return std::nullopt;
 }
 
-std::string to_string(network_server_t::protocol_t protocol)
+std::string to_string(model::protocol_t protocol)
 {
     switch (protocol) {
-    case network_server_t::protocol_t::UDP:
+    case model::protocol_t::UDP:
         return "udp";
-    case network_server_t::protocol_t::TCP:
+    case model::protocol_t::TCP:
         return "tcp";
     default:
         return "";
@@ -39,6 +39,34 @@ tl::expected<bool, std::vector<std::string>>
 is_valid(const swagger::NetworkGeneratorConfig& config)
 {
     auto errors = std::vector<std::string>();
+
+    if (config.getConnections() < 1)
+        errors.emplace_back("Connections value is not valid.");
+    if (config.getOpsPerConnection() < 1)
+        errors.emplace_back("Opperations per connection value is not valid.");
+    if (config.getReadSize() < 1)
+        errors.emplace_back("Read Size value is not valid.");
+    if (config.getReadsPerSec() < 0)
+        errors.emplace_back("Reads Per Sec value is not valid.");
+    if (config.getWriteSize() < 1)
+        errors.emplace_back("Write Size value is not valid.");
+    if (config.getWritesPerSec() < 0)
+        errors.emplace_back("Writes Per Sec value is not valid.");
+
+    if (config.getReadsPerSec() < 1 && config.getWritesPerSec() < 1)
+        errors.emplace_back("No operations were specified.");
+
+    auto target = config.getTarget();
+    if (!target) {
+        errors.emplace_back("Network target is required.");
+    } else {
+        if (target->getHost().size() < 1)
+            errors.emplace_back("Target host value is not valid.");
+        if (target->getPort() < 0 || target->getPort() > 65535)
+            errors.emplace_back("Port value is not valid.");
+        if (!protocol_from_string(target->getProtocol()))
+            errors.emplace_back("Target protocol value is not valid.");
+    }
 
     if (!errors.empty()) return tl::make_unexpected(std::move(errors));
     return true;
@@ -97,7 +125,7 @@ model::server from_swagger(const swagger::NetworkServer& server)
     server_model.id(server.getId());
     server_model.port(server.getPort());
     server_model.protocol(protocol_from_string(server.getProtocol())
-                              .value_or(model::server::protocol_t::TCP));
+                              .value_or(model::protocol_t::TCP));
     return server_model;
 }
 
@@ -125,6 +153,19 @@ std::shared_ptr<swagger::NetworkGenerator>
 to_swagger(const model::generator& model)
 {
     auto network_config = std::make_shared<swagger::NetworkGeneratorConfig>();
+    network_config->setReadSize(model.config().read_size);
+    network_config->setReadsPerSec(model.config().reads_per_sec);
+    network_config->setWriteSize(model.config().write_size);
+    network_config->setWritesPerSec(model.config().writes_per_sec);
+    network_config->setConnections(model.config().connections);
+    network_config->setOpsPerConnection(model.config().ops_per_connection);
+
+    auto network_target =
+        std::make_shared<swagger::NetworkGeneratorConfig_target>();
+    network_target->setHost(model.target().host);
+    network_target->setPort(model.target().port);
+    network_target->setProtocol(to_string(model.target().protocol));
+    network_config->setTarget(network_target);
 
     auto gen = std::make_shared<swagger::NetworkGenerator>();
     gen->setId(model.id());

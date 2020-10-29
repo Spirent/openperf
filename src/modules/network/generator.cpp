@@ -5,66 +5,54 @@
 
 namespace openperf::network::internal {
 
+using namespace std::chrono_literals;
+
 static uint16_t serial_counter = 0;
 constexpr auto NAME_PREFIX = "op_network";
+
+auto to_statistics_t(const task_stat_t& task_stat)
+{
+    return model::generator_result::statistics_t{
+        .bytes_actual = task_stat.bytes_actual,
+        .bytes_target = task_stat.bytes_target,
+        .io_errors = task_stat.errors,
+        .ops_actual = task_stat.ops_actual,
+        .ops_target = task_stat.ops_target,
+        .latency = task_stat.latency,
+        .latency_min = task_stat.latency_min,
+        .latency_max = task_stat.latency_max};
+};
 
 std::optional<double> get_field(const model::generator_result& stat,
                                 std::string_view name)
 {
-    /*if (name == "timestamp") return stat.available.count();
+    auto read = stat.read_stats();
+    if (name == "read.ops_target") return read.ops_target;
+    if (name == "read.ops_actual") return read.ops_actual;
+    if (name == "read.bytes_target") return read.bytes_target;
+    if (name == "read.bytes_actual") return read.bytes_actual;
+    if (name == "read.io_errors") return read.io_errors;
+    if (name == "read.latency_total") return read.latency.count();
 
-    if (name == "available") return stat.available.count();
-    if (name == "utilization") return stat.utilization.count();
-    if (name == "system") return stat.system.count();
-    if (name == "user") return stat.user.count();
-    if (name == "steal") return stat.steal.count();
-    if (name == "error") return stat.error.count();
+    if (name == "read.latency_min")
+        return read.latency_min.value_or(0ns).count();
+    if (name == "read.latency_max")
+        return read.latency_max.value_or(0ns).count();
 
-    // Parse the cores[N] field name
-    constexpr auto prefix = "cores[";
-    auto prefix_size = std::strlen(prefix);
-    if (name.substr(0, prefix_size) == prefix) {
-        auto core_number = std::stoul(std::string(name.substr(
-            prefix_size, name.find_first_of(']', prefix_size) - prefix_size)));
+    auto write = stat.write_stats();
+    if (name == "write.ops_target") return write.ops_target;
+    if (name == "write.ops_actual") return write.ops_actual;
+    if (name == "write.bytes_target") return write.bytes_target;
+    if (name == "write.bytes_actual") return write.bytes_actual;
+    if (name == "write.io_errors") return write.io_errors;
+    if (name == "write.latency_total") return write.latency.count();
 
-        if (core_number < stat.cores.size()) {
-            auto field_name =
-                name.substr(name.find_first_of('.', prefix_size) + 1);
+    if (name == "write.latency_min")
+        return write.latency_min.value_or(0ns).count();
+    if (name == "write.latency_max")
+        return write.latency_max.value_or(0ns).count();
 
-            if (field_name == "available")
-                return stat.cores[core_number].available.count();
-            if (field_name == "utilization")
-                return stat.cores[core_number].utilization.count();
-            if (field_name == "system")
-                return stat.cores[core_number].system.count();
-            if (field_name == "user")
-                return stat.cores[core_number].user.count();
-            if (field_name == "steal")
-                return stat.cores[core_number].steal.count();
-            if (field_name == "error")
-                return stat.cores[core_number].error.count();
-
-            // Parse the targest[N] field name
-            constexpr auto target_prefix = "targets[";
-            auto target_prefix_size = std::strlen(target_prefix);
-            if (field_name.substr(0, target_prefix_size) == target_prefix) {
-                auto target_number = std::stoul(std::string(field_name.substr(
-                    target_prefix_size,
-                    field_name.find_first_of(']', target_prefix_size)
-                        - target_prefix_size)));
-
-                if (target_number < stat.cores[core_number].targets.size()) {
-                    auto target_field = field_name.substr(
-                        field_name.find_first_of('.', target_prefix_size) + 1);
-
-                    if (target_field == "operations")
-                        return stat.cores[core_number]
-                            .targets[target_number]
-                            .operations;
-                }
-            }
-        }
-    }*/
+    if (name == "timestamp") return stat.timestamp().time_since_epoch().count();
 
     return std::nullopt;
 }
@@ -74,23 +62,42 @@ generator::generator(const model::generator& generator_model)
     : model::generator(generator_model)
     , m_result_id(core::to_string(core::uuid::random()))
     , m_serial_number(++serial_counter)
-    , m_read_stat_ptr(&m_read_stat)
-    , m_write_stat_ptr(&m_write_stat)
     , m_dynamic(get_field)
     , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
 {
-    generator::config(generator_model.config());
-    // m_controller.start<model::generator_result::statistics_t*>([this](const
-    // task_cpu_stat& stat) {
-    //     auto stat_copy = m_stat;
-    //     m_stat_ptr = &stat_copy;
-    //     m_stat += stat;
+    m_controller.start<task_stat_t>([this](const task_stat_t& stat) {
+        auto elapsed_time = stat.updated - m_start_time;
 
-    //     if (m_stat.steal == 0ns) m_stat.steal = internal::cpu_steal_time();
+        switch (stat.operation) {
+        case task_operation::READ:
+            m_read_stat += stat;
+            m_read_stat.ops_target =
+                elapsed_time.count() * m_config.reads_per_sec
+                * std::min(m_config.read_size, 1U) / std::nano::den;
+            m_read_stat.bytes_target =
+                m_read_stat.ops_target * m_config.read_size;
+            break;
+        case task_operation::WRITE:
+            m_write_stat += stat;
+            m_write_stat.ops_target =
+                elapsed_time.count() * m_config.writes_per_sec
+                * std::min(m_config.write_size, 1U) / std::nano::den;
+            m_write_stat.bytes_target =
+                m_write_stat.ops_target * m_config.write_size;
+            break;
+        }
 
-    //     m_dynamic.add(m_stat);
-    //     m_stat_ptr = &m_stat;
-    // });
+        auto complete_stat = model::generator_result();
+        complete_stat.read_stats(to_statistics_t(m_read_stat));
+        complete_stat.write_stats(to_statistics_t(m_write_stat));
+        complete_stat.timestamp(
+            std::max(m_write_stat.updated, m_read_stat.updated));
+        complete_stat.dynamic_results(m_dynamic.result());
+
+        m_dynamic.add(complete_stat);
+    });
+
+    generator::config(m_config);
 }
 
 generator::~generator()

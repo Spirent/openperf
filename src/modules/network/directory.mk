@@ -13,8 +13,15 @@ NETWORK_SOURCES += \
 	server.cpp \
 	generator.cpp \
 	generator_stack.cpp \
+	task.cpp \
 	internal_server.cpp \
 	internal_server_stack.cpp \
+	internal_utils.cpp
+
+ifeq ($(PLATFORM), linux)
+	NETWORK_SOURCES += \
+	internal_utils_linux.cpp
+endif
 
 NETWORK_SOURCES += \
 	firehose/server_tcp.cpp
