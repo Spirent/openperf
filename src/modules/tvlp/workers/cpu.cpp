@@ -22,8 +22,9 @@ cpu_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
     auto config = std::make_shared<swagger::CpuGeneratorConfig>();
     config->fromJson(const_cast<nlohmann::json&>(entry.config));
     if (config->getMethod() == "system") {
-        config->getSystem()->setUtilization(std::min(
-            config->getSystem()->getUtilization() * entry.load_scale, 100.0));
+        config->getSystem()->setUtilization(
+            std::min(config->getSystem()->getUtilization() * entry.load_scale,
+                     100.0 * op_get_cpu_count()));
     } else if (config->getMethod() == "cores") {
         for (auto& core : config->getCores()) {
             core->setUtilization(

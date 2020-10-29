@@ -119,7 +119,11 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
 
     m_state.state.store(model::RUNNING);
     duration total_offset = duration::zero();
-    for (auto entry : profile) {
+    for (const auto& entry : profile) {
+        auto entry_duration =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(
+                entry.length * entry.time_scale);
+
         if (m_state.stopped.load()) {
             m_state.state.store(model::READY);
             return {};
@@ -132,8 +136,7 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
             return tl::make_unexpected(create_result.error());
         }
         auto gen_id = create_result.value();
-        auto end_time = ref_clock::now()
-                        + entry.length * static_cast<long>(entry.time_scale);
+        auto end_time = ref_clock::now() + entry_duration;
 
         // Start generator
         auto start_result = send_start(gen_id);
@@ -166,7 +169,7 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
             std::this_thread::sleep_for(sleep_time);
         }
 
-        total_offset += entry.length * static_cast<long>(entry.time_scale);
+        total_offset += entry_duration;
         m_state.offset.store(total_offset);
 
         // Stop generator
