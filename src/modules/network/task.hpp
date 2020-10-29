@@ -3,17 +3,13 @@
 
 #include <atomic>
 #include <chrono>
-
-#include <aio.h>
-
-#include "pattern_generator.hpp"
-
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include "framework/generator/task.hpp"
 #include "modules/timesync/chrono.hpp"
 
-namespace openperf::network::worker {
+namespace openperf::network::internal {
 
-using ref_clock = timesync::chrono::monotime;
 using realtime = timesync::chrono::realtime;
 using time_point = realtime::time_point;
 using duration = std::chrono::nanoseconds;
@@ -30,14 +26,18 @@ struct task_synchronizer
 
 struct task_config_t
 {
-    int fd;
-    size_t f_size;
-    size_t header_size;
-    size_t queue_depth;
     task_operation operation;
     uint32_t ops_per_sec;
+    size_t connections;
     size_t block_size;
+    std::string host;
+    uint64_t port;
     task_synchronizer* synchronizer = nullptr;
+};
+
+struct task_connection_t
+{
+    int fd;
 };
 
 struct task_stat_t
@@ -69,30 +69,13 @@ struct task_stat_t
     task_stat_t& operator+=(const task_stat_t&);
 };
 
-enum aio_state : uint8_t {
-    IDLE = 0,
-    PENDING,
-    COMPLETE,
-    FAILED,
-};
-
-struct operation_state
-{
-    time_point start;
-    time_point stop;
-    uint64_t io_bytes;
-    enum aio_state state;
-    aiocb aiocb;
-};
-
 class network_task : public framework::generator::task<task_stat_t>
 {
 private:
     task_config_t m_task_config;
     task_stat_t m_stat;
-    std::vector<operation_state> m_aio_ops;
-    std::vector<uint8_t> m_buf;
     realtime::time_point m_operation_timestamp;
+    std::vector<task_connection_t> m_connections;
 
 public:
     network_task(const task_config_t&);
@@ -109,6 +92,6 @@ private:
     task_stat_t worker_spin(uint64_t nb_ops, time_point deadline);
 };
 
-} // namespace openperf::network::worker
+} // namespace openperf::network::internal
 
 #endif // _OP_NETWORK_GENERATOR_WORKER_HPP_

@@ -7,11 +7,11 @@
 
 namespace openperf::network::model {
 
+enum protocol_t { TCP, UDP };
+
 class server
 {
 public:
-    enum class protocol_t { TCP, UDP };
-
     server() = default;
     server(const server&) = default;
     virtual ~server() = default;

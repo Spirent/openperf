@@ -4,7 +4,7 @@
 
 namespace openperf::network::internal {
 
-using protocol_t = model::server::protocol_t;
+using protocol_t = model::protocol_t;
 
 // Constructors & Destructor
 server::server(const model::server& server_model)
@@ -23,6 +23,9 @@ server::server(const model::server& server_model)
         /* code */
         break;
     }
+
+    server_ptr->run_accept_thread();
+    server_ptr->run_worker_thread();
 }
 
 server::~server() { server_ptr.reset(nullptr); }
