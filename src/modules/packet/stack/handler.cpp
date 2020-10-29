@@ -1,6 +1,7 @@
 #include <zmq.h>
 
 #include "api/api_route_handler.hpp"
+#include "api/api_utils.hpp"
 #include "config/op_config_utils.hpp"
 #include "core/op_core.h"
 #include "message/serialized_message.hpp"
@@ -201,14 +202,13 @@ void handler::list_interfaces(const request_type& request,
     auto api_reply = submit_request(m_socket.get(), std::move(api_request));
 
     if (auto reply = std::get_if<reply_interfaces>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
         auto interfaces = nlohmann::json::array();
         std::transform(std::begin(reply->interfaces),
                        std::end(reply->interfaces),
                        std::back_inserter(interfaces),
                        [](const auto& intf) { return (intf->toJson()); });
-        response.send(Http::Code::Ok, interfaces.dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, interfaces);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -440,14 +440,13 @@ void handler::list_stacks(const request_type&, response_type response)
     auto api_reply = submit_request(m_socket.get(), request_list_stacks{});
 
     if (auto reply = std::get_if<reply_stacks>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
         auto stacks = nlohmann::json::array();
         std::transform(std::begin(reply->stacks),
                        std::end(reply->stacks),
                        std::back_inserter(stacks),
                        [](const auto& intf) { return (intf->toJson()); });
-        response.send(Http::Code::Ok, stacks.dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, stacks);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }

@@ -1,6 +1,7 @@
 #include <zmq.h>
 
 #include "api/api_route_handler.hpp"
+#include "api/api_utils.hpp"
 #include "config/op_config_utils.hpp"
 #include "core/op_core.h"
 #include "message/serialized_message.hpp"
@@ -216,15 +217,14 @@ void handler::list_generators(const request_type& request,
     auto api_reply = submit_request(m_socket.get(), std::move(api_request));
 
     if (auto reply = std::get_if<reply_generators>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
         auto generators = nlohmann::json::array();
         std::transform(
             std::begin(reply->generators),
             std::end(reply->generators),
             std::back_inserter(generators),
             [](const auto& generator) { return (generator->toJson()); });
-        response.send(Http::Code::Ok, generators.dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, generators);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -678,14 +678,13 @@ void handler::list_generator_results(const request_type& request,
     auto api_reply = submit_request(m_socket.get(), std::move(api_request));
 
     if (auto reply = std::get_if<reply_generator_results>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
         auto generator_results = nlohmann::json::array();
         std::transform(std::begin(reply->generator_results),
                        std::end(reply->generator_results),
                        std::back_inserter(generator_results),
                        [](const auto& result) { return (result->toJson()); });
-        response.send(Http::Code::Ok, generator_results.dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, generator_results);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -757,14 +756,13 @@ void handler::list_tx_flows(const request_type& request, response_type response)
     auto api_reply = submit_request(m_socket.get(), std::move(api_request));
 
     if (auto reply = std::get_if<reply_tx_flows>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
         auto flows = nlohmann::json::array();
         std::transform(std::begin(reply->flows),
                        std::end(reply->flows),
                        std::back_inserter(flows),
                        [](const auto& result) { return (result->toJson()); });
-        response.send(Http::Code::Ok, flows.dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, flows);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
