@@ -1,6 +1,7 @@
 #include <zmq.h>
 
 #include "api/api_route_handler.hpp"
+#include "api/api_utils.hpp"
 #include "config/op_config_utils.hpp"
 #include "core/op_core.h"
 #include "message/serialized_message.hpp"
@@ -207,15 +208,14 @@ void handler::list_analyzers(const request_type& request,
     auto api_reply = submit_request(m_socket.get(), std::move(api_request));
 
     if (auto reply = std::get_if<reply_analyzers>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
         auto analyzers = nlohmann::json::array();
         std::transform(
             std::begin(reply->analyzers),
             std::end(reply->analyzers),
             std::back_inserter(analyzers),
             [](const auto& analyzer) { return (analyzer->toJson()); });
-        response.send(Http::Code::Ok, analyzers.dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, analyzers);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -661,14 +661,13 @@ void handler::list_analyzer_results(const request_type& request,
     auto api_reply = submit_request(m_socket.get(), std::move(api_request));
 
     if (auto reply = std::get_if<reply_analyzer_results>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
         auto analyzer_results = nlohmann::json::array();
         std::transform(std::begin(reply->analyzer_results),
                        std::end(reply->analyzer_results),
                        std::back_inserter(analyzer_results),
                        [](const auto& result) { return (result->toJson()); });
-        response.send(Http::Code::Ok, analyzer_results.dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, analyzer_results);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -742,14 +741,13 @@ void handler::list_rx_flows(const request_type& request, response_type response)
     auto api_reply = submit_request(m_socket.get(), std::move(api_request));
 
     if (auto reply = std::get_if<reply_rx_flows>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
         auto flows = nlohmann::json::array();
         std::transform(std::begin(reply->flows),
                        std::end(reply->flows),
                        std::back_inserter(flows),
                        [](const auto& result) { return (result->toJson()); });
-        response.send(Http::Code::Ok, flows.dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, flows);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
