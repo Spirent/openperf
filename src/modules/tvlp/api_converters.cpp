@@ -125,9 +125,6 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
     if (config.state() == model::RUNNING || config.state() == model::COUNTDOWN)
         model.getTime()->setStart(
             to_rfc3339(config.start_time().time_since_epoch()));
-    if (config.state() == model::RUNNING)
-        model.getTime()->setOffset(config.current_offset().count());
-    if (config.state() == model::ERROR) model.setError(config.error());
 
     switch (config.state()) {
     case model::READY:
@@ -137,9 +134,11 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
         model.setState("countdown");
         break;
     case model::RUNNING:
+        model.getTime()->setOffset(config.current_offset().count());
         model.setState("running");
         break;
     case model::ERROR:
+        model.setError(config.error());
         model.setState("error");
     }
 
@@ -254,6 +253,7 @@ swagger::TvlpResult to_swagger(const tvlp_result_t& result)
                 return g_result;
             });
     }
+
     if (modules_results.memory) {
         auto memory_results = modules_results.memory.value();
         std::transform(
@@ -267,6 +267,7 @@ swagger::TvlpResult to_swagger(const tvlp_result_t& result)
                 return g_result;
             });
     }
+
     if (modules_results.cpu) {
         auto cpu_results = modules_results.cpu.value();
         std::transform(cpu_results.begin(),
@@ -279,6 +280,7 @@ swagger::TvlpResult to_swagger(const tvlp_result_t& result)
                            return g_result;
                        });
     }
+
     if (modules_results.packet) {
         auto packet_results = modules_results.packet.value();
         std::transform(
