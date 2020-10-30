@@ -17,8 +17,8 @@ struct tvlp_profile_entry_t
     duration length;
     std::optional<std::string> resource_id;
     nlohmann::json config;
-    double time_scale;
-    double load_scale;
+    double time_scale = 1.0;
+    double load_scale = 1.0;
 };
 
 using tvlp_module_profile_t = std::vector<tvlp_profile_entry_t>;
@@ -39,9 +39,6 @@ protected:
     std::string m_id;
     tvlp_state_t m_state = READY;
 
-    double m_load_scale = 1.0;
-    double m_time_scale = 1.0;
-
     time_point m_start_time = time_point::min();
     duration m_total_length = duration::zero();
     duration m_current_offset = duration::zero();
@@ -60,13 +57,9 @@ public:
     duration total_length() const { return m_total_length; }
     duration current_offset() const { return m_current_offset; }
     std::string error() const { return m_error; }
-    double load_scale() const { return m_load_scale; }
-    double time_scale() const { return m_time_scale; }
 
     void id(std::string_view value) { m_id = value; }
     void profile(const tvlp_profile_t& value) { m_profile = value; }
-    void load_scale(double scale) { m_load_scale = scale; }
-    void time_scale(double scale) { m_time_scale = scale; }
 };
 
 } // namespace openperf::tvlp::model

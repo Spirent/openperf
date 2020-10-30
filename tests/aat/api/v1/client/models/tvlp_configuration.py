@@ -33,8 +33,6 @@ class TvlpConfiguration(object):
     swagger_types = {
         'id': 'str',
         'state': 'str',
-        'load_scale': 'float',
-        'time_scale': 'float',
         'time': 'TvlpConfigurationTime',
         'profile': 'TvlpProfile',
         'error': 'str'
@@ -43,20 +41,16 @@ class TvlpConfiguration(object):
     attribute_map = {
         'id': 'id',
         'state': 'state',
-        'load_scale': 'load_scale',
-        'time_scale': 'time_scale',
         'time': 'time',
         'profile': 'profile',
         'error': 'error'
     }
 
-    def __init__(self, id=None, state=None, load_scale=1.0, time_scale=1.0, time=None, profile=None, error=None):  # noqa: E501
+    def __init__(self, id=None, state=None, time=None, profile=None, error=None):  # noqa: E501
         """TvlpConfiguration - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._state = None
-        self._load_scale = None
-        self._time_scale = None
         self._time = None
         self._profile = None
         self._error = None
@@ -64,8 +58,6 @@ class TvlpConfiguration(object):
 
         self.id = id
         self.state = state
-        self.load_scale = load_scale
-        self.time_scale = time_scale
         self.time = time
         self.profile = profile
         if error is not None:
@@ -114,50 +106,6 @@ class TvlpConfiguration(object):
         :type: str
         """
         self._state = state
-
-    @property
-    def load_scale(self):
-        """Gets the load_scale of this TvlpConfiguration.  # noqa: E501
-
-        The scale multiplier for load parameters of generators  # noqa: E501
-
-        :return: The load_scale of this TvlpConfiguration.  # noqa: E501
-        :rtype: float
-        """
-        return self._load_scale
-
-    @load_scale.setter
-    def load_scale(self, load_scale):
-        """Sets the load_scale of this TvlpConfiguration.
-
-        The scale multiplier for load parameters of generators  # noqa: E501
-
-        :param load_scale: The load_scale of this TvlpConfiguration.  # noqa: E501
-        :type: float
-        """
-        self._load_scale = load_scale
-
-    @property
-    def time_scale(self):
-        """Gets the time_scale of this TvlpConfiguration.  # noqa: E501
-
-        The scale multiplier for the length of each profile entry  # noqa: E501
-
-        :return: The time_scale of this TvlpConfiguration.  # noqa: E501
-        :rtype: float
-        """
-        return self._time_scale
-
-    @time_scale.setter
-    def time_scale(self, time_scale):
-        """Sets the time_scale of this TvlpConfiguration.
-
-        The scale multiplier for the length of each profile entry  # noqa: E501
-
-        :param time_scale: The time_scale of this TvlpConfiguration.  # noqa: E501
-        :type: float
-        """
-        self._time_scale = time_scale
 
     @property
     def time(self):

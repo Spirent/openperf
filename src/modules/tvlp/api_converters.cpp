@@ -48,17 +48,32 @@ tl::expected<bool, std::vector<std::string>>
 is_valid(const swagger::TvlpConfiguration& config)
 {
     auto errors = std::vector<std::string>();
-    if (config.getTimeScale() <= 0.0) {
-        errors.emplace_back("Time scale value '"
-                            + std::to_string(config.getTimeScale())
-                            + "' should be greater than 0.0");
-    }
 
-    if (config.getLoadScale() <= 0.0) {
-        errors.emplace_back("Load scale value '"
-                            + std::to_string(config.getLoadScale())
-                            + "' should be greater than 0.0");
-    }
+    auto scale_check = [&errors](auto&& profile) {
+        if (profile->getTimeScale() <= 0.0) {
+            errors.emplace_back("Time scale value '"
+                                + std::to_string(profile->getTimeScale())
+                                + "' should be greater than 0.0");
+        }
+
+        if (profile->getLoadScale() <= 0.0) {
+            errors.emplace_back("Load scale value '"
+                                + std::to_string(profile->getLoadScale())
+                                + "' should be greater than 0.0");
+        }
+    };
+
+    if (config.getProfile()->blockIsSet())
+        scale_check(config.getProfile()->getBlock());
+
+    if (config.getProfile()->memoryIsSet())
+        scale_check(config.getProfile()->getMemory());
+
+    if (config.getProfile()->cpuIsSet())
+        scale_check(config.getProfile()->getCpu());
+
+    if (config.getProfile()->packetIsSet())
+        scale_check(config.getProfile()->getPacket());
 
     if (!errors.empty()) return tl::make_unexpected(std::move(errors));
     return true;
@@ -71,40 +86,68 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
 
     tvlp_profile_t profile;
     if (m.getProfile()->blockIsSet()) {
+        auto profile_model = m.getProfile()->getBlock();
+        auto time_scale = profile_model->getTimeScale();
+        auto load_scale = profile_model->getLoadScale();
+
         profile.block = std::vector<tvlp_profile_entry_t>();
-        for (auto block_entry : m.getProfile()->getBlock()->getSeries()) {
+        for (auto block_entry : profile_model->getSeries()) {
             profile.block.value().push_back(tvlp_profile_entry_t{
                 .length = model::duration(block_entry->getLength()),
                 .resource_id = block_entry->getResourceId(),
-                .config = block_entry->getConfig()->toJson()});
+                .config = block_entry->getConfig()->toJson(),
+                .time_scale = time_scale,
+                .load_scale = load_scale,
+            });
         }
     }
 
     if (m.getProfile()->memoryIsSet()) {
+        auto profile_model = m.getProfile()->getMemory();
+        auto time_scale = profile_model->getTimeScale();
+        auto load_scale = profile_model->getLoadScale();
+
         profile.memory = std::vector<tvlp_profile_entry_t>();
-        for (auto memory_entry : m.getProfile()->getMemory()->getSeries()) {
+        for (auto memory_entry : profile_model->getSeries()) {
             profile.memory.value().push_back(tvlp_profile_entry_t{
                 .length = model::duration(memory_entry->getLength()),
-                .config = memory_entry->getConfig()->toJson()});
+                .config = memory_entry->getConfig()->toJson(),
+                .time_scale = time_scale,
+                .load_scale = load_scale,
+            });
         }
     }
 
     if (m.getProfile()->cpuIsSet()) {
+        auto profile_model = m.getProfile()->getCpu();
+        auto time_scale = profile_model->getTimeScale();
+        auto load_scale = profile_model->getLoadScale();
+
         profile.cpu = std::vector<tvlp_profile_entry_t>();
-        for (auto cpu_entry : m.getProfile()->getCpu()->getSeries()) {
+        for (auto cpu_entry : profile_model->getSeries()) {
             profile.cpu.value().push_back(tvlp_profile_entry_t{
                 .length = model::duration(cpu_entry->getLength()),
-                .config = cpu_entry->getConfig()->toJson()});
+                .config = cpu_entry->getConfig()->toJson(),
+                .time_scale = time_scale,
+                .load_scale = load_scale,
+            });
         }
     }
 
     if (m.getProfile()->packetIsSet()) {
+        auto profile_model = m.getProfile()->getPacket();
+        auto time_scale = profile_model->getTimeScale();
+        auto load_scale = profile_model->getLoadScale();
+
         profile.packet = std::vector<tvlp_profile_entry_t>();
-        for (auto packet_entry : m.getProfile()->getPacket()->getSeries()) {
+        for (auto packet_entry : profile_model->getSeries()) {
             profile.packet.value().push_back(tvlp_profile_entry_t{
                 .length = model::duration(packet_entry->getLength()),
                 .resource_id = packet_entry->getTargetId(),
-                .config = packet_entry->getConfig()->toJson()});
+                .config = packet_entry->getConfig()->toJson(),
+                .time_scale = time_scale,
+                .load_scale = load_scale,
+            });
         }
     }
 
@@ -116,8 +159,6 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
 {
     swagger::TvlpConfiguration model;
     model.setId(config.id());
-    model.setTimeScale(config.time_scale());
-    model.setLoadScale(config.load_scale());
 
     model.setTime(std::make_shared<swagger::TvlpConfiguration_time>());
     model.getTime()->setLength(config.total_length().count());
@@ -150,11 +191,14 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
             block_vector.begin(),
             block_vector.end(),
             std::back_inserter(block->getSeries()),
-            [](auto& block_entry) {
+            [&block](auto& block_entry) {
                 auto entry =
                     std::make_shared<swagger::TvlpProfile_block_series>();
                 entry->setLength(block_entry.length.count());
                 entry->setResourceId(block_entry.resource_id.value());
+
+                block->setTimeScale(block_entry.time_scale);
+                block->setLoadScale(block_entry.load_scale);
 
                 auto g_config =
                     std::make_shared<swagger::BlockGeneratorConfig>();
@@ -173,10 +217,13 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
             memory_vector.begin(),
             memory_vector.end(),
             std::back_inserter(memory->getSeries()),
-            [](auto& memory_entry) {
+            [&memory](auto& memory_entry) {
                 auto entry =
                     std::make_shared<swagger::TvlpProfile_memory_series>();
                 entry->setLength(memory_entry.length.count());
+
+                memory->setTimeScale(memory_entry.time_scale);
+                memory->setLoadScale(memory_entry.load_scale);
 
                 auto g_config =
                     std::make_shared<swagger::MemoryGeneratorConfig>();
@@ -195,10 +242,13 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
             cpu_vector.begin(),
             cpu_vector.end(),
             std::back_inserter(cpu->getSeries()),
-            [](auto& cpu_entry) {
+            [&cpu](auto& cpu_entry) {
                 auto entry =
                     std::make_shared<swagger::TvlpProfile_cpu_series>();
                 entry->setLength(cpu_entry.length.count());
+
+                cpu->setTimeScale(cpu_entry.time_scale);
+                cpu->setLoadScale(cpu_entry.load_scale);
 
                 auto g_config = std::make_shared<swagger::CpuGeneratorConfig>();
                 g_config->fromJson(cpu_entry.config);
@@ -211,15 +261,19 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
     if (config.profile().packet) {
         auto packet = std::make_shared<swagger::TvlpProfile_packet>();
         auto packet_vector = config.profile().packet.value();
+
         std::transform(
             packet_vector.begin(),
             packet_vector.end(),
             std::back_inserter(packet->getSeries()),
-            [](auto& packet_entry) {
+            [&packet](auto& packet_entry) {
                 auto entry =
                     std::make_shared<swagger::TvlpProfile_packet_series>();
                 entry->setLength(packet_entry.length.count());
                 entry->setTargetId(packet_entry.resource_id.value());
+
+                packet->setTimeScale(packet_entry.time_scale);
+                packet->setLoadScale(packet_entry.load_scale);
 
                 auto g_config =
                     std::make_shared<swagger::PacketGeneratorConfig>();

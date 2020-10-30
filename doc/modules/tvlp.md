@@ -30,15 +30,25 @@ After a profile has completed its run, the `state` revert back to READY.
 The TVLP module responds to the following configuration properties:
 
 * **id** - unique TVLP identifier. Leave field empty to generate value.
-* **load_scale** - scale multiplier for load parameters of generators.
-* **time_scale** - scale multiplier for the length of each profile entry.
 * **profile** - TVLP profile data
+    * **block** - series set for block generator (optional)
+    * **cpu** - series set for cpu generator (optional)
+    * **memory** - series set for memory generator (optional)
+    * **packet** - series set for packet generator (optional)
 * **state** - current TVLP profile `state`, one of: READY, COUNTDOWN, RUNNING, or ERROR (read only).
 * **error** - read only string describing error condition; only when `state` == ERROR (read only).
 * **time** - read-only information about execution time.
     * **start** - ISO8601-formatted TVLP profile start time. Only available when `state` = COUNTDOWN or RUNNING (read only).
     * **length** - length of current tvlp profile in ns (read only).
     * **offset** - current offset in ns. Only valid when `state` = RUNNING (read only).
+
+#### Profile
+
+* **load_scale** - scale multiplier for load parameters of generators.
+* **time_scale** - scale multiplier for the length of each profile entry.
+* **series** - sequence of generator configurations
+    * **config** - generator configuration
+    * **length** - time of execution current configuration
 
 ### Load Scale
 

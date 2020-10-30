@@ -21,7 +21,7 @@ controller_t::controller_t(void* context,
     , m_context(context)
 {
 
-    auto scale_length = [this](model::tvlp_module_profile_t& profiles) {
+    auto scale_length = [](model::tvlp_module_profile_t& profiles) {
         duration total_length = 0ms;
         for (auto& p : profiles) {
             if (p.length <= 0ms) {
@@ -30,11 +30,9 @@ controller_t::controller_t(void* context,
                     "or equal to zero");
             }
 
-            p.time_scale = m_time_scale;
-            p.load_scale = m_load_scale;
             total_length +=
                 std::chrono::duration_cast<std::chrono::nanoseconds>(
-                    p.length * m_time_scale);
+                    p.length * p.time_scale);
         }
 
         return total_length;
