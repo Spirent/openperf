@@ -12,8 +12,8 @@ def tvlp_model():
     return tc
 
 
-def tvlp_block_profile_model(entries, length, resource_id):
-    tp = client.models.TvlpProfileBlock(series=[])
+def tvlp_block_profile_model(entries, length, resource_id, time_scale=1.0, load_scale=1.0):
+    tp = client.models.TvlpProfileBlock(series=[], time_scale=time_scale, load_scale=load_scale)
     for i in range(entries):
         ps = client.models.TvlpProfileBlockSeries()
         ps.length = length
@@ -23,8 +23,8 @@ def tvlp_block_profile_model(entries, length, resource_id):
     return tp
 
 
-def tvlp_memory_profile_model(entries, length):
-    tp = client.models.TvlpProfileMemory(series=[])
+def tvlp_memory_profile_model(entries, length, time_scale=1.0, load_scale=1.0):
+    tp = client.models.TvlpProfileMemory(series=[], time_scale=time_scale, load_scale=load_scale)
     for i in range(entries):
         ps = client.models.TvlpProfileMemorySeries()
         ps.length = length
@@ -33,8 +33,8 @@ def tvlp_memory_profile_model(entries, length):
     return tp
 
 
-def tvlp_cpu_profile_model(entries, length):
-    tp = client.models.TvlpProfileCpu(series=[])
+def tvlp_cpu_profile_model(entries, length, time_scale=1.0, load_scale=1.0):
+    tp = client.models.TvlpProfileCpu(series=[], time_scale=time_scale, load_scale=load_scale)
     for i in range(entries):
         ps = client.models.TvlpProfileCpuSeries()
         ps.length = length
@@ -43,8 +43,8 @@ def tvlp_cpu_profile_model(entries, length):
     return tp
 
 
-def tvlp_packet_profile_model(entries, length, target_id):
-    tp = client.models.TvlpProfilePacket(series=[])
+def tvlp_packet_profile_model(entries, length, target_id, time_scale=1.0, load_scale=1.0):
+    tp = client.models.TvlpProfilePacket(series=[], time_scale=time_scale, load_scale=load_scale)
     for i in range(entries):
         ps = client.models.TvlpProfilePacketSeries()
         ps.length = length
@@ -52,3 +52,9 @@ def tvlp_packet_profile_model(entries, length, target_id):
         ps.target_id = target_id
         tp.series.append(ps)
     return tp
+
+def tvlp_profile_length(profile):
+    length = 0.0
+    for i in profile.series:
+        length += profile.time_scale * i.length
+    return length

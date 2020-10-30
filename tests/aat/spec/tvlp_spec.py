@@ -36,7 +36,8 @@ from common.helper import (tvlp_model,
                            tvlp_block_profile_model,
                            tvlp_memory_profile_model,
                            tvlp_cpu_profile_model,
-                           tvlp_packet_profile_model)
+                           tvlp_packet_profile_model,
+                           tvlp_profile_length)
 
 from common.matcher import (be_valid_tvlp_configuration,
                             be_valid_block_tvlp_profile,
@@ -118,6 +119,69 @@ with description('TVLP,', 'tvlp') as self:
                     if not self._packet_linked:
                         self.skip()
                     expect(self._config[0].profile.packet).to(be_valid_packet_tvlp_profile)
+
+            with description("custom time_scale,"):
+                with before.all:
+                    self._scale = 2.0
+                    self._length = 0.0
+                    t = tvlp_model()
+                    if self._block_linked:
+                        t.profile.block = tvlp_block_profile_model(1, 100000000, "tmp", time_scale=self._scale)
+                        self._length = max(self._length, tvlp_profile_length(t.profile.block))
+                    if self._memory_linked:
+                        t.profile.memory = tvlp_memory_profile_model(1, 100000000, time_scale=self._scale)
+                        self._length = max(self._length, tvlp_profile_length(t.profile.memory))
+                    if self._cpu_linked:
+                        t.profile.cpu = tvlp_cpu_profile_model(1, 100000000, time_scale=self._scale)
+                        self._length = max(self._length, tvlp_profile_length(t.profile.cpu))
+                    if self._packet_linked:
+                        t.profile.packet = tvlp_packet_profile_model(1, 100000000,
+                            get_first_port_id(self.service.client()), time_scale=self._scale)
+                        self._length = max(self._length, tvlp_profile_length(t.profile.packet))
+
+                    self._config = self.tvlp_api.create_tvlp_configuration_with_http_info(t)
+
+                with it('code Created'):
+                    expect(self._config[1]).to(equal(201))
+
+                with it('has valid Location header,'):
+                    expect(self._config[2]).to(has_location('/tvlp/' + self._config[0].id))
+
+                with it('has a valid tvlp configuration'):
+                    expect(self._config[0]).to(be_valid_tvlp_configuration)
+
+                with it('has a valid block profile'):
+                    if not self._block_linked:
+                        self.skip()
+                    expect(self._config[0].profile.block).to(be_valid_block_tvlp_profile)
+
+                with it('has a valid memory profile'):
+                    if not self._memory_linked:
+                        self.skip()
+                    expect(self._config[0].profile.memory).to(be_valid_memory_tvlp_profile)
+
+                with it('has a valid cpu profile'):
+                    if not self._cpu_linked:
+                        self.skip()
+                    expect(self._config[0].profile.cpu).to(be_valid_cpu_tvlp_profile)
+
+                with it('has a valid packet profile'):
+                    if not self._packet_linked:
+                        self.skip()
+                    expect(self._config[0].profile.packet).to(be_valid_packet_tvlp_profile)
+
+                with it('has a valid common length'):
+                    length = 0.0
+                    if self._block_linked:
+                        length = max(length, tvlp_profile_length(self._config[0].profile.block))
+                    if self._memory_linked:
+                        length = max(length, tvlp_profile_length(self._config[0].profile.memory))
+                    if self._cpu_linked:
+                        length = max(length, tvlp_profile_length(self._config[0].profile.cpu))
+                    if self._packet_linked:
+                        length = max(length, tvlp_profile_length(self._config[0].profile.packet))
+                    expect(self._length).to(equal(length))
+                    expect(self._config[0].time.length).to(equal(length))
 
             with description("no profile entries,"):
                 with it('returns 400'):

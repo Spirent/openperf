@@ -55,5 +55,6 @@ from common.helper.tvlp import (tvlp_model,
                                 tvlp_block_profile_model,
                                 tvlp_memory_profile_model,
                                 tvlp_cpu_profile_model,
-                                tvlp_packet_profile_model)
+                                tvlp_packet_profile_model,
+                                tvlp_profile_length)
 
