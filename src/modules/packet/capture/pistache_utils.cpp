@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <climits>
 
+#include "pistache/peer.h"
+
 #include "packet/capture/pistache_utils.hpp"
 #include "core/op_core.h"
 
@@ -132,13 +134,15 @@ Pistache::Tcp::Transport* get_transport(Pistache::Http::ResponseWriter& writer)
     // As a work around, a class is defined with identical memory layout
     // and all of the members exposed as public members.
     //
-    class MockResponseWriter : public Pistache::Http::Response
+    class MockResponseWriter
     {
     public:
+        Pistache::Http::Response response_;
         std::weak_ptr<Pistache::Tcp::Peer> peer_;
         Pistache::DynamicStreamBuf buf_;
         Pistache::Tcp::Transport* transport_;
         Pistache::Http::Timeout timeout_;
+        ssize_t sent_bytes;
     };
     static_assert(sizeof(MockResponseWriter)
                   == sizeof(Pistache::Http::ResponseWriter));

@@ -765,7 +765,8 @@ void handler::get_capture_result_pcap(const request_type& request,
     if (auto reply = std::get_if<reply_ok>(&api_reply)) {
         // Request was successful so no longer own the transfer object
         auto transfer = transfer_ptr.release();
-        auto result = pcap::send_pcap_response_header(response, *transfer);
+        auto result = pcap::send_pcap_response_header(
+            response, request.version(), *transfer);
         if (result.isRejected()) {
             submit_request(m_socket.get(),
                            request_delete_capture_transfer{transfer});
@@ -800,7 +801,8 @@ void handler::get_capture_result_live(const request_type& request,
     if (auto reply = std::get_if<reply_ok>(&api_reply)) {
         // Request was successful so no longer own the transfer object
         auto transfer = transfer_ptr.release();
-        auto result = pcap::send_pcap_response_header(response, *transfer);
+        auto result = pcap::send_pcap_response_header(
+            response, request.version(), *transfer);
         if (result.isRejected()) {
             submit_request(m_socket.get(),
                            request_delete_capture_transfer{transfer});
@@ -871,7 +873,8 @@ void handler::merge_captures_pcap(const request_type& request,
     if (auto reply = std::get_if<reply_ok>(&api_reply)) {
         // Request was successful so no longer own the transfer object
         auto transfer = transfer_ptr.release();
-        auto result = pcap::send_pcap_response_header(response, *transfer);
+        auto result = pcap::send_pcap_response_header(
+            response, request.version(), *transfer);
         if (result.isRejected()) {
             submit_request(m_socket.get(),
                            request_delete_capture_transfer{transfer});

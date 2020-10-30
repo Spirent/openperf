@@ -2,6 +2,8 @@
 #include <sys/stat.h>
 #include <thread>
 
+#include "pistache/peer.h"
+
 #include "core/op_core.h"
 #include "packet/capture/api.hpp"
 #include "packet/capture/sink.hpp"
@@ -85,54 +87,8 @@ private:
 };
 
 Pistache::Async::Promise<ssize_t>
-send_pcap_response_header_async(Pistache::Http::ResponseWriter& response,
-                                uint32_t pcap_size)
-{
-    auto mime_type =
-        Pistache::Http::Mime::MediaType::fromString(PCAPNG_MIME_TYPE);
-
-    // Update response headers
-    auto& headers = response.headers();
-    auto ct = headers.tryGet<Pistache::Http::Header::ContentType>();
-    if (ct)
-        ct->setMime(mime_type);
-    else
-        headers.add<Pistache::Http::Header::ContentType>(mime_type);
-    if (pcap_size == 0) {
-        headers.add<Pistache::Http::Header::TransferEncoding>(
-            Pistache::Http::Header::Encoding::Chunked);
-    } else {
-        headers.add<Pistache::Http::Header::ContentLength>(pcap_size);
-    }
-
-    // Encode the headers into the buffer
-    auto* buf = response.rdbuf();
-    std::ostream os(buf);
-    if (!write_status_line(os, response.version(), Pistache::Http::Code::Ok)
-        || !write_cookies(os, response.cookies())
-        || !write_headers(os, response.headers())
-        || !(os << Pistache::Http::crlf)) {
-        return Pistache::Async::Promise<ssize_t>::rejected(
-            Pistache::Error("Response exceeded buffer size"));
-    }
-
-    auto transport = get_transport(response);
-    auto peer = response.peer();
-
-    return transport->asyncWrite(peer->fd(), buf->buffer(), MSG_MORE);
-}
-
-Pistache::Async::Promise<ssize_t>
-send_pcap_response_header_async(Pistache::Http::ResponseWriter& response,
-                                transfer_context& context)
-{
-    return send_pcap_response_header_async(
-        response,
-        dynamic_cast<pcap_transfer_context&>(context).get_total_length());
-}
-
-Pistache::Async::Promise<ssize_t>
 send_pcap_response_header(Pistache::Http::ResponseWriter& response,
+                          Pistache::Http::Version version,
                           uint32_t pcap_size)
 {
     auto mime_type =
@@ -155,7 +111,7 @@ send_pcap_response_header(Pistache::Http::ResponseWriter& response,
     // Encode the headers into the buffer
     std::ostringstream os;
 
-    if (!write_status_line(os, response.version(), Pistache::Http::Code::Ok)
+    if (!write_status_line(os, version, Pistache::Http::Code::Ok)
         || !write_cookies(os, response.cookies())
         || !write_headers(os, response.headers())
         || !(os << Pistache::Http::crlf)) {
@@ -179,10 +135,12 @@ send_pcap_response_header(Pistache::Http::ResponseWriter& response,
 
 Pistache::Async::Promise<ssize_t>
 send_pcap_response_header(Pistache::Http::ResponseWriter& response,
+                          Pistache::Http::Version version,
                           transfer_context& context)
 {
     return send_pcap_response_header(
         response,
+        version,
         dynamic_cast<pcap_transfer_context&>(context).get_total_length());
 }
 

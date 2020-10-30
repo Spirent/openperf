@@ -18,14 +18,17 @@ OP_INC_DIRS += $(HTTP_INC_DIR)
 OP_LIB_DIRS += $(HTTP_LIB_DIR)
 OP_LDLIBS += -lpistache
 
-# Pistache code doesn't build without warnings; just silence them since we're
+# Pistache code doesn't build without warnings; just ignore them since we're
 # not going to fix them.
-HTTP_FLAGS := -Wno-shadow -Wno-missing-field-initializers
+# We use "Wno-error" here because old compiler versions don't necessarily
+# recognize new errors we need to ignore, e.g. -Wno-defaulted-function-deleted.
+HTTP_FLAGS := -Wno-error
 
 ###
 # Sources, objects, targets, and dependencies
 ###
 HTTP_COMMON_SOURCES := \
+	common/base64.cc \
 	common/cookie.cc \
 	common/description.cc \
 	common/http.cc \
