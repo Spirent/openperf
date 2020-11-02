@@ -309,16 +309,16 @@ void handler::create_generators(const request_type& request,
 
     if (auto reply = std::get_if<reply_generators>(&api_reply)) {
         assert(reply->generators.size() == 1);
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
 
         if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
             response.headers().add<Http::Header::Location>(
                 *uri + reply->generators[0]->getId());
         }
 
-        response.send(Http::Code::Created,
-                      reply->generators[0]->toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response),
+            Http::Code::Created,
+            reply->generators[0]->toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -348,9 +348,10 @@ void handler::get_generator(const request_type& request, response_type response)
 
     if (auto reply = std::get_if<reply_generators>(&api_reply)) {
         assert(reply->generators.size() == 1);
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok, reply->generators[0]->toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response),
+            Http::Code::Ok,
+            reply->generators[0]->toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -389,15 +390,16 @@ void handler::start_generator(const request_type& request,
 
     if (auto reply = std::get_if<reply_generator_results>(&api_reply)) {
         assert(reply->generator_results.size() == 1);
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
+
         if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
             response.headers().add<Http::Header::Location>(
                 *uri + reply->generator_results[0]->getId());
         }
 
-        response.send(Http::Code::Created,
-                      reply->generator_results[0]->toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response),
+            Http::Code::Created,
+            reply->generator_results[0]->toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -479,16 +481,14 @@ void handler::bulk_create_generators(const request_type& request,
     auto api_reply = submit_request(m_socket.get(), std::move(*api_request));
 
     if (auto reply = std::get_if<reply_generators>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-
         auto swagger_reply =
             swagger::v1::model::BulkCreatePacketGeneratorsResponse{};
         std::move(std::begin(reply->generators),
                   std::end(reply->generators),
                   std::back_inserter(swagger_reply.getItems()));
 
-        response.send(Http::Code::Ok, swagger_reply.toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, swagger_reply.toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -576,14 +576,13 @@ void handler::bulk_start_generators(const request_type& request,
     auto api_reply = submit_request(m_socket.get(), std::move(api_request));
 
     if (auto reply = std::get_if<reply_generator_results>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
         auto swagger_reply =
             swagger::v1::model::BulkStartPacketGeneratorsResponse{};
         std::move(std::begin(reply->generator_results),
                   std::end(reply->generator_results),
                   std::back_inserter(swagger_reply.getItems()));
-        response.send(Http::Code::Ok, swagger_reply.toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, swagger_reply.toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -652,15 +651,16 @@ void handler::toggle_generators(const request_type& request,
 
     if (auto reply = std::get_if<reply_generator_results>(&api_reply)) {
         assert(reply->generator_results.size() == 1);
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
+
         if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
             response.headers().add<Http::Header::Location>(
                 *uri + reply->generator_results[0]->getId());
         }
 
-        response.send(Http::Code::Created,
-                      reply->generator_results[0]->toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response),
+            Http::Code::Created,
+            reply->generator_results[0]->toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -717,10 +717,10 @@ void handler::get_generator_result(const request_type& request,
 
     if (auto reply = std::get_if<reply_generator_results>(&api_reply)) {
         assert(reply->generator_results.size() == 1);
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok,
-                      reply->generator_results[0]->toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response),
+            Http::Code::Ok,
+            reply->generator_results[0]->toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -780,9 +780,8 @@ void handler::get_tx_flow(const request_type& request, response_type response)
 
     if (auto reply = std::get_if<reply_tx_flows>(&api_reply)) {
         assert(reply->flows.size() == 1);
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok, reply->flows[0]->toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, reply->flows[0]->toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
