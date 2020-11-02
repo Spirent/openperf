@@ -91,7 +91,7 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
         auto load_scale = profile_model->getLoadScale();
 
         profile.block = std::vector<tvlp_profile_entry_t>();
-        for (auto block_entry : profile_model->getSeries()) {
+        for (const auto& block_entry : profile_model->getSeries()) {
             profile.block.value().push_back(tvlp_profile_entry_t{
                 .length = model::duration(block_entry->getLength()),
                 .resource_id = block_entry->getResourceId(),
@@ -108,7 +108,7 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
         auto load_scale = profile_model->getLoadScale();
 
         profile.memory = std::vector<tvlp_profile_entry_t>();
-        for (auto memory_entry : profile_model->getSeries()) {
+        for (const auto& memory_entry : profile_model->getSeries()) {
             profile.memory.value().push_back(tvlp_profile_entry_t{
                 .length = model::duration(memory_entry->getLength()),
                 .config = memory_entry->getConfig()->toJson(),
@@ -124,7 +124,7 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
         auto load_scale = profile_model->getLoadScale();
 
         profile.cpu = std::vector<tvlp_profile_entry_t>();
-        for (auto cpu_entry : profile_model->getSeries()) {
+        for (const auto& cpu_entry : profile_model->getSeries()) {
             profile.cpu.value().push_back(tvlp_profile_entry_t{
                 .length = model::duration(cpu_entry->getLength()),
                 .config = cpu_entry->getConfig()->toJson(),
@@ -140,7 +140,7 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
         auto load_scale = profile_model->getLoadScale();
 
         profile.packet = std::vector<tvlp_profile_entry_t>();
-        for (auto packet_entry : profile_model->getSeries()) {
+        for (const auto& packet_entry : profile_model->getSeries()) {
             profile.packet.value().push_back(tvlp_profile_entry_t{
                 .length = model::duration(packet_entry->getLength()),
                 .resource_id = packet_entry->getTargetId(),

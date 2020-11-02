@@ -25,10 +25,14 @@ memory_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
     config.fromJson(const_cast<nlohmann::json&>(entry.config));
 
     // Apply Load Scale to generator configuration
-    config.setReadSize(config.getReadSize() * entry.load_scale);
-    config.setReadsPerSec(config.getReadsPerSec() * entry.load_scale);
-    config.setWriteSize(config.getWriteSize() * entry.load_scale);
-    config.setWritesPerSec(config.getWritesPerSec() * entry.load_scale);
+    config.setReadSize(
+        static_cast<uint32_t>(config.getReadSize() * entry.load_scale));
+    config.setReadsPerSec(
+        static_cast<uint32_t>(config.getReadsPerSec() * entry.load_scale));
+    config.setWriteSize(
+        static_cast<uint32_t>(config.getWriteSize() * entry.load_scale));
+    config.setWritesPerSec(
+        static_cast<uint32_t>(config.getWritesPerSec() * entry.load_scale));
 
     request::generator::create data{
         .is_running = false,

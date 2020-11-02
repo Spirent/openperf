@@ -28,10 +28,11 @@ packet_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
             .get<PacketGeneratorConfig>());
 
     auto load = config->getLoad();
-    load->setBurstSize(load->getBurstSize() * entry.load_scale);
+    load->setBurstSize(
+        static_cast<uint32_t>(load->getBurstSize() * entry.load_scale));
 
     auto rate = config->getLoad()->getRate();
-    rate->setValue(rate->getValue() * entry.load_scale);
+    rate->setValue(static_cast<uint64_t>(rate->getValue() * entry.load_scale));
 
     PacketGenerator gen;
     gen.setTargetId(entry.resource_id.value());
