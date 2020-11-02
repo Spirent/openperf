@@ -37,6 +37,18 @@ static int set_service_port(long port)
 
 in_port_t api_get_service_port(void) { return service_port; }
 
+static void block_sigpipe()
+{
+    /* Add SIGPIPE to the list of signals blocked for this thread */
+    sigset_t set;
+    sigemptyset(&set);
+    sigaddset(&set, SIGPIPE);
+    if (auto error = pthread_sigmask(SIG_BLOCK, &set, nullptr)) {
+        throw std::runtime_error("Could not block SIGPIPE: "
+                                 + std::string(strerror(error)));
+    }
+}
+
 static Rest::Route::Result NotFound(const Rest::Request& request
                                     __attribute__((unused)),
                                     Http::ResponseWriter response)
@@ -108,6 +120,12 @@ public:
     void run(in_port_t port)
     {
         op_thread_setname("op_api");
+
+        /*
+         * Pistache doesn't handle SIGPIPE, so block it for this thread and all
+         * its descendants
+         */
+        block_sigpipe();
 
         Address addr(IP::any(Ipv6::supported()), Port(port));
         auto opts = Http::Endpoint::options()
