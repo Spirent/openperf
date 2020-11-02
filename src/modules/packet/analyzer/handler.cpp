@@ -284,16 +284,16 @@ void handler::create_analyzers(const request_type& request,
 
     if (auto reply = std::get_if<reply_analyzers>(&api_reply)) {
         assert(reply->analyzers.size() == 1);
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
 
         if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
             response.headers().add<Http::Header::Location>(
                 *uri + reply->analyzers[0]->getId());
         }
 
-        response.send(Http::Code::Created,
-                      reply->analyzers[0]->toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response),
+            Http::Code::Created,
+            reply->analyzers[0]->toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -322,9 +322,8 @@ void handler::get_analyzer(const request_type& request, response_type response)
 
     if (auto reply = std::get_if<reply_analyzers>(&api_reply)) {
         assert(reply->analyzers.size() == 1);
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok, reply->analyzers[0]->toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, reply->analyzers[0]->toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -362,16 +361,16 @@ void handler::reset_analyzer(const request_type& request,
 
     if (auto reply = std::get_if<reply_analyzer_results>(&api_reply)) {
         assert(reply->analyzer_results.size() == 1);
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
 
         if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
             response.headers().add<Http::Header::Location>(
                 *uri + reply->analyzer_results[0]->getId());
         }
 
-        response.send(Http::Code::Created,
-                      reply->analyzer_results[0]->toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response),
+            Http::Code::Created,
+            reply->analyzer_results[0]->toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -390,16 +389,16 @@ void handler::start_analyzer(const request_type& request,
 
     if (auto reply = std::get_if<reply_analyzer_results>(&api_reply)) {
         assert(reply->analyzer_results.size() == 1);
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
 
         if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
             response.headers().add<Http::Header::Location>(
                 *uri + reply->analyzer_results[0]->getId());
         }
 
-        response.send(Http::Code::Created,
-                      reply->analyzer_results[0]->toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response),
+            Http::Code::Created,
+            reply->analyzer_results[0]->toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -479,16 +478,14 @@ void handler::bulk_create_analyzers(const request_type& request,
     auto api_reply = submit_request(m_socket.get(), std::move(*api_request));
 
     if (auto reply = std::get_if<reply_analyzers>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-
         auto swagger_reply =
             swagger::v1::model::BulkCreatePacketAnalyzersResponse{};
         std::move(std::begin(reply->analyzers),
                   std::end(reply->analyzers),
                   std::back_inserter(swagger_reply.getItems()));
 
-        response.send(Http::Code::Ok, swagger_reply.toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, swagger_reply.toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -589,16 +586,14 @@ void handler::bulk_start_analyzers(const request_type& request,
     auto api_reply = submit_request(m_socket.get(), std::move(api_request));
 
     if (auto reply = std::get_if<reply_analyzer_results>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-
         auto swagger_reply =
             swagger::v1::model::BulkStartPacketAnalyzersResponse{};
         std::move(std::begin(reply->analyzer_results),
                   std::end(reply->analyzer_results),
                   std::back_inserter(swagger_reply.getItems()));
 
-        response.send(Http::Code::Ok, swagger_reply.toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, swagger_reply.toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -700,10 +695,10 @@ void handler::get_analyzer_result(const request_type& request,
 
     if (auto reply = std::get_if<reply_analyzer_results>(&api_reply)) {
         assert(reply->analyzer_results.size() == 1);
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok,
-                      reply->analyzer_results[0]->toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response),
+            Http::Code::Ok,
+            reply->analyzer_results[0]->toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
@@ -765,9 +760,8 @@ void handler::get_rx_flow(const request_type& request, response_type response)
 
     if (auto reply = std::get_if<reply_rx_flows>(&api_reply)) {
         assert(reply->flows.size() == 1);
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok, reply->flows[0]->toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, reply->flows[0]->toJson());
     } else {
         handle_reply_error(api_reply, std::move(response));
     }
