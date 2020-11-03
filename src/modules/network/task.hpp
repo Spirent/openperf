@@ -8,39 +8,56 @@
 #include "framework/generator/task.hpp"
 #include "modules/timesync/chrono.hpp"
 
-namespace openperf::network::internal {
+namespace openperf::network::internal::task {
 
 using realtime = timesync::chrono::realtime;
 using time_point = realtime::time_point;
 using duration = std::chrono::nanoseconds;
 
-enum class task_operation : uint8_t { READ = 0, WRITE };
+enum class operation_t : uint8_t { READ = 0, WRITE };
 
-struct task_synchronizer
+struct target_t
 {
-    std::atomic_int32_t ratio_reads;
-    std::atomic_int32_t ratio_writes;
-    std::atomic_int64_t reads_actual = 0;
-    std::atomic_int64_t writes_actual = 0;
-};
-
-struct task_config_t
-{
-    task_operation operation;
-    uint32_t ops_per_sec;
-    size_t connections;
-    size_t block_size;
     std::string host;
     uint64_t port;
-    task_synchronizer* synchronizer = nullptr;
+    int protocol;
 };
 
-struct task_connection_t
+struct config_t
+{
+    operation_t operation;
+    uint64_t ops_per_sec;
+    uint64_t connections;
+    uint64_t ops_per_connection;
+    uint64_t block_size;
+    target_t target;
+};
+
+enum connection_state_t {
+    STATE_NONE = 0, /**< Invalid state */
+    STATE_INIT,     /**< Initial connection state (requests can be made) */
+    STATE_READING,  /**< Receiving transaction data state */
+    STATE_WRITING,  /**< Sending transaction data state */
+    STATE_ERROR,    /**< Connection has encountered an error */
+    STATE_DONE      /**< Transaction limit reached; connection should close */
+};
+struct connection_t
 {
     int fd;
+    connection_state_t state;
+    std::vector<uint8_t> buffer;
+    size_t bytes_left;
 };
 
-struct task_stat_t
+struct conn_stat_t
+{
+    uint_fast64_t attempted = 0;
+    uint_fast64_t successful = 0;
+    uint_fast64_t errors = 0;
+    uint_fast64_t closed = 0;
+};
+
+struct stat_t
 {
     using optional_time_t = std::optional<duration>;
     /**
@@ -55,7 +72,8 @@ struct task_stat_t
      * latency_max  - The maximum observed latency value
      */
 
-    task_operation operation;
+    operation_t operation;
+    conn_stat_t conn_stat;
     time_point updated = realtime::now();
     uint_fast64_t ops_target = 0;
     uint_fast64_t ops_actual = 0;
@@ -66,32 +84,36 @@ struct task_stat_t
     optional_time_t latency_min;
     optional_time_t latency_max;
 
-    task_stat_t& operator+=(const task_stat_t&);
+    stat_t& operator+=(const stat_t&);
 };
 
-class network_task : public framework::generator::task<task_stat_t>
+class network_task : public framework::generator::task<stat_t>
 {
 private:
-    task_config_t m_task_config;
-    task_stat_t m_stat;
+    config_t m_config;
+    stat_t m_stat;
     realtime::time_point m_operation_timestamp;
-    std::vector<task_connection_t> m_connections;
+    std::vector<connection_t> m_connections;
+    std::vector<uint8_t> m_buffer;
 
 public:
-    network_task(const task_config_t&);
+    network_task(const config_t&);
 
-    task_config_t config() const { return m_task_config; }
+    config_t config() const { return m_config; }
 
-    task_stat_t spin() override;
+    stat_t spin() override;
     void reset() override;
 
 private:
-    void config(const task_config_t&);
+    void config(const config_t&);
     void reset_spin_stat();
-    int32_t calculate_rate();
-    task_stat_t worker_spin(uint64_t nb_ops, time_point deadline);
+    void do_init(connection_t& conn, stat_t& stat);
+    void do_read(connection_t& conn, stat_t& stat);
+    void do_write(connection_t& conn, stat_t& stat);
+    void do_shutdown(connection_t& conn, stat_t& stat);
+    stat_t worker_spin(uint64_t nb_ops, time_point deadline);
 };
 
-} // namespace openperf::network::internal
+} // namespace openperf::network::internal::task
 
 #endif // _OP_NETWORK_GENERATOR_WORKER_HPP_

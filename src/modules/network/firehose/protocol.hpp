@@ -47,20 +47,18 @@ inline tl::expected<request_t, int> parse_request(uint8_t*& data,
     return request;
 }
 
-inline tl::expected<void, int>
-build_request(const request_t& request, char*& data, size_t& length)
+inline tl::expected<void, int> build_request(const request_t& request,
+                                             std::vector<uint8_t>& data)
 {
-    net_request_t* net_request = (net_request_t*)calloc(1, net_request_size);
+    net_request_t net_request;
 
-    if (!net_request) { return tl::make_unexpected(-ENOMEM); }
+    strncpy(net_request.protocol, protocol.c_str(), protocol_len);
 
-    strncpy(net_request->protocol, protocol.c_str(), protocol_len);
+    net_request.action = htonl(request.action);
+    net_request.length = htonl(request.length);
 
-    net_request->action = htonl(request.action);
-    net_request->length = htonl(request.length);
-
-    data = (char*)net_request;
-    length = sizeof(*net_request);
+    data.resize(sizeof(net_request));
+    memcpy(data.data(), &net_request, sizeof(net_request));
 
     return {};
 }
