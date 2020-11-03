@@ -12,7 +12,8 @@ namespace openperf::packetio::dpdk::mempool {
  * The next two functions are intended for acquiring/releasing memory pools for
  * transmit purposes.
  */
-rte_mempool* acquire(std::string_view id,
+rte_mempool* acquire(uint16_t port_id,
+                     uint16_t queue_id,
                      unsigned numa_node,
                      uint16_t packet_length,
                      uint16_t packet_count,

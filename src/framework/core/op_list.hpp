@@ -13,10 +13,19 @@ template <typename Item> class list_iterator
     op_list* m_list;
     op_list_item* m_cursor;
 
+    static auto as_tie(const list_iterator& it)
+    {
+        return (std::tie(it.m_list, it.m_cursor));
+    }
+
 public:
+    using iterator_category = typename std::forward_iterator_tag;
+
     using tr = std::iterator_traits<Item*>;
     using value_type = typename tr::value_type;
+    using difference_type = typename tr::difference_type;
     using pointer = typename tr::pointer;
+    using reference = typename tr::reference;
 
     list_iterator(op_list* list, op_list_item* cursor) noexcept
         : m_list(list)
@@ -51,9 +60,14 @@ public:
         return (list_iterator(m_list, tmp));
     }
 
+    bool operator==(const list_iterator& other)
+    {
+        return (as_tie(*this) == as_tie(other));
+    }
+
     bool operator!=(const list_iterator& other)
     {
-        return (m_cursor != other.m_cursor);
+        return (as_tie(*this) != as_tie(other));
     }
 };
 
@@ -63,6 +77,16 @@ public:
     list()
         : m_list(op_list_allocate())
     {}
+
+    void set_comparator(op_comparator* cmp)
+    {
+        op_list_set_comparator(m_list.get(), cmp);
+    }
+
+    void set_destructor(op_destructor* dest)
+    {
+        op_list_set_destructor(m_list.get(), dest);
+    }
 
     bool insert(Item* item) { return op_list_insert(m_list.get(), item); }
     bool remove(Item* item) { return op_list_delete(m_list.get(), item); }

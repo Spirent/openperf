@@ -93,6 +93,23 @@ static bool all_pollable(const std::vector<task_ptr>& tasks)
 }
 
 /**
+ * Invalidate signature data, if present, by overwriting the CRC field.
+ */
+static void rx_mbuf_signature_clear(rte_mbuf* mbuf)
+{
+    constexpr auto crc_offset = 4;
+    if (mbuf_signature_avail(mbuf)) {
+        /*
+         * If there is a signature here, then hopefully this de-referenced
+         * data is still in the cache...
+         */
+        auto* data = rte_pktmbuf_mtod_offset(
+            mbuf, uint16_t*, rte_pktmbuf_pkt_len(mbuf) - crc_offset);
+        *data = 0;
+    }
+}
+
+/**
  * Set the interface pointer the mbuf will be dispatched to.
  *
  * This interface pointer is only valid for unicast packets during parts of the
@@ -114,8 +131,8 @@ static void rx_mbuf_clear_tag(rte_mbuf* mbuf) { mbuf->userdata = nullptr; }
 /**
  * Get the interface pointer the mbuf will be dispatchd to.
  *
- * This interface pointer is only valid for unicast packets during parts of the
- * rx dispatch.
+ * This interface pointer is only valid for unicast packets during parts
+ * of the rx dispatch.
  */
 static bool rx_mbuf_has_tag(rte_mbuf* mbuf)
 {
@@ -124,8 +141,8 @@ static bool rx_mbuf_has_tag(rte_mbuf* mbuf)
 
 /**
  * Resolve interfaces for the packets and store interface in the packet
- * ancillary data.  If the mbuf is destined to an interface which is not found,
- * the mbuf is added to the list of packets to free.
+ * ancillary data.  If the mbuf is destined to an interface which is not
+ * found, the mbuf is added to the list of packets to free.
  */
 static std::pair<uint16_t, uint16_t> rx_resolve_interfaces(const fib* fib,
                                                            const rx_queue* rxq,
@@ -138,9 +155,9 @@ static std::pair<uint16_t, uint16_t> rx_resolve_interfaces(const fib* fib,
     auto port_id = rxq->port_id();
 
     /*
-     * Pre-fetching the payload data to the CPU cache is critical for parsing
-     * performance.  This series of loops is inteded to keep the cache filled
-     * with pending data.
+     * Pre-fetching the payload data to the CPU cache is critical for
+     * parsing performance.  This series of loops is inteded to keep the
+     * cache filled with pending data.
      */
     utils::prefetch_for_each(
         incoming,
@@ -242,9 +259,9 @@ rx_interface_sink_dispatch(const fib* fib,
     const worker::fib::interface_sinks* last_entry = nullptr;
 
     /*
-     * Pre-fetching the payload data to the CPU cache is critical for parsing
-     * performance.  This series of loops is inteded to keep the cache filled
-     * with pending data.
+     * Pre-fetching the payload data to the CPU cache is critical for
+     * parsing performance.  This series of loops is inteded to keep the
+     * cache filled with pending data.
      */
 
     utils::prefetch_for_each(
@@ -260,8 +277,8 @@ rx_interface_sink_dispatch(const fib* fib,
             bool unicast = rte_is_unicast_ether_addr(dst_addr);
 
             if (unicast) {
-                // Unicast packets must match an interface or they will be
-                // discarded
+                // Unicast packets must match an interface or they will
+                // be discarded
                 if (!last_dst_addr
                     || !rte_is_same_ether_addr(dst_addr, last_dst_addr)) {
                     last_dst_addr = dst_addr;
@@ -273,8 +290,8 @@ rx_interface_sink_dispatch(const fib* fib,
                     to_free[nb_to_free++] = mbuf;
                     return;
                 } else {
-                    // Store interface pointers to avoid multiple lookups for
-                    // the same packet
+                    // Store interface pointers to avoid multiple
+                    // lookups for the same packet
                     rx_mbuf_set_tag(mbuf, std::addressof(last_entry->ifp));
                     to_stack[nb_to_stack++] = mbuf;
                 }
@@ -328,8 +345,8 @@ static void rx_stack_dispatch(const fib* fib,
                             unicast.data(),
                             nunicast.data(),
                             [](auto* mbuf) -> bool {
-                                // Unicast packets should have a non null
-                                // interace
+                                // Unicast packets should have a non
+                                // null interace
                                 return rx_mbuf_has_tag(mbuf);
                             });
 
@@ -451,7 +468,8 @@ static void rx_interface_dispatch(const fib* fib,
 
     /* ... and free all the non-stack packets */
     std::for_each(to_free.data(), to_free.data() + nb_to_free, [](auto mbuf) {
-        rx_mbuf_clear_tag(mbuf); // Clear just to be safe
+        rx_mbuf_clear_tag(mbuf);       // Clear just to be safe
+        rx_mbuf_signature_clear(mbuf); // Prevent leaks when buffer is reused
         rte_pktmbuf_free(mbuf);
     });
 }
@@ -799,7 +817,8 @@ static void run_pollable(run_args&& args)
                     event);
             }
         }
-        /* Perform all loop updates before exiting or restarting the loop. */
+        /* Perform all loop updates before exiting or restarting the
+         * loop. */
         loop_adapter.update_poller(poller);
     }
 
@@ -827,7 +846,8 @@ static void run_spinning(run_args&& args)
     while (!messages) {
         args.recycler->reader_checkpoint(rte_lcore_id());
 
-        /* Service queues as fast as possible if any of them have packets. */
+        /* Service queues as fast as possible if any of them have
+         * packets. */
         uint16_t pkts;
         do {
             pkts = 0;
@@ -843,7 +863,8 @@ static void run_spinning(run_args&& args)
             service_event(args.loop, args.fib, event);
         }
 
-        /* Perform all loop updates before exiting or restarting the loop. */
+        /* Perform all loop updates before exiting or restarting the
+         * loop. */
         loop_adapter.update_poller(poller);
     }
 
@@ -857,7 +878,8 @@ static void run(run_args&& args)
     /*
      * XXX: Our control socket is edge triggered, so make sure we drain
      * all of the control messages before jumping into our real run
-     * function.  We won't receive any more control interrupts otherwise.
+     * function.  We won't receive any more control interrupts
+     * otherwise.
      */
     if (op_socket_has_messages(args.control)) return;
 
@@ -877,10 +899,10 @@ class worker : public finite_state_machine<worker, state, command_msg>
     event_loop::generic_event_loop m_loop;
 
     /**
-     * Workers deal with a number of different event sources.  All of those
-     * sources are interrupt driven with the possible exception of RX queues.
-     * Hence, we need to separate rx queues from our other event types in
-     * order to handle them properly.
+     * Workers deal with a number of different event sources.  All of
+     * those sources are interrupt driven with the possible exception of
+     * RX queues. Hence, we need to separate rx queues from our other
+     * event types in order to handle them properly.
      */
     std::vector<task_ptr> m_rx_queues;
     std::vector<task_ptr> m_pollables;
@@ -918,7 +940,8 @@ class worker : public finite_state_machine<worker, state, command_msg>
                     },
                     [&](tx_scheduler* scheduler) {
                         OP_LOG(OP_LOG_DEBUG,
-                               "Adding TX port scheduler %u:%u to worker %u\n",
+                               "Adding TX port scheduler %u:%u to "
+                               "worker %u\n",
                                scheduler->port_id(),
                                scheduler->queue_id(),
                                rte_lcore_id());
@@ -934,8 +957,8 @@ class worker : public finite_state_machine<worker, state, command_msg>
             if (d.worker_id != rte_lcore_id()) continue;
 
             /*
-             * XXX: Careful!  These pointers have likely been deleted by their
-             * owners at this point, so don't dereference them!
+             * XXX: Careful!  These pointers have likely been deleted by
+             * their owners at this point, so don't dereference them!
              */
             std::visit(
                 utils::overloaded_visitor(
@@ -968,7 +991,8 @@ class worker : public finite_state_machine<worker, state, command_msg>
                     },
                     [&](tx_scheduler* scheduler) {
                         OP_LOG(OP_LOG_DEBUG,
-                               "Removing TX port scheduler from worker %u\n",
+                               "Removing TX port scheduler from worker "
+                               "%u\n",
                                rte_lcore_id());
                         m_pollables.erase(std::remove(std::begin(m_pollables),
                                                       std::end(m_pollables),

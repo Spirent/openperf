@@ -20,7 +20,9 @@ class tx_source
     packet::generic_source m_source;
 
 public:
-    tx_source(uint16_t port_idx, packet::generic_source source);
+    tx_source(uint16_t port_idx,
+              uint16_t queue_idx,
+              packet::generic_source source);
 
     tx_source(tx_source&& other) noexcept;
     tx_source& operator=(tx_source&& other) noexcept;

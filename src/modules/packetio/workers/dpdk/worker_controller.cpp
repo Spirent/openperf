@@ -807,7 +807,9 @@ worker_controller::add_source(std::string_view dst_id,
            worker_idx);
 
     auto to_delete = m_tib->insert_source(
-        *port_idx, queue_idx, tx_source(*port_idx, std::move(source)));
+        *port_idx,
+        queue_idx,
+        tx_source(*port_idx, queue_idx, std::move(source)));
     m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
 
     m_source_features.update(*m_tib, *port_idx);
@@ -897,7 +899,9 @@ tl::expected<void, int> worker_controller::swap_source(
         m_tib->remove_source(*port_idx, *out_queue_idx, outgoing.id());
     if (swap_action) { (*swap_action)(outgoing, incoming); }
     auto to_delete2 = m_tib->insert_source(
-        *port_idx, in_queue_idx, tx_source(*port_idx, std::move(incoming)));
+        *port_idx,
+        in_queue_idx,
+        tx_source(*port_idx, in_queue_idx, std::move(incoming)));
     m_recycler->writer_add_gc_callback([to_delete1, to_delete2]() {
         delete to_delete1;
         delete to_delete2;
