@@ -18,7 +18,7 @@ public:
     void reset();
 
 private:
-    std::unique_ptr<firehose_server> server_ptr;
+    std::unique_ptr<firehose::server> server_ptr;
 };
 
 } // namespace openperf::network::internal

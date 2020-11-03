@@ -10,7 +10,7 @@ using namespace std::chrono_literals;
 static uint16_t serial_counter = 0;
 constexpr auto NAME_PREFIX = "op_network";
 
-auto to_statistics_t(const task_stat_t& task_stat)
+auto to_statistics_t(const task::stat_t& task_stat)
 {
     return model::generator_result::statistics_t{
         .bytes_actual = task_stat.bytes_actual,
@@ -65,23 +65,23 @@ generator::generator(const model::generator& generator_model)
     , m_dynamic(get_field)
     , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
 {
-    m_controller.start<task_stat_t>([this](const task_stat_t& stat) {
+    m_controller.start<task::stat_t>([this](const task::stat_t& stat) {
         auto elapsed_time = stat.updated - m_start_time;
 
         switch (stat.operation) {
-        case task_operation::READ:
+        case task::operation_t::READ:
             m_read_stat += stat;
             m_read_stat.ops_target =
                 elapsed_time.count() * m_config.reads_per_sec
-                * std::min(m_config.read_size, 1U) / std::nano::den;
+                * std::min(m_config.read_size, 1UL) / std::nano::den;
             m_read_stat.bytes_target =
                 m_read_stat.ops_target * m_config.read_size;
             break;
-        case task_operation::WRITE:
+        case task::operation_t::WRITE:
             m_write_stat += stat;
             m_write_stat.ops_target =
                 elapsed_time.count() * m_config.writes_per_sec
-                * std::min(m_config.write_size, 1U) / std::nano::den;
+                * std::min(m_config.write_size, 1UL) / std::nano::den;
             m_write_stat.bytes_target =
                 m_write_stat.ops_target * m_config.write_size;
             break;
@@ -106,9 +106,41 @@ generator::~generator()
     m_controller.clear();
 }
 
+inline int to_task_protocol(model::protocol_t p)
+{
+    switch (p) {
+    case model::TCP:
+        return (IPPROTO_TCP);
+    case model::UDP:
+        return (IPPROTO_UDP);
+    default:
+        return (IPPROTO_IP); /* a.k.a. 0 */
+    }
+}
+
 void generator::config(const model::generator_config& config)
 {
     m_controller.pause();
+    m_controller.clear();
+
+    uint64_t threads = 1;
+    for (uint64_t i = 0; i < threads; i++) {
+        auto task = task::network_task(
+            task::config_t{.operation = task::operation_t::READ,
+                           .block_size = m_config.read_size,
+                           .ops_per_sec = m_config.reads_per_sec / threads,
+                           .connections = m_config.connections,
+                           .ops_per_connection = m_config.ops_per_connection,
+                           .target = task::target_t{
+                               .host = m_target.host,
+                               .port = m_target.port,
+                               .protocol = to_task_protocol(m_target.protocol),
+                           }});
+
+        m_controller.add(std::move(task),
+                         NAME_PREFIX + std::to_string(m_serial_number)
+                             + std::to_string(i + 1));
+    }
 
     if (m_running) m_controller.resume();
 }
@@ -121,8 +153,8 @@ model::generator_result generator::statistics() const
     stat.active(m_running);
     stat.timestamp(timesync::chrono::realtime::now());
     stat.start_timestamp(m_start_time);
-    stat.read_stats(*m_read_stat_ptr);
-    stat.write_stats(*m_write_stat_ptr);
+    stat.read_stats(to_statistics_t(m_read_stat));
+    stat.write_stats(to_statistics_t(m_write_stat));
     stat.dynamic_results(m_dynamic.result());
 
     return stat;

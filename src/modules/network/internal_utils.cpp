@@ -29,7 +29,7 @@ static void* get_sa_addr(const sockaddr* sa)
     }
 }
 
-inline socklen_t network_sockaddr_size(const network_sockaddr& s)
+socklen_t network_sockaddr_size(const network_sockaddr& s)
 {
     switch (s.sa.sa_family) {
     case AF_INET:
@@ -41,7 +41,7 @@ inline socklen_t network_sockaddr_size(const network_sockaddr& s)
     }
 }
 
-inline in_port_t network_sockaddr_port(const network_sockaddr& s)
+in_port_t network_sockaddr_port(const network_sockaddr& s)
 {
     switch (s.sa.sa_family) {
     case AF_INET:
@@ -53,7 +53,7 @@ inline in_port_t network_sockaddr_port(const network_sockaddr& s)
     }
 }
 
-inline void* network_sockaddr_addr(const network_sockaddr& s)
+void* network_sockaddr_addr(const network_sockaddr& s)
 {
     switch (s.sa.sa_family) {
     case AF_INET:
@@ -65,7 +65,7 @@ inline void* network_sockaddr_addr(const network_sockaddr& s)
     }
 }
 
-inline const char*
+const char*
 network_sockaddr_addr_str(const network_sockaddr& s, char* buf, size_t buf_len)
 {
     void* addr = network_sockaddr_addr(s);
@@ -78,8 +78,7 @@ network_sockaddr_addr_str(const network_sockaddr& s, char* buf, size_t buf_len)
     return inet_ntop(s.sa.sa_family, addr, buf, buf_len);
 }
 
-inline size_t network_addr_mask_to_prefix_len(const uint8_t* bytes,
-                                              size_t n_bytes)
+size_t network_addr_mask_to_prefix_len(const uint8_t* bytes, size_t n_bytes)
 {
     for (size_t i = 0; i < n_bytes; ++i) {
         uint8_t val = bytes[n_bytes - i - 1];

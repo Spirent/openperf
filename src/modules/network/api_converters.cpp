@@ -89,13 +89,25 @@ is_valid(const swagger::NetworkServer& server)
 model::generator from_swagger(const swagger::NetworkGenerator& generator)
 {
     model::generator_config config;
+    config.connections = generator.getConfig()->getConnections();
+    config.ops_per_connection = generator.getConfig()->getOpsPerConnection();
+    config.read_size = generator.getConfig()->getReadSize();
+    config.reads_per_sec = generator.getConfig()->getReadsPerSec();
+    config.write_size = generator.getConfig()->getWriteSize();
+    config.writes_per_sec = generator.getConfig()->getWritesPerSec();
 
-    auto swagger_network_config = generator.getConfig();
+    model::generator_target target;
+    target.host = generator.getConfig()->getTarget()->getHost();
+    target.port = generator.getConfig()->getTarget()->getPort();
+    auto protocol =
+        protocol_from_string(generator.getConfig()->getTarget()->getProtocol());
+    if (protocol) target.protocol = protocol.value();
 
     model::generator gen_model;
     gen_model.id(generator.getId());
     gen_model.running(generator.isRunning());
     gen_model.config(config);
+    gen_model.target(target);
     return gen_model;
 }
 

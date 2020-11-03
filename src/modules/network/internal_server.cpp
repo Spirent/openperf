@@ -17,7 +17,7 @@ server::server(const model::server& server_model)
 
     switch (protocol()) {
     case protocol_t::TCP:
-        server_ptr = std::make_unique<firehose_server_tcp>(port());
+        server_ptr = std::make_unique<firehose::server_tcp>(port());
         break;
     case protocol_t::UDP:
         /* code */

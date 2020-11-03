@@ -11,11 +11,11 @@ namespace openperf::network::model {
 struct generator_config
 {
     uint64_t connections;
-    uint32_t ops_per_connection;
-    uint32_t reads_per_sec;
-    uint32_t read_size;
-    uint32_t writes_per_sec;
-    uint32_t write_size;
+    uint64_t ops_per_connection;
+    uint64_t reads_per_sec;
+    uint64_t read_size;
+    uint64_t writes_per_sec;
+    uint64_t write_size;
 };
 
 struct generator_target

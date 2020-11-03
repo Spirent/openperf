@@ -109,11 +109,10 @@ generator_stack::start_generator(const std::string& id)
         if (gen->running())
             return tl::make_unexpected("Generator is already in running state");
 
-        // gen->start();
-        // auto result = gen->statistics();
-        // m_statistics[result.id()] = gen;
-        // return result;
-        return tl::make_unexpected("Result not found");
+        gen->start();
+        auto result = gen->statistics();
+        m_statistics[result.id()] = gen;
+        return result;
     } catch (const std::out_of_range&) {
         return tl::make_unexpected("Generator not found");
     }
@@ -128,11 +127,10 @@ generator_stack::start_generator(const std::string& id,
         if (gen->running())
             return tl::make_unexpected("Generator is already in running state");
 
-        // gen->start(cfg);
-        // auto result = gen->statistics();
-        // m_statistics[result.id()] = gen;
-        // return result;
-        return tl::make_unexpected("Generator not found");
+        gen->start(cfg);
+        auto result = gen->statistics();
+        m_statistics[result.id()] = gen;
+        return result;
     } catch (const std::out_of_range&) {
         return tl::make_unexpected("Generator not found");
     }
@@ -144,10 +142,10 @@ bool generator_stack::stop_generator(const std::string& id)
         auto gen = m_generators.at(id);
         if (!gen->running()) return true;
 
-        // gen->stop();
-        // auto result = gen->statistics();
-        // m_statistics[result.id()] = result;
-        // gen->reset();
+        gen->stop();
+        auto result = gen->statistics();
+        m_statistics[result.id()] = result;
+        gen->reset();
         return true;
     } catch (const std::out_of_range&) {
         return false;

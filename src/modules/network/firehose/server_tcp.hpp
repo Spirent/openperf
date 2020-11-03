@@ -4,31 +4,42 @@
 #include <atomic>
 #include <thread>
 #include <vector>
+#include <zmq.h>
 #include <netinet/in.h>
 
 #include "server_common.hpp"
 
-namespace openperf::network::internal {
+namespace openperf::network::internal::firehose {
 
-class firehose_server_tcp : public firehose_server
+class server_tcp : public server
 {
-public:
-    firehose_server_tcp(in_port_t port);
-    firehose_server_tcp(const firehose_server_tcp&) = delete;
-    ~firehose_server_tcp() override;
-
-    void run_accept_thread() override;
-    void run_worker_thread() override;
-
 private:
-    int tcp_write(connection_t&);
+    struct zmq_ctx_deleter
+    {
+        void operator()(void* ctx) const
+        {
+            zmq_ctx_shutdown(ctx);
+            zmq_ctx_term(ctx);
+        }
+    };
 
     std::vector<uint8_t> m_send_buffer;
     std::atomic_bool m_stopped;
-    std::thread m_accept_thread, m_worker_thread;
-    std::vector<connection_t> m_connections;
+    std::thread m_accept_thread;
+    std::vector<std::unique_ptr<std::thread>> m_worker_threads;
+    std::unique_ptr<void, zmq_ctx_deleter> m_context;
+
+    int tcp_write(connection_t&);
+
+public:
+    server_tcp(in_port_t port);
+    server_tcp(const server_tcp&) = delete;
+    ~server_tcp() override;
+
+    void run_accept_thread() override;
+    void run_worker_thread() override;
 };
 
-} // namespace openperf::network::internal
+} // namespace openperf::network::internal::firehose
 
 #endif
