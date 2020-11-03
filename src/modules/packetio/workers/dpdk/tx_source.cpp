@@ -8,6 +8,7 @@
 namespace openperf::packetio::dpdk {
 
 static rte_mempool* get_packet_pool(uint16_t port_idx,
+                                    uint16_t queue_idx,
                                     const packet::generic_source& source)
 {
     /*
@@ -18,7 +19,8 @@ static rte_mempool* get_packet_pool(uint16_t port_idx,
      * otherwise every call to retrieve buffers from the pool will bypass the
      * CPU cache and go straight to the pool.
      */
-    return (mempool::acquire(source.id(),
+    return (mempool::acquire(port_idx,
+                             queue_idx,
                              port_info::socket_id(port_idx),
                              source.max_packet_length() + RTE_PKTMBUF_HEADROOM,
                              port_info::tx_desc_count(port_idx)
@@ -26,10 +28,17 @@ static rte_mempool* get_packet_pool(uint16_t port_idx,
                              2 * worker::pkt_burst_size));
 }
 
-tx_source::tx_source(uint16_t port_idx, packet::generic_source source)
-    : m_pool(get_packet_pool(port_idx, source))
+tx_source::tx_source(uint16_t port_idx,
+                     uint16_t queue_idx,
+                     packet::generic_source source)
+    : m_pool(get_packet_pool(port_idx, queue_idx, source))
     , m_source(std::move(source))
-{}
+{
+    if (!m_pool) {
+        throw std::runtime_error("No packet pool available for source "
+                                 + source.id());
+    }
+}
 
 tx_source::tx_source(tx_source&& other) noexcept
     : m_pool(other.m_pool)
