@@ -11,12 +11,25 @@
 
 #include <core/op_log.h>
 #include <core/op_thread.h>
+#include "core/op_socket.h"
 
 #include "protocol.hpp"
 
-namespace openperf::network::internal {
+namespace openperf::network::internal::firehose {
 
 const static size_t tcp_backlog = 128;
+const std::string endpoint = "inproc://firehose_server";
+
+struct connection_msg_t
+{
+    int fd;
+    union
+    {
+        struct sockaddr client;
+        struct sockaddr_in client4;
+        struct sockaddr_in6 client6;
+    };
+};
 
 static int _server(int domain, in_port_t port)
 {
@@ -77,8 +90,9 @@ static int _server(int domain, in_port_t port)
     return (sock);
 }
 
-firehose_server_tcp::firehose_server_tcp(in_port_t port)
+server_tcp::server_tcp(in_port_t port)
     : m_stopped(false)
+    , m_context(zmq_ctx_new())
 {
     /* IPv6 any supports IPv4 and IPv6 */
     if ((m_fd = _server(AF_INET6, port)) >= 0) {
@@ -90,16 +104,21 @@ firehose_server_tcp::firehose_server_tcp(in_port_t port)
     }
 }
 
-firehose_server_tcp::~firehose_server_tcp()
+server_tcp::~server_tcp()
 {
     m_stopped.store(true, std::memory_order_relaxed);
-    if (m_fd >= 0) close(m_fd);
+    if (m_fd.load() >= 0) shutdown(m_fd.load(), SHUT_RDWR);
+
     if (m_accept_thread.joinable()) m_accept_thread.join();
-    if (m_worker_thread.joinable()) m_worker_thread.join();
+    for (auto& thread : m_worker_threads) {
+        if (thread->joinable()) thread->join();
+    }
 }
 
-void firehose_server_tcp::run_accept_thread()
+void server_tcp::run_accept_thread()
 {
+    if (m_accept_thread.joinable()) return;
+
     m_accept_thread = std::thread([&] {
         // Set the thread name
         op_thread_setname("op_net_srv_acc");
@@ -109,8 +128,12 @@ void firehose_server_tcp::run_accept_thread()
         struct sockaddr* client = (struct sockaddr*)&client_storage;
         socklen_t client_length = sizeof(client_storage);
 
+        void* sync =
+            op_socket_get_server(m_context.get(), ZMQ_PUSH, endpoint.data());
+
         int connect_fd;
-        while ((connect_fd = accept(m_fd, client, &client_length)) != -1) {
+        while ((connect_fd = accept(m_fd.load(), client, &client_length))
+               != -1) {
             int enable = 1;
             OP_LOG(OP_LOG_INFO, "Trying to accept client\n");
             if (setsockopt(connect_fd,
@@ -123,17 +146,15 @@ void firehose_server_tcp::run_accept_thread()
                 continue;
             }
 
-            auto conn = connection_t{
-                .fd = connect_fd, .state = connection_state_t::STATE_WAITING};
+            auto conn = connection_msg_t{.fd = connect_fd};
             memcpy(&conn.client, client, get_sa_len(client));
-
-            // TODO replace with thread safe
-            m_connections.push_back(conn);
+            OP_LOG(OP_LOG_INFO, "Send new connection %d", conn.fd);
+            zmq_send(sync, &conn, sizeof(conn), ZMQ_DONTWAIT);
         }
     });
 }
 
-int firehose_server_tcp::tcp_write(connection_t& conn)
+int server_tcp::tcp_write(connection_t& conn)
 {
 
     int flags = 0;
@@ -171,14 +192,37 @@ int firehose_server_tcp::tcp_write(connection_t& conn)
     return 0;
 }
 
-void firehose_server_tcp::run_worker_thread()
+void server_tcp::run_worker_thread()
 {
-    m_worker_thread = std::thread([&] {
+    m_worker_threads.push_back(std::make_unique<std::thread>([&] {
         // Set the thread name
         op_thread_setname("op_net_srv_w");
+        std::vector<connection_t> connections;
+        connection_msg_t conn_buffer;
+        void* sync =
+            op_socket_get_client(m_context.get(), ZMQ_PULL, endpoint.data());
 
-        while (m_stopped.load(std::memory_order_relaxed)) {
-            for (auto& conn : m_connections) {
+        while (!m_stopped.load(std::memory_order_relaxed)) {
+            // Receive all accepted connections
+
+            while (zmq_recv(sync,
+                            &conn_buffer,
+                            sizeof(conn_buffer),
+                            (connections.size() > 0) ? ZMQ_DONTWAIT : 0)
+                   >= 0) {
+                auto conn = connection_t{
+                    .fd = conn_buffer.fd,
+                    .state = STATE_WAITING,
+                };
+                memcpy(&conn.client,
+                       &conn_buffer.client,
+                       get_sa_len(&conn_buffer.client));
+                connections.push_back(conn);
+
+                OP_LOG(OP_LOG_INFO, "Received new connection %d", conn.fd);
+            }
+
+            for (auto& conn : connections) {
                 uint8_t recv_buffer[recv_buffer_size];
                 size_t recv_length = recv_buffer_size;
                 uint8_t* recv_cursor = &recv_buffer[0];
@@ -228,11 +272,12 @@ void firehose_server_tcp::run_worker_thread()
                                 conn.request.insert(conn.request.end(),
                                                     recv_cursor,
                                                     recv_cursor + bytes_left);
+                                bytes_left = 0;
                                 break;
                             }
 
-                            /* Note: this function updates the note, including
-                             * the state */
+                            /* Note: this function updates the note,
+                             * including the state */
                             auto req = firehose::parse_request(recv_cursor,
                                                                bytes_left);
                             if (!req) {
@@ -287,7 +332,7 @@ void firehose_server_tcp::run_worker_thread()
                 } while (recv_or_err == recv_buffer_size);
             }
         }
-    });
+    }));
 }
 
-} // namespace openperf::network::internal
+} // namespace openperf::network::internal::firehose

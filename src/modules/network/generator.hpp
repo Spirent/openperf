@@ -23,8 +23,7 @@ private:
     std::string m_result_id;
     const uint16_t m_serial_number;
 
-    task_stat_t m_read_stat, m_write_stat;
-    std::atomic<generator_stat_t*> m_read_stat_ptr, m_write_stat_ptr;
+    task::stat_t m_read_stat, m_write_stat;
     chronometer::time_point m_start_time;
 
     dynamic::spool<model::generator_result> m_dynamic;

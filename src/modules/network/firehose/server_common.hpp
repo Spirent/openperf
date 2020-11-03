@@ -6,7 +6,7 @@
 #include <arpa/inet.h>
 #include "protocol.hpp"
 
-namespace openperf::network::internal {
+namespace openperf::network::internal::firehose {
 
 const static size_t recv_buffer_size = 4096;
 const static size_t send_buffer_size = 4096;
@@ -35,12 +35,12 @@ struct connection_t
     };
 };
 
-class firehose_server
+class server
 {
 public:
-    firehose_server() = default;
-    firehose_server(const firehose_server&) = delete;
-    virtual ~firehose_server() = default;
+    server() = default;
+    server(const server&) = delete;
+    virtual ~server() = default;
 
     virtual void run_accept_thread() = 0;
     virtual void run_worker_thread() = 0;
@@ -105,7 +105,7 @@ inline const char* get_state_string(connection_state_t state)
 }
 
 inline int
-parse_firehose_request(uint8_t*& data, size_t& data_length, connection_t& conn)
+parse_request(uint8_t*& data, size_t& data_length, connection_t& conn)
 {
     firehose::request_t request;
 
@@ -132,6 +132,6 @@ parse_firehose_request(uint8_t*& data, size_t& data_length, connection_t& conn)
     return 0;
 }
 
-} // namespace openperf::network::internal
+} // namespace openperf::network::internal::firehose
 
 #endif
