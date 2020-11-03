@@ -3,13 +3,6 @@ core:
     level: debug
 
 modules:
-  plugins:
-    load:
-      - "libopenperf_tvlp.so"
-    path: "/opt/openperf/plugins"
-  api:
-    port: 9000
-
   socket:
     force-unlink: true
 

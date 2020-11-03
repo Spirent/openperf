@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-clean_folder() {
+function clean_folder() {
     rm -rf "$ROOT/build/docker"
 }
 
@@ -19,8 +19,15 @@ cp -r "$ROOT/.circleci" \
       "$ROOT/src" \
       "$ROOT/targets" \
       "config.yaml" \
+      "init.sh" \
       "$ROOT/build/docker/"
 
-docker build -f Dockerfile -t "${DOCKER_IMAGE}" --build-arg GIT_COMMIT="${GIT_COMMIT}" --build-arg GIT_VERSION="${GIT_VERSION}" --build-arg BUILD_NUMBER="${BUILD_NUMBER}" "$ROOT/build/docker"
+docker build \
+    --file Dockerfile \
+    --tag "${DOCKER_IMAGE}" \
+    --build-arg GIT_COMMIT="${GIT_COMMIT}" \
+    --build-arg GIT_VERSION="${GIT_VERSION}" \
+    --build-arg BUILD_NUMBER="${BUILD_NUMBER}" \
+    "$ROOT/build/docker"
 
 clean_folder
