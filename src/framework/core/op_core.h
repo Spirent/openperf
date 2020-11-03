@@ -33,6 +33,7 @@
 #include "core/op_log.h"
 #include "core/op_modules.h"
 #include "core/op_options.h"
+#include "core/op_reference.h"
 #include "core/op_socket.h"
 #include "core/op_task.h"
 #include "core/op_thread.h"

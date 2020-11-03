@@ -11,6 +11,7 @@ FW_SOURCES += \
 	core/op_modules.c \
 	core/op_options.c \
 	core/op_plugins.cpp \
+	core/op_reference.c \
 	core/op_socket.c \
 	core/op_task.c \
 	core/op_version.c
