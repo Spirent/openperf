@@ -150,12 +150,13 @@ stat_t network_task::spin()
 }
 
 static tl::expected<connection_t, int>
-new_connection(const network_sockaddr& server, int protocol)
+new_connection(const network_sockaddr& server, const config_t& config)
 {
     int sock = 0;
     if ((sock = socket(server.sa.sa_family,
-                       protocol == IPPROTO_TCP ? SOCK_STREAM : SOCK_DGRAM,
-                       protocol))
+                       config.target.protocol == IPPROTO_TCP ? SOCK_STREAM
+                                                             : SOCK_DGRAM,
+                       config.target.protocol))
         == -1) {
         return tl::make_unexpected(-errno);
     }
@@ -200,7 +201,7 @@ new_connection(const network_sockaddr& server, int protocol)
      * the ACK that the peer decided to delay. So we wouldn't resume tranmition
      * until the delayed ack timer fired (100ms on BSD, 40ms on Linux).
      */
-    if ((protocol == IPPROTO_TCP)
+    if ((config.target.protocol == IPPROTO_TCP)
         && (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &enable, sizeof(enable))
             != 0)) {
         close(sock);
@@ -210,6 +211,7 @@ new_connection(const network_sockaddr& server, int protocol)
     return connection_t{
         .fd = sock,
         .state = STATE_INIT,
+        .ops_left = config.ops_per_connection,
     };
 }
 
@@ -283,6 +285,7 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
         } else {
             stat.bytes_actual += m_config.block_size;
             stat.ops_actual += 1;
+            conn.ops_left--;
             conn.state = STATE_INIT;
         }
 
@@ -316,6 +319,7 @@ void network_task::do_read(connection_t& conn, stat_t& stat)
     }
 
     stat.ops_actual++;
+    conn.ops_left--;
     stat.bytes_actual += m_config.block_size;
 
     conn.state = STATE_INIT;
@@ -354,6 +358,7 @@ void network_task::do_write(connection_t& conn, stat_t& stat)
     assert(conn.bytes_left == 0);
 
     stat.ops_actual++;
+    conn.ops_left--;
     stat.bytes_actual += m_config.block_size;
 
     conn.state = STATE_INIT;
@@ -361,7 +366,13 @@ void network_task::do_write(connection_t& conn, stat_t& stat)
     return;
 }
 
-void network_task::do_shutdown(connection_t& conn, stat_t& stat) {}
+void network_task::do_shutdown(connection_t& conn, stat_t& stat)
+{
+    if (conn.state == STATE_ERROR) stat.errors++;
+
+    close(conn.fd);
+    stat.conn_stat.closed++;
+}
 
 // Methods : private
 stat_t network_task::worker_spin(uint64_t nb_ops, realtime::time_point deadline)
@@ -374,7 +385,7 @@ stat_t network_task::worker_spin(uint64_t nb_ops, realtime::time_point deadline)
         network_sockaddr server;
         populate_sockaddr(server, m_config.target.host, m_config.target.port);
         stat.conn_stat.attempted++;
-        auto conn = new_connection(server, m_config.target.protocol);
+        auto conn = new_connection(server, m_config);
         if (!conn) {
             OP_LOG(OP_LOG_ERROR,
                    "Could not open new connection: %s\n",
@@ -384,29 +395,46 @@ stat_t network_task::worker_spin(uint64_t nb_ops, realtime::time_point deadline)
         }
         stat.conn_stat.successful++;
         m_connections.push_back(conn.value());
+
+        OP_LOG(OP_LOG_INFO,
+               "CLIENT: Created new connection %d, total %zu\n",
+               conn.value().fd,
+               m_connections.size());
     }
 
-    for (auto& conn : m_connections) {
-        switch (conn.state) {
-        case STATE_INIT: {
-            do_init(conn, stat);
-        } break;
-        case STATE_READING: {
+    for (size_t i = 0; i < nb_ops && i < m_connections.size(); i++) {
+        auto& conn = m_connections[i];
+        if (conn.state == STATE_INIT) do_init(conn, stat);
+
+        if (conn.state == STATE_READING) {
             do_read(conn, stat);
-        } break;
-        case STATE_WRITING: {
+        } else if (conn.state == STATE_WRITING) {
             do_write(conn, stat);
-        } break;
-        case STATE_ERROR:
-            m_stat.errors++;
-        case STATE_DONE:
+        }
+
+        if (conn.ops_left == 0) conn.state = STATE_DONE;
+
+        if (conn.state == STATE_DONE || conn.state == STATE_ERROR) {
             do_shutdown(conn, stat);
-            break;
-        default:
-            break;
         }
     }
 
+    // Remove closed connections
+    auto s = m_connections.size();
+
+    m_connections.erase(std::remove_if(m_connections.begin(),
+                                       m_connections.end(),
+                                       [](const auto& conn) {
+                                           return conn.state == STATE_DONE
+                                                  || conn.state == STATE_ERROR;
+                                       }),
+                        m_connections.end());
+    if (m_connections.size() != s) {
+        OP_LOG(OP_LOG_INFO,
+               "CLIENT: Removed %zu connections, current %zu\n",
+               s - m_connections.size(),
+               m_connections.size());
+    }
     return stat;
 }
 

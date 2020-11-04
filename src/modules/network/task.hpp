@@ -47,6 +47,7 @@ struct connection_t
     connection_state_t state;
     std::vector<uint8_t> buffer;
     size_t bytes_left;
+    uint_fast64_t ops_left;
 };
 
 struct conn_stat_t
