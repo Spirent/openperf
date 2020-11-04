@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <string>
+#include <fcntl.h>
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -107,6 +108,7 @@ server_tcp::server_tcp(in_port_t port)
 server_tcp::~server_tcp()
 {
     m_stopped.store(true, std::memory_order_relaxed);
+    zmq_ctx_shutdown(m_context);
     if (m_fd.load() >= 0) shutdown(m_fd.load(), SHUT_RDWR);
 
     if (m_accept_thread.joinable()) m_accept_thread.join();
@@ -128,14 +130,12 @@ void server_tcp::run_accept_thread()
         struct sockaddr* client = (struct sockaddr*)&client_storage;
         socklen_t client_length = sizeof(client_storage);
 
-        void* sync =
-            op_socket_get_server(m_context.get(), ZMQ_PUSH, endpoint.data());
+        void* sync = op_socket_get_server(m_context, ZMQ_PUSH, endpoint.data());
 
         int connect_fd;
         while ((connect_fd = accept(m_fd.load(), client, &client_length))
                != -1) {
             int enable = 1;
-            OP_LOG(OP_LOG_INFO, "Trying to accept client\n");
             if (setsockopt(connect_fd,
                            IPPROTO_TCP,
                            TCP_NODELAY,
@@ -145,10 +145,25 @@ void server_tcp::run_accept_thread()
                 close(connect_fd);
                 continue;
             }
+            // Change the socket into non-blocking state
+            int flags;
+            if ((flags = fcntl(connect_fd, F_GETFL, 0)); flags >= 0) {
+                flags |= O_NONBLOCK;
+                if (fcntl(connect_fd, F_SETFL, O_NONBLOCK)) {
+                    OP_LOG(OP_LOG_WARNING,
+                           "Cannot set non blocking socket (%d): %s\n",
+                           connect_fd,
+                           strerror(errno));
+                }
+            } else {
+                OP_LOG(OP_LOG_WARNING,
+                       "Cannot get file descriptor flags (%d): %s\n",
+                       connect_fd,
+                       strerror(errno));
+            }
 
             auto conn = connection_msg_t{.fd = connect_fd};
             memcpy(&conn.client, client, get_sa_len(client));
-            OP_LOG(OP_LOG_INFO, "Send new connection %d", conn.fd);
             zmq_send(sync, &conn, sizeof(conn), ZMQ_DONTWAIT);
         }
     });
@@ -199,8 +214,7 @@ void server_tcp::run_worker_thread()
         op_thread_setname("op_net_srv_w");
         std::vector<connection_t> connections;
         connection_msg_t conn_buffer;
-        void* sync =
-            op_socket_get_client(m_context.get(), ZMQ_PULL, endpoint.data());
+        void* sync = op_socket_get_client(m_context, ZMQ_PULL, endpoint.data());
 
         while (!m_stopped.load(std::memory_order_relaxed)) {
             // Receive all accepted connections
@@ -219,7 +233,10 @@ void server_tcp::run_worker_thread()
                        get_sa_len(&conn_buffer.client));
                 connections.push_back(conn);
 
-                OP_LOG(OP_LOG_INFO, "Received new connection %d", conn.fd);
+                OP_LOG(OP_LOG_INFO,
+                       "SERVER: Received new connection %d, total %zu\n",
+                       conn.fd,
+                       connections.size());
             }
 
             for (auto& conn : connections) {
@@ -250,10 +267,10 @@ void server_tcp::run_worker_thread()
                                ntohs(get_sa_port(&conn.client)),
                                strerror(errno));
                         conn.state = STATE_ERROR;
-                        // return (-1);
+                        break;
                     } else if (recv_or_err == 0) {
                         conn.state = STATE_DONE;
-                        // return (-1); /* remote side closed connection */
+                        break;
                     }
 
                     if (conn.request.size()) {
@@ -330,6 +347,23 @@ void server_tcp::run_worker_thread()
                         }
                     }
                 } while (recv_or_err == recv_buffer_size);
+            }
+
+            // Remove closed connections
+            auto s = connections.size();
+            connections.erase(std::remove_if(connections.begin(),
+                                             connections.end(),
+                                             [](const auto& conn) {
+                                                 return conn.state == STATE_DONE
+                                                        || conn.state
+                                                               == STATE_ERROR;
+                                             }),
+                              connections.end());
+            if (connections.size() != s) {
+                OP_LOG(OP_LOG_INFO,
+                       "SERVER: Removed %zu connections, current %zu\n",
+                       s - connections.size(),
+                       connections.size());
             }
         }
     }));
