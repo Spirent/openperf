@@ -19,8 +19,8 @@ if [ -z "${EXECUTABLE}" ]; then
 fi
 
 # Print environment variables to console for debugging
-echo ">>> ENV Variables"
-env | sort | sed -e 's/^/   /;$a\\n'
+#echo ">>> ENV Variables"
+#env | sort | sed -e 's/^/   /;$a\\n'
 
 function scan_plugins() {
   if [ ! -d "$1" ]; then
@@ -55,8 +55,8 @@ OPTIONS=($(set | awk '
     print(val)
   }'))
 
-echo -e "Options: ${OPTIONS[@]}\n"
+#echo -e "Options: ${OPTIONS[@]}\n"
 
-echo "Run OpenPerf:"
 exec "${EXECUTABLE}" \
   $* "${OPTIONS[@]}"
+
