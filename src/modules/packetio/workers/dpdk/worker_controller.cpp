@@ -925,6 +925,9 @@ tl::expected<std::string, int> worker_controller::add_task(
         return (tl::make_unexpected(EINVAL));
     }
 
+    auto stack_lcore_id = topology::get_stack_lcore_id();
+    if (!stack_lcore_id) { return (tl::make_unexpected(ENOTSUP)); }
+
     auto id = core::uuid::random();
     auto [it, success] =
         m_tasks.try_emplace(id,
@@ -941,8 +944,8 @@ tl::expected<std::string, int> worker_controller::add_task(
            name.data(),
            core::to_string(id).c_str());
 
-    std::vector<worker::descriptor> tasks{worker::descriptor(
-        topology::get_stack_lcore_id(), std::addressof(it->second))};
+    std::vector<worker::descriptor> tasks{
+        worker::descriptor(*stack_lcore_id, std::addressof(it->second))};
     m_workers->add_descriptors(tasks);
 
     return (core::to_string(id));
@@ -950,14 +953,17 @@ tl::expected<std::string, int> worker_controller::add_task(
 
 void worker_controller::del_task(std::string_view task_id)
 {
+    auto stack_lcore_id = topology::get_stack_lcore_id();
+    if (!stack_lcore_id) { return; }
+
     OP_LOG(OP_LOG_DEBUG,
            "Deleting task %.*s\n",
            static_cast<int>(task_id.length()),
            task_id.data());
     auto id = core::uuid(task_id);
     if (auto item = m_tasks.find(id); item != m_tasks.end()) {
-        std::vector<worker::descriptor> tasks{worker::descriptor(
-            topology::get_stack_lcore_id(), std::addressof(item->second))};
+        std::vector<worker::descriptor> tasks{
+            worker::descriptor(*stack_lcore_id, std::addressof(item->second))};
         m_workers->del_descriptors(tasks);
         m_recycler->writer_add_gc_callback([id, this]() { m_tasks.erase(id); });
     }

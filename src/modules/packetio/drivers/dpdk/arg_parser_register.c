@@ -1,10 +1,12 @@
 #include "core/op_core.h"
 #include "config/op_config_file.hpp"
 
-const char op_packetio_dpdk_options[] = "modules.packetio.dpdk.options";
-const char op_packetio_dpdk_port_ids[] = "modules.packetio.dpdk.port-ids";
+const char op_packetio_cpu_mask[] = "modules.packetio.cpu-mask";
 const char op_packetio_dpdk_misc_worker_mask[] =
     "modules.packetio.dpdk.misc-worker-mask";
+const char op_packetio_dpdk_no_init[] = "modules.packetio.dpdk.no-init";
+const char op_packetio_dpdk_options[] = "modules.packetio.dpdk.options";
+const char op_packetio_dpdk_port_ids[] = "modules.packetio.dpdk.port-ids";
 const char op_packetio_dpdk_rx_worker_mask[] =
     "modules.packetio.dpdk.rx-worker-mask";
 const char op_packetio_dpdk_tx_worker_mask[] =
@@ -13,6 +15,14 @@ const char op_packetio_dpdk_tx_worker_mask[] =
 MAKE_OPTION_DATA(
     dpdk,
     NULL,
+    MAKE_OPT("specifies CPU core mask for all threads, in hex",
+             op_packetio_cpu_mask,
+             0,
+             OP_OPTION_TYPE_HEX),
+    MAKE_OPT("specifies CPU core mask for miscellaneous threads, in hex",
+             op_packetio_dpdk_misc_worker_mask,
+             'M',
+             OP_OPTION_TYPE_HEX),
     MAKE_OPT("quoted, comma separated options for DPDK",
              op_packetio_dpdk_options,
              'd',
@@ -22,10 +32,10 @@ MAKE_OPTION_DATA(
              op_packetio_dpdk_port_ids,
              0,
              OP_OPTION_TYPE_MAP),
-    MAKE_OPT("specifies CPU core mask for miscellaneous threads, in hex",
-             op_packetio_dpdk_misc_worker_mask,
-             'M',
-             OP_OPTION_TYPE_HEX),
+    MAKE_OPT("skip DPDK initialization",
+             op_packetio_dpdk_no_init,
+             0,
+             OP_OPTION_TYPE_NONE),
     MAKE_OPT("specifies CPU core mask for receive threads, in hex",
              op_packetio_dpdk_rx_worker_mask,
              'R',

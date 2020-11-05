@@ -1,8 +1,10 @@
 #include <thread>
 
+#include <lwip/sys.h>
 #include <zmq.h>
 
 #include "core/op_core.h"
+#include "packetio/init.hpp"
 #include "packet/stack/generic_stack.hpp"
 #include "packet/stack/server.hpp"
 
@@ -22,8 +24,7 @@ static int handle_zmq_shutdown(const op_event_data* data, void*)
 
 struct service
 {
-    std::unique_ptr<openperf::core::event_loop> m_loop =
-        std::make_unique<openperf::core::event_loop>();
+    std::unique_ptr<openperf::core::event_loop> m_loop;
     std::unique_ptr<generic_stack> m_stack;
     std::unique_ptr<api::server> m_stack_server;
     std::unique_ptr<void, op_socket_deleter> m_shutdown;
@@ -36,6 +37,21 @@ struct service
 
     void init(void* context)
     {
+        if (!packetio::is_enabled()) {
+            OP_LOG(OP_LOG_WARNING,
+                   "PacketIO module is not enabled; skipping stack "
+                   "initialization\n");
+            return;
+        }
+
+        if (sys_stack_worker_id() == -1) {
+            OP_LOG(
+                OP_LOG_WARNING,
+                "No stack thread available; skipping stack initialization\n");
+            return;
+        }
+
+        m_loop = std::make_unique<core::event_loop>();
         m_stack = stack::make(context);
         m_stack_server =
             std::make_unique<api::server>(context, *m_loop, *m_stack);
@@ -45,6 +61,8 @@ struct service
 
     void start()
     {
+        if (!m_loop) { return; }
+
         m_service = std::thread([this]() {
             op_thread_setname("op_packet_stack");
 
@@ -56,6 +74,11 @@ struct service
         });
     }
 };
+
+bool is_enabled()
+{
+    return (packetio::is_enabled() && sys_stack_worker_id() != -1);
+}
 
 } // namespace openperf::packet::stack
 
