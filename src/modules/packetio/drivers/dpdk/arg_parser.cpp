@@ -12,9 +12,18 @@ namespace openperf::packetio::dpdk::config {
 
 using namespace openperf::config;
 
+inline constexpr std::string_view core_mask_arg = "-c";
 inline constexpr std::string_view program_name = "op_eal";
 inline constexpr std::string_view log_level_arg = "--log-level";
 inline constexpr std::string_view file_prefix_arg = "--file-prefix";
+
+static void add_argument(std::vector<std::string>& args,
+                         std::string_view arg,
+                         std::optional<std::string_view> opt = std::nullopt)
+{
+    args.emplace_back(arg);
+    if (opt) { args.emplace_back(opt.value()); }
+}
 
 static void add_log_level_arg(enum op_log_level level,
                               std::vector<std::string>& args)
@@ -30,15 +39,7 @@ static void add_log_level_arg(enum op_log_level level,
         {OP_LOG_TRACE, "8"}     /* RTE_LOG_DEBUG */
     };
 
-    args.emplace_back(log_level_arg);
-    args.push_back(log_level_map[level]);
-}
-
-static void add_file_prefix_arg(std::string_view prefix,
-                                std::vector<std::string>& args)
-{
-    args.emplace_back(file_prefix_arg);
-    args.emplace_back(prefix);
+    add_argument(args, log_level_arg, log_level_map[level]);
 }
 
 // Split portX and return just the X part.
@@ -100,6 +101,62 @@ process_dpdk_port_ids(const std::map<std::string, std::string>& input,
     return (0);
 }
 
+template <typename Key, typename Value, typename... Pairs>
+constexpr auto associative_array(Pairs&&... pairs)
+    -> std::array<std::pair<Key, Value>, sizeof...(pairs)>
+{
+    return {{std::forward<Pairs>(pairs)...}};
+}
+
+constexpr std::string_view bin_to_hex_chunk(std::string_view value)
+{
+    constexpr auto bin_to_hex_array =
+        associative_array<std::string_view, std::string_view>(
+            std::pair("0000", "0"),
+            std::pair("0001", "1"),
+            std::pair("0010", "2"),
+            std::pair("0011", "3"),
+            std::pair("0100", "4"),
+            std::pair("0101", "5"),
+            std::pair("0110", "6"),
+            std::pair("0111", "7"),
+            std::pair("1000", "8"),
+            std::pair("1001", "9"),
+            std::pair("1010", "a"),
+            std::pair("1011", "b"),
+            std::pair("1100", "c"),
+            std::pair("1101", "d"),
+            std::pair("1110", "e"),
+            std::pair("1111", "f"));
+
+    auto cursor = std::begin(bin_to_hex_array),
+         end = std::end(bin_to_hex_array);
+    while (cursor != end) {
+        if (cursor->first == value) { return (cursor->second); }
+        ++cursor;
+    }
+
+    return ("0");
+}
+
+std::string bin_to_hex(std::string_view value)
+{
+
+    /* Let's make this easy for ourselves */
+    assert(value.length() % 4 == 0);
+
+    auto out = std::string{};
+    for (auto idx = 0U; idx < value.length(); idx += 4) {
+        out += bin_to_hex_chunk(value.substr(idx, 4));
+    }
+
+    /* Trim leading 0's */
+    auto start = out.find_first_not_of('0');
+    return (start == std::string::npos
+                ? "0x0" /* all zeroes */
+                : "0x" + out.substr(start, out.length() - start));
+}
+
 std::vector<std::string> common_dpdk_args()
 {
     // Add name value in straight away.
@@ -117,13 +174,46 @@ std::vector<std::string> common_dpdk_args()
     if (!contains(to_return, log_level_arg)) {
         add_log_level_arg(op_log_level_get(), to_return);
     }
+
+    /* Add a file prefix if one was provided */
     if (!contains(to_return, file_prefix_arg)) {
         if (auto prefix = config::get_prefix()) {
-            add_file_prefix_arg(*prefix, to_return);
+            add_argument(to_return, file_prefix_arg, *prefix);
+        }
+    }
+
+    /*
+     * Add an explicit mask if the user provided one via arguments and
+     * not via standard DPDK options.
+     */
+    if (auto mask = packetio_mask()) {
+        if (!contains(to_return, core_mask_arg)) {
+            add_argument(
+                to_return, core_mask_arg, bin_to_hex(mask.value().to_string()));
+        } else {
+            OP_LOG(OP_LOG_WARNING,
+                   "Ignoring packetio cpu-mask value due to explicit DPDK core "
+                   "mask\n");
         }
     }
 
     return (to_return);
+}
+
+bool dpdk_disabled()
+{
+    /* Check if the user explicitly disabled DPDK */
+    if (auto result = config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
+            op_packetio_dpdk_no_init)) {
+        return (result.value());
+    }
+
+    /* Also check our core mask; can't run without cores... */
+    if (auto mask = packetio_mask()) {
+        if (mask.value().none()) { return (true); }
+    }
+
+    return (false);
 }
 
 std::map<uint16_t, std::string> dpdk_id_map()
@@ -143,34 +233,34 @@ std::map<uint16_t, std::string> dpdk_id_map()
     return (to_return);
 }
 
-std::optional<core_mask> misc_core_mask()
+static std::optional<core_mask> get_mask_argument(std::string_view name)
 {
-    const auto mask = config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
-        op_packetio_dpdk_misc_worker_mask);
-
-    if (mask) { return core_mask{*mask}; }
+    if (const auto mask =
+            config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(name)) {
+        return (core_mask{*mask});
+    }
 
     return (std::nullopt);
+}
+
+std::optional<core_mask> packetio_mask()
+{
+    return (get_mask_argument(op_packetio_cpu_mask));
+}
+
+std::optional<core_mask> misc_core_mask()
+{
+    return (get_mask_argument(op_packetio_dpdk_misc_worker_mask));
 }
 
 std::optional<core_mask> rx_core_mask()
 {
-    const auto mask = config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
-        op_packetio_dpdk_rx_worker_mask);
-
-    if (mask) { return core_mask{*mask}; }
-
-    return (std::nullopt);
+    return (get_mask_argument(op_packetio_dpdk_rx_worker_mask));
 }
 
 std::optional<core_mask> tx_core_mask()
 {
-    const auto mask = config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
-        op_packetio_dpdk_tx_worker_mask);
-
-    if (mask) { return core_mask{*mask}; }
-
-    return (std::nullopt);
+    return (get_mask_argument(op_packetio_dpdk_tx_worker_mask));
 }
 
 } /* namespace openperf::packetio::dpdk::config */

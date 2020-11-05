@@ -1,6 +1,7 @@
 #include <thread>
 
 #include "core/op_core.h"
+#include "packet/stack/init.hpp"
 #include "socket/server/api_server.hpp"
 
 namespace openperf::socket::server {
@@ -11,12 +12,22 @@ struct service
 {
     void init(void* context)
     {
+        if (!packet::stack::is_enabled()) {
+            OP_LOG(OP_LOG_WARNING,
+                   "Packet stack module is not enabled; skipping socket server "
+                   "initialization\n");
+            return;
+        }
+
         m_server = std::make_unique<api::server>(context);
     }
 
-    int start() { return (m_server->start()); }
+    int start() { return (m_server ? m_server->start() : 0); }
 
-    void stop() { m_server->stop(); }
+    void stop()
+    {
+        if (m_server) { m_server->stop(); }
+    }
 
     std::unique_ptr<api::server> m_server;
 };

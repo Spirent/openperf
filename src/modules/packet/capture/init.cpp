@@ -2,6 +2,7 @@
 #include <thread>
 
 #include "core/op_core.h"
+#include "packetio/init.hpp"
 #include "packet/capture/server.hpp"
 
 namespace openperf::packet::capture {
@@ -20,8 +21,7 @@ static int handle_zmq_shutdown(const op_event_data* data, void*)
 
 struct service
 {
-    std::unique_ptr<openperf::core::event_loop> m_loop =
-        std::make_unique<openperf::core::event_loop>();
+    std::unique_ptr<openperf::core::event_loop> m_loop;
     std::unique_ptr<api::server> m_server;
     std::unique_ptr<void, op_socket_deleter> m_shutdown;
     std::thread m_service;
@@ -33,6 +33,14 @@ struct service
 
     void init(void* context)
     {
+        if (!packetio::is_enabled()) {
+            OP_LOG(OP_LOG_WARNING,
+                   "PacketIO module is not enabled; skipping packet capture "
+                   "initialization\n");
+            return;
+        }
+
+        m_loop = std::make_unique<openperf::core::event_loop>();
         m_server = std::make_unique<api::server>(context, *m_loop);
 
         m_shutdown.reset(op_socket_get_server(
@@ -41,6 +49,8 @@ struct service
 
     void start()
     {
+        if (!m_loop) { return; }
+
         m_service = std::thread([this]() {
             op_thread_setname("op_packet_cap");
 

@@ -44,6 +44,8 @@ public:
     void start_all_ports();
     void stop_all_ports();
 
+    bool is_usable();
+
     using port_id_map = std::map<uint16_t, std::string>;
 
 private:
