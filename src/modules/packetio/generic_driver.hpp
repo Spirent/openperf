@@ -47,6 +47,8 @@ public:
 
     void stop_all_ports() { return m_self->stop_all_ports(); }
 
+    bool is_usable() { return m_self->is_usable(); }
+
 private:
     struct driver_concept
     {
@@ -61,6 +63,7 @@ private:
         delete_port(std::string_view id) = 0;
         virtual void start_all_ports() = 0;
         virtual void stop_all_ports() = 0;
+        virtual bool is_usable() = 0;
     };
 
     template <typename Driver> struct driver_model final : driver_concept
@@ -101,6 +104,8 @@ private:
         void start_all_ports() override { return m_driver.start_all_ports(); }
 
         void stop_all_ports() override { return m_driver.stop_all_ports(); }
+
+        bool is_usable() override { return m_driver.is_usable(); }
 
         Driver m_driver;
     };

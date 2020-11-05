@@ -16,6 +16,8 @@ namespace openperf::packetio {
 
 static constexpr int module_version = 1;
 
+static std::atomic_bool init_flag = false;
+
 static int handle_zmq_shutdown(const op_event_data* data,
                                void* arg __attribute__((unused)))
 {
@@ -34,10 +36,18 @@ struct service
         if (m_service.joinable()) { m_service.join(); }
     }
 
-    void init(void* context)
+    bool init(void* context)
     {
-        m_loop = std::make_unique<openperf::core::event_loop>();
         m_driver = driver::make();
+        if (!m_driver->is_usable()) {
+            OP_LOG(OP_LOG_WARNING,
+                   "No usable PacketIO driver available; skipping "
+                   "initialization\n");
+            m_driver.reset();
+            return (false);
+        }
+
+        m_loop = std::make_unique<openperf::core::event_loop>();
         m_workers = workers::make(context, *m_loop, *m_driver);
         m_port_server =
             std::make_unique<port::api::server>(context, *m_loop, *m_driver);
@@ -46,10 +56,16 @@ struct service
 
         m_shutdown.reset(op_socket_get_server(
             context, ZMQ_REQ, "inproc://packetio_shutdown_canary"));
+
+        init_flag.store(true, std::memory_order_release);
+
+        return (true);
     }
 
     void start()
     {
+        assert(m_driver && m_driver->is_usable());
+
         m_service = std::thread([this]() {
             op_thread_setname("op_pio");
 
@@ -76,6 +92,8 @@ struct service
     std::thread m_service;
 };
 
+bool is_enabled() { return (init_flag.load(std::memory_order_relaxed)); }
+
 } // namespace openperf::packetio
 
 extern "C" {
@@ -83,8 +101,7 @@ extern "C" {
 int op_packetio_init(void* context, void* state)
 {
     auto* s = reinterpret_cast<openperf::packetio::service*>(state);
-    s->init(context);
-    s->start();
+    if (s->init(context)) { s->start(); }
     return (0);
 }
 

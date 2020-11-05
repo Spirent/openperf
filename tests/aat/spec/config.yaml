@@ -26,6 +26,25 @@ services:
     init_url: http://127.0.0.1:9000/interfaces/dataplane-server
     init_timeout: 15s
 
+  # PacketIO argument test configs
+  packetio-args-1:
+    command: '../../build/openperf-linux-x86_64-testing/bin/openperf --modules.packetio.cpu-mask 0x0 -p 9000 >> openperf.log 2>&1'
+    base_url: http://127.0.0.1:9000
+    init_url: http://127.0.0.1:9000/version
+    init_timeout: 15s
+
+  packetio-args-2:
+    command: '../../build/openperf-linux-x86_64-testing/bin/openperf --modules.packetio.dpdk.no-init -p 9000 >> openperf.log 2>&1'
+    base_url: http://127.0.0.1:9000
+    init_url: http://127.0.0.1:9000/version
+    init_timeout: 15s
+
+  packetio-args-3:
+    command: '../../build/openperf-linux-x86_64-testing/bin/openperf --modules.packetio.cpu-mask 0x3 --modules.packetio.dpdk.options="-m256m,--no-huge" --modules.packetio.dpdk.test-mode --modules.packetio.dpdk.rx-worker-mask 0x2 --modules.packetio.dpdk.tx-worker-mask 0x2 -p 9000 >> openperf.log 2>&1'
+    base_url: http://127.0.0.1:9000
+    init_url: http://127.0.0.1:9000/version
+    init_timeout: 15s
+
   #TVLP support.
   tvlp:
     command: '../../build/openperf-linux-x86_64-testing/bin/openperf --modules.packetio.dpdk.test-mode --core.log.level debug --modules.socket.force-unlink --modules.packetio.dpdk.options="-m256m,--no-huge" --modules.packetio.dpdk.port-ids="port0=0, port1=1" -p 9000 -L "libopenperf_tvlp.so" -m "../../build/openperf-linux-x86_64-testing/plugins/" >> openperf.log 2>&1'

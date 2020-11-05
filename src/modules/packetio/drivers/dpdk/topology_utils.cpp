@@ -34,9 +34,10 @@ std::vector<queue::descriptor>
 index_queue_distribute(const std::vector<uint16_t>& port_ids)
 {
     /* If we have multiple cores, assign the stack to a dedicated one. */
-    unsigned stack_lcore =
-        (rte_lcore_count() <= 2 ? std::numeric_limits<unsigned>::max()
-                                : get_stack_lcore_id());
+    constexpr auto lcore_max = std::numeric_limits<unsigned>::max();
+    auto stack_lcore =
+        (rte_lcore_count() <= 2 ? lcore_max
+                                : get_stack_lcore_id().value_or(lcore_max));
 
     /*
      * Generate a node -> core map so that we can easily tell which cores are
@@ -44,6 +45,7 @@ index_queue_distribute(const std::vector<uint16_t>& port_ids)
      */
     const auto mask = config::rx_core_mask().value_or(dpdk_mask())
                       | config::tx_core_mask().value_or(dpdk_mask());
+
     cores_by_id nodes;
     unsigned lcore_id = 0;
     RTE_LCORE_FOREACH_SLAVE (lcore_id) {
@@ -170,7 +172,7 @@ static core_mask get_misc_mask()
     return (misc_mask);
 }
 
-unsigned get_stack_lcore_id()
+std::optional<unsigned> get_stack_lcore_id()
 {
     /* Generate the set of numa nodes/socket ids from our set of ports */
     std::set<unsigned> node_ids;
@@ -188,9 +190,7 @@ unsigned get_stack_lcore_id()
         nodes[rte_lcore_to_socket_id(lcore_id)].set(lcore_id);
     }
 
-    if (nodes.empty()) {
-        throw std::runtime_error("No cores available for stack thread!");
-    }
+    if (nodes.empty()) { return (std::nullopt); }
 
     /* Find the numa node with the most available cores */
     auto max = std::max_element(

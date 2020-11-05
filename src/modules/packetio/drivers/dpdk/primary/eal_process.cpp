@@ -66,7 +66,9 @@ static void log_idle_workers(const std::vector<queue::descriptor>& descriptors)
                   [&](const auto& d) { eal_mask.reset(d.worker_id); });
 
     /* Clear the bit used by the stack */
-    eal_mask.reset(topology::get_stack_lcore_id());
+    if (auto stack_id = topology::get_stack_lcore_id()) {
+        eal_mask.reset(stack_id.value());
+    }
 
     /* Warn if we are unable to use any of our available cores */
     if (eal_mask.count()) {

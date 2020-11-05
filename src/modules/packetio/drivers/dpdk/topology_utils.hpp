@@ -12,8 +12,9 @@ namespace openperf::packetio::dpdk::topology {
 /**
  * Use the currently available ports, cores, and NUMA architecture to
  * determine a reasonable logical core to run the stack thread.
+ * Note: one might not be present.
  */
-unsigned get_stack_lcore_id();
+std::optional<unsigned> get_stack_lcore_id();
 
 std::vector<uint16_t> get_ports();
 

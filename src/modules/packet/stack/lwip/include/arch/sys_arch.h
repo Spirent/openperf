@@ -29,4 +29,10 @@ typedef struct sys_thread* sys_thread_t;
 void sys_check_timeouts();
 u32_t sys_timeouts_sleeptime();
 
+/*
+ * Retrieve the worker id for the stack thread. Returns -1 if no
+ * thread is available.
+ */
+int sys_stack_worker_id();
+
 #endif /* _OP_PACKETIO_STACK_DPDK_SYS_ARCH_H_ */

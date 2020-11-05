@@ -9,9 +9,11 @@
 
 #include "packetio/drivers/dpdk/core_mask.hpp"
 
+extern const char op_packetio_cpu_mask[];
+extern const char op_packetio_dpdk_misc_worker_mask[];
+extern const char op_packetio_dpdk_no_init[];
 extern const char op_packetio_dpdk_options[];
 extern const char op_packetio_dpdk_port_ids[];
-extern const char op_packetio_dpdk_misc_worker_mask[];
 extern const char op_packetio_dpdk_rx_worker_mask[];
 extern const char op_packetio_dpdk_tx_worker_mask[];
 
@@ -21,9 +23,12 @@ std::vector<std::string> dpdk_args(); /**< Retrieve a copy of args for use */
 std::vector<std::string> common_dpdk_args(); /**< Common args for all
                                                 process types */
 
+bool dpdk_disabled();
+
 std::map<uint16_t, std::string>
 dpdk_id_map(); /**< Retrieve a copy of port idx->id map */
 
+std::optional<core_mask> packetio_mask();
 std::optional<core_mask> misc_core_mask();
 std::optional<core_mask> rx_core_mask();
 std::optional<core_mask> tx_core_mask();

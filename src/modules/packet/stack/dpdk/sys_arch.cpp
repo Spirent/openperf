@@ -136,6 +136,12 @@ static int get_waiting_lcore()
     return (-1);
 }
 
+int sys_stack_worker_id()
+{
+    return (
+        openperf::packetio::dpdk::topology::get_stack_lcore_id().value_or(-1));
+}
+
 sys_thread_t sys_thread_new(const char* name,
                             lwip_thread_fn function,
                             void* arg,
@@ -149,8 +155,7 @@ sys_thread_t sys_thread_new(const char* name,
      * Luckily for us the TCPIP thread identifies itself clearly, so we can
      * put it on a specific core.  Otherwise, just pick one that is free.
      */
-    int lcore = (strcmp(TCPIP_THREAD_NAME, name) == 0 ? static_cast<int>(
-                     openperf::packetio::dpdk::topology::get_stack_lcore_id())
+    int lcore = (strcmp(TCPIP_THREAD_NAME, name) == 0 ? sys_stack_worker_id()
                                                       : get_waiting_lcore());
 
     if (lcore < 0) {

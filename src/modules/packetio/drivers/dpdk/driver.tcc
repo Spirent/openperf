@@ -65,7 +65,7 @@ static inline void log_port(uint16_t idx, std::string_view id)
 static inline void sanity_check_environment()
 {
     if (rte_lcore_count() <= 1) {
-        throw std::runtime_error("No DPDK workers cores are available! "
+        throw std::runtime_error("No DPDK worker cores are available! "
                                  "At least 2 CPU cores are required.");
     }
 
@@ -308,10 +308,7 @@ template <typename ProcessType> driver<ProcessType>::driver()
 
     m_ethdev_ports = port_ids;
 
-    if (m_ethdev_ports.empty()) {
-        throw std::runtime_error("No DPDK ports are available! "
-                                 "At least 1 port is required.");
-    }
+    if (m_ethdev_ports.empty()) { return; } /* nothing left to do */
 
     /* Log port details */
     std::for_each(std::begin(m_ethdev_ports),
@@ -510,6 +507,11 @@ template <typename ProcessType> void driver<ProcessType>::stop_all_ports()
         std::begin(m_ethdev_ports),
         std::end(m_ethdev_ports),
         [this](const auto& pair) { m_process->stop_port(pair.first); });
+}
+
+template <typename ProcessType> bool driver<ProcessType>::is_usable()
+{
+    return (!m_ethdev_ports.empty() && rte_lcore_count() > 0);
 }
 
 } // namespace openperf::packetio::dpdk
