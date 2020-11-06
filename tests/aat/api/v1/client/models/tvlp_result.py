@@ -36,7 +36,8 @@ class TvlpResult(object):
         'memory': 'list[MemoryGeneratorResult]',
         'block': 'list[BlockGeneratorResult]',
         'cpu': 'list[CpuGeneratorResult]',
-        'packet': 'list[PacketGeneratorResult]'
+        'packet': 'list[PacketGeneratorResult]',
+        'network': 'list[NetworkGeneratorResult]'
     }
 
     attribute_map = {
@@ -45,10 +46,11 @@ class TvlpResult(object):
         'memory': 'memory',
         'block': 'block',
         'cpu': 'cpu',
-        'packet': 'packet'
+        'packet': 'packet',
+        'network': 'network'
     }
 
-    def __init__(self, id=None, tvlp_id=None, memory=None, block=None, cpu=None, packet=None):  # noqa: E501
+    def __init__(self, id=None, tvlp_id=None, memory=None, block=None, cpu=None, packet=None, network=None):  # noqa: E501
         """TvlpResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
@@ -57,6 +59,7 @@ class TvlpResult(object):
         self._block = None
         self._cpu = None
         self._packet = None
+        self._network = None
         self.discriminator = None
 
         self.id = id
@@ -69,6 +72,8 @@ class TvlpResult(object):
             self.cpu = cpu
         if packet is not None:
             self.packet = packet
+        if network is not None:
+            self.network = network
 
     @property
     def id(self):
@@ -193,6 +198,26 @@ class TvlpResult(object):
         :type: list[PacketGeneratorResult]
         """
         self._packet = packet
+
+    @property
+    def network(self):
+        """Gets the network of this TvlpResult.  # noqa: E501
+
+
+        :return: The network of this TvlpResult.  # noqa: E501
+        :rtype: list[NetworkGeneratorResult]
+        """
+        return self._network
+
+    @network.setter
+    def network(self, network):
+        """Sets the network of this TvlpResult.
+
+
+        :param network: The network of this TvlpResult.  # noqa: E501
+        :type: list[NetworkGeneratorResult]
+        """
+        self._network = network
 
     def to_dict(self):
         """Returns the model properties as a dict"""

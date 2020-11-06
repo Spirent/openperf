@@ -38,6 +38,7 @@ class NetworkGeneratorResult(object):
         'timestamp_last': 'datetime',
         'read': 'NetworkGeneratorStats',
         'write': 'NetworkGeneratorStats',
+        'connection': 'NetworkGeneratorConnectionStats',
         'dynamic_results': 'DynamicResults'
     }
 
@@ -49,10 +50,11 @@ class NetworkGeneratorResult(object):
         'timestamp_last': 'timestamp_last',
         'read': 'read',
         'write': 'write',
+        'connection': 'connection',
         'dynamic_results': 'dynamic_results'
     }
 
-    def __init__(self, id=None, generator_id=None, active=None, timestamp_first=None, timestamp_last=None, read=None, write=None, dynamic_results=None):  # noqa: E501
+    def __init__(self, id=None, generator_id=None, active=None, timestamp_first=None, timestamp_last=None, read=None, write=None, connection=None, dynamic_results=None):  # noqa: E501
         """NetworkGeneratorResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
@@ -62,6 +64,7 @@ class NetworkGeneratorResult(object):
         self._timestamp_last = None
         self._read = None
         self._write = None
+        self._connection = None
         self._dynamic_results = None
         self.discriminator = None
 
@@ -73,6 +76,8 @@ class NetworkGeneratorResult(object):
         self.timestamp_last = timestamp_last
         self.read = read
         self.write = write
+        if connection is not None:
+            self.connection = connection
         if dynamic_results is not None:
             self.dynamic_results = dynamic_results
 
@@ -225,6 +230,26 @@ class NetworkGeneratorResult(object):
         :type: NetworkGeneratorStats
         """
         self._write = write
+
+    @property
+    def connection(self):
+        """Gets the connection of this NetworkGeneratorResult.  # noqa: E501
+
+
+        :return: The connection of this NetworkGeneratorResult.  # noqa: E501
+        :rtype: NetworkGeneratorConnectionStats
+        """
+        return self._connection
+
+    @connection.setter
+    def connection(self, connection):
+        """Sets the connection of this NetworkGeneratorResult.
+
+
+        :param connection: The connection of this NetworkGeneratorResult.  # noqa: E501
+        :type: NetworkGeneratorConnectionStats
+        """
+        self._connection = connection
 
     @property
     def dynamic_results(self):

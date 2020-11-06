@@ -755,6 +755,9 @@ definitions:
   NetworkGeneratorStats:
     $ref: ./modules/network.yaml#/definitions/NetworkGeneratorStats
 
+  NetworkGeneratorConnectionStats:
+    $ref: ./modules/network.yaml#/definitions/NetworkGeneratorConnectionStats
+
   ###
   # CPU definitions
   ###

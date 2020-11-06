@@ -21,6 +21,7 @@
 
 #include "ModelBase.h"
 
+#include "NetworkGeneratorResult.h"
 #include "BlockGeneratorResult.h"
 #include <string>
 #include "MemoryGeneratorResult.h"
@@ -87,6 +88,12 @@ public:
     std::vector<std::shared_ptr<PacketGeneratorResult>>& getPacket();
     bool packetIsSet() const;
     void unsetPacket();
+    /// <summary>
+    /// 
+    /// </summary>
+    std::vector<std::shared_ptr<NetworkGeneratorResult>>& getNetwork();
+    bool networkIsSet() const;
+    void unsetNetwork();
 
 protected:
     std::string m_Id;
@@ -101,6 +108,8 @@ protected:
     bool m_CpuIsSet;
     std::vector<std::shared_ptr<PacketGeneratorResult>> m_Packet;
     bool m_PacketIsSet;
+    std::vector<std::shared_ptr<NetworkGeneratorResult>> m_Network;
+    bool m_NetworkIsSet;
 };
 
 }
