@@ -296,6 +296,26 @@ definitions:
                 - config
         required:
           - series
+      network:
+        type: object
+        properties:
+          series:
+            type: array
+            items:
+              type: object
+              description: TVLP Profile for Network generators configuration
+              properties:
+                length:
+                  type: integer
+                  format: int64
+                  description: Length of the current operation in ns
+                config:
+                  $ref: "./network.yaml#/definitions/NetworkGeneratorConfig"
+              required:
+                - length
+                - config
+        required:
+          - series
 
   TvlpResult:
     type: object
@@ -323,6 +343,10 @@ definitions:
         type: array
         items:
           $ref: "./packet/generator.yaml#/definitions/PacketGeneratorResult"
+      network:
+        type: array
+        items:
+          $ref: "./network.yaml#/definitions/NetworkGeneratorResult"
     required:
       - id
       - tvlp_id
