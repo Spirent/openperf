@@ -29,8 +29,12 @@ std::optional<time_point> from_rfc3339(const std::string& from)
     int d;
     double seconds = 0;
     sscanf(date.c_str(), "%d-%d-%dT%d:%d:%lfZ", &d, &d, &d, &d, &d, &seconds);
-    dur += std::chrono::nanoseconds(static_cast<long>(std::nano::den * seconds)
-                                    % std::nano::den);
+
+    auto chrono_sec = std::chrono::duration<double>(seconds);
+    dur += std::chrono::duration_cast<std::chrono::nanoseconds>(
+        chrono_sec
+        - std::chrono::duration_cast<std::chrono::seconds>(chrono_sec));
+
     return time_point(dur);
 }
 
