@@ -25,6 +25,7 @@ TvlpResult::TvlpResult()
     m_BlockIsSet = false;
     m_CpuIsSet = false;
     m_PacketIsSet = false;
+    m_NetworkIsSet = false;
     
 }
 
@@ -89,6 +90,18 @@ nlohmann::json TvlpResult::toJson() const
         if(jsonArray.size() > 0)
         {
             val["packet"] = jsonArray;
+        }
+    }
+    {
+        nlohmann::json jsonArray;
+        for( auto& item : m_Network )
+        {
+            jsonArray.push_back(ModelBase::toJson(item));
+        }
+        
+        if(jsonArray.size() > 0)
+        {
+            val["network"] = jsonArray;
         }
     }
     
@@ -188,6 +201,28 @@ void TvlpResult::fromJson(nlohmann::json& val)
         }
         }
     }
+    {
+        m_Network.clear();
+        nlohmann::json jsonArray;
+        if(val.find("network") != val.end())
+        {
+        for( auto& item : val["network"] )
+        {
+            
+            if(item.is_null())
+            {
+                m_Network.push_back( std::shared_ptr<NetworkGeneratorResult>(nullptr) );
+            }
+            else
+            {
+                std::shared_ptr<NetworkGeneratorResult> newItem(new NetworkGeneratorResult());
+                newItem->fromJson(item);
+                m_Network.push_back( newItem );
+            }
+            
+        }
+        }
+    }
     
 }
 
@@ -257,6 +292,18 @@ bool TvlpResult::packetIsSet() const
 void TvlpResult::unsetPacket()
 {
     m_PacketIsSet = false;
+}
+std::vector<std::shared_ptr<NetworkGeneratorResult>>& TvlpResult::getNetwork()
+{
+    return m_Network;
+}
+bool TvlpResult::networkIsSet() const
+{
+    return m_NetworkIsSet;
+}
+void TvlpResult::unsetNetwork()
+{
+    m_NetworkIsSet = false;
 }
 
 }

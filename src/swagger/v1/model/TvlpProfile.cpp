@@ -23,6 +23,7 @@ TvlpProfile::TvlpProfile()
     m_BlockIsSet = false;
     m_CpuIsSet = false;
     m_PacketIsSet = false;
+    m_NetworkIsSet = false;
     
 }
 
@@ -54,6 +55,10 @@ nlohmann::json TvlpProfile::toJson() const
     if(m_PacketIsSet)
     {
         val["packet"] = ModelBase::toJson(m_Packet);
+    }
+    if(m_NetworkIsSet)
+    {
+        val["network"] = ModelBase::toJson(m_Network);
     }
     
 
@@ -99,6 +104,16 @@ void TvlpProfile::fromJson(nlohmann::json& val)
             std::shared_ptr<TvlpProfile_packet> newItem(new TvlpProfile_packet());
             newItem->fromJson(val["packet"]);
             setPacket( newItem );
+        }
+        
+    }
+    if(val.find("network") != val.end())
+    {
+        if(!val["network"].is_null())
+        {
+            std::shared_ptr<TvlpProfile_network> newItem(new TvlpProfile_network());
+            newItem->fromJson(val["network"]);
+            setNetwork( newItem );
         }
         
     }
@@ -173,6 +188,23 @@ bool TvlpProfile::packetIsSet() const
 void TvlpProfile::unsetPacket()
 {
     m_PacketIsSet = false;
+}
+std::shared_ptr<TvlpProfile_network> TvlpProfile::getNetwork() const
+{
+    return m_Network;
+}
+void TvlpProfile::setNetwork(std::shared_ptr<TvlpProfile_network> value)
+{
+    m_Network = value;
+    m_NetworkIsSet = true;
+}
+bool TvlpProfile::networkIsSet() const
+{
+    return m_NetworkIsSet;
+}
+void TvlpProfile::unsetNetwork()
+{
+    m_NetworkIsSet = false;
 }
 
 }
