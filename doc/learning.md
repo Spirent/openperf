@@ -8,6 +8,8 @@ OpenPerf uses ARP/ND learning to resolve destination MAC addresses for traffic g
 
 OpenPerf performs learning process automatically when a client `POST`s a generator resource that's attached to an interface. The packet generator module extracts unique layer 3 destination addresses and passes them to the learning module. The learning module uses ARP/ND capabilities of `lwip` stack to perform the required packet exchanges. Once all addresses have been resolved and/or timeouts exceeded, learning module returns resolved information to the packet generator module. The packet generator module then continues the existing process of creating the generator resource.
 
+Users can manually initiate learning by `POST`ing a list of generators to `/learning`.
+
 ## REST Client View
 
 Learning module adds two endpoints: `/learning` and `/learning-results`.
@@ -69,3 +71,5 @@ Once learning is done the packet generator module updates the destination MAC fo
 5. Keep completed `/learning` requests? Or just keep the associated results?
 
 6. MAC address timeout? As in do resolved MACs time out like on real systems?
+
+7. Is it worth adding a "skip learning" setting in packet generator config so OpenPerf skips learning on generator creation?
