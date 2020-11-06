@@ -23,7 +23,7 @@ controller_t::controller_t(void* context,
 
     auto scale_length = [](model::tvlp_module_profile_t& profiles) {
         duration total_length = 0ms;
-        for (auto& p : profiles) {
+        for (const auto& p : profiles) {
             if (p.length <= 0ms) {
                 throw std::runtime_error(
                     "Invalid field value: profile length cannot be less than "
@@ -45,18 +45,21 @@ controller_t::controller_t(void* context,
         m_block = std::make_unique<worker::block_tvlp_worker_t>(
             m_context, m_profile.block.value());
     }
+
     if (m_profile.memory) {
         total_length =
             std::max(total_length, scale_length(m_profile.memory.value()));
         m_memory = std::make_unique<worker::memory_tvlp_worker_t>(
             m_context, m_profile.memory.value());
     }
+
     if (m_profile.cpu) {
         total_length =
             std::max(total_length, scale_length(m_profile.cpu.value()));
         m_cpu = std::make_unique<worker::cpu_tvlp_worker_t>(
             m_context, m_profile.cpu.value());
     }
+
     if (m_profile.packet) {
         total_length =
             std::max(total_length, scale_length(m_profile.packet.value()));
@@ -86,16 +89,19 @@ controller_t::start(const time_point& start_time)
         // Starting already running worker should never happen
         assert(m_block->start(start_time));
     }
+
     if (m_profile.memory) {
         modules_results.memory = model::json_vector();
         // Starting already running worker should never happen
         assert(m_memory->start(start_time));
     }
+
     if (m_profile.cpu) {
         modules_results.cpu = model::json_vector();
         // Starting already running worker should never happen
         assert(m_cpu->start(start_time));
     }
+
     if (m_profile.packet) {
         modules_results.packet = model::json_vector();
         // Starting already running worker should never happen
