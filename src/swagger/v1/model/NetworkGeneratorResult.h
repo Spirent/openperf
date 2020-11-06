@@ -22,6 +22,7 @@
 #include "ModelBase.h"
 
 #include <string>
+#include "NetworkGeneratorConnectionStats.h"
 #include "DynamicResults.h"
 #include "NetworkGeneratorStats.h"
 
@@ -90,6 +91,13 @@ public:
         /// <summary>
     /// 
     /// </summary>
+    std::shared_ptr<NetworkGeneratorConnectionStats> getConnection() const;
+    void setConnection(std::shared_ptr<NetworkGeneratorConnectionStats> value);
+    bool connectionIsSet() const;
+    void unsetConnection();
+    /// <summary>
+    /// 
+    /// </summary>
     std::shared_ptr<DynamicResults> getDynamicResults() const;
     void setDynamicResults(std::shared_ptr<DynamicResults> value);
     bool dynamicResultsIsSet() const;
@@ -110,6 +118,8 @@ protected:
 
     std::shared_ptr<NetworkGeneratorStats> m_Write;
 
+    std::shared_ptr<NetworkGeneratorConnectionStats> m_Connection;
+    bool m_ConnectionIsSet;
     std::shared_ptr<DynamicResults> m_Dynamic_results;
     bool m_Dynamic_resultsIsSet;
 };

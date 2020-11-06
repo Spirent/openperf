@@ -301,6 +301,42 @@ definitions:
           - series
           - load_scale
           - time_scale
+      network:
+        type: object
+        properties:
+          load_scale:
+            type: number
+            format: double
+            description: The scale multiplier for load parameters of generators
+            default: 1.0
+            minimum: 0.0
+            exclusiveMinimum: true
+          time_scale:
+            type: number
+            format: double
+            description: The scale multiplier for the length of each profile entry
+            default: 1.0
+            minimum: 0.0
+            exclusiveMinimum: true
+          series:
+            type: array
+            items:
+              type: object
+              description: TVLP Profile for Network generators configuration
+              properties:
+                length:
+                  type: integer
+                  format: int64
+                  description: Length of the current operation in ns
+                config:
+                  $ref: "./network.yaml#/definitions/NetworkGeneratorConfig"
+              required:
+                - length
+                - config
+        required:
+          - series
+          - load_scale
+          - time_scale
 
   TvlpResult:
     type: object
@@ -328,6 +364,10 @@ definitions:
         type: array
         items:
           $ref: "./packet/generator.yaml#/definitions/PacketGeneratorResult"
+      network:
+        type: array
+        items:
+          $ref: "./network.yaml#/definitions/NetworkGeneratorResult"
     required:
       - id
       - tvlp_id

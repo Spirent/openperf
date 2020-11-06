@@ -119,6 +119,7 @@ from client.models.module_version import ModuleVersion
 from client.models.network_generator import NetworkGenerator
 from client.models.network_generator_config import NetworkGeneratorConfig
 from client.models.network_generator_config_target import NetworkGeneratorConfigTarget
+from client.models.network_generator_connection_stats import NetworkGeneratorConnectionStats
 from client.models.network_generator_result import NetworkGeneratorResult
 from client.models.network_generator_stats import NetworkGeneratorStats
 from client.models.network_server import NetworkServer
@@ -220,6 +221,8 @@ from client.models.tvlp_profile_cpu import TvlpProfileCpu
 from client.models.tvlp_profile_cpu_series import TvlpProfileCpuSeries
 from client.models.tvlp_profile_memory import TvlpProfileMemory
 from client.models.tvlp_profile_memory_series import TvlpProfileMemorySeries
+from client.models.tvlp_profile_network import TvlpProfileNetwork
+from client.models.tvlp_profile_network_series import TvlpProfileNetworkSeries
 from client.models.tvlp_profile_packet import TvlpProfilePacket
 from client.models.tvlp_profile_packet_series import TvlpProfilePacketSeries
 from client.models.tvlp_result import TvlpResult

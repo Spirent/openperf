@@ -536,6 +536,8 @@ definitions:
         $ref: "#/definitions/NetworkGeneratorStats"
       write:
         $ref: "#/definitions/NetworkGeneratorStats"
+      connection:
+        $ref: "#/definitions/NetworkGeneratorConnectionStats"
       dynamic_results:
         $ref: "./dynamic.yaml#/definitions/DynamicResults"
     required:
@@ -589,3 +591,29 @@ definitions:
       - bytes_actual
       - io_errors
       - latency_total
+
+  NetworkGeneratorConnectionStats:
+    type: object
+    description: Network generator connection statistics
+    properties:
+      attempted:
+        type: integer
+        description: The number of attempts to establish connections
+        format: int64
+      successful:
+        type: integer
+        description: The actual number of established connections
+        format: int64
+      errors:
+        type: integer
+        description: The number of errors observed during connecting process
+        format: int64
+      closed:
+        type: integer
+        description: The number of closed connections
+        format: int64
+    required:
+      - attempted
+      - successful
+      - errors
+      - closed

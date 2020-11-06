@@ -22,6 +22,7 @@
 #include "ModelBase.h"
 
 #include "TvlpProfile_memory.h"
+#include "TvlpProfile_network.h"
 #include "TvlpProfile_block.h"
 #include "TvlpProfile_cpu.h"
 #include "TvlpProfile_packet.h"
@@ -79,6 +80,13 @@ public:
     void setPacket(std::shared_ptr<TvlpProfile_packet> value);
     bool packetIsSet() const;
     void unsetPacket();
+    /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<TvlpProfile_network> getNetwork() const;
+    void setNetwork(std::shared_ptr<TvlpProfile_network> value);
+    bool networkIsSet() const;
+    void unsetNetwork();
 
 protected:
     std::shared_ptr<TvlpProfile_memory> m_Memory;
@@ -89,6 +97,8 @@ protected:
     bool m_CpuIsSet;
     std::shared_ptr<TvlpProfile_packet> m_Packet;
     bool m_PacketIsSet;
+    std::shared_ptr<TvlpProfile_network> m_Network;
+    bool m_NetworkIsSet;
 };
 
 }

@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **block** | [**list[BlockGeneratorResult]**](BlockGeneratorResult.md) |  | [optional] 
 **cpu** | [**list[CpuGeneratorResult]**](CpuGeneratorResult.md) |  | [optional] 
 **packet** | [**list[PacketGeneratorResult]**](PacketGeneratorResult.md) |  | [optional] 
+**network** | [**list[NetworkGeneratorResult]**](NetworkGeneratorResult.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
