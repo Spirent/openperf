@@ -3,12 +3,19 @@
 # Run script for the OpenPerf docker container entrypoint
 #
 # This script translates container environment variables with OP_ prefix
-# to the long options of the OpenPerf. All underscores in variable name
-# will be replaced by dots. Prefix OP_ will be cutted.
+# to the long options of the OpenPerf. All double underscores in variable
+# name will be replaced by hyphens. All single underscores will be replaced
+# by dots. Prefix OP_ will be stripped.
+#
+# Replacement rules:
+#   OP_ =>
+#   __  => -
+#   _   => .
 #
 # For example:
-#   OP_CONFIG -> --config
-#   OP_MODULES_PLUGINS_LOAD -> --modules.plugins.load
+#   OP_CONFIG => --config
+#   OP_MODULES_PLUGINS_LOAD => --modules.plugins.load
+#   OP_MODULES_SOCKET_FORCE__UNLINK => --modules.socket.force-unlink
 #
 
 # The executable program should be passed through EXECUTABLE
@@ -49,6 +56,7 @@ OPTIONS=($(set | awk '
     sub("OP_", "", $1);
     var = substr($1, 0, index($1, "="));
     val = substr($1, index($1, "=") + 1);
+    gsub("__", "-", var);
     gsub("_", ".", var);
 
     print("--", tolower(var))
