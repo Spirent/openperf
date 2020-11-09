@@ -38,9 +38,9 @@ function scan_plugins() {
   cd "$1"
   local list=''
   for plugin in *.so; do
-    list="${list} ${plugin}"
+    list="${list},${plugin}"
   done
-  echo ${list}
+  echo ${list#,}
 }
 
 #OP_CONFIG=${OP_CONFIG:-'config.yaml'}
