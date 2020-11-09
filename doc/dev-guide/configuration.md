@@ -1,70 +1,142 @@
 
-# Configurations
+# Configuration
 
-## dynamic config.yaml
+Configuration parameters can be specified in a YAML configuration file, or as command line arguments.
 
-   * API
-       - modules.api.port
-           + Rest API HTTP port
+## Common
+- `-c, --config`
 
-   * Core
-       - core.prefix
-           + Prefix for temporary file system files, e.g. sockets. Needed when running multiple instances.
+  Configuration file.
 
-       - core.log.prefix
-           + Used to specify the log level. Currently supported log levels are:
-             + critical
-             + error
-             + warning
-             + info
-             + debug
-             + trace
+- `--version`
 
-   * DPDK
-       - modules.packetio.dpdk.no-rx-interrupts
-           + Use polling instead of interrupts to service DPDK receive queues.
-             Note: polling will always be used for drivers that do not support receive interrupts
+  Print version and exit.
 
-       - modules.packetio.dpdk.no-lro
-           + Disable Large Receive Offload. LRO is used by default if supported by the driver;
-             unfortunately, many drivers are buggy.
+- `--help`
 
-       - modules.packetio.dpdk.no-init
-           + Disable DPDK entirely. The PacketIO module and all dependent modules will be unusable.
-             This is equivalent to setting the packetio CPU mask to 0.
+  Print help and exit.
 
-       - modules.packetio.dpdk.options
-           + Provide explicit options to DPDK. Example: ["-m256m", "--no-huge"]
+## Core
+- `-P, --core.prefix`
 
-       - modules.packetio.dpdk.port-ids
-           + Use well-known strings for port id's instead of random UUID's. Example: [port0: port0, port1: port1]
-             This option is necessary when creating port based resources in the configuration file.
+   Prefix for temporary file system files, e.g. sockets. Needed when running multiple instances.
 
-       - modules.packetio.dpdk.test-mode
-           + enable test mode by creating loopback port pairs
+- `-l, --core.log.level`
 
-       - modules.packetio.dpdk.test-portpairs
-           + number of loopback port pairs for testing, defaults to 1
+   Used to specify the log level. Currently supported log levels are:
+     1. critical
+     2. error
+     3. warning
+     4. info
+     5. debug
+     6. trace
 
-       - modules.packetio.dpdk.misc-worker-mask
-           + Provide an explicit mask for miscellaneous worker threads. Must be a subset of the module or DPDK mask.
-             Currently only used for stack threads. Setting this mask to 0x0 will disable the stack.
+## Modules
 
-       - modules.packetio.dpdk.rx-worker-mask
-           + Provide an explicit mask for receive worker threads. Must be a subset of the module or DPDK mask.
+### Plugins
 
-       - modules.packetio.dpdk.tx-worker-mask
-           + Provide an explicit mask for transmit worker threads. Must be a subset of the module or DPDK mask.
+- `-m, --modules.plugins.path`
 
-   * PacketIO
-       - modules.packetio.cpu-mask
-           + Provide an explicit CPU mask for packetio module threads.
-             By, default, packetio will use all available CPU's. Setting this
-             option to 0 will disable the packetio module.
+  Specifies path to plugin modules. This path will be used to searching the modules specified by `modules.plugins.load` option.
 
-   * Socket
-       - modules.socket.force-unlink
-           + Force removal of stale files
+- `-L, --modules.plugins.load`
+
+  Comma separated plugin module file names.
+
+### API
+- `-p, --modules.api.port`
+
+  Rest API HTTP port.
+
+### Block
+- `--modules.block.cpu-mask`
+
+  Specifies a CPU core affinity mask for all Block module threads, in hex. By, default, block module will use all available CPU's.
+
+### CPU
+- `--modules.cpu.cpu-mask`
+
+  Specifies a CPU core affinity mask for all CPU module threads, in hex. By, default, cpu module will use all available CPU's.
+
+### Memory
+- `--modules.memory.cpu-mask`
+
+  Specifies a CPU core affinity mask for all Memory module threads, in hex. By, default, memory module will use all available CPU's.
+
+### Socket
+- `-f, --modules.socket.force-unlink`
+
+  Force removal of stale files.
+
+### PacketIO
+- `--modules.packetio.cpu-mask`
+
+  Provide an explicit CPU mask for packetio module threads. By, default, packetio will use all available CPU's. Setting this option to 0 will disable the packetio module.
+
+### DPDK
+- `--modules.packetio.dpdk.no-rx-interrupts`
+
+  Use polling instead of interrupts to service DPDK receive queues.
+
+  *Note: polling will always be used for drivers that do not support receive interrupts.*
+
+- `--modules.packetio.dpdk.no-lro`
+
+  Disable Large Receive Offload. LRO is used by default if supported by the driver; unfortunately, many drivers are buggy.
+
+- `--modules.packetio.dpdk.no-init`
+
+  Disable DPDK entirely. The PacketIO module and all dependent modules will be unusable. This is equivalent to setting the packetio CPU mask to 0.
+
+- `-d, --modules.packetio.dpdk.options`
+
+  Provide explicit options to DPDK.
+
+  *Example:* "-m256m,--no-huge"
+
+- `--modules.packetio.dpdk.port-ids`
+
+  Use well-known strings for port id's instead of random UUID's. This option is necessary when creating port based resources in the configuration file.
+
+  *Example:* "port0:port0,port1:port1"
+
+- `--modules.packetio.dpdk.test-mode`
+
+  Enable test mode by creating loopback port pairs.
+
+- `--modules.packetio.dpdk.test-portpairs`
+
+  Number of loopback port pairs for testing, defaults to 1.
+
+- `-M, --modules.packetio.dpdk.misc-worker-mask`
+
+  Provide an explicit mask for miscellaneous worker threads. Must be a subset of the module or DPDK mask. Currently only used for stack threads. Setting this mask to 0x0 will disable the stack.
+
+- `-R, --modules.packetio.dpdk.rx-worker-mask`
+
+  Provide an explicit mask for receive worker threads. Must be a subset of the module or DPDK mask.
+
+- `-T, --modules.packetio.dpdk.tx-worker-mask`
+
+  Provide an explicit mask for transmit worker threads. Must be a subset of the module or DPDK mask.
+
+## Configuration file
+
+All structured long options, starting with `--` and containing dot delimiter can be specified in a configuration YAML file. Comma separated lists can be converted to an array in YAML configuration file. For example:
+
+```YAML
+core:
+  log:
+    level: warning
+
+modules:
+  api:
+    port: 9000
+  plugins:
+    path: "/usr/lib/openperf/plugins"
+```
+
+## Configuration for AAT
 
 When running AAT, the typical configuration is
 
