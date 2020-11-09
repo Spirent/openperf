@@ -4,7 +4,7 @@
 MAKE_OPTION_DATA(
     block,
     NULL,
-    MAKE_OPT("specifies CPU core mask for all CPU module threads, in hex",
+    MAKE_OPT("specifies CPU core mask for all Block module threads, in hex",
              "modules.block.cpu-mask",
              0,
              OP_OPTION_TYPE_HEX), );
