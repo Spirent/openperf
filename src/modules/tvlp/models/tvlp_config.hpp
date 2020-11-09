@@ -17,6 +17,8 @@ struct tvlp_profile_entry_t
     duration length;
     std::optional<std::string> resource_id;
     nlohmann::json config;
+    double time_scale = 1.0;
+    double load_scale = 1.0;
 };
 
 using tvlp_module_profile_t = std::vector<tvlp_profile_entry_t>;
@@ -33,23 +35,6 @@ enum tvlp_state_t { READY = 0, COUNTDOWN, RUNNING, ERROR };
 
 class tvlp_configuration_t
 {
-public:
-    tvlp_configuration_t() = default;
-    tvlp_configuration_t(const tvlp_configuration_t&) = default;
-
-    std::string id() const { return m_id; };
-    void id(std::string_view value) { m_id = value; };
-
-    tvlp_profile_t profile() const { return m_profile; };
-    void profile(const tvlp_profile_t& value) { m_profile = value; };
-
-    tvlp_state_t state() const { return m_state; };
-    time_point start_time() const { return m_start_time; };
-    duration total_length() const { return m_total_length; };
-    duration current_offset() const { return m_current_offset; };
-
-    std::string error() const { return m_error; };
-
 protected:
     std::string m_id;
     tvlp_state_t m_state = READY;
@@ -60,6 +45,21 @@ protected:
 
     tvlp_profile_t m_profile;
     std::string m_error;
+
+public:
+    tvlp_configuration_t() = default;
+    tvlp_configuration_t(const tvlp_configuration_t&) = default;
+
+    std::string id() const { return m_id; }
+    tvlp_profile_t profile() const { return m_profile; }
+    tvlp_state_t state() const { return m_state; }
+    time_point start_time() const { return m_start_time; }
+    duration total_length() const { return m_total_length; }
+    duration current_offset() const { return m_current_offset; }
+    std::string error() const { return m_error; }
+
+    void id(std::string_view value) { m_id = value; }
+    void profile(const tvlp_profile_t& value) { m_profile = value; }
 };
 
 } // namespace openperf::tvlp::model

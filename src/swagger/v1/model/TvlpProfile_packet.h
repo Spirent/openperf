@@ -50,11 +50,25 @@ public:
     /// TvlpProfile_packet members
 
     /// <summary>
+    /// The scale multiplier for load parameters of generators
+    /// </summary>
+    double getLoadScale() const;
+    void setLoadScale(double value);
+        /// <summary>
+    /// The scale multiplier for the length of each profile entry
+    /// </summary>
+    double getTimeScale() const;
+    void setTimeScale(double value);
+        /// <summary>
     /// 
     /// </summary>
     std::vector<std::shared_ptr<TvlpProfile_packet_series>>& getSeries();
     
 protected:
+    double m_Load_scale;
+
+    double m_Time_scale;
+
     std::vector<std::shared_ptr<TvlpProfile_packet_series>> m_Series;
 
 };

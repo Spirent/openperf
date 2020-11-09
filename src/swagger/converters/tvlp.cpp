@@ -20,6 +20,15 @@ void from_json(const nlohmann::json& j, TvlpProfile_cpu_series& cpu_series)
 void from_json(const nlohmann::json& j, TvlpProfile_cpu& cpu_profile)
 {
     auto val = const_cast<nlohmann::json&>(j);
+    if (j.find("time_scale") != j.end())
+        cpu_profile.setTimeScale(j.at("time_scale"));
+    else
+        cpu_profile.setTimeScale(1.0);
+
+    if (j.find("load_scale") != j.end())
+        cpu_profile.setLoadScale(j.at("load_scale"));
+    else
+        cpu_profile.setLoadScale(1.0);
 
     cpu_profile.getSeries().clear();
     for (auto& item : val["series"]) {
@@ -45,6 +54,16 @@ void from_json(const nlohmann::json& j, TvlpProfile_block& block_profile)
 {
     auto val = const_cast<nlohmann::json&>(j);
 
+    if (j.find("time_scale") != j.end())
+        block_profile.setTimeScale(j.at("time_scale"));
+    else
+        block_profile.setTimeScale(1.0);
+
+    if (j.find("load_scale") != j.end())
+        block_profile.setLoadScale(j.at("load_scale"));
+    else
+        block_profile.setLoadScale(1.0);
+
     block_profile.getSeries().clear();
     for (auto& item : val["series"]) {
         auto newItem = std::make_shared<TvlpProfile_block_series>(
@@ -68,6 +87,16 @@ void from_json(const nlohmann::json& j,
 void from_json(const nlohmann::json& j, TvlpProfile_memory& memory_profile)
 {
     auto val = const_cast<nlohmann::json&>(j);
+
+    if (j.find("time_scale") != j.end())
+        memory_profile.setTimeScale(j.at("time_scale"));
+    else
+        memory_profile.setTimeScale(1.0);
+
+    if (j.find("load_scale") != j.end())
+        memory_profile.setLoadScale(j.at("load_scale"));
+    else
+        memory_profile.setLoadScale(1.0);
 
     memory_profile.getSeries().clear();
     if (val.find("series") != val.end()) {
@@ -95,6 +124,15 @@ void from_json(const nlohmann::json& j,
 void from_json(const nlohmann::json& j, TvlpProfile_packet& packet_profile)
 {
     auto val = const_cast<nlohmann::json&>(j);
+    if (j.find("time_scale") != j.end())
+        packet_profile.setTimeScale(j.at("time_scale"));
+    else
+        packet_profile.setTimeScale(1.0);
+
+    if (j.find("load_scale") != j.end())
+        packet_profile.setLoadScale(j.at("load_scale"));
+    else
+        packet_profile.setLoadScale(1.0);
 
     packet_profile.getSeries().clear();
     if (val.find("series") != val.end()) {
@@ -116,6 +154,7 @@ void from_json(const nlohmann::json& j, TvlpProfile& profile)
             profile.setMemory(newItem);
         }
     }
+
     if (val.find("block") != val.end()) {
         if (!val["block"].is_null()) {
             auto newItem = std::make_shared<TvlpProfile_block>(
@@ -123,6 +162,7 @@ void from_json(const nlohmann::json& j, TvlpProfile& profile)
             profile.setBlock(newItem);
         }
     }
+
     if (val.find("cpu") != val.end()) {
         if (!val["cpu"].is_null()) {
             auto newItem = std::make_shared<TvlpProfile_cpu>(
@@ -130,6 +170,7 @@ void from_json(const nlohmann::json& j, TvlpProfile& profile)
             profile.setCpu(newItem);
         }
     }
+
     if (val.find("packet") != val.end()) {
         if (!val["packet"].is_null()) {
             auto newItem = std::make_shared<TvlpProfile_packet>(

@@ -21,46 +21,56 @@ controller_t::controller_t(void* context,
     , m_context(context)
 {
 
-    auto get_length = [](const model::tvlp_module_profile_t& profiles) {
+    auto scale_length = [](model::tvlp_module_profile_t& profiles) {
         duration total_length = 0ms;
         for (const auto& p : profiles) {
-            if (p.length <= 0ms)
+            if (p.length <= 0ms) {
                 throw std::runtime_error(
                     "Invalid field value: profile length cannot be less than "
                     "or equal to zero");
-            total_length += p.length;
+            }
+
+            total_length +=
+                std::chrono::duration_cast<std::chrono::nanoseconds>(
+                    p.length * p.time_scale);
         }
+
         return total_length;
     };
 
     duration total_length = 0ms;
     if (m_profile.block) {
-        total_length = get_length(m_profile.block.value());
+        total_length =
+            std::max(total_length, scale_length(m_profile.block.value()));
         m_block = std::make_unique<worker::block_tvlp_worker_t>(
             m_context, m_profile.block.value());
     }
+
     if (m_profile.memory) {
         total_length =
-            std::max(total_length, get_length(m_profile.memory.value()));
+            std::max(total_length, scale_length(m_profile.memory.value()));
         m_memory = std::make_unique<worker::memory_tvlp_worker_t>(
             m_context, m_profile.memory.value());
     }
+
     if (m_profile.cpu) {
         total_length =
-            std::max(total_length, get_length(m_profile.cpu.value()));
+            std::max(total_length, scale_length(m_profile.cpu.value()));
         m_cpu = std::make_unique<worker::cpu_tvlp_worker_t>(
             m_context, m_profile.cpu.value());
     }
+
     if (m_profile.packet) {
         total_length =
-            std::max(total_length, get_length(m_profile.packet.value()));
+            std::max(total_length, scale_length(m_profile.packet.value()));
         m_packet = std::make_unique<worker::packet_tvlp_worker_t>(
             m_context, m_profile.packet.value());
     }
 
-    if (total_length == 0ms)
+    if (total_length == 0ms) {
         throw std::runtime_error(
             "Invalid field value: no profile entries found");
+    }
 
     m_total_length = total_length;
 
@@ -79,16 +89,19 @@ controller_t::start(const time_point& start_time)
         // Starting already running worker should never happen
         assert(m_block->start(start_time));
     }
+
     if (m_profile.memory) {
         modules_results.memory = model::json_vector();
         // Starting already running worker should never happen
         assert(m_memory->start(start_time));
     }
+
     if (m_profile.cpu) {
         modules_results.cpu = model::json_vector();
         // Starting already running worker should never happen
         assert(m_cpu->start(start_time));
     }
+
     if (m_profile.packet) {
         modules_results.packet = model::json_vector();
         // Starting already running worker should never happen

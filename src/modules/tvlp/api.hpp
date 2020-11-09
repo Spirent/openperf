@@ -17,8 +17,8 @@ namespace openperf::tvlp::api {
 
 static constexpr auto endpoint = "inproc://openperf_tvlp";
 
-using time_point = std::chrono::time_point<timesync::chrono::realtime>;
 using realtime = timesync::chrono::realtime;
+using time_point = realtime::time_point;
 using tvlp_config_t = model::tvlp_configuration_t;
 using tvlp_config_ptr = std::unique_ptr<tvlp_config_t>;
 using tvlp_result_t = model::tvlp_result_t;

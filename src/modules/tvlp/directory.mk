@@ -8,6 +8,7 @@ TVLP_SOURCES += \
 	init.cpp \
 	handler.cpp \
 	server.cpp \
+	api_converters.cpp \
 	api_transmogrify.cpp \
 	controller.cpp \
 	controller_stack.cpp \
