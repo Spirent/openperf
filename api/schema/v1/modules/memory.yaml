@@ -7,6 +7,9 @@ parameters:
     format: string
     required: true
 
+  dynamic_results:
+    $ref: "./dynamic.yaml#/parameters/dynamic_results"
+
 paths:
   /memory-generators:
     get:
@@ -149,7 +152,7 @@ paths:
       description: Start an existing memory generator.
       parameters:
         - $ref: "#/parameters/id"
-        - $ref: "./modules/dynamic.yaml#/parameters/dynamic_results"
+        - $ref: "#/parameters/dynamic_results"
       responses:
         201:
           description: Created
