@@ -720,6 +720,7 @@ class TVLPApi(object):
         :param async_req bool
         :param str id: Unique resource identifier (required)
         :param datetime time: The ISO8601-formatted date and time to start profile replay
+        :param TvlpStartConfiguration start: TVLP Start parameters
         :return: TvlpResult
                  If the method is called asynchronously,
                  returns the request thread.
@@ -743,12 +744,13 @@ class TVLPApi(object):
         :param async_req bool
         :param str id: Unique resource identifier (required)
         :param datetime time: The ISO8601-formatted date and time to start profile replay
+        :param TvlpStartConfiguration start: TVLP Start parameters
         :return: TvlpResult
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = ['id', 'time']  # noqa: E501
+        all_params = ['id', 'time', 'start']  # noqa: E501
         all_params.append('async_req')
         all_params.append('_return_http_data_only')
         all_params.append('_preload_content')
@@ -784,6 +786,8 @@ class TVLPApi(object):
         local_var_files = {}
 
         body_params = None
+        if 'start' in params:
+            body_params = params['start']
         # HTTP header `Accept`
         header_params['Accept'] = self.api_client.select_header_accept(
             ['application/json'])  # noqa: E501

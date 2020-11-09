@@ -1891,7 +1891,7 @@ class BlockGeneratorApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
-        :param DynamicResultsConfig dynamic_results: Dynamic results configuration
+        :param DynamicResults dynamic_results: Dynamic results configuration
         :return: BlockGeneratorResult
                  If the method is called asynchronously,
                  returns the request thread.
@@ -1914,7 +1914,7 @@ class BlockGeneratorApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
-        :param DynamicResultsConfig dynamic_results: Dynamic results configuration
+        :param DynamicResults dynamic_results: Dynamic results configuration
         :return: BlockGeneratorResult
                  If the method is called asynchronously,
                  returns the request thread.
