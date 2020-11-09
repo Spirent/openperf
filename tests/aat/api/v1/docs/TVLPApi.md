@@ -340,7 +340,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **start_tvlp_configuration**
-> TvlpResult start_tvlp_configuration(id, time=time)
+> TvlpResult start_tvlp_configuration(id, time=time, tvlp_start_configuration=tvlp_start_configuration)
 
 Start a TVLP configuration
 
@@ -358,10 +358,11 @@ from pprint import pprint
 api_instance = client.TVLPApi()
 id = 'id_example' # str | Unique resource identifier
 time = '2013-10-20T19:20:30+01:00' # datetime | The ISO8601-formatted date and time to start profile replay (optional)
+tvlp_start_configuration = client.TvlpStartConfiguration() # TvlpStartConfiguration | Dynamic results configuration (optional)
 
 try:
     # Start a TVLP configuration
-    api_response = api_instance.start_tvlp_configuration(id, time=time)
+    api_response = api_instance.start_tvlp_configuration(id, time=time, tvlp_start_configuration=tvlp_start_configuration)
     pprint(api_response)
 except ApiException as e:
     print("Exception when calling TVLPApi->start_tvlp_configuration: %s\n" % e)
@@ -373,6 +374,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **id** | **str**| Unique resource identifier | 
  **time** | **datetime**| The ISO8601-formatted date and time to start profile replay | [optional] 
+ **tvlp_start_configuration** | [**TvlpStartConfiguration**](TvlpStartConfiguration.md)| Dynamic results configuration | [optional] 
 
 ### Return type
 

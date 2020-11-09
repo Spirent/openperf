@@ -89,6 +89,23 @@ paths:
       parameters:
         - $ref: "#/parameters/id"
         - $ref: "#/parameters/start_time"
+        - name: TvlpStartConfiguration
+          in: body
+          description: Dynamic results configuration
+          required: false
+          schema:
+            type: object
+            description: TVLP Dynamic results configuration
+            properties:
+              memory:
+                $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"
+              block:
+                $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"
+              cpu:
+                $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"
+              packet:
+                $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"
+
       responses:
         201:
           description: Created
