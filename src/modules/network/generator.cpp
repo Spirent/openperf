@@ -123,12 +123,11 @@ void generator::config(const model::generator_config& config)
     m_controller.pause();
     m_controller.clear();
 
-    uint64_t threads = 1;
-    for (uint64_t i = 0; i < threads; i++) {
+    if (config.reads_per_sec > 0) {
         auto task = task::network_task(
             task::config_t{.operation = task::operation_t::READ,
                            .block_size = m_config.read_size,
-                           .ops_per_sec = m_config.reads_per_sec / threads,
+                           .ops_per_sec = m_config.reads_per_sec,
                            .connections = m_config.connections,
                            .ops_per_connection = m_config.ops_per_connection,
                            .target = task::target_t{
@@ -136,10 +135,23 @@ void generator::config(const model::generator_config& config)
                                .port = m_target.port,
                                .protocol = to_task_protocol(m_target.protocol),
                            }});
-
         m_controller.add(std::move(task),
-                         NAME_PREFIX + std::to_string(m_serial_number)
-                             + std::to_string(i + 1));
+                         NAME_PREFIX + std::to_string(m_serial_number) + "r");
+    }
+    if (config.writes_per_sec > 0) {
+        auto task = task::network_task(
+            task::config_t{.operation = task::operation_t::WRITE,
+                           .block_size = m_config.write_size,
+                           .ops_per_sec = m_config.writes_per_sec,
+                           .connections = m_config.connections,
+                           .ops_per_connection = m_config.ops_per_connection,
+                           .target = task::target_t{
+                               .host = m_target.host,
+                               .port = m_target.port,
+                               .protocol = to_task_protocol(m_target.protocol),
+                           }});
+        m_controller.add(std::move(task),
+                         NAME_PREFIX + std::to_string(m_serial_number) + "w");
     }
 
     if (m_running) m_controller.resume();
@@ -196,8 +208,8 @@ void generator::reset()
 {
     m_controller.pause();
     m_controller.reset();
-    m_read_stat = {};
-    m_write_stat = {};
+    m_read_stat = {.operation = task::operation_t::READ};
+    m_write_stat = {.operation = task::operation_t::WRITE};
 
     m_result_id = core::to_string(core::uuid::random());
     m_start_time = chronometer::now();

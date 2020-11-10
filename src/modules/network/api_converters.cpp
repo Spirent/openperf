@@ -186,12 +186,39 @@ to_swagger(const model::generator& model)
     return gen;
 }
 
+swagger::NetworkGeneratorStats
+to_swagger(const model::generator_result::statistics_t& stat)
+{
+    swagger::NetworkGeneratorStats model;
+    model.setBytesActual(stat.bytes_actual);
+    model.setBytesTarget(stat.bytes_target);
+    model.setLatencyTotal(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(stat.latency)
+            .count());
+    model.setOpsActual(stat.ops_actual);
+    model.setOpsTarget(stat.ops_target);
+    model.setIoErrors(stat.io_errors);
+
+    if (stat.latency_max.has_value()) {
+        model.setLatencyMax(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(
+                stat.latency_max.value())
+                .count());
+    }
+
+    if (stat.latency_min.has_value()) {
+        model.setLatencyMin(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(
+                stat.latency_min.value())
+                .count());
+    }
+
+    return model;
+}
+
 std::shared_ptr<swagger::NetworkGeneratorResult>
 to_swagger(const model::generator_result& result)
 {
-    // auto stats = result.stats();
-    auto network_stats = std::make_shared<swagger::NetworkGeneratorStats>();
-
     auto gen = std::make_shared<swagger::NetworkGeneratorResult>();
     gen->setId(result.id());
     gen->setGeneratorId(result.generator_id());
@@ -199,6 +226,12 @@ to_swagger(const model::generator_result& result)
     gen->setTimestampLast(to_rfc3339(result.timestamp().time_since_epoch()));
     gen->setTimestampFirst(
         to_rfc3339(result.start_timestamp().time_since_epoch()));
+
+    gen->setRead(std::make_shared<swagger::NetworkGeneratorStats>(
+        to_swagger(result.read_stats())));
+    gen->setWrite(std::make_shared<swagger::NetworkGeneratorStats>(
+        to_swagger(result.write_stats())));
+
     gen->setDynamicResults(std::make_shared<swagger::DynamicResults>(
         dynamic::to_swagger(result.dynamic_results())));
 

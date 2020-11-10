@@ -40,10 +40,6 @@ inline tl::expected<request_t, int> parse_request(uint8_t*& data,
         request_t{.action = static_cast<action_t>(ntohl(net_request->action)),
                   .length = ntohl(net_request->length)};
 
-    /* update pointers to data buffer */
-    data += net_request_size;
-    length -= net_request_size;
-
     return request;
 }
 

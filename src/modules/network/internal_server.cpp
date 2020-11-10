@@ -1,6 +1,7 @@
 #include "framework/core/op_log.h"
 #include "internal_server.hpp"
 #include "firehose/server_tcp.hpp"
+#include "firehose/server_udp.hpp"
 
 namespace openperf::network::internal {
 
@@ -20,7 +21,7 @@ server::server(const model::server& server_model)
         server_ptr = std::make_unique<firehose::server_tcp>(port());
         break;
     case protocol_t::UDP:
-        /* code */
+        server_ptr = std::make_unique<firehose::server_udp>(port());
         break;
     }
 

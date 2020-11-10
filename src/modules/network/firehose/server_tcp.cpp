@@ -10,9 +10,10 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-#include <core/op_log.h>
-#include <core/op_thread.h>
+#include "core/op_log.h"
+#include "core/op_thread.h"
 #include "core/op_socket.h"
+#include "utils/random.hpp"
 
 #include "protocol.hpp"
 
@@ -169,7 +170,7 @@ void server_tcp::run_accept_thread()
     });
 }
 
-int server_tcp::tcp_write(connection_t& conn)
+int server_tcp::tcp_write(connection_t& conn, std::vector<uint8_t> send_buffer)
 {
 
     int flags = 0;
@@ -179,10 +180,10 @@ int server_tcp::tcp_write(connection_t& conn)
 
     if (conn.state != STATE_WRITING) { return 0; }
 
-    assert(conn.to_write);
+    assert(conn.bytes_left);
 
-    size_t to_send = std::min(send_buffer_size, conn.to_write);
-    ssize_t send_or_err = send(conn.fd, m_send_buffer.data(), to_send, flags);
+    size_t to_send = std::min(send_buffer_size, conn.bytes_left);
+    ssize_t send_or_err = send(conn.fd, send_buffer.data(), to_send, flags);
     if (send_or_err == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) { return 0; }
 
@@ -200,7 +201,7 @@ int server_tcp::tcp_write(connection_t& conn)
         return -1;
     }
 
-    conn.to_write -= send_or_err;
+    conn.bytes_left -= send_or_err;
 
     conn.state = STATE_WAITING;
 
@@ -214,6 +215,9 @@ void server_tcp::run_worker_thread()
         op_thread_setname("op_net_srv_w");
         std::vector<connection_t> connections;
         connection_msg_t conn_buffer;
+        std::vector<uint8_t> send_buffer(send_buffer_size);
+        utils::op_prbs23_fill(send_buffer.data(), send_buffer.size());
+        std::vector<uint8_t> recv_buffer(recv_buffer_size);
         void* sync = op_socket_get_client(m_context, ZMQ_PULL, endpoint.data());
 
         while (!m_stopped.load(std::memory_order_relaxed)) {
@@ -240,19 +244,28 @@ void server_tcp::run_worker_thread()
             }
 
             for (auto& conn : connections) {
-                uint8_t recv_buffer[recv_buffer_size];
-                size_t recv_length = recv_buffer_size;
-                uint8_t* recv_cursor = &recv_buffer[0];
+                uint8_t* recv_cursor = recv_buffer.data();
 
                 ssize_t recv_or_err = 0;
                 do {
                     if (conn.state == STATE_WRITING) {
-                        tcp_write(conn);
+                        tcp_write(conn, send_buffer);
                         break;
                     }
 
+                    if (conn.request.size()) {
+                        /* handle leftovers from last go round */
+                        memcpy(&recv_buffer,
+                               conn.request.data(),
+                               conn.request.size());
+                        recv_cursor += conn.request.size();
+                    }
+
                     if ((recv_or_err =
-                             recv(conn.fd, recv_cursor, recv_length, 0))
+                             recv(conn.fd,
+                                  recv_cursor,
+                                  recv_buffer.size() - conn.request.size(),
+                                  0))
                         == -1) {
                         if (errno == EAGAIN || errno == EWOULDBLOCK) { break; }
 
@@ -290,7 +303,7 @@ void server_tcp::run_worker_thread()
                                                     recv_cursor,
                                                     recv_cursor + bytes_left);
                                 bytes_left = 0;
-                                break;
+                                continue;
                             }
 
                             /* Note: this function updates the note,
@@ -310,19 +323,30 @@ void server_tcp::run_worker_thread()
                                        addr ? addr : "unknown",
                                        ntohs(get_sa_port(&conn.client)));
                                 conn.state = STATE_ERROR;
+                                bytes_left = 0;
                             }
+                            conn.state = (req.value().action == action_t::GET)
+                                             ? STATE_WRITING
+                                             : STATE_READING;
+                            conn.bytes_left = req.value().length;
+                            bytes_left -= firehose::net_request_size;
+                            recv_cursor += firehose::net_request_size;
                             break;
                         }
                         case STATE_READING: {
                             size_t consumed =
-                                std::min(bytes_left, conn.to_read);
-                            conn.to_read -= consumed;
+                                std::min(bytes_left, conn.bytes_left);
+                            conn.bytes_left -= consumed;
                             bytes_left -= consumed;
                             recv_cursor += consumed;
 
-                            if (conn.to_read == 0) {
+                            if (conn.bytes_left == 0) {
                                 conn.state = STATE_WAITING;
                             }
+
+                            OP_LOG(OP_LOG_INFO,
+                                   "-=- CLIENT READ %zu SIMBOLS\n",
+                                   consumed);
 
                             break;
                         }
