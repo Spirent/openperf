@@ -24,7 +24,8 @@ ifeq ($(PLATFORM), linux)
 endif
 
 NETWORK_SOURCES += \
-	firehose/server_tcp.cpp
+	firehose/server_tcp.cpp \
+	firehose/server_udp.cpp
 
 NETWORK_VERSIONED_FILES := init.cpp
 NETWORK_UNVERSIONED_OBJECTS := \

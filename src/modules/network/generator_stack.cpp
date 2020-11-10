@@ -43,19 +43,18 @@ generator_stack::generator(const std::string& id) const
 tl::expected<model::generator_result, std::string>
 generator_stack::statistics(const std::string& id) const
 {
-    // try {
-    //     auto result = m_statistics.at(id);
-    //     return std::visit(
-    //         utils::overloaded_visitor(
-    //             [&](const generator_ptr& generator) {
-    //                 return tl::make_unexpected(
-    //                     "Result not found"); // genf erator->statistics();
-    //             },
-    //             [&](const model::generator_result& res) { return res; }),
-    //         result);
-    // } catch (const std::out_of_range&) {
-    //     return tl::make_unexpected("Result not found");
-    // }
+    try {
+        auto result = m_statistics.at(id);
+        return std::visit(
+            utils::overloaded_visitor(
+                [&](const generator_ptr& generator) {
+                    return generator->statistics();
+                },
+                [&](const model::generator_result& res) { return res; }),
+            result);
+    } catch (const std::out_of_range&) {
+        return tl::make_unexpected("Result not found");
+    }
     return tl::make_unexpected("Result implemented");
 }
 
@@ -65,7 +64,7 @@ std::vector<model::generator_result> generator_stack::list_statistics() const
     for (const auto& pair : m_statistics) {
         std::visit(utils::overloaded_visitor(
                        [&](const generator_ptr& generator) {
-                           // result_list.push_back(generator->statistics());
+                           result_list.push_back(generator->statistics());
                        },
                        [&](const model::generator_result& result) {
                            result_list.push_back(result);
