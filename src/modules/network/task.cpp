@@ -19,16 +19,7 @@ namespace openperf::network::internal::task {
 using ref_clock = timesync::chrono::monotime;
 using namespace std::chrono_literals;
 constexpr duration TASK_SPIN_THRESHOLD = 100ms;
-
-struct operation_config
-{
-    int fd;
-    size_t f_size;
-    size_t block_size;
-    uint8_t* buffer;
-    off_t offset;
-    size_t header_size;
-};
+const size_t max_buffer_size = 64 * 1024;
 
 stat_t& stat_t::operator+=(const stat_t& stat)
 {
@@ -66,6 +57,8 @@ stat_t& stat_t::operator+=(const stat_t& stat)
 // Constructors & Destructor
 network_task::network_task(const config_t& configuration)
 {
+    m_write_buffer.resize(std::min(configuration.block_size, max_buffer_size));
+    utils::op_prbs23_fill(m_write_buffer.data(), m_write_buffer.size());
     config(configuration);
 }
 
@@ -212,6 +205,9 @@ new_connection(const network_sockaddr& server, const config_t& config)
         .fd = sock,
         .state = STATE_INIT,
         .ops_left = config.ops_per_connection,
+        .bytes_left = 0,
+        .buffer =
+            std::vector<uint8_t>(std::min(config.block_size, max_buffer_size)),
     };
 }
 
@@ -250,8 +246,8 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
                 .iov_len = header.size(),
             },
             {
-                .iov_base = m_buffer.data(),
-                .iov_len = m_buffer.size(),
+                .iov_base = m_write_buffer.data(),
+                .iov_len = m_write_buffer.size(),
             },
         };
 
@@ -279,7 +275,7 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
             return;
         }
 
-        conn.bytes_left = header.size() + m_buffer.size() - send_or_err;
+        conn.bytes_left = header.size() + m_write_buffer.size() - send_or_err;
         if (conn.bytes_left) {
             conn.state = STATE_WRITING;
         } else {
@@ -339,8 +335,8 @@ void network_task::do_write(connection_t& conn, stat_t& stat)
     while (conn.bytes_left) {
         ssize_t send_or_err =
             send(conn.fd,
-                 conn.buffer.data(),
-                 std::min(conn.bytes_left, conn.buffer.size()),
+                 m_write_buffer.data(),
+                 std::min(conn.bytes_left, m_write_buffer.size()),
                  flags);
         if (send_or_err == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) { return; }
@@ -394,7 +390,7 @@ stat_t network_task::worker_spin(uint64_t nb_ops, realtime::time_point deadline)
             break;
         }
         stat.conn_stat.successful++;
-        m_connections.push_back(conn.value());
+        m_connections.push_back(std::move(conn.value()));
 
         OP_LOG(OP_LOG_INFO,
                "CLIENT: Created new connection %d, total %zu\n",

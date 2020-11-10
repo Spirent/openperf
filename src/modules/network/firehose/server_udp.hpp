@@ -1,5 +1,5 @@
-#ifndef _OP_NETWORK_FIREHOSE_SERVER_TCP_HPP_
-#define _OP_NETWORK_FIREHOSE_SERVER_TCP_HPP_
+#ifndef _OP_NETWORK_FIREHOSE_SERVER_UDP_HPP_
+#define _OP_NETWORK_FIREHOSE_SERVER_UDP_HPP_
 
 #include <atomic>
 #include <thread>
@@ -11,7 +11,7 @@
 
 namespace openperf::network::internal::firehose {
 
-class server_tcp : public server
+class server_udp : public server
 {
 private:
     struct zmq_ctx_deleter
@@ -24,19 +24,17 @@ private:
     };
 
     std::atomic_bool m_stopped;
-    std::thread m_accept_thread;
-    std::vector<std::unique_ptr<std::thread>> m_worker_threads;
-    void* m_context;
+    std::thread m_worker_thread;
 
-    int tcp_write(connection_t&, std::vector<uint8_t> send_buffer);
+    int udp_write(connection_t&);
 
 public:
-    server_tcp(in_port_t port);
-    server_tcp(const server_tcp&) = delete;
-    ~server_tcp() override;
+    server_udp(in_port_t port);
+    server_udp(const server_udp&) = delete;
+    ~server_udp() override;
 
     void run_accept_thread() override;
-    void run_worker_thread() override;
+    void run_worker_thread() override{};
 };
 
 } // namespace openperf::network::internal::firehose

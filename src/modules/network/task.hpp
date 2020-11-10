@@ -95,7 +95,7 @@ private:
     stat_t m_stat;
     realtime::time_point m_operation_timestamp;
     std::vector<connection_t> m_connections;
-    std::vector<uint8_t> m_buffer;
+    std::vector<uint8_t> m_write_buffer;
 
 public:
     network_task(const config_t&);

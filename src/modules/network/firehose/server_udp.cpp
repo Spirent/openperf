@@ -1,28 +1,15 @@
+#include <unistd.h>
+#include <stdexcept>
 
+#include "core/op_log.h"
+#include "core/op_thread.h"
+#include "utils/random.hpp"
+#include "server_udp.hpp"
+#include "protocol.hpp"
 
-int udp_read_callback(int fd)
-{
-    ssize_t recv_or_err = 0;
-    char recv_buffer[firehose_request_size];
-    size_t recv_length = sizeof(recv_buffer);
-    char* recv_cursor = &recv_buffer[0];
-    struct sockaddr_storage client_storage;
-    struct sockaddr* client = (struct sockaddr*)&client_storage;
-    socklen_t client_length = sizeof(struct sockaddr_in6);
+namespace openperf::network::internal::firehose {
 
-    OP_LOG(OP_LOG_INFO, "Listening UDP\n");
-    while ((recv_or_err = recvfrom(
-                fd, recv_buffer, recv_length, 0, client, &client_length))
-           != -1) {
-
-        recv_cursor = &recv_buffer[0];
-        OP_LOG(OP_LOG_INFO, "Received %zd UDP bytes\n", recv_or_err);
-    }
-    OP_LOG(OP_LOG_INFO, "Done listening UDP\n");
-    return (0);
-}
-
-static int _server(int domain, protocol_t protocol, in_port_t port)
+static int _server(int domain, in_port_t port)
 {
     struct sockaddr_storage client_storage;
     struct sockaddr* server_ptr = (struct sockaddr*)&client_storage;
@@ -50,27 +37,12 @@ static int _server(int domain, protocol_t protocol, in_port_t port)
     }
 
     int sock = 0, enable = true;
-    switch (protocol) {
-    case protocol_t::TCP:
-        if ((sock = socket(domain, SOCK_STREAM, 0)) == -1) {
-            OP_LOG(OP_LOG_WARNING,
-                   "Unable to open %s TCP server socket: %s\n",
-                   domain_str.c_str(),
-                   strerror(errno));
-            return -1;
-        }
-        break;
-    case protocol_t::UDP:
-        if ((sock = socket(domain, SOCK_DGRAM, 0)) == -1) {
-            OP_LOG(OP_LOG_WARNING,
-                   "Unable to open %s UDP server socket: %s\n",
-                   domain_str.c_str(),
-                   strerror(errno));
-            return -1;
-        }
-        break;
-    default:
-        return (-EINVAL);
+    if ((sock = socket(domain, SOCK_DGRAM, 0)) == -1) {
+        OP_LOG(OP_LOG_WARNING,
+               "Unable to open %s UDP server socket: %s\n",
+               domain_str.c_str(),
+               strerror(errno));
+        return -1;
     }
 
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable))
@@ -79,67 +51,130 @@ static int _server(int domain, protocol_t protocol, in_port_t port)
         return (-1);
     }
 
-    if (bind(sock, server_ptr, _get_sa_len(server_ptr)) == -1) {
+    if (bind(sock, server_ptr, get_sa_len(server_ptr)) == -1) {
         OP_LOG(OP_LOG_ERROR,
-               "Unable to bind to socket (domain = %d, protocol = %d): %s\n",
+               "Unable to bind to socket (domain = %d, protocol = UDP): %s\n",
                domain,
-               protocol,
                strerror(errno));
-    }
-
-    if (protocol == protocol_t::TCP) {
-        if (listen(sock, tcp_backlog) == -1) {
-            OP_LOG(OP_LOG_ERROR,
-                   "Unable to listen on socket %d: %s\n",
-                   sock,
-                   strerror(errno));
-        }
     }
 
     return (sock);
 }
 
-void firehose_server_tcp::run_worker_thread()
+server_udp::server_udp(in_port_t port)
+    : m_stopped(false)
+{
+    /* IPv6 any supports IPv4 and IPv6 */
+    if ((m_fd = _server(AF_INET6, port)) >= 0) {
+        OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4/IPv6.\n");
+    } else {
+        /* Couldn't bind IPv6 socket so use IPv4 */
+        if ((m_fd = _server(AF_INET, port)) < 0) { return; }
+        OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4.\n");
+    }
+}
+
+server_udp::~server_udp()
+{
+    m_stopped.store(true, std::memory_order_relaxed);
+    if (m_fd.load() >= 0) close(m_fd.load());
+
+    if (m_worker_thread.joinable()) m_worker_thread.join();
+}
+
+// One worker for udp connections
+void server_udp::run_accept_thread()
 {
     m_worker_thread = std::thread([&] {
         // Set the thread name
         op_thread_setname("op_net_srv_w");
+        std::vector<connection_t> connections;
+        ssize_t recv_or_err = 0;
+        connection_t conn;
+        socklen_t client_length = sizeof(struct sockaddr_in6);
 
-        char recv_buffer[firehose::net_request_size];
-        char* recv_cursor = &recv_buffer[0];
-        size_t recv_length = sizeof(recv_buffer);
-        socklen_t client_length = sizeof(sockaddr_in6);
+        std::vector<uint8_t> read_buffer(net_request_size);
+        OP_LOG(
+            OP_LOG_INFO, "Initialized read buffer %zu\n", read_buffer.size());
 
-        while (m_stopped.load(std::memory_order_relaxed)) {
-            for (auto conn : m_connections) {
-                ssize_t recv_or_err = 0;
-                while ((recv_or_err = recvfrom(conn.fd,
-                                               recv_buffer,
-                                               recv_length,
-                                               0,
-                                               &conn.client,
-                                               &client_length))
-                       != -1) {
-                    size_t bytes_left = recv_or_err;
-                    auto req = firehose::parse_request(recv_cursor, bytes_left);
-                    if (!req) {
+        std::vector<uint8_t> send_buffer(send_buffer_size);
+        utils::op_prbs23_fill(send_buffer.data(), send_buffer.size());
+        OP_LOG(
+            OP_LOG_INFO, "Initialized write buffer %zu\n", send_buffer.size());
+
+        while (!m_stopped.load(std::memory_order_relaxed)) {
+            // Receive all accepted connections
+            while ((recv_or_err = recvfrom(m_fd,
+                                           read_buffer.data(),
+                                           read_buffer.size(),
+                                           0,
+                                           &conn.client,
+                                           &client_length))
+                   != -1) {
+                uint8_t* recv_cursor = read_buffer.data();
+                size_t bytes_left = recv_or_err;
+                auto req = firehose::parse_request(recv_cursor, bytes_left);
+                if (!req) {
+                    char ntopbuf[INET6_ADDRSTRLEN];
+                    const char* addr = inet_ntop(conn.client.sa_family,
+                                                 get_sa_addr(&conn.client),
+                                                 ntopbuf,
+                                                 INET6_ADDRSTRLEN);
+                    OP_LOG(OP_LOG_ERROR,
+                           "Invalid firehose request received "
+                           "from %s:%d\n",
+                           addr ? addr : "unknown",
+                           ntohs(get_sa_port(&conn.client)));
+                    OP_LOG(OP_LOG_ERROR,
+                           "recv = %zu, bytes_left = %zu\n",
+                           recv_or_err,
+                           bytes_left);
+                    continue;
+                }
+                conn.state = (req.value().action == action_t::GET)
+                                 ? STATE_WRITING
+                                 : STATE_READING;
+                conn.bytes_left = req.value().length;
+                bytes_left -= firehose::net_request_size;
+                recv_cursor += firehose::net_request_size;
+                OP_LOG(OP_LOG_INFO,
+                       "=== RECEIVED FH REQUEST %d %zu %u %s",
+                       m_fd.load(),
+                       recv_or_err,
+                       req.value().length,
+                       conn.state == STATE_WRITING ? "WRITE" : "READ");
+
+                while (conn.state == STATE_WRITING && conn.bytes_left) {
+                    size_t produced =
+                        std::min(send_buffer.size(), conn.bytes_left);
+                    ssize_t send_or_err = sendto(m_fd,
+                                                 send_buffer.data(),
+                                                 produced,
+                                                 0,
+                                                 &conn.client,
+                                                 get_sa_len(&conn.client));
+                    if (send_or_err == -1) {
                         char ntopbuf[INET6_ADDRSTRLEN];
                         const char* addr = inet_ntop(conn.client.sa_family,
                                                      get_sa_addr(&conn.client),
                                                      ntopbuf,
                                                      INET6_ADDRSTRLEN);
                         OP_LOG(OP_LOG_ERROR,
-                               "Invalid firehose request received from %s:%d\n",
+                               "Error sending to %s:%d: %s\n",
                                addr ? addr : "unknown",
-                               ntohs(get_sa_port(&conn.client)));
-                        OP_LOG(OP_LOG_INFO,
-                               "recv = %zu, bytes_left = %zu\n",
-                               recv_or_err,
-                               bytes_left);
-                        return (0);
+                               ntohs(get_sa_port(&conn.client)),
+                               strerror(errno));
+                        conn.state = STATE_ERROR;
+                        conn.bytes_left = 0;
+                    } else {
+                        conn.bytes_left -= send_or_err;
+                        OP_LOG(
+                            OP_LOG_INFO, "--- SERVER SENT %zd\n", send_or_err);
                     }
                 }
             }
         }
     });
 }
+
+} // namespace openperf::network::internal::firehose

@@ -24,8 +24,7 @@ struct connection_t
 {
     int fd;
     connection_state_t state;
-    size_t to_read;
-    size_t to_write;
+    size_t bytes_left;
     std::vector<uint8_t> request;
     union
     {
@@ -113,17 +112,15 @@ parse_request(uint8_t*& data, size_t& data_length, connection_t& conn)
     if (req) {
         switch (req.value().action) {
         case firehose::action_t::GET:
-            conn.to_read = 0;
-            conn.to_write = request.length;
+            conn.bytes_left = request.length;
             conn.state = STATE_WRITING;
             break;
         case firehose::action_t::PUT:
-            conn.to_read = request.length;
-            conn.to_write = 0;
+            conn.bytes_left = request.length;
             conn.state = STATE_READING;
             break;
         default:
-            conn.to_read = conn.to_write = 0;
+            conn.bytes_left = 0;
             conn.state = STATE_ERROR;
             return -1;
         }
