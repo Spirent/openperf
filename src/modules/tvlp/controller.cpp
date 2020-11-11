@@ -78,7 +78,8 @@ controller_t::controller_t(void* context,
 }
 
 std::shared_ptr<model::tvlp_result_t>
-controller_t::start(const time_point& start_time)
+controller_t::start(const time_point& start_time,
+                    const model::tvlp_dynamic_t& dynamic_results)
 {
     if (is_running()) return m_result;
 
@@ -87,25 +88,25 @@ controller_t::start(const time_point& start_time)
     if (m_profile.block) {
         modules_results.block = model::json_vector();
         // Starting already running worker should never happen
-        assert(m_block->start(start_time));
+        assert(m_block->start(start_time, dynamic_results.block));
     }
 
     if (m_profile.memory) {
         modules_results.memory = model::json_vector();
         // Starting already running worker should never happen
-        assert(m_memory->start(start_time));
+        assert(m_memory->start(start_time, dynamic_results.memory));
     }
 
     if (m_profile.cpu) {
         modules_results.cpu = model::json_vector();
         // Starting already running worker should never happen
-        assert(m_cpu->start(start_time));
+        assert(m_cpu->start(start_time, dynamic_results.cpu));
     }
 
     if (m_profile.packet) {
         modules_results.packet = model::json_vector();
         // Starting already running worker should never happen
-        assert(m_packet->start(start_time));
+        assert(m_packet->start(start_time, dynamic_results.packet));
     }
 
     m_start_time = start_time;

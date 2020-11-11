@@ -35,8 +35,8 @@ public:
     get(const std::string& id) const;
     tl::expected<void, std::string> erase(const std::string& id);
 
-    tl::expected<tvlp_result_ptr, std::string> start(const std::string&,
-                                                     const time_point&);
+    tl::expected<tvlp_result_ptr, std::string>
+    start(const std::string&, const time_point&, const model::tvlp_dynamic_t&);
     tl::expected<void, std::string> stop(const std::string&);
 
     std::vector<tvlp_result_ptr> results() const;

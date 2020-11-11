@@ -31,7 +31,9 @@ public:
     // Operators overloading
     controller_t& operator=(const controller_t&) = delete;
 
-    std::shared_ptr<model::tvlp_result_t> start(const time_point& start_time);
+    std::shared_ptr<model::tvlp_result_t>
+    start(const time_point& start_time,
+          const model::tvlp_dynamic_t& dynamic_results);
     void stop();
     bool is_running() const;
 

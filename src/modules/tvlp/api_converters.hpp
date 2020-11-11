@@ -6,6 +6,7 @@
 #include "models/tvlp_config.hpp"
 #include "models/tvlp_result.hpp"
 #include "swagger/v1/model/TvlpConfiguration.h"
+#include "swagger/v1/model/TvlpStartConfiguration.h"
 #include "swagger/v1/model/TvlpResult.h"
 
 namespace openperf::tvlp::api {
@@ -17,6 +18,7 @@ tl::expected<bool, std::vector<std::string>>
 is_valid(const swagger::TvlpConfiguration&);
 
 std::optional<time_point> from_rfc3339(const std::string& from);
+tvlp_dynamic_t from_swagger(const swagger::TvlpStartConfiguration&);
 tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration&);
 swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t&);
 swagger::TvlpResult to_swagger(const tvlp_result_t&);

@@ -43,7 +43,9 @@ public:
     virtual ~tvlp_worker_t();
 
     tl::expected<void, std::string>
-    start(const realtime::time_point& start_time = realtime::now());
+    start(const realtime::time_point& start_time = realtime::now(),
+          const std::optional<dynamic::configuration>& dynamic_results =
+              std::nullopt);
     void stop();
 
     model::tvlp_state_t state() const;
@@ -55,7 +57,8 @@ protected:
     virtual tl::expected<std::string, std::string>
     send_create(const model::tvlp_profile_entry_t&) = 0;
     virtual tl::expected<stat_pair_t, std::string>
-    send_start(const std::string& id) = 0;
+    send_start(const std::string& id,
+               const dynamic::configuration& dynamic_results = {}) = 0;
     virtual tl::expected<void, std::string>
     send_stop(const std::string& id) = 0;
     virtual tl::expected<nlohmann::json, std::string>
@@ -71,7 +74,9 @@ protected:
 private:
     tl::expected<void, std::string>
     schedule(realtime::time_point start_time,
-             const model::tvlp_module_profile_t& profile);
+             const model::tvlp_module_profile_t& profile,
+             const std::optional<dynamic::configuration>& dynamic_results =
+                 std::nullopt);
 
     tvlp_worker_state_t m_state;
     std::string m_error;

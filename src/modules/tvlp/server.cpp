@@ -121,7 +121,8 @@ api_reply server::handle_request(const request::tvlp::start& request)
         };
     }
 
-    auto result = m_controller_stack->start(request.id, request.start_time);
+    auto result = m_controller_stack->start(
+        request.id, request.start_time, request.dynamic_results);
     if (!result) {
         return reply::error{
             .type = reply::error::BAD_REQUEST_ERROR,

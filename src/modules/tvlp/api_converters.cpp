@@ -6,8 +6,11 @@
 #include "swagger/converters/memory.hpp"
 #include "swagger/converters/cpu.hpp"
 #include "swagger/converters/packet_generator.hpp"
+#include "modules/dynamic/api.hpp"
 
 namespace openperf::tvlp::api {
+
+namespace dynamic = ::openperf::dynamic;
 
 std::optional<time_point> from_rfc3339(const std::string& from)
 {
@@ -156,6 +159,24 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
     }
 
     config.profile(profile);
+    return config;
+}
+
+tvlp_dynamic_t from_swagger(const swagger::TvlpStartConfiguration& start)
+{
+    tvlp_dynamic_t config;
+
+    if (start.memoryIsSet())
+        config.memory = dynamic::from_swagger(*start.getMemory());
+
+    if (start.cpuIsSet()) config.cpu = dynamic::from_swagger(*start.getCpu());
+
+    if (start.blockIsSet())
+        config.block = dynamic::from_swagger(*start.getBlock());
+
+    if (start.packetIsSet())
+        config.packet = dynamic::from_swagger(*start.getPacket());
+
     return config;
 }
 
