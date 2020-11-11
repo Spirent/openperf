@@ -52,7 +52,9 @@ inline void pop_front(serialized_message& msg)
     msg.parts.erase(std::begin(msg.parts));
 }
 
-template <typename T> auto push(serialized_message& msg, const T& value)
+template <typename T>
+std::enable_if_t<std::is_trivially_copyable<T>::value, int>
+push(serialized_message& msg, const T& value)
 {
     auto& part = msg.parts.emplace_back();
 
