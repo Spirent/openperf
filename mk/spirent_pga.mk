@@ -13,14 +13,13 @@ $(call op_check_vars,$(PGA_REQ_VARS))
 PGA_COMMA := ,
 PGA_EMPTY :=
 PGA_SPACE := $(PGA_EMPTY) $(PGA_EMPTY)
-
-PGA_ISPC_OPTS :=
+PGA_ISPC_FLAGS := $(OP_ISPC_FLAGS)
 
 ifeq ($(MODE),debug)
-	PGA_ISPC_OPTS += -O0
+	PGA_ISPC_FLAGS += -O0
 endif
 ifneq ($(MODE),release)
-	PGA_ISPC_OPTS += -g
+	PGA_ISPC_FLAGS += -g
 endif
 
 PGA_SRC_DIR := $(OP_ROOT)/src/lib/spirent_pga
@@ -102,7 +101,7 @@ $(PGA_ISPC_TARGET_OBJECTS): $(PGA_ISPC_OBJECTS)
 # we write the target name in ourselves.
 $(PGA_OBJ_DIR)/%.o: $(PGA_SRC_DIR)/%.ispc
 	@mkdir -p $(dir $@)
-	$(strip $(OP_ISPC) -o $@ $(PGA_ISPC_OPTS) \
+	$(strip $(OP_ISPC) -o $@ $(PGA_ISPC_FLAGS) \
 		-M -MF $(@:.o=.d) \
 		--target=$(subst $(PGA_SPACE),$(PGA_COMMA),$(OP_ISPC_TARGETS)) \
 		--header-outfile=$(patsubst %,$(PGA_OBJ_DIR)/%,$(notdir $<.h)) $<)
