@@ -41,24 +41,17 @@ int server::handle_rpc_request(const op_event_data* data)
     return ((reply_errors || errno == ETERM) ? -1 : 0);
 }
 
-reply::error to_error(reply::error_data::type_t type,
-                      int code = 0,
-                      const std::string& value = "")
-{
-    return {.data = std::make_unique<reply::error_data>(
-                reply::error_data{.type = type, .code = code, .value = value})};
-}
-
 api_reply server::handle_request(const request::tvlp::list&)
 {
-    auto reply = reply::tvlp::list{
-        .data = std::make_unique<std::vector<tvlp_config_t>>()};
+    auto reply = reply::tvlp::list{};
     auto list = m_controller_stack->list();
-    std::transform(
-        list.begin(),
-        list.end(),
-        std::back_inserter(*reply.data),
-        [](const auto& config) { return tvlp_config_t(config->model()); });
+    std::transform(list.begin(),
+                   list.end(),
+                   std::back_inserter(reply),
+                   [](const auto& config) {
+                       return model::tvlp_configuration_t(config->model());
+                   });
+
     return reply;
 }
 
@@ -66,21 +59,28 @@ api_reply server::handle_request(const request::tvlp::get& request)
 {
     auto controller = m_controller_stack->get(request.id);
 
-    if (!controller) { return to_error(reply::error_data::NOT_FOUND); }
-    auto reply = reply::tvlp::item{
-        .data = std::make_unique<tvlp_config_t>(controller.value()->model())};
+    if (!controller) {
+        return reply::error{
+            .type = reply::error::NOT_FOUND,
+        };
+    }
 
-    return reply;
+    return controller.value()->model();
 }
 
 api_reply server::handle_request(const request::tvlp::erase& request)
 {
-    auto result = m_controller_stack->get(request.id);
-    if (!result) { return to_error(reply::error_data::NOT_FOUND); }
+    if (auto result = m_controller_stack->get(request.id); !result) {
+        return reply::error{
+            .type = reply::error::NOT_FOUND,
+        };
+    }
 
-    auto res = m_controller_stack->erase(request.id);
-    if (!res) {
-        return to_error(reply::error_data::BAD_REQUEST_ERROR, 0, res.error());
+    if (auto res = m_controller_stack->erase(request.id); !res) {
+        return reply::error{
+            .type = reply::error::BAD_REQUEST_ERROR,
+            .message = res.error(),
+        };
     }
 
     return reply::ok{};
@@ -89,49 +89,56 @@ api_reply server::handle_request(const request::tvlp::erase& request)
 api_reply server::handle_request(const request::tvlp::create& request)
 {
     // If user did not specify an id create one for them.
-    if (request.data->id().empty()) {
-        request.data->id(core::to_string(core::uuid::random()));
+    auto config = request;
+    if (config.id().empty()) {
+        config.id(core::to_string(core::uuid::random()));
     }
 
-    if (auto id_check =
-            config::op_config_validate_id_string(request.data->id());
+    if (auto id_check = config::op_config_validate_id_string(config.id());
         !id_check) {
-        return to_error(reply::error_data::INVALID_ID);
+        return reply::error{
+            .type = reply::error::INVALID_ID,
+        };
     }
 
-    auto result = m_controller_stack->create(*request.data);
+    auto result = m_controller_stack->create(config);
     if (!result) {
-        return (
-            to_error(reply::error_data::BAD_REQUEST_ERROR, 0, result.error()));
+        return reply::error{
+            .type = reply::error::BAD_REQUEST_ERROR,
+            .message = result.error(),
+        };
     }
 
-    auto reply = reply::tvlp::item{
-        .data = std::make_unique<tvlp_config_t>(*result.value())};
-
-    return reply;
+    return *result.value();
 }
 
 api_reply server::handle_request(const request::tvlp::start& request)
 {
-    auto controller = m_controller_stack->get(request.data->id);
-    if (!controller) { return to_error(reply::error_data::NOT_FOUND); }
-
-    auto result =
-        m_controller_stack->start(request.data->id, request.data->start_time);
-    if (!result) {
-        return to_error(
-            reply::error_data::BAD_REQUEST_ERROR, 0, result.error());
+    auto controller = m_controller_stack->get(request.id);
+    if (!controller) {
+        return reply::error{
+            .type = reply::error::NOT_FOUND,
+        };
     }
-    auto reply = reply::tvlp::result::item{
-        .data = std::make_unique<tvlp_result_t>(*result.value())};
 
-    return reply;
+    auto result = m_controller_stack->start(request.id, request.start_time);
+    if (!result) {
+        return reply::error{
+            .type = reply::error::BAD_REQUEST_ERROR,
+            .message = result.error(),
+        };
+    }
+
+    return *result.value();
 }
 
 api_reply server::handle_request(const request::tvlp::stop& request)
 {
-    auto controller = m_controller_stack->get(request.id);
-    if (!controller) { return to_error(reply::error_data::NOT_FOUND); }
+    if (auto controller = m_controller_stack->get(request.id); !controller) {
+        return reply::error{
+            .type = reply::error::NOT_FOUND,
+        };
+    }
 
     auto result = m_controller_stack->stop(request.id);
     return reply::ok{};
@@ -139,35 +146,41 @@ api_reply server::handle_request(const request::tvlp::stop& request)
 
 api_reply server::handle_request(const request::tvlp::result::list&)
 {
-    auto reply = reply::tvlp::result::list{
-        .data = std::make_unique<std::vector<tvlp_result_t>>()};
+    auto reply = reply::tvlp::result::list{};
     auto list = m_controller_stack->results();
     std::transform(list.begin(),
                    list.end(),
-                   std::back_inserter(*reply.data),
+                   std::back_inserter(reply),
                    [](const auto& result) { return *result; });
+
     return reply;
 }
 
 api_reply server::handle_request(const request::tvlp::result::get& request)
 {
     auto result = m_controller_stack->result(request.id);
+    if (!result) {
+        return reply::error{
+            .type = reply::error::NOT_FOUND,
+        };
+    }
 
-    if (!result) { return to_error(reply::error_data::NOT_FOUND); }
-    auto reply = reply::tvlp::result::item{
-        .data = std::make_unique<tvlp_result_t>(*result.value())};
-
-    return reply;
+    return *result.value();
 }
 
 api_reply server::handle_request(const request::tvlp::result::erase& request)
 {
-    auto result = m_controller_stack->result(request.id);
-    if (!result) { return to_error(reply::error_data::NOT_FOUND); }
+    if (auto result = m_controller_stack->result(request.id); !result) {
+        return reply::error{
+            .type = reply::error::NOT_FOUND,
+        };
+    }
 
-    auto res = m_controller_stack->erase_result(request.id);
-    if (!res) {
-        return to_error(reply::error_data::BAD_REQUEST_ERROR, 0, res.error());
+    if (auto res = m_controller_stack->erase_result(request.id); !res) {
+        return reply::error{
+            .type = reply::error::BAD_REQUEST_ERROR,
+            .message = res.error(),
+        };
     }
 
     return reply::ok{};

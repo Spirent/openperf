@@ -1,17 +1,20 @@
 #ifndef _OP_TVLP_API_HPP_
 #define _OP_TVLP_API_HPP_
 
+#include <chrono>
 #include <string>
 #include <variant>
 
-#include <chrono>
 #include <json.hpp>
-#include <zmq.h>
 #include <tl/expected.hpp>
+#include <zmq.h>
 
-#include "message/serialized_message.hpp"
 #include "models/tvlp_config.hpp"
 #include "models/tvlp_result.hpp"
+
+namespace openperf::message {
+struct serialized_message;
+};
 
 namespace openperf::tvlp::api {
 
@@ -19,10 +22,6 @@ static constexpr auto endpoint = "inproc://openperf_tvlp";
 
 using realtime = timesync::chrono::realtime;
 using time_point = realtime::time_point;
-using tvlp_config_t = model::tvlp_configuration_t;
-using tvlp_config_ptr = std::unique_ptr<tvlp_config_t>;
-using tvlp_result_t = model::tvlp_result_t;
-using tvlp_result_ptr = std::unique_ptr<tvlp_result_t>;
 using serialized_msg = openperf::message::serialized_message;
 
 struct message
@@ -42,19 +41,13 @@ struct get : id_message
 {};
 struct erase : id_message
 {};
-struct create : message
-{
-    std::unique_ptr<tvlp_config_t> data;
-};
+
+using create = model::tvlp_configuration_t;
 
 struct start : message
 {
-    struct start_data
-    {
-        std::string id;
-        time_point start_time;
-    };
-    std::unique_ptr<start_data> data;
+    std::string id;
+    time_point start_time;
 };
 struct stop : id_message
 {};
@@ -66,8 +59,8 @@ struct get : id_message
 {};
 struct erase : id_message
 {};
-} // namespace result
 
+} // namespace result
 } // namespace tvlp
 } // namespace request
 
@@ -76,52 +69,34 @@ namespace reply {
 struct ok : message
 {};
 
-struct error_data
+struct error : message
 {
-    enum type_t {
+    enum type_t : uint8_t {
         NONE = 0,
         NOT_FOUND,
         EXISTS,
         INVALID_ID,
         ZMQ_ERROR,
         BAD_REQUEST_ERROR
-    } type = NONE;
-    int code = 0;
-    std::string value;
-};
+    };
 
-struct error : message
-{
-    std::unique_ptr<error_data> data;
+    type_t type = NONE;
+    int code = 0;
+    std::string message;
 };
 
 namespace tvlp {
-struct item : message
-{
-    tvlp_config_ptr data;
-};
 
-struct list : message
-{
-    std::unique_ptr<std::vector<tvlp_config_t>> data;
-};
+using item = model::tvlp_configuration_t;
+using list = std::vector<item>;
 
 namespace result {
 
-struct item : message
-{
-    tvlp_result_ptr data;
-};
-
-struct list : message
-{
-    std::unique_ptr<std::vector<tvlp_result_t>> data;
-};
+using item = model::tvlp_result_t;
+using list = std::vector<item>;
 
 } // namespace result
-
 } // namespace tvlp
-
 } // namespace reply
 
 // Variant types
@@ -150,4 +125,4 @@ tl::expected<api_reply, int> deserialize_reply(serialized_msg&& msg);
 
 } // namespace openperf::tvlp::api
 
-#endif
+#endif // _OP_TVLP_API_HPP_
