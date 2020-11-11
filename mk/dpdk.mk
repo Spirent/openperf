@@ -30,6 +30,12 @@ else
 	DPDK_TARGET := $(DPDK_LIB_DIR)/libdpdk.a
 endif
 
+ifeq (,$(wildcard $(DPDK_SRC_DIR)/mk/machine/$(OP_MACHINE_ARCH)))
+	DPDK_MACHINE := default # No explicit match
+else
+	DPDK_MACHINE := $(OP_MACHINE_ARCH)
+endif
+
 # Generate appropriate DPDK_LDLIBS based on the dpdk defconfig
 include $(OP_ROOT)/mk/dpdk_ldlibs.mk
 
@@ -48,6 +54,7 @@ OP_DEFINES += $(DPDK_DEFINES)
 
 $(DPDK_BLD_DIR)/.config: $(DPDK_DEFCONFIG)
 	cp $(DPDK_DEFCONFIG) $(DPDK_SRC_DIR)/config
+	sed -i -e 's/^CONFIG_RTE_MACHINE="default"/CONFIG_RTE_MACHINE="$(DPDK_MACHINE)"/' $(DPDK_SRC_DIR)/config/$(notdir $(DPDK_DEFCONFIG))
 	cd $(DPDK_SRC_DIR) && $(MAKE) config T=$(DPDK_DEFTARGET) O=$(DPDK_BLD_DIR)
 
 $(DPDK_TARGET): $(DPDK_BLD_DIR)/.config
