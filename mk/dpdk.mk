@@ -54,7 +54,7 @@ OP_DEFINES += $(DPDK_DEFINES)
 
 $(DPDK_BLD_DIR)/.config: $(DPDK_DEFCONFIG)
 	cp $(DPDK_DEFCONFIG) $(DPDK_SRC_DIR)/config
-	sed -i -e 's/^CONFIG_RTE_MACHINE="default"/CONFIG_RTE_MACHINE="$(DPDK_MACHINE)"/' $(DPDK_SRC_DIR)/config/$(notdir $(DPDK_DEFCONFIG))
+	sed -i -e 's/^CONFIG_RTE_MACHINE="default"/CONFIG_RTE_MACHINE="$(strip $(DPDK_MACHINE))"/' $(DPDK_SRC_DIR)/config/$(notdir $(DPDK_DEFCONFIG))
 	cd $(DPDK_SRC_DIR) && $(MAKE) config T=$(DPDK_DEFTARGET) O=$(DPDK_BLD_DIR)
 
 $(DPDK_TARGET): $(DPDK_BLD_DIR)/.config
