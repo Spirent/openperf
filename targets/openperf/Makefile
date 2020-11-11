@@ -30,6 +30,12 @@ BUILD_DEPS := \
 
 OP_PACKETIO_DRIVER ?= dpdk
 
+# Build a Position Independent Executable
+OP_EXTRA_CFLAGS += -fPIE
+OP_EXTRA_CXXFLAGS += -fPIE
+OP_EXTRA_LDFLAGS += -pie
+OP_EXTRA_ISPC_FLAGS += --pic
+
 # Pull in dependencies
 -include $(OBJECTS:.o=.d)
 $(call op_include_dependencies,$(BUILD_DEPS))
