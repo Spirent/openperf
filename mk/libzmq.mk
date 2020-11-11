@@ -33,8 +33,8 @@ $(LIBZMQ_OBJ_DIR)/Makefile: $(LIBZMQ_SRC_DIR)/configure
 	@mkdir -p $(LIBZMQ_OBJ_DIR)
 	cd $(LIBZMQ_OBJ_DIR) && $(LIBZMQ_SRC_DIR)/configure $(OP_CONFIG_OPTS) \
 		$(LIBZMQ_CONFIG_OPTS) --enable-drafts=no --prefix="$(LIBZMQ_BLD_DIR)" \
-		CC="$(CC)" CFLAGS="$(OP_COPTS)" \
-		CXX="$(CXX)" CXXFLAGS="$(OP_CXXOPTS)"
+		CC="$(CC)" CFLAGS="$(OP_COPTS) $(OP_EXTRA_CFLAGS)" \
+		CXX="$(CXX)" CXXFLAGS="$(OP_COPTS) $(OP_EXTRA_CXXFLAGS)"
 
 $(LIBZMQ_LIB_DIR)/libzmq.la: $(LIBZMQ_OBJ_DIR)/Makefile
 	cd $(LIBZMQ_OBJ_DIR) && $(MAKE) install
@@ -42,7 +42,7 @@ $(LIBZMQ_LIB_DIR)/libzmq.la: $(LIBZMQ_OBJ_DIR)/Makefile
 .PHONY: libzmq
 libzmq: $(LIBZMQ_LIB_DIR)/libzmq.la
 
-.PHONY: libzmq_clean
-libzmq_clean:
+.PHONY: clean_libzmq
+clean_libzmq:
 	@rm -rf $(LIBZMQ_OBJ_DIR) $(LIBZMQ_BLD_DIR) $(LIBZMQ_SRC_DIR)/configure
-clean: libzmq_clean
+clean: clean_libzmq

@@ -42,8 +42,3 @@ $(SLJIT_TARGET): $(SLJIT_OBJECTS)
 
 .PHONY: sljit
 sljit: $(SLJIT_TARGET)
-
-.PHONY: sljit_clean
-sljit_clean:
-	@rm -rf $(SLJIT_OBJ_DIR) $(SLJIT_BLD_DIR)
-clean: sljit_clean

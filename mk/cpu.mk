@@ -14,6 +14,7 @@ CPU_LIB_DIR := $(OP_BUILD_ROOT)/lib
 
 OP_INC_DIRS += $(OP_ROOT)/src/modules
 OP_LIB_DIRS += $(CPU_LIB_DIR)
+CPU_ISPC_FLAGS := $(OP_ISPC_FLAGS)
 
 CPU_SOURCES :=
 CPU_DEPENDS :=
@@ -106,7 +107,7 @@ CPU_SPACE := $(CPU_EMPTY) $(CPU_EMPTY)
 
 $(CPU_OBJ_DIR)/%.o: $(CPU_SRC_DIR)/%.ispc
 	@mkdir -p $(dir $@)
-	$(strip $(OP_ISPC) -o $@ $(CPU_ISPC_OPTS) \
+	$(strip $(OP_ISPC) -o $@ $(CPU_ISPC_FLAGS) \
 		-M -MF $(@:.o=.d) \
 		--target=$(subst $(CPU_SPACE),$(CPU_COMMA),$(CPU_ISPC_TARGETS)) \
 		--header-outfile=$(patsubst %,$(CPU_OBJ_DIR)/%,$(notdir $<.h)) $<)
