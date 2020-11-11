@@ -24,8 +24,9 @@ tvlp_worker_t::~tvlp_worker_t()
     delete m_result.exchange(nullptr);
 }
 
-tl::expected<void, std::string>
-tvlp_worker_t::start(const realtime::time_point& start_time)
+tl::expected<void, std::string> tvlp_worker_t::start(
+    const realtime::time_point& start_time,
+    const std::optional<dynamic::configuration>& dynamic_results)
 {
     auto state = m_state.state.load();
     if (state == model::RUNNING || state == model::COUNTDOWN) {
@@ -40,11 +41,14 @@ tvlp_worker_t::start(const realtime::time_point& start_time)
     delete m_result.exchange(new model::json_vector());
     m_scheduler_thread = std::async(
         std::launch::async,
-        [this](realtime::time_point tp, const model::tvlp_module_profile_t& p) {
-            return schedule(tp, p);
+        [this](realtime::time_point tp,
+               const model::tvlp_module_profile_t& p,
+               const std::optional<dynamic::configuration>& dynamic_results) {
+            return schedule(tp, p, dynamic_results);
         },
         start_time,
-        m_profile);
+        m_profile,
+        dynamic_results);
 
     return {};
 }
@@ -103,9 +107,10 @@ void tvlp_worker_t::store_results(const nlohmann::json& result,
     delete m_result.exchange(updated, std::memory_order_release);
 }
 
-tl::expected<void, std::string>
-tvlp_worker_t::schedule(realtime::time_point start_time,
-                        const model::tvlp_module_profile_t& profile)
+tl::expected<void, std::string> tvlp_worker_t::schedule(
+    realtime::time_point start_time,
+    const model::tvlp_module_profile_t& profile,
+    const std::optional<dynamic::configuration>& dynamic_results)
 {
     m_state.state.store(model::COUNTDOWN);
     for (auto now = realtime::now(); now < start_time; now = realtime::now()) {
@@ -139,7 +144,9 @@ tvlp_worker_t::schedule(realtime::time_point start_time,
         auto end_time = ref_clock::now() + entry_duration;
 
         // Start generator
-        auto start_result = send_start(gen_id);
+        auto start_result = (dynamic_results.has_value())
+                                ? send_start(gen_id, dynamic_results.value())
+                                : send_start(gen_id);
         if (!start_result) {
             m_state.state.store(model::ERROR);
             return tl::make_unexpected(start_result.error());

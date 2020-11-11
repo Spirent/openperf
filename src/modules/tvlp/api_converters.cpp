@@ -6,8 +6,11 @@
 #include "swagger/converters/memory.hpp"
 #include "swagger/converters/cpu.hpp"
 #include "swagger/converters/packet_generator.hpp"
+#include "modules/dynamic/api.hpp"
 
 namespace openperf::tvlp::api {
+
+namespace dynamic = ::openperf::dynamic;
 
 std::optional<time_point> from_rfc3339(const std::string& from)
 {
@@ -156,6 +159,37 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
     }
 
     config.profile(profile);
+    return config;
+}
+
+tvlp_dynamic_t from_swagger(const swagger::TvlpStartConfiguration& start)
+{
+    tvlp_dynamic_t config;
+
+    if (start.memoryIsSet()) {
+        auto memory = start.getMemory();
+        if (memory->dynamicResultsIsSet())
+            config.memory = dynamic::from_swagger(*memory->getDynamicResults());
+    }
+
+    if (start.cpuIsSet()) {
+        auto cpu = start.getCpu();
+        if (cpu->dynamicResultsIsSet())
+            config.cpu = dynamic::from_swagger(*cpu->getDynamicResults());
+    }
+
+    if (start.blockIsSet()) {
+        auto block = start.getBlock();
+        if (block->dynamicResultsIsSet())
+            config.block = dynamic::from_swagger(*block->getDynamicResults());
+    }
+
+    if (start.packetIsSet()) {
+        auto packet = start.getPacket();
+        if (packet->dynamicResultsIsSet())
+            config.packet = dynamic::from_swagger(*packet->getDynamicResults());
+    }
+
     return config;
 }
 

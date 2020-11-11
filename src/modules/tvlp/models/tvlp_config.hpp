@@ -1,10 +1,13 @@
 #ifndef _OP_TVLP_CONFIG_MODEL_HPP_
 #define _OP_TVLP_CONFIG_MODEL_HPP_
 
+#include <chrono>
 #include <optional>
 #include <string>
-#include <chrono>
+
 #include "json.hpp"
+
+#include "modules/dynamic/api.hpp"
 #include "modules/timesync/chrono.hpp"
 
 namespace openperf::tvlp::model {
@@ -29,6 +32,14 @@ struct tvlp_profile_t
     std::optional<tvlp_module_profile_t> cpu;
     std::optional<tvlp_module_profile_t> memory;
     std::optional<tvlp_module_profile_t> packet;
+};
+
+struct tvlp_dynamic_t
+{
+    std::optional<dynamic::configuration> block;
+    std::optional<dynamic::configuration> cpu;
+    std::optional<dynamic::configuration> memory;
+    std::optional<dynamic::configuration> packet;
 };
 
 enum tvlp_state_t { READY = 0, COUNTDOWN, RUNNING, ERROR };
