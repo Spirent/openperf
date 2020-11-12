@@ -220,7 +220,7 @@ size_t stream_channel::recv_drop(size_t length)
 {
     if (!length) return (0);
 
-    auto adjust = drop(length);
+    [[maybe_unused]] auto adjust = drop(length);
     assert(adjust == length); /* should always be true for us */
 
     unblock();
