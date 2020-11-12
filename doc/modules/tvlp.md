@@ -74,6 +74,38 @@ Packet Generator:
 * **load.burst_size**
 * **load.rate.value**
 
+## Dynamic Results
+
+The Dynamic Results are available to use with TVLP profiles. To get more information read the dedicated documentation of a [Dynamic Results](dynamic.md). The Dynamic Results configuration can be specified for each type of generator in appropriate section at start time of a TVLP profile. Dynamic Results are available for Memory, Block and CPU generators.
+
+Example:
+
+```json
+{
+    "memory": {
+        "dynamic_results": {
+            "thresholds": [
+                {
+                    "id": "",
+                    "value": 1000.0,
+                    "function": "dx",
+                    "stat_x": "read.bytes_actual",
+                    "condition": "less"
+                }
+            ],
+            "tdigests": [
+                {
+                    "id": "",
+                    "function": "dx",
+                    "stat_x": "read.bytes_actual",
+                    "compression": 10
+                }
+            ]
+        }
+    }
+}
+```
+
 ## TVLP Configuration Diagram
 
 Each generator module configured by TVLP profile as follows:
