@@ -207,7 +207,7 @@ bool dgram_channel::send(const pbuf* p)
         },
     };
 
-    auto written = write(items.data(), items.size());
+    [[maybe_unused]] auto written = write(items.data(), items.size());
     assert(written == buffer_required(p->len));
     notify();
 
@@ -236,7 +236,7 @@ bool dgram_channel::send(const pbuf* p,
         },
     };
 
-    auto written = write(items.data(), items.size());
+    [[maybe_unused]] auto written = write(items.data(), items.size());
     assert(written == buffer_required(p->len));
     notify();
 
