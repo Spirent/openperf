@@ -1,6 +1,7 @@
 import client.api
 import client.models
 
+
 def make_dynamic_results_config(fields):
     if not fields:
         return client.models.DynamicResultsConfig()

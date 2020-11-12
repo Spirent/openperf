@@ -4,6 +4,7 @@ import common.helper.block as block
 import common.helper.memory as memory
 import common.helper.cpu as cpu
 import common.helper.packet as packet
+import common.helper.dynamic as dynamic
 
 
 def tvlp_model():
@@ -52,6 +53,21 @@ def tvlp_packet_profile_model(entries, length, target_id, time_scale=1.0, load_s
         ps.target_id = target_id
         tp.series.append(ps)
     return tp
+
+
+def tvlp_start_configuration():
+    start = client.models.TvlpStartConfiguration()
+    start.memory = client.models.TvlpSeriesStartConfiguration()
+    start.memory.dynamic_results = dynamic.make_dynamic_results_config(
+        memory.get_memory_dynamic_results_fields())
+    start.block = client.models.TvlpSeriesStartConfiguration()
+    start.block.dynamic_results = dynamic.make_dynamic_results_config(
+        block.get_block_dynamic_results_fields())
+    start.cpu = client.models.TvlpSeriesStartConfiguration()
+    start.cpu.dynamic_results = dynamic.make_dynamic_results_config(
+        ["utilization", "steal"])
+    return start
+
 
 def tvlp_profile_length(profile):
     length = 0.0
