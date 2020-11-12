@@ -37,7 +37,8 @@ from common.helper import (tvlp_model,
                            tvlp_memory_profile_model,
                            tvlp_cpu_profile_model,
                            tvlp_packet_profile_model,
-                           tvlp_profile_length)
+                           tvlp_profile_length,
+                           tvlp_dynamic_results)
 
 from common.matcher import (be_valid_tvlp_configuration,
                             be_valid_block_tvlp_profile,
@@ -315,6 +316,14 @@ with description('TVLP,', 'tvlp') as self:
                     config = self.tvlp_api.get_tvlp_configuration(self._config.id)
                     expect(config).to(be_valid_tvlp_configuration)
                     expect(config.state).to(equal("countdown"))
+
+            with description('with dynamic results'):
+                with it('succeeded'):
+                    result = self.tvlp_api.start_tvlp_configuration_with_http_info(
+                        id=self._config.id, tvlp_start_configuration=tvlp_dynamic_results())
+                    expect(result[1]).to(equal(201))
+                    expect(result[2]).to(has_location('/tvlp-results/' + result[0].id))
+                    expect(result[0]).to(be_valid_tvlp_result)
 
             with description('running,'):
                 with it('returns 400'):

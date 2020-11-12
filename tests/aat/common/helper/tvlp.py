@@ -4,7 +4,7 @@ import common.helper.block as block
 import common.helper.memory as memory
 import common.helper.cpu as cpu
 import common.helper.packet as packet
-
+import common.helper.dynamic as dynamic
 
 def tvlp_model():
     tc = client.models.TvlpConfiguration()
@@ -52,6 +52,12 @@ def tvlp_packet_profile_model(entries, length, target_id, time_scale=1.0, load_s
         ps.target_id = target_id
         tp.series.append(ps)
     return tp
+
+def tvlp_dynamic_results():
+    start = client.models.TrafficProtocol()
+    start.memory = dynamic.make_dynamic_results_config(
+        memory.get_memory_dynamic_results_fields())
+    return start
 
 def tvlp_profile_length(profile):
     length = 0.0
