@@ -61,6 +61,8 @@ public:
                   const interface::generic_interface& interface);
     void del_interface(std::string_view port_id,
                        const interface::generic_interface& interface);
+    tl::expected<interface::generic_interface, int>
+    interface(std::string_view interface_id) const;
 
     tl::expected<void, int> add_sink(packet::traffic_direction direction,
                                      std::string_view src_id,

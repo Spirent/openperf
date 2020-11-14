@@ -116,6 +116,12 @@ public:
         m_self->del_source(dst_id, source);
     }
 
+    tl::expected<interface::generic_interface, int>
+    interface(std::string_view interface_id) const
+    {
+        return (m_self->interface(interface_id));
+    }
+
     tl::expected<void, int> swap_source(std::string_view dst_id,
                                         packet::generic_source outgoing,
                                         packet::generic_source incoming)
@@ -181,6 +187,8 @@ private:
                       interface::generic_interface interface) = 0;
         virtual void del_interface(std::string_view port_id,
                                    interface::generic_interface interface) = 0;
+        virtual tl::expected<interface::generic_interface, int>
+        interface(std::string_view interface_id) const = 0;
         virtual tl::expected<void, int>
         add_sink(packet::traffic_direction direction,
                  std::string_view src_id,
@@ -237,6 +245,12 @@ private:
                            interface::generic_interface interface) override
         {
             m_workers.del_interface(port_id, interface);
+        }
+
+        tl::expected<interface::generic_interface, int>
+        interface(std::string_view interface_id) const override
+        {
+            return (m_workers.interface(interface_id));
         }
 
         tl::expected<void, int> add_sink(packet::traffic_direction direction,
