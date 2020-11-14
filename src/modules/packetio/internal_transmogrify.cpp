@@ -14,6 +14,9 @@ serialized_msg serialize_request(request_msg&& msg)
         (message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
+                 [&](const request_interface& intf_data) {
+                     return (message::push(serialized, intf_data.interface_id));
+                 },
                  [&](const request_interface_add& intf_add) {
                      return (message::push(serialized,
                                            std::addressof(intf_add.data),
@@ -83,6 +86,11 @@ serialized_msg serialize_reply(reply_msg&& msg)
         (message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
+                 [&](const reply_interface& interface_data) {
+                     return (message::push(serialized,
+                                           std::addressof(interface_data.data),
+                                           sizeof(interface_data.data)));
+                 },
                  [&](const reply_port_index& port_index) {
                      return (message::push(serialized, port_index.index));
                  },
@@ -111,6 +119,9 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     auto idx = message::pop<index_type>(msg);
 
     switch (idx) {
+    case utils::variant_index<request_msg, request_interface>(): {
+        return (request_interface{message::pop_string(msg)});
+    }
     case utils::variant_index<request_msg, request_interface_add>(): {
         auto request = request_interface_add{
             *message::front_msg_data<interface_data*>(msg)};
@@ -180,6 +191,12 @@ tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg)
     using index_type = decltype(std::declval<reply_msg>().index());
     auto idx = message::pop<index_type>(msg);
     switch (idx) {
+    case utils::variant_index<reply_msg, reply_interface>(): {
+        auto reply =
+            reply_interface{*message::front_msg_data<interface_data*>(msg)};
+        message::pop_front(msg);
+        return (reply);
+    }
     case utils::variant_index<reply_msg, reply_port_index>():
         return (reply_port_index{message::pop<int>(msg)});
     case utils::variant_index<reply_msg, reply_task_add>(): {
