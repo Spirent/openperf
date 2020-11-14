@@ -20,6 +20,16 @@ reply_msg handle_request(server& s, const request_interface_add& request)
     }
 }
 
+reply_msg handle_request(server& s, const request_interface& request)
+{
+    auto maybe_interface = s.workers().interface(request.interface_id);
+    if (!maybe_interface) {
+        return (reply_error{maybe_interface.error()});
+    } else {
+        return (reply_interface{.data.interface = *maybe_interface});
+    }
+}
+
 reply_msg handle_request(server& s, const request_interface_del& request)
 {
     s.workers().del_interface(request.data.port_id, request.data.interface);
@@ -137,6 +147,9 @@ static std::string to_string(request_msg& request)
             [](const request_interface_add& msg) {
                 return ("add interface " + msg.data.interface.id() + " to port "
                         + std::string(msg.data.port_id));
+            },
+            [](const request_interface& msg) {
+                return ("get interface " + msg.interface_id);
             },
             [](const request_interface_del& msg) {
                 return ("delete interface " + msg.data.interface.id()

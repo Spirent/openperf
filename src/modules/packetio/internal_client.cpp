@@ -159,6 +159,31 @@ client::del_interface(std::string_view port_id,
     return (tl::make_unexpected(EBADMSG));
 }
 
+tl::expected<interface::generic_interface, int>
+client::interface(std::string_view interface_id)
+{
+    if (interface_id.length() > name_length_max) {
+        OP_LOG(OP_LOG_ERROR,
+               "Interface ID, %.*s, is too big\n",
+               static_cast<int>(interface_id.length()),
+               interface_id.data());
+        return (tl::make_unexpected(ENOMEM));
+    }
+
+    auto request = request_interface{.interface_id = std::string(interface_id)};
+
+    auto reply = do_request(m_socket.get(), request);
+    if (!reply) { return (tl::make_unexpected(reply.error())); }
+
+    if (auto maybe_interface = std::get_if<reply_interface>(&reply.value())) {
+        return (maybe_interface->data.interface);
+    } else if (auto error = std::get_if<reply_error>(&reply.value())) {
+        return (tl::make_unexpected(error->value));
+    }
+
+    return (tl::make_unexpected(EBADMSG));
+}
+
 tl::expected<void, int> client::add_sink(packet::traffic_direction direction,
                                          std::string_view src_id,
                                          packet::generic_sink sink)
