@@ -31,21 +31,102 @@ class TvlpStartSeriesConfiguration(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'load_scale': 'float',
+        'time_scale': 'float',
+        'start_time': 'datetime',
         'dynamic_results': 'DynamicResultsConfig'
     }
 
     attribute_map = {
+        'load_scale': 'load_scale',
+        'time_scale': 'time_scale',
+        'start_time': 'start_time',
         'dynamic_results': 'dynamic_results'
     }
 
-    def __init__(self, dynamic_results=None):  # noqa: E501
+    def __init__(self, load_scale=1.0, time_scale=1.0, start_time=None, dynamic_results=None):  # noqa: E501
         """TvlpStartSeriesConfiguration - a model defined in Swagger"""  # noqa: E501
 
+        self._load_scale = None
+        self._time_scale = None
+        self._start_time = None
         self._dynamic_results = None
         self.discriminator = None
 
+        if load_scale is not None:
+            self.load_scale = load_scale
+        if time_scale is not None:
+            self.time_scale = time_scale
+        if start_time is not None:
+            self.start_time = start_time
         if dynamic_results is not None:
             self.dynamic_results = dynamic_results
+
+    @property
+    def load_scale(self):
+        """Gets the load_scale of this TvlpStartSeriesConfiguration.  # noqa: E501
+
+        The scale multiplier for load parameters of generators  # noqa: E501
+
+        :return: The load_scale of this TvlpStartSeriesConfiguration.  # noqa: E501
+        :rtype: float
+        """
+        return self._load_scale
+
+    @load_scale.setter
+    def load_scale(self, load_scale):
+        """Sets the load_scale of this TvlpStartSeriesConfiguration.
+
+        The scale multiplier for load parameters of generators  # noqa: E501
+
+        :param load_scale: The load_scale of this TvlpStartSeriesConfiguration.  # noqa: E501
+        :type: float
+        """
+        self._load_scale = load_scale
+
+    @property
+    def time_scale(self):
+        """Gets the time_scale of this TvlpStartSeriesConfiguration.  # noqa: E501
+
+        The scale multiplier for the length of each profile entry  # noqa: E501
+
+        :return: The time_scale of this TvlpStartSeriesConfiguration.  # noqa: E501
+        :rtype: float
+        """
+        return self._time_scale
+
+    @time_scale.setter
+    def time_scale(self, time_scale):
+        """Sets the time_scale of this TvlpStartSeriesConfiguration.
+
+        The scale multiplier for the length of each profile entry  # noqa: E501
+
+        :param time_scale: The time_scale of this TvlpStartSeriesConfiguration.  # noqa: E501
+        :type: float
+        """
+        self._time_scale = time_scale
+
+    @property
+    def start_time(self):
+        """Gets the start_time of this TvlpStartSeriesConfiguration.  # noqa: E501
+
+        The ISO8601-formatted date and time to start profile replay  # noqa: E501
+
+        :return: The start_time of this TvlpStartSeriesConfiguration.  # noqa: E501
+        :rtype: datetime
+        """
+        return self._start_time
+
+    @start_time.setter
+    def start_time(self, start_time):
+        """Sets the start_time of this TvlpStartSeriesConfiguration.
+
+        The ISO8601-formatted date and time to start profile replay  # noqa: E501
+
+        :param start_time: The start_time of this TvlpStartSeriesConfiguration.  # noqa: E501
+        :type: datetime
+        """
+        self._start_time = start_time
 
     @property
     def dynamic_results(self):

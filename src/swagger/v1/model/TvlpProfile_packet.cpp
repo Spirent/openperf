@@ -19,8 +19,6 @@ namespace model {
 
 TvlpProfile_packet::TvlpProfile_packet()
 {
-    m_Load_scale = 0.0;
-    m_Time_scale = 0.0;
     
 }
 
@@ -37,8 +35,6 @@ nlohmann::json TvlpProfile_packet::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["load_scale"] = m_Load_scale;
-    val["time_scale"] = m_Time_scale;
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Series )
@@ -54,8 +50,6 @@ nlohmann::json TvlpProfile_packet::toJson() const
 
 void TvlpProfile_packet::fromJson(nlohmann::json& val)
 {
-    setLoadScale(val.at("load_scale"));
-    setTimeScale(val.at("time_scale"));
     {
         m_Series.clear();
         nlohmann::json jsonArray;
@@ -79,24 +73,6 @@ void TvlpProfile_packet::fromJson(nlohmann::json& val)
 }
 
 
-double TvlpProfile_packet::getLoadScale() const
-{
-    return m_Load_scale;
-}
-void TvlpProfile_packet::setLoadScale(double value)
-{
-    m_Load_scale = value;
-    
-}
-double TvlpProfile_packet::getTimeScale() const
-{
-    return m_Time_scale;
-}
-void TvlpProfile_packet::setTimeScale(double value)
-{
-    m_Time_scale = value;
-    
-}
 std::vector<std::shared_ptr<TvlpProfile_packet_series>>& TvlpProfile_packet::getSeries()
 {
     return m_Series;

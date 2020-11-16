@@ -19,6 +19,12 @@ namespace model {
 
 TvlpStartSeriesConfiguration::TvlpStartSeriesConfiguration()
 {
+    m_Load_scale = 0.0;
+    m_Load_scaleIsSet = false;
+    m_Time_scale = 0.0;
+    m_Time_scaleIsSet = false;
+    m_Start_time = "";
+    m_Start_timeIsSet = false;
     m_Dynamic_resultsIsSet = false;
     
 }
@@ -36,6 +42,18 @@ nlohmann::json TvlpStartSeriesConfiguration::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    if(m_Load_scaleIsSet)
+    {
+        val["load_scale"] = m_Load_scale;
+    }
+    if(m_Time_scaleIsSet)
+    {
+        val["time_scale"] = m_Time_scale;
+    }
+    if(m_Start_timeIsSet)
+    {
+        val["start_time"] = ModelBase::toJson(m_Start_time);
+    }
     if(m_Dynamic_resultsIsSet)
     {
         val["dynamic_results"] = ModelBase::toJson(m_Dynamic_results);
@@ -47,6 +65,19 @@ nlohmann::json TvlpStartSeriesConfiguration::toJson() const
 
 void TvlpStartSeriesConfiguration::fromJson(nlohmann::json& val)
 {
+    if(val.find("load_scale") != val.end())
+    {
+        setLoadScale(val.at("load_scale"));
+    }
+    if(val.find("time_scale") != val.end())
+    {
+        setTimeScale(val.at("time_scale"));
+    }
+    if(val.find("start_time") != val.end())
+    {
+        setStartTime(val.at("start_time"));
+        
+    }
     if(val.find("dynamic_results") != val.end())
     {
         if(!val["dynamic_results"].is_null())
@@ -61,6 +92,57 @@ void TvlpStartSeriesConfiguration::fromJson(nlohmann::json& val)
 }
 
 
+double TvlpStartSeriesConfiguration::getLoadScale() const
+{
+    return m_Load_scale;
+}
+void TvlpStartSeriesConfiguration::setLoadScale(double value)
+{
+    m_Load_scale = value;
+    m_Load_scaleIsSet = true;
+}
+bool TvlpStartSeriesConfiguration::loadScaleIsSet() const
+{
+    return m_Load_scaleIsSet;
+}
+void TvlpStartSeriesConfiguration::unsetLoad_scale()
+{
+    m_Load_scaleIsSet = false;
+}
+double TvlpStartSeriesConfiguration::getTimeScale() const
+{
+    return m_Time_scale;
+}
+void TvlpStartSeriesConfiguration::setTimeScale(double value)
+{
+    m_Time_scale = value;
+    m_Time_scaleIsSet = true;
+}
+bool TvlpStartSeriesConfiguration::timeScaleIsSet() const
+{
+    return m_Time_scaleIsSet;
+}
+void TvlpStartSeriesConfiguration::unsetTime_scale()
+{
+    m_Time_scaleIsSet = false;
+}
+std::string TvlpStartSeriesConfiguration::getStartTime() const
+{
+    return m_Start_time;
+}
+void TvlpStartSeriesConfiguration::setStartTime(std::string value)
+{
+    m_Start_time = value;
+    m_Start_timeIsSet = true;
+}
+bool TvlpStartSeriesConfiguration::startTimeIsSet() const
+{
+    return m_Start_timeIsSet;
+}
+void TvlpStartSeriesConfiguration::unsetStart_time()
+{
+    m_Start_timeIsSet = false;
+}
 std::shared_ptr<DynamicResultsConfig> TvlpStartSeriesConfiguration::getDynamicResults() const
 {
     return m_Dynamic_results;

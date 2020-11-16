@@ -31,72 +31,20 @@ class TvlpProfileCpu(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'load_scale': 'float',
-        'time_scale': 'float',
         'series': 'list[TvlpProfileCpuSeries]'
     }
 
     attribute_map = {
-        'load_scale': 'load_scale',
-        'time_scale': 'time_scale',
         'series': 'series'
     }
 
-    def __init__(self, load_scale=1.0, time_scale=1.0, series=None):  # noqa: E501
+    def __init__(self, series=None):  # noqa: E501
         """TvlpProfileCpu - a model defined in Swagger"""  # noqa: E501
 
-        self._load_scale = None
-        self._time_scale = None
         self._series = None
         self.discriminator = None
 
-        self.load_scale = load_scale
-        self.time_scale = time_scale
         self.series = series
-
-    @property
-    def load_scale(self):
-        """Gets the load_scale of this TvlpProfileCpu.  # noqa: E501
-
-        The scale multiplier for load parameters of generators  # noqa: E501
-
-        :return: The load_scale of this TvlpProfileCpu.  # noqa: E501
-        :rtype: float
-        """
-        return self._load_scale
-
-    @load_scale.setter
-    def load_scale(self, load_scale):
-        """Sets the load_scale of this TvlpProfileCpu.
-
-        The scale multiplier for load parameters of generators  # noqa: E501
-
-        :param load_scale: The load_scale of this TvlpProfileCpu.  # noqa: E501
-        :type: float
-        """
-        self._load_scale = load_scale
-
-    @property
-    def time_scale(self):
-        """Gets the time_scale of this TvlpProfileCpu.  # noqa: E501
-
-        The scale multiplier for the length of each profile entry  # noqa: E501
-
-        :return: The time_scale of this TvlpProfileCpu.  # noqa: E501
-        :rtype: float
-        """
-        return self._time_scale
-
-    @time_scale.setter
-    def time_scale(self, time_scale):
-        """Sets the time_scale of this TvlpProfileCpu.
-
-        The scale multiplier for the length of each profile entry  # noqa: E501
-
-        :param time_scale: The time_scale of this TvlpProfileCpu.  # noqa: E501
-        :type: float
-        """
-        self._time_scale = time_scale
 
     @property
     def series(self):
