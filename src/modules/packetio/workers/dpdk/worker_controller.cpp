@@ -490,7 +490,7 @@ worker_controller::interface(std::string_view interface_id) const
     auto maybe_interface = m_fib->find_interface(interface_id);
     if (maybe_interface) { return (*maybe_interface); }
 
-    return (tl::make_unexpected(ENODEV));
+    return (tl::make_unexpected(EINVAL));
 }
 
 template <typename Vector, typename Item>

@@ -22,8 +22,12 @@ reply_msg handle_request(server& s, const request_interface_add& request)
 
 reply_msg handle_request(server& s, const request_interface& request)
 {
-    auto interface = s.workers().interface(request.interface_id);
-    return (reply_interface{interface});
+    auto maybe_interface = s.workers().interface(request.interface_id);
+    if (!maybe_interface) {
+        return (reply_error{maybe_interface.error()});
+    } else {
+        return (reply_interface{.data.interface = *maybe_interface});
+    }
 }
 
 reply_msg handle_request(server& s, const request_interface_del& request)

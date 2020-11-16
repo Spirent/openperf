@@ -170,14 +170,13 @@ client::interface(std::string_view interface_id)
         return (tl::make_unexpected(ENOMEM));
     }
 
-    auto request = request_interface { .interface_id = std::string(interface_id) };
+    auto request = request_interface{.interface_id = std::string(interface_id)};
 
     auto reply = do_request(m_socket.get(), request);
     if (!reply) { return (tl::make_unexpected(reply.error())); }
 
-    if (auto maybe_interface =
-            std::get_if<reply_interface>(&reply.value())) {
-        return (maybe_interface->interface);
+    if (auto maybe_interface = std::get_if<reply_interface>(&reply.value())) {
+        return (maybe_interface->data.interface);
     } else if (auto error = std::get_if<reply_error>(&reply.value())) {
         return (tl::make_unexpected(error->value));
     }

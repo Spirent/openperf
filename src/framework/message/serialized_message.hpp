@@ -1,7 +1,6 @@
 #ifndef _OP_MESSAGE_SERIALIZED_MESSAGE_HPP_
 #define _OP_MESSAGE_SERIALIZED_MESSAGE_HPP_
 
-#include <cstring>
 #include <memory>
 #include <optional>
 #include <string>
@@ -210,42 +209,6 @@ std::vector<std::unique_ptr<T>> pop_unique_vector(serialized_message& msg)
         data, data + size, [&](const auto& ptr) { vec.emplace_back(ptr); });
     pop_front(msg);
     return (vec);
-}
-
-// Note: tl::expected cannot be default constructed in the case of empty
-// messages. Furthermore, the error type can be anything and default
-// initializing anything is not a great idea.
-//
-// So, explicitly enable specific overloads based on the error type.
-// As of 11/2020 virtually all tl::expected constructs in this codebase use
-// either std::string or int as their error type.
-
-// Version for tl::expected<T, int>
-template <typename T, typename E>
-std::enable_if_t<std::is_same_v<E, int>, tl::expected<T, E>>
-pop_expected(serialized_message& msg)
-{
-    if (msg.parts.empty()) { return tl::make_unexpected(ENODATA); }
-
-    auto& front = msg.parts.front();
-    auto obj = *(reinterpret_cast<tl::expected<T, int>*>(zmq_msg_data(&front)));
-    pop_front(msg);
-    return (obj);
-}
-
-// Version for tl::expected<T, std::string>
-template <typename T, typename E>
-std::enable_if_t<std::is_same_v<E, std::string>, tl::expected<T, E>>
-pop_expected(serialized_message& msg)
-{
-    if (msg.parts.empty()) {
-        return tl::make_unexpected(std::strerror(ENODATA));
-    }
-
-    auto& front = msg.parts.front();
-    auto obj = *(reinterpret_cast<tl::expected<T, std::string>*>(zmq_msg_data(&front)));
-    pop_front(msg);
-    return (obj);
 }
 
 inline int send(void* socket, serialized_message&& msg)

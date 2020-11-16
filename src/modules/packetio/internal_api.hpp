@@ -125,7 +125,7 @@ struct request_worker_ids
 
 struct reply_interface
 {
-    tl::expected<interface::generic_interface, int> interface;
+    interface_data data;
 };
 
 struct reply_task_add
