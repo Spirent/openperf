@@ -21,7 +21,6 @@
 
 #include "ModelBase.h"
 
-#include <string>
 #include "DynamicResultsConfig.h"
 
 namespace swagger {
@@ -64,13 +63,6 @@ public:
     bool timeScaleIsSet() const;
     void unsetTime_scale();
     /// <summary>
-    /// The ISO8601-formatted date and time to start profile replay
-    /// </summary>
-    std::string getStartTime() const;
-    void setStartTime(std::string value);
-    bool startTimeIsSet() const;
-    void unsetStart_time();
-    /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<DynamicResultsConfig> getDynamicResults() const;
@@ -83,8 +75,6 @@ protected:
     bool m_Load_scaleIsSet;
     double m_Time_scale;
     bool m_Time_scaleIsSet;
-    std::string m_Start_time;
-    bool m_Start_timeIsSet;
     std::shared_ptr<DynamicResultsConfig> m_Dynamic_results;
     bool m_Dynamic_resultsIsSet;
 };

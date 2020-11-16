@@ -19,6 +19,8 @@ namespace model {
 
 TvlpStartConfiguration::TvlpStartConfiguration()
 {
+    m_Start_time = "";
+    m_Start_timeIsSet = false;
     m_CpuIsSet = false;
     m_MemoryIsSet = false;
     m_BlockIsSet = false;
@@ -39,6 +41,10 @@ nlohmann::json TvlpStartConfiguration::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    if(m_Start_timeIsSet)
+    {
+        val["start_time"] = ModelBase::toJson(m_Start_time);
+    }
     if(m_CpuIsSet)
     {
         val["cpu"] = ModelBase::toJson(m_Cpu);
@@ -62,6 +68,11 @@ nlohmann::json TvlpStartConfiguration::toJson() const
 
 void TvlpStartConfiguration::fromJson(nlohmann::json& val)
 {
+    if(val.find("start_time") != val.end())
+    {
+        setStartTime(val.at("start_time"));
+        
+    }
     if(val.find("cpu") != val.end())
     {
         if(!val["cpu"].is_null())
@@ -106,6 +117,23 @@ void TvlpStartConfiguration::fromJson(nlohmann::json& val)
 }
 
 
+std::string TvlpStartConfiguration::getStartTime() const
+{
+    return m_Start_time;
+}
+void TvlpStartConfiguration::setStartTime(std::string value)
+{
+    m_Start_time = value;
+    m_Start_timeIsSet = true;
+}
+bool TvlpStartConfiguration::startTimeIsSet() const
+{
+    return m_Start_timeIsSet;
+}
+void TvlpStartConfiguration::unsetStart_time()
+{
+    m_Start_timeIsSet = false;
+}
 std::shared_ptr<TvlpStartSeriesConfiguration> TvlpStartConfiguration::getCpu() const
 {
     return m_Cpu;

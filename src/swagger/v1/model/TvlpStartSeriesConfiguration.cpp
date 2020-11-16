@@ -23,8 +23,6 @@ TvlpStartSeriesConfiguration::TvlpStartSeriesConfiguration()
     m_Load_scaleIsSet = false;
     m_Time_scale = 0.0;
     m_Time_scaleIsSet = false;
-    m_Start_time = "";
-    m_Start_timeIsSet = false;
     m_Dynamic_resultsIsSet = false;
     
 }
@@ -50,10 +48,6 @@ nlohmann::json TvlpStartSeriesConfiguration::toJson() const
     {
         val["time_scale"] = m_Time_scale;
     }
-    if(m_Start_timeIsSet)
-    {
-        val["start_time"] = ModelBase::toJson(m_Start_time);
-    }
     if(m_Dynamic_resultsIsSet)
     {
         val["dynamic_results"] = ModelBase::toJson(m_Dynamic_results);
@@ -72,11 +66,6 @@ void TvlpStartSeriesConfiguration::fromJson(nlohmann::json& val)
     if(val.find("time_scale") != val.end())
     {
         setTimeScale(val.at("time_scale"));
-    }
-    if(val.find("start_time") != val.end())
-    {
-        setStartTime(val.at("start_time"));
-        
     }
     if(val.find("dynamic_results") != val.end())
     {
@@ -125,23 +114,6 @@ bool TvlpStartSeriesConfiguration::timeScaleIsSet() const
 void TvlpStartSeriesConfiguration::unsetTime_scale()
 {
     m_Time_scaleIsSet = false;
-}
-std::string TvlpStartSeriesConfiguration::getStartTime() const
-{
-    return m_Start_time;
-}
-void TvlpStartSeriesConfiguration::setStartTime(std::string value)
-{
-    m_Start_time = value;
-    m_Start_timeIsSet = true;
-}
-bool TvlpStartSeriesConfiguration::startTimeIsSet() const
-{
-    return m_Start_timeIsSet;
-}
-void TvlpStartSeriesConfiguration::unsetStart_time()
-{
-    m_Start_timeIsSet = false;
 }
 std::shared_ptr<DynamicResultsConfig> TvlpStartSeriesConfiguration::getDynamicResults() const
 {

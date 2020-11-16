@@ -31,6 +31,7 @@ class TvlpStartConfiguration(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'start_time': 'datetime',
         'cpu': 'TvlpStartSeriesConfiguration',
         'memory': 'TvlpStartSeriesConfiguration',
         'block': 'TvlpStartSeriesConfiguration',
@@ -38,21 +39,25 @@ class TvlpStartConfiguration(object):
     }
 
     attribute_map = {
+        'start_time': 'start_time',
         'cpu': 'cpu',
         'memory': 'memory',
         'block': 'block',
         'packet': 'packet'
     }
 
-    def __init__(self, cpu=None, memory=None, block=None, packet=None):  # noqa: E501
+    def __init__(self, start_time=None, cpu=None, memory=None, block=None, packet=None):  # noqa: E501
         """TvlpStartConfiguration - a model defined in Swagger"""  # noqa: E501
 
+        self._start_time = None
         self._cpu = None
         self._memory = None
         self._block = None
         self._packet = None
         self.discriminator = None
 
+        if start_time is not None:
+            self.start_time = start_time
         if cpu is not None:
             self.cpu = cpu
         if memory is not None:
@@ -61,6 +66,28 @@ class TvlpStartConfiguration(object):
             self.block = block
         if packet is not None:
             self.packet = packet
+
+    @property
+    def start_time(self):
+        """Gets the start_time of this TvlpStartConfiguration.  # noqa: E501
+
+        The ISO8601-formatted date and time to start profile replay  # noqa: E501
+
+        :return: The start_time of this TvlpStartConfiguration.  # noqa: E501
+        :rtype: datetime
+        """
+        return self._start_time
+
+    @start_time.setter
+    def start_time(self, start_time):
+        """Sets the start_time of this TvlpStartConfiguration.
+
+        The ISO8601-formatted date and time to start profile replay  # noqa: E501
+
+        :param start_time: The start_time of this TvlpStartConfiguration.  # noqa: E501
+        :type: datetime
+        """
+        self._start_time = start_time
 
     @property
     def cpu(self):

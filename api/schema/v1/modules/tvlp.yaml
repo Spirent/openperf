@@ -7,14 +7,6 @@ parameters:
     format: string
     required: true
 
-  start_time:
-    name: time
-    in: query
-    description: The ISO8601-formatted date and time to start profile replay
-    type: string
-    format: date-time
-    required: false
-
 paths:
   /tvlp:
     get:
@@ -88,7 +80,6 @@ paths:
       description: Start an existing TVLP configuration.
       parameters:
         - $ref: "#/parameters/id"
-        - $ref: "#/parameters/start_time"
         - name: start
           in: body
           description: TVLP Start parameters
@@ -345,6 +336,10 @@ definitions:
     type: object
     description: TVLP start configuration
     properties:
+      start_time:
+        type: string
+        format: date-time
+        description: The ISO8601-formatted date and time to start profile replay
       cpu:
         $ref: "#/definitions/TvlpStartSeriesConfiguration"
       memory:
@@ -372,9 +367,5 @@ definitions:
         default: 1.0
         minimum: 0.0
         exclusiveMinimum: true
-      start_time:
-        type: string
-        format: date-time
-        description: The ISO8601-formatted date and time to start profile replay
       dynamic_results:
         $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"
