@@ -162,8 +162,12 @@ memory_stat task_memory::spin()
         to_do_ops -= spin_ops;
     }
 
+    using double_time = std::chrono::duration<double>;
     stat.operations_target =
-        (stat.run_time + stat.sleep_time).count() * m_rate / std::nano::den;
+        static_cast<uint64_t>((std::chrono::duration_cast<double_time>(
+                                   stat.run_time + stat.sleep_time)
+                               * m_rate)
+                                  .count());
     stat.bytes_target = stat.operations_target * m_config.block_size;
     m_stat += stat;
 

@@ -93,25 +93,25 @@ generator::generator()
         m_stat.write += stat.write;
 
         // Calculate really target values from start time of the generator
+        using double_time = std::chrono::duration<double>;
         if (m_read.config.threads) {
             auto& rstat = m_stat.read;
-            rstat.operations_target =
-                elapsed_time.count()
-                * static_cast<uint64_t>(
-                    m_read.config.op_per_sec
-                    * std::min(m_read.config.block_size, 1UL) / std::nano::den);
+            rstat.operations_target = static_cast<uint64_t>(
+                (std::chrono::duration_cast<double_time>(elapsed_time)
+                 * std::min(m_read.config.block_size, 1UL)
+                 * m_read.config.op_per_sec)
+                    .count());
             rstat.bytes_target =
                 rstat.operations_target * m_read.config.block_size;
         }
 
         if (m_write.config.threads) {
             auto& wstat = m_stat.write;
-            wstat.operations_target =
-                elapsed_time.count()
-                * static_cast<uint64_t>(
-                    m_write.config.op_per_sec
-                    * std::min(m_write.config.block_size, 1UL)
-                    / std::nano::den);
+            wstat.operations_target = static_cast<uint64_t>(
+                (std::chrono::duration_cast<double_time>(elapsed_time)
+                 * std::min(m_write.config.block_size, 1UL)
+                 * m_write.config.op_per_sec)
+                    .count());
             wstat.bytes_target =
                 wstat.operations_target * m_write.config.block_size;
         }
