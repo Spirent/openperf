@@ -20,8 +20,6 @@ namespace openperf::tvlp::api {
 
 static constexpr auto endpoint = "inproc://openperf_tvlp";
 
-using realtime = timesync::chrono::realtime;
-using time_point = realtime::time_point;
 using serialized_msg = openperf::message::serialized_message;
 
 struct message

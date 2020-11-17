@@ -12,6 +12,8 @@
 
 namespace openperf::tvlp::model {
 
+using ref_clock = timesync::chrono::monotime;
+using realtime = timesync::chrono::realtime;
 using duration = std::chrono::nanoseconds;
 using time_point = timesync::chrono::realtime::time_point;
 
@@ -41,7 +43,7 @@ struct tvlp_start_t
         dynamic::configuration dynamic_results;
     };
 
-    time_point start_time = timesync::chrono::realtime::now();
+    time_point start_time = realtime::now();
     start_t block;
     start_t cpu;
     start_t memory;

@@ -12,7 +12,6 @@ namespace openperf::tvlp::internal {
 
 class controller_stack
 {
-    using time_point = std::chrono::time_point<timesync::chrono::realtime>;
     using tvlp_controller_ptr = std::shared_ptr<controller_t>;
     using tvlp_controller_map =
         std::unordered_map<std::string, tvlp_controller_ptr>;

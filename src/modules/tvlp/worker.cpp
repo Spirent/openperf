@@ -5,7 +5,7 @@
 
 namespace openperf::tvlp::internal::worker {
 
-constexpr duration THRESHOLD = 100ms;
+constexpr model::duration THRESHOLD = 100ms;
 
 tvlp_worker_t::tvlp_worker_t(void* context,
                              const std::string& endpoint,
@@ -14,7 +14,7 @@ tvlp_worker_t::tvlp_worker_t(void* context,
     , m_profile(profile)
 {
     m_state.state.store(model::READY);
-    m_state.offset.store(duration::zero());
+    m_state.offset.store(model::duration::zero());
     m_result.store(new model::json_vector());
 }
 
@@ -34,9 +34,9 @@ tvlp_worker_t::start(const model::time_point& start_time,
     }
 
     if (m_scheduler_thread.valid()) m_scheduler_thread.wait();
-    m_state.offset = duration::zero();
-    m_state.state =
-        start_time > ref_clock::now() ? model::COUNTDOWN : model::RUNNING;
+    m_state.offset = model::duration::zero();
+    m_state.state = start_time > model::ref_clock::now() ? model::COUNTDOWN
+                                                         : model::RUNNING;
     m_state.stopped = false;
     delete m_result.exchange(new model::json_vector());
     m_scheduler_thread = std::async(
@@ -77,7 +77,7 @@ std::optional<std::string> tvlp_worker_t::error() const
     return m_error;
 }
 
-duration tvlp_worker_t::offset() const { return m_state.offset.load(); }
+model::duration tvlp_worker_t::offset() const { return m_state.offset.load(); }
 
 model::json_vector tvlp_worker_t::results() const
 {
@@ -112,18 +112,21 @@ tvlp_worker_t::schedule(const model::tvlp_module_profile_t& profile,
                         const model::time_point& start_time,
                         const model::tvlp_start_t::start_t& start_config)
 {
+    using model::realtime;
+    using model::ref_clock;
+
     m_state.state.store(model::COUNTDOWN);
     for (auto now = realtime::now(); now < start_time; now = realtime::now()) {
         if (m_state.stopped.load()) {
             m_state.state.store(model::READY);
             return {};
         }
-        duration sleep_time = std::min(start_time - now, THRESHOLD);
+        model::duration sleep_time = std::min(start_time - now, THRESHOLD);
         std::this_thread::sleep_for(sleep_time);
     }
 
     m_state.state.store(model::RUNNING);
-    duration total_offset = duration::zero();
+    model::duration total_offset = model::duration::zero();
     for (const auto& entry : profile) {
         auto entry_duration =
             std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -170,7 +173,7 @@ tvlp_worker_t::schedule(const model::tvlp_module_profile_t& profile,
             store_results(stat_result.value(), result_store_operation::UPDATE);
 
             m_state.offset.store(total_offset + now - started);
-            duration sleep_time = std::min(end_time - now, THRESHOLD);
+            model::duration sleep_time = std::min(end_time - now, THRESHOLD);
             std::this_thread::sleep_for(sleep_time);
         }
 

@@ -13,10 +13,9 @@ namespace openperf::tvlp::internal {
 
 class controller_t : public model::tvlp_configuration_t
 {
-    using time_point = std::chrono::time_point<timesync::chrono::realtime>;
+    static constexpr auto NAME_PREFIX = "op_tvlp";
 
 private:
-    static constexpr auto NAME_PREFIX = "op_tvlp";
     void* m_context;
     std::shared_ptr<model::tvlp_result_t> m_result;
     std::unique_ptr<worker::tvlp_worker_t> m_block, m_memory, m_cpu, m_packet;

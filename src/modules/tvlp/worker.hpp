@@ -18,15 +18,12 @@
 namespace openperf::tvlp::internal::worker {
 
 using namespace std::chrono_literals;
-using ref_clock = timesync::chrono::monotime;
-using realtime = timesync::chrono::realtime;
-using duration = std::chrono::nanoseconds;
 using stat_pair_t = std::pair<std::string, nlohmann::json>;
 
 struct tvlp_worker_state_t
 {
     std::atomic<model::tvlp_state_t> state;
-    std::atomic<duration> offset;
+    std::atomic<model::duration> offset;
     std::atomic_bool stopped;
 };
 
@@ -48,7 +45,7 @@ public:
 
     model::tvlp_state_t state() const;
     std::optional<std::string> error() const;
-    duration offset() const;
+    model::duration offset() const;
     model::json_vector results() const;
 
 protected:
