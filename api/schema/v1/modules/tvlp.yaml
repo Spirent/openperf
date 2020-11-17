@@ -339,7 +339,9 @@ definitions:
       start_time:
         type: string
         format: date-time
-        description: The ISO8601-formatted date and time to start profile replay
+        description: |
+          The ISO8601-formatted date and time to start profile replay.
+          If not specified the profile will start immediately.
       cpu:
         $ref: "#/definitions/TvlpStartSeriesConfiguration"
       memory:

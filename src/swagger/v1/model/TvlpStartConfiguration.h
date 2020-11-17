@@ -50,7 +50,7 @@ public:
     /// TvlpStartConfiguration members
 
     /// <summary>
-    /// The ISO8601-formatted date and time to start profile replay
+    /// The ISO8601-formatted date and time to start profile replay. If not specified the profile will start immediately. 
     /// </summary>
     std::string getStartTime() const;
     void setStartTime(std::string value);

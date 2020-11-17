@@ -71,7 +71,7 @@ class TvlpStartConfiguration(object):
     def start_time(self):
         """Gets the start_time of this TvlpStartConfiguration.  # noqa: E501
 
-        The ISO8601-formatted date and time to start profile replay  # noqa: E501
+        The ISO8601-formatted date and time to start profile replay. If not specified the profile will start immediately.   # noqa: E501
 
         :return: The start_time of this TvlpStartConfiguration.  # noqa: E501
         :rtype: datetime
@@ -82,7 +82,7 @@ class TvlpStartConfiguration(object):
     def start_time(self, start_time):
         """Sets the start_time of this TvlpStartConfiguration.
 
-        The ISO8601-formatted date and time to start profile replay  # noqa: E501
+        The ISO8601-formatted date and time to start profile replay. If not specified the profile will start immediately.   # noqa: E501
 
         :param start_time: The start_time of this TvlpStartConfiguration.  # noqa: E501
         :type: datetime

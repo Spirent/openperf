@@ -3,7 +3,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**start_time** | **datetime** | The ISO8601-formatted date and time to start profile replay | [optional] 
+**start_time** | **datetime** | The ISO8601-formatted date and time to start profile replay. If not specified the profile will start immediately.  | [optional] 
 **cpu** | [**TvlpStartSeriesConfiguration**](TvlpStartSeriesConfiguration.md) |  | [optional] 
 **memory** | [**TvlpStartSeriesConfiguration**](TvlpStartSeriesConfiguration.md) |  | [optional] 
 **block** | [**TvlpStartSeriesConfiguration**](TvlpStartSeriesConfiguration.md) |  | [optional] 
