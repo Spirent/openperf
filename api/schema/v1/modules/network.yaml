@@ -429,10 +429,17 @@ definitions:
         enum:
           - tcp
           - udp
+      driver:
+        type: string
+        description: Driver which is used to establish client connections
+        enum:
+          - kernel
+          - dpdk
     required:
       - id
       - port
       - protocol
+      - driver
 
   NetworkGenerator:
     type: object
@@ -474,10 +481,17 @@ definitions:
             enum:
               - tcp
               - udp
+          driver:
+            type: string
+            description: Driver which is used to establish connection between client and host
+            enum:
+              - kernel
+              - dpdk
         required:
           - host
           - port
           - protocol
+          - driver
       connections:
         type: integer
         format: int64

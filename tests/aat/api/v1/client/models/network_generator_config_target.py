@@ -33,26 +33,30 @@ class NetworkGeneratorConfigTarget(object):
     swagger_types = {
         'host': 'str',
         'port': 'int',
-        'protocol': 'str'
+        'protocol': 'str',
+        'driver': 'str'
     }
 
     attribute_map = {
         'host': 'host',
         'port': 'port',
-        'protocol': 'protocol'
+        'protocol': 'protocol',
+        'driver': 'driver'
     }
 
-    def __init__(self, host='127.0.0.1', port=3357, protocol=None):  # noqa: E501
+    def __init__(self, host='127.0.0.1', port=3357, protocol=None, driver=None):  # noqa: E501
         """NetworkGeneratorConfigTarget - a model defined in Swagger"""  # noqa: E501
 
         self._host = None
         self._port = None
         self._protocol = None
+        self._driver = None
         self.discriminator = None
 
         self.host = host
         self.port = port
         self.protocol = protocol
+        self.driver = driver
 
     @property
     def host(self):
@@ -119,6 +123,28 @@ class NetworkGeneratorConfigTarget(object):
         :type: str
         """
         self._protocol = protocol
+
+    @property
+    def driver(self):
+        """Gets the driver of this NetworkGeneratorConfigTarget.  # noqa: E501
+
+        Driver which is used to establish connection between client and host  # noqa: E501
+
+        :return: The driver of this NetworkGeneratorConfigTarget.  # noqa: E501
+        :rtype: str
+        """
+        return self._driver
+
+    @driver.setter
+    def driver(self, driver):
+        """Sets the driver of this NetworkGeneratorConfigTarget.
+
+        Driver which is used to establish connection between client and host  # noqa: E501
+
+        :param driver: The driver of this NetworkGeneratorConfigTarget.  # noqa: E501
+        :type: str
+        """
+        self._driver = driver
 
     def to_dict(self):
         """Returns the model properties as a dict"""

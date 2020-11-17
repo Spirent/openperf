@@ -63,6 +63,11 @@ public:
     /// </summary>
     std::string getProtocol() const;
     void setProtocol(std::string value);
+        /// <summary>
+    /// Driver which is used to establish client connections
+    /// </summary>
+    std::string getDriver() const;
+    void setDriver(std::string value);
     
 protected:
     std::string m_Id;
@@ -70,6 +75,8 @@ protected:
     int64_t m_Port;
 
     std::string m_Protocol;
+
+    std::string m_Driver;
 
 };
 

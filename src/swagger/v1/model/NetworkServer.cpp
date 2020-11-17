@@ -22,6 +22,7 @@ NetworkServer::NetworkServer()
     m_Id = "";
     m_Port = 0L;
     m_Protocol = "";
+    m_Driver = "";
     
 }
 
@@ -41,6 +42,7 @@ nlohmann::json NetworkServer::toJson() const
     val["id"] = ModelBase::toJson(m_Id);
     val["port"] = m_Port;
     val["protocol"] = ModelBase::toJson(m_Protocol);
+    val["driver"] = ModelBase::toJson(m_Driver);
     
 
     return val;
@@ -51,6 +53,7 @@ void NetworkServer::fromJson(nlohmann::json& val)
     setId(val.at("id"));
     setPort(val.at("port"));
     setProtocol(val.at("protocol"));
+    setDriver(val.at("driver"));
     
 }
 
@@ -80,6 +83,15 @@ std::string NetworkServer::getProtocol() const
 void NetworkServer::setProtocol(std::string value)
 {
     m_Protocol = value;
+    
+}
+std::string NetworkServer::getDriver() const
+{
+    return m_Driver;
+}
+void NetworkServer::setDriver(std::string value)
+{
+    m_Driver = value;
     
 }
 

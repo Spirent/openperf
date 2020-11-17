@@ -22,6 +22,7 @@ NetworkGeneratorConfig_target::NetworkGeneratorConfig_target()
     m_Host = "";
     m_Port = 0L;
     m_Protocol = "";
+    m_Driver = "";
     
 }
 
@@ -41,6 +42,7 @@ nlohmann::json NetworkGeneratorConfig_target::toJson() const
     val["host"] = ModelBase::toJson(m_Host);
     val["port"] = m_Port;
     val["protocol"] = ModelBase::toJson(m_Protocol);
+    val["driver"] = ModelBase::toJson(m_Driver);
     
 
     return val;
@@ -51,6 +53,7 @@ void NetworkGeneratorConfig_target::fromJson(nlohmann::json& val)
     setHost(val.at("host"));
     setPort(val.at("port"));
     setProtocol(val.at("protocol"));
+    setDriver(val.at("driver"));
     
 }
 
@@ -80,6 +83,15 @@ std::string NetworkGeneratorConfig_target::getProtocol() const
 void NetworkGeneratorConfig_target::setProtocol(std::string value)
 {
     m_Protocol = value;
+    
+}
+std::string NetworkGeneratorConfig_target::getDriver() const
+{
+    return m_Driver;
+}
+void NetworkGeneratorConfig_target::setDriver(std::string value)
+{
+    m_Driver = value;
     
 }
 
