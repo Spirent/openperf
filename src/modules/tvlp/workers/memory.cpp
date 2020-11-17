@@ -19,20 +19,21 @@ memory_tvlp_worker_t::memory_tvlp_worker_t(
 memory_tvlp_worker_t::~memory_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-memory_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
+memory_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry,
+                                  double load_scale)
 {
     auto config = swagger::MemoryGeneratorConfig{};
     config.fromJson(const_cast<nlohmann::json&>(entry.config));
 
     // Apply Load Scale to generator configuration
     config.setReadSize(
-        static_cast<uint32_t>(config.getReadSize() * entry.load_scale));
+        static_cast<uint32_t>(config.getReadSize() * load_scale));
     config.setReadsPerSec(
-        static_cast<uint32_t>(config.getReadsPerSec() * entry.load_scale));
+        static_cast<uint32_t>(config.getReadsPerSec() * load_scale));
     config.setWriteSize(
-        static_cast<uint32_t>(config.getWriteSize() * entry.load_scale));
+        static_cast<uint32_t>(config.getWriteSize() * load_scale));
     config.setWritesPerSec(
-        static_cast<uint32_t>(config.getWritesPerSec() * entry.load_scale));
+        static_cast<uint32_t>(config.getWritesPerSec() * load_scale));
 
     request::generator::create data{
         .is_running = false,

@@ -47,8 +47,7 @@ using create = model::tvlp_configuration_t;
 struct start : message
 {
     std::string id;
-    time_point start_time;
-    model::tvlp_dynamic_t dynamic_results;
+    model::tvlp_start_t start_configuration;
 };
 struct stop : id_message
 {};

@@ -15,7 +15,7 @@ public:
 
 protected:
     tl::expected<std::string, std::string>
-    send_create(const model::tvlp_profile_entry_t&) override;
+    send_create(const model::tvlp_profile_entry_t&, double load_scale) override;
     tl::expected<stat_pair_t, std::string>
     send_start(const std::string& id,
                const dynamic::configuration& dynamic_results) override;

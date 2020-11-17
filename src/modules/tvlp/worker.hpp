@@ -42,10 +42,8 @@ public:
                            const model::tvlp_module_profile_t&);
     virtual ~tvlp_worker_t();
 
-    tl::expected<void, std::string>
-    start(const realtime::time_point& start_time = realtime::now(),
-          const std::optional<dynamic::configuration>& dynamic_results =
-              std::nullopt);
+    tl::expected<void, std::string> start(const model::time_point& start_time,
+                                          const model::tvlp_start_t::start_t&);
     void stop();
 
     model::tvlp_state_t state() const;
@@ -55,7 +53,7 @@ public:
 
 protected:
     virtual tl::expected<std::string, std::string>
-    send_create(const model::tvlp_profile_entry_t&) = 0;
+    send_create(const model::tvlp_profile_entry_t&, double load_scale) = 0;
     virtual tl::expected<stat_pair_t, std::string>
     send_start(const std::string& id,
                const dynamic::configuration& dynamic_results = {}) = 0;
@@ -73,10 +71,9 @@ protected:
 
 private:
     tl::expected<void, std::string>
-    schedule(realtime::time_point start_time,
-             const model::tvlp_module_profile_t& profile,
-             const std::optional<dynamic::configuration>& dynamic_results =
-                 std::nullopt);
+    schedule(const model::tvlp_module_profile_t& profile,
+             const model::time_point& time,
+             const model::tvlp_start_t::start_t& start_config);
 
     tvlp_worker_state_t m_state;
     std::string m_error;

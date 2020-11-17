@@ -24,9 +24,9 @@ tvlp_worker_t::~tvlp_worker_t()
     delete m_result.exchange(nullptr);
 }
 
-tl::expected<void, std::string> tvlp_worker_t::start(
-    const realtime::time_point& start_time,
-    const std::optional<dynamic::configuration>& dynamic_results)
+tl::expected<void, std::string>
+tvlp_worker_t::start(const model::time_point& start_time,
+                     const model::tvlp_start_t::start_t& start_config)
 {
     auto state = m_state.state.load();
     if (state == model::RUNNING || state == model::COUNTDOWN) {
@@ -41,14 +41,14 @@ tl::expected<void, std::string> tvlp_worker_t::start(
     delete m_result.exchange(new model::json_vector());
     m_scheduler_thread = std::async(
         std::launch::async,
-        [this](realtime::time_point tp,
-               const model::tvlp_module_profile_t& p,
-               const std::optional<dynamic::configuration>& dynamic_results) {
-            return schedule(tp, p, dynamic_results);
+        [this](const model::tvlp_module_profile_t& profile,
+               const model::time_point& time,
+               const model::tvlp_start_t::start_t start) {
+            return schedule(profile, time, start);
         },
-        start_time,
         m_profile,
-        dynamic_results);
+        start_time,
+        start_config);
 
     return {};
 }
@@ -107,10 +107,10 @@ void tvlp_worker_t::store_results(const nlohmann::json& result,
     delete m_result.exchange(updated, std::memory_order_release);
 }
 
-tl::expected<void, std::string> tvlp_worker_t::schedule(
-    realtime::time_point start_time,
-    const model::tvlp_module_profile_t& profile,
-    const std::optional<dynamic::configuration>& dynamic_results)
+tl::expected<void, std::string>
+tvlp_worker_t::schedule(const model::tvlp_module_profile_t& profile,
+                        const model::time_point& start_time,
+                        const model::tvlp_start_t::start_t& start_config)
 {
     m_state.state.store(model::COUNTDOWN);
     for (auto now = realtime::now(); now < start_time; now = realtime::now()) {
@@ -127,7 +127,7 @@ tl::expected<void, std::string> tvlp_worker_t::schedule(
     for (const auto& entry : profile) {
         auto entry_duration =
             std::chrono::duration_cast<std::chrono::nanoseconds>(
-                entry.length * entry.time_scale);
+                entry.length * start_config.time_scale);
 
         if (m_state.stopped.load()) {
             m_state.state.store(model::READY);
@@ -135,7 +135,7 @@ tl::expected<void, std::string> tvlp_worker_t::schedule(
         }
 
         // Create generator
-        auto create_result = send_create(entry);
+        auto create_result = send_create(entry, start_config.load_scale);
         if (!create_result) {
             m_state.state.store(model::ERROR);
             return tl::make_unexpected(create_result.error());
@@ -144,9 +144,7 @@ tl::expected<void, std::string> tvlp_worker_t::schedule(
         auto end_time = ref_clock::now() + entry_duration;
 
         // Start generator
-        auto start_result = (dynamic_results.has_value())
-                                ? send_start(gen_id, dynamic_results.value())
-                                : send_start(gen_id);
+        auto start_result = send_start(gen_id, start_config.dynamic_results);
         if (!start_result) {
             m_state.state.store(model::ERROR);
             return tl::make_unexpected(start_result.error());

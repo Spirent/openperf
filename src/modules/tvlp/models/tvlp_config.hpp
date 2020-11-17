@@ -13,15 +13,13 @@
 namespace openperf::tvlp::model {
 
 using duration = std::chrono::nanoseconds;
-using time_point = std::chrono::time_point<timesync::chrono::realtime>;
+using time_point = timesync::chrono::realtime::time_point;
 
 struct tvlp_profile_entry_t
 {
     duration length;
     std::optional<std::string> resource_id;
     nlohmann::json config;
-    double time_scale = 1.0;
-    double load_scale = 1.0;
 };
 
 using tvlp_module_profile_t = std::vector<tvlp_profile_entry_t>;
@@ -34,12 +32,20 @@ struct tvlp_profile_t
     std::optional<tvlp_module_profile_t> packet;
 };
 
-struct tvlp_dynamic_t
+struct tvlp_start_t
 {
-    std::optional<dynamic::configuration> block;
-    std::optional<dynamic::configuration> cpu;
-    std::optional<dynamic::configuration> memory;
-    std::optional<dynamic::configuration> packet;
+    struct start_t
+    {
+        double time_scale = 1.0;
+        double load_scale = 1.0;
+        dynamic::configuration dynamic_results;
+    };
+
+    time_point start_time = timesync::chrono::realtime::now();
+    start_t block;
+    start_t cpu;
+    start_t memory;
+    start_t packet;
 };
 
 enum tvlp_state_t { READY = 0, COUNTDOWN, RUNNING, ERROR };

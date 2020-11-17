@@ -32,8 +32,7 @@ public:
     controller_t& operator=(const controller_t&) = delete;
 
     std::shared_ptr<model::tvlp_result_t>
-    start(const time_point& start_time,
-          const model::tvlp_dynamic_t& dynamic_results);
+    start(const model::tvlp_start_t& start_configuration);
     void stop();
     bool is_running() const;
 

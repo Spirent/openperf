@@ -67,8 +67,7 @@ tl::expected<void, std::string> controller_stack::erase(const std::string& id)
 
 tl::expected<controller_stack::tvlp_result_ptr, std::string>
 controller_stack::start(const std::string& id,
-                        const time_point& start_time,
-                        const model::tvlp_dynamic_t& dynamic_results)
+                        const model::tvlp_start_t& start_configuration)
 {
     auto controller = get(id);
     if (!controller) return tl::make_unexpected(controller.error());
@@ -77,7 +76,7 @@ controller_stack::start(const std::string& id,
         return tl::make_unexpected("Generator is already in running state");
     }
 
-    auto result = controller.value()->start(start_time, dynamic_results);
+    auto result = controller.value()->start(start_configuration);
     m_results[result->id()] = result;
     return result;
 }
