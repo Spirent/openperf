@@ -70,23 +70,22 @@ block_generator::block_generator(
     m_controller.start<task_stat_t>([this](const task_stat_t& stat) {
         auto elapsed_time = stat.updated - m_start_time;
 
+        using double_time = std::chrono::duration<double>;
         switch (stat.operation) {
         case task_operation::READ:
             m_read += stat;
-            m_read.ops_target =
-                elapsed_time.count()
-                * static_cast<uint64_t>(m_config.reads_per_sec
-                                        * std::min(m_config.read_size, 1U)
-                                        / std::nano::den);
+            m_read.ops_target = static_cast<uint64_t>(
+                (std::chrono::duration_cast<double_time>(elapsed_time)
+                 * std::min(m_config.read_size, 1U) * m_config.reads_per_sec)
+                    .count());
             m_read.bytes_target = m_read.ops_target * m_config.read_size;
             break;
         case task_operation::WRITE:
             m_write += stat;
-            m_write.ops_target =
-                elapsed_time.count()
-                * static_cast<uint64_t>(m_config.writes_per_sec
-                                        * std::min(m_config.write_size, 1U)
-                                        / std::nano::den);
+            m_write.ops_target = static_cast<uint64_t>(
+                (std::chrono::duration_cast<double_time>(elapsed_time)
+                 * std::min(m_config.write_size, 1U) * m_config.writes_per_sec)
+                    .count());
             m_write.bytes_target = m_write.ops_target * m_config.write_size;
             break;
         }
