@@ -106,6 +106,11 @@ api_reply server::handle_request(const request::generator::create& req)
         return reply::error{.type = reply::error::EXISTS};
     } catch (const std::domain_error&) {
         return reply::error{.type = reply::error::INVALID_ID};
+    } catch (const std::runtime_error& e) {
+        return reply::error{
+            .type = reply::error::CUSTOM,
+            .message = e.what(),
+        };
     }
 }
 
@@ -133,6 +138,12 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
         } catch (const std::domain_error&) {
             remove_created_items();
             return reply::error{.type = reply::error::INVALID_ID};
+        } catch (const std::runtime_error& e) {
+            remove_created_items();
+            return reply::error{
+                .type = reply::error::CUSTOM,
+                .message = e.what(),
+            };
         }
     }
 
