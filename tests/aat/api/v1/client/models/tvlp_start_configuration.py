@@ -31,10 +31,10 @@ class TvlpStartConfiguration(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'cpu': 'TvlpSeriesStartConfiguration',
-        'memory': 'TvlpSeriesStartConfiguration',
-        'block': 'TvlpSeriesStartConfiguration',
-        'packet': 'TvlpSeriesStartConfiguration'
+        'cpu': 'TvlpStartSeriesConfiguration',
+        'memory': 'TvlpStartSeriesConfiguration',
+        'block': 'TvlpStartSeriesConfiguration',
+        'packet': 'TvlpStartSeriesConfiguration'
     }
 
     attribute_map = {
@@ -68,7 +68,7 @@ class TvlpStartConfiguration(object):
 
 
         :return: The cpu of this TvlpStartConfiguration.  # noqa: E501
-        :rtype: TvlpSeriesStartConfiguration
+        :rtype: TvlpStartSeriesConfiguration
         """
         return self._cpu
 
@@ -78,7 +78,7 @@ class TvlpStartConfiguration(object):
 
 
         :param cpu: The cpu of this TvlpStartConfiguration.  # noqa: E501
-        :type: TvlpSeriesStartConfiguration
+        :type: TvlpStartSeriesConfiguration
         """
         self._cpu = cpu
 
@@ -88,7 +88,7 @@ class TvlpStartConfiguration(object):
 
 
         :return: The memory of this TvlpStartConfiguration.  # noqa: E501
-        :rtype: TvlpSeriesStartConfiguration
+        :rtype: TvlpStartSeriesConfiguration
         """
         return self._memory
 
@@ -98,7 +98,7 @@ class TvlpStartConfiguration(object):
 
 
         :param memory: The memory of this TvlpStartConfiguration.  # noqa: E501
-        :type: TvlpSeriesStartConfiguration
+        :type: TvlpStartSeriesConfiguration
         """
         self._memory = memory
 
@@ -108,7 +108,7 @@ class TvlpStartConfiguration(object):
 
 
         :return: The block of this TvlpStartConfiguration.  # noqa: E501
-        :rtype: TvlpSeriesStartConfiguration
+        :rtype: TvlpStartSeriesConfiguration
         """
         return self._block
 
@@ -118,7 +118,7 @@ class TvlpStartConfiguration(object):
 
 
         :param block: The block of this TvlpStartConfiguration.  # noqa: E501
-        :type: TvlpSeriesStartConfiguration
+        :type: TvlpStartSeriesConfiguration
         """
         self._block = block
 
@@ -128,7 +128,7 @@ class TvlpStartConfiguration(object):
 
 
         :return: The packet of this TvlpStartConfiguration.  # noqa: E501
-        :rtype: TvlpSeriesStartConfiguration
+        :rtype: TvlpStartSeriesConfiguration
         """
         return self._packet
 
@@ -138,7 +138,7 @@ class TvlpStartConfiguration(object):
 
 
         :param packet: The packet of this TvlpStartConfiguration.  # noqa: E501
-        :type: TvlpSeriesStartConfiguration
+        :type: TvlpStartSeriesConfiguration
         """
         self._packet = packet
 

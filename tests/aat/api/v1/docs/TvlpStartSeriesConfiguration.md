@@ -1,4 +1,4 @@
-# TvlpSeriesStartConfiguration
+# TvlpStartSeriesConfiguration
 
 ## Properties
 Name | Type | Description | Notes

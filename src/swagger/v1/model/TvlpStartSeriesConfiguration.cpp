@@ -11,28 +11,28 @@
 */
 
 
-#include "TvlpSeriesStartConfiguration.h"
+#include "TvlpStartSeriesConfiguration.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-TvlpSeriesStartConfiguration::TvlpSeriesStartConfiguration()
+TvlpStartSeriesConfiguration::TvlpStartSeriesConfiguration()
 {
     m_Dynamic_resultsIsSet = false;
     
 }
 
-TvlpSeriesStartConfiguration::~TvlpSeriesStartConfiguration()
+TvlpStartSeriesConfiguration::~TvlpStartSeriesConfiguration()
 {
 }
 
-void TvlpSeriesStartConfiguration::validate()
+void TvlpStartSeriesConfiguration::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json TvlpSeriesStartConfiguration::toJson() const
+nlohmann::json TvlpStartSeriesConfiguration::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
@@ -45,7 +45,7 @@ nlohmann::json TvlpSeriesStartConfiguration::toJson() const
     return val;
 }
 
-void TvlpSeriesStartConfiguration::fromJson(nlohmann::json& val)
+void TvlpStartSeriesConfiguration::fromJson(nlohmann::json& val)
 {
     if(val.find("dynamic_results") != val.end())
     {
@@ -61,20 +61,20 @@ void TvlpSeriesStartConfiguration::fromJson(nlohmann::json& val)
 }
 
 
-std::shared_ptr<DynamicResultsConfig> TvlpSeriesStartConfiguration::getDynamicResults() const
+std::shared_ptr<DynamicResultsConfig> TvlpStartSeriesConfiguration::getDynamicResults() const
 {
     return m_Dynamic_results;
 }
-void TvlpSeriesStartConfiguration::setDynamicResults(std::shared_ptr<DynamicResultsConfig> value)
+void TvlpStartSeriesConfiguration::setDynamicResults(std::shared_ptr<DynamicResultsConfig> value)
 {
     m_Dynamic_results = value;
     m_Dynamic_resultsIsSet = true;
 }
-bool TvlpSeriesStartConfiguration::dynamicResultsIsSet() const
+bool TvlpStartSeriesConfiguration::dynamicResultsIsSet() const
 {
     return m_Dynamic_resultsIsSet;
 }
-void TvlpSeriesStartConfiguration::unsetDynamic_results()
+void TvlpStartSeriesConfiguration::unsetDynamic_results()
 {
     m_Dynamic_resultsIsSet = false;
 }

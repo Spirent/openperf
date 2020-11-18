@@ -21,7 +21,7 @@
 
 #include "ModelBase.h"
 
-#include "TvlpSeriesStartConfiguration.h"
+#include "TvlpStartSeriesConfiguration.h"
 
 namespace swagger {
 namespace v1 {
@@ -51,40 +51,40 @@ public:
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<TvlpSeriesStartConfiguration> getCpu() const;
-    void setCpu(std::shared_ptr<TvlpSeriesStartConfiguration> value);
+    std::shared_ptr<TvlpStartSeriesConfiguration> getCpu() const;
+    void setCpu(std::shared_ptr<TvlpStartSeriesConfiguration> value);
     bool cpuIsSet() const;
     void unsetCpu();
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<TvlpSeriesStartConfiguration> getMemory() const;
-    void setMemory(std::shared_ptr<TvlpSeriesStartConfiguration> value);
+    std::shared_ptr<TvlpStartSeriesConfiguration> getMemory() const;
+    void setMemory(std::shared_ptr<TvlpStartSeriesConfiguration> value);
     bool memoryIsSet() const;
     void unsetMemory();
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<TvlpSeriesStartConfiguration> getBlock() const;
-    void setBlock(std::shared_ptr<TvlpSeriesStartConfiguration> value);
+    std::shared_ptr<TvlpStartSeriesConfiguration> getBlock() const;
+    void setBlock(std::shared_ptr<TvlpStartSeriesConfiguration> value);
     bool blockIsSet() const;
     void unsetBlock();
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<TvlpSeriesStartConfiguration> getPacket() const;
-    void setPacket(std::shared_ptr<TvlpSeriesStartConfiguration> value);
+    std::shared_ptr<TvlpStartSeriesConfiguration> getPacket() const;
+    void setPacket(std::shared_ptr<TvlpStartSeriesConfiguration> value);
     bool packetIsSet() const;
     void unsetPacket();
 
 protected:
-    std::shared_ptr<TvlpSeriesStartConfiguration> m_Cpu;
+    std::shared_ptr<TvlpStartSeriesConfiguration> m_Cpu;
     bool m_CpuIsSet;
-    std::shared_ptr<TvlpSeriesStartConfiguration> m_Memory;
+    std::shared_ptr<TvlpStartSeriesConfiguration> m_Memory;
     bool m_MemoryIsSet;
-    std::shared_ptr<TvlpSeriesStartConfiguration> m_Block;
+    std::shared_ptr<TvlpStartSeriesConfiguration> m_Block;
     bool m_BlockIsSet;
-    std::shared_ptr<TvlpSeriesStartConfiguration> m_Packet;
+    std::shared_ptr<TvlpStartSeriesConfiguration> m_Packet;
     bool m_PacketIsSet;
 };
 

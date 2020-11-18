@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * TvlpSeriesStartConfiguration.h
+ * TvlpStartSeriesConfiguration.h
  *
  * TVLP series start configuration
  */
 
-#ifndef TvlpSeriesStartConfiguration_H_
-#define TvlpSeriesStartConfiguration_H_
+#ifndef TvlpStartSeriesConfiguration_H_
+#define TvlpStartSeriesConfiguration_H_
 
 
 #include "ModelBase.h"
@@ -30,12 +30,12 @@ namespace model {
 /// <summary>
 /// TVLP series start configuration
 /// </summary>
-class  TvlpSeriesStartConfiguration
+class  TvlpStartSeriesConfiguration
     : public ModelBase
 {
 public:
-    TvlpSeriesStartConfiguration();
-    virtual ~TvlpSeriesStartConfiguration();
+    TvlpStartSeriesConfiguration();
+    virtual ~TvlpStartSeriesConfiguration();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -46,7 +46,7 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// TvlpSeriesStartConfiguration members
+    /// TvlpStartSeriesConfiguration members
 
     /// <summary>
     /// 
@@ -65,4 +65,4 @@ protected:
 }
 }
 
-#endif /* TvlpSeriesStartConfiguration_H_ */
+#endif /* TvlpStartSeriesConfiguration_H_ */

@@ -402,15 +402,15 @@ definitions:
     description: TVLP start configuration
     properties:
       cpu:
-        $ref: "#/definitions/TvlpSeriesStartConfiguration"
+        $ref: "#/definitions/TvlpStartSeriesConfiguration"
       memory:
-        $ref: "#/definitions/TvlpSeriesStartConfiguration"
+        $ref: "#/definitions/TvlpStartSeriesConfiguration"
       block:
-        $ref: "#/definitions/TvlpSeriesStartConfiguration"
+        $ref: "#/definitions/TvlpStartSeriesConfiguration"
       packet:
-        $ref: "#/definitions/TvlpSeriesStartConfiguration"
+        $ref: "#/definitions/TvlpStartSeriesConfiguration"
 
-  TvlpSeriesStartConfiguration:
+  TvlpStartSeriesConfiguration:
     type: object
     description: TVLP series start configuration
     properties:

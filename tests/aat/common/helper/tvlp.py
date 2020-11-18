@@ -57,13 +57,13 @@ def tvlp_packet_profile_model(entries, length, target_id, time_scale=1.0, load_s
 
 def tvlp_start_configuration():
     start = client.models.TvlpStartConfiguration()
-    start.memory = client.models.TvlpSeriesStartConfiguration()
+    start.memory = client.models.TvlpStartSeriesConfiguration()
     start.memory.dynamic_results = dynamic.make_dynamic_results_config(
         memory.get_memory_dynamic_results_fields())
-    start.block = client.models.TvlpSeriesStartConfiguration()
+    start.block = client.models.TvlpStartSeriesConfiguration()
     start.block.dynamic_results = dynamic.make_dynamic_results_config(
         block.get_block_dynamic_results_fields())
-    start.cpu = client.models.TvlpSeriesStartConfiguration()
+    start.cpu = client.models.TvlpStartSeriesConfiguration()
     start.cpu.dynamic_results = dynamic.make_dynamic_results_config(
         ["utilization", "steal"])
     return start

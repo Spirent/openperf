@@ -66,7 +66,7 @@ void TvlpStartConfiguration::fromJson(nlohmann::json& val)
     {
         if(!val["cpu"].is_null())
         {
-            std::shared_ptr<TvlpSeriesStartConfiguration> newItem(new TvlpSeriesStartConfiguration());
+            std::shared_ptr<TvlpStartSeriesConfiguration> newItem(new TvlpStartSeriesConfiguration());
             newItem->fromJson(val["cpu"]);
             setCpu( newItem );
         }
@@ -76,7 +76,7 @@ void TvlpStartConfiguration::fromJson(nlohmann::json& val)
     {
         if(!val["memory"].is_null())
         {
-            std::shared_ptr<TvlpSeriesStartConfiguration> newItem(new TvlpSeriesStartConfiguration());
+            std::shared_ptr<TvlpStartSeriesConfiguration> newItem(new TvlpStartSeriesConfiguration());
             newItem->fromJson(val["memory"]);
             setMemory( newItem );
         }
@@ -86,7 +86,7 @@ void TvlpStartConfiguration::fromJson(nlohmann::json& val)
     {
         if(!val["block"].is_null())
         {
-            std::shared_ptr<TvlpSeriesStartConfiguration> newItem(new TvlpSeriesStartConfiguration());
+            std::shared_ptr<TvlpStartSeriesConfiguration> newItem(new TvlpStartSeriesConfiguration());
             newItem->fromJson(val["block"]);
             setBlock( newItem );
         }
@@ -96,7 +96,7 @@ void TvlpStartConfiguration::fromJson(nlohmann::json& val)
     {
         if(!val["packet"].is_null())
         {
-            std::shared_ptr<TvlpSeriesStartConfiguration> newItem(new TvlpSeriesStartConfiguration());
+            std::shared_ptr<TvlpStartSeriesConfiguration> newItem(new TvlpStartSeriesConfiguration());
             newItem->fromJson(val["packet"]);
             setPacket( newItem );
         }
@@ -106,11 +106,11 @@ void TvlpStartConfiguration::fromJson(nlohmann::json& val)
 }
 
 
-std::shared_ptr<TvlpSeriesStartConfiguration> TvlpStartConfiguration::getCpu() const
+std::shared_ptr<TvlpStartSeriesConfiguration> TvlpStartConfiguration::getCpu() const
 {
     return m_Cpu;
 }
-void TvlpStartConfiguration::setCpu(std::shared_ptr<TvlpSeriesStartConfiguration> value)
+void TvlpStartConfiguration::setCpu(std::shared_ptr<TvlpStartSeriesConfiguration> value)
 {
     m_Cpu = value;
     m_CpuIsSet = true;
@@ -123,11 +123,11 @@ void TvlpStartConfiguration::unsetCpu()
 {
     m_CpuIsSet = false;
 }
-std::shared_ptr<TvlpSeriesStartConfiguration> TvlpStartConfiguration::getMemory() const
+std::shared_ptr<TvlpStartSeriesConfiguration> TvlpStartConfiguration::getMemory() const
 {
     return m_Memory;
 }
-void TvlpStartConfiguration::setMemory(std::shared_ptr<TvlpSeriesStartConfiguration> value)
+void TvlpStartConfiguration::setMemory(std::shared_ptr<TvlpStartSeriesConfiguration> value)
 {
     m_Memory = value;
     m_MemoryIsSet = true;
@@ -140,11 +140,11 @@ void TvlpStartConfiguration::unsetMemory()
 {
     m_MemoryIsSet = false;
 }
-std::shared_ptr<TvlpSeriesStartConfiguration> TvlpStartConfiguration::getBlock() const
+std::shared_ptr<TvlpStartSeriesConfiguration> TvlpStartConfiguration::getBlock() const
 {
     return m_Block;
 }
-void TvlpStartConfiguration::setBlock(std::shared_ptr<TvlpSeriesStartConfiguration> value)
+void TvlpStartConfiguration::setBlock(std::shared_ptr<TvlpStartSeriesConfiguration> value)
 {
     m_Block = value;
     m_BlockIsSet = true;
@@ -157,11 +157,11 @@ void TvlpStartConfiguration::unsetBlock()
 {
     m_BlockIsSet = false;
 }
-std::shared_ptr<TvlpSeriesStartConfiguration> TvlpStartConfiguration::getPacket() const
+std::shared_ptr<TvlpStartSeriesConfiguration> TvlpStartConfiguration::getPacket() const
 {
     return m_Packet;
 }
-void TvlpStartConfiguration::setPacket(std::shared_ptr<TvlpSeriesStartConfiguration> value)
+void TvlpStartConfiguration::setPacket(std::shared_ptr<TvlpStartSeriesConfiguration> value)
 {
     m_Packet = value;
     m_PacketIsSet = true;

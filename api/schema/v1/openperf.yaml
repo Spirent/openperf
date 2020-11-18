@@ -760,5 +760,5 @@ definitions:
   TvlpStartConfiguration:
     $ref: ./modules/tvlp.yaml#/definitions/TvlpStartConfiguration
 
-  TvlpSeriesStartConfiguration:
-    $ref: ./modules/tvlp.yaml#/definitions/TvlpSeriesStartConfiguration
+  TvlpStartSeriesConfiguration:
+    $ref: ./modules/tvlp.yaml#/definitions/TvlpStartSeriesConfiguration
