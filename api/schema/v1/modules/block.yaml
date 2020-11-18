@@ -490,7 +490,7 @@ definitions:
       id:
         type: string
         description: Unique file identifier
-      file_size:
+      size:
         type: integer
         description: Size of test file (in bytes)
         format: int64
@@ -511,7 +511,7 @@ definitions:
           - ready
     required:
       - id
-      - file_size
+      - size
       - init_percent_complete
       - path
       - state

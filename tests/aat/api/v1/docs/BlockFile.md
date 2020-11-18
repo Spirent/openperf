@@ -4,7 +4,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** | Unique file identifier | 
-**file_size** | **int** | Size of test file (in bytes) | 
+**size** | **int** | Size of test file (in bytes) | 
 **init_percent_complete** | **int** | Percentage of initialization completed so far | 
 **path** | **str** | Resource pathname | 
 **state** | **str** | State of resource | 

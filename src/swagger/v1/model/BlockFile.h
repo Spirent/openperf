@@ -56,8 +56,8 @@ public:
         /// <summary>
     /// Size of test file (in bytes)
     /// </summary>
-    int64_t getFileSize() const;
-    void setFileSize(int64_t value);
+    int64_t getSize() const;
+    void setSize(int64_t value);
         /// <summary>
     /// Percentage of initialization completed so far
     /// </summary>
@@ -77,7 +77,7 @@ public:
 protected:
     std::string m_Id;
 
-    int64_t m_File_size;
+    int64_t m_Size;
 
     int32_t m_Init_percent_complete;
 
