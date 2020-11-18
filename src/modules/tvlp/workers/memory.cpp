@@ -12,8 +12,8 @@ using namespace openperf::memory::api;
 // using namespace Pistache;
 
 memory_tvlp_worker_t::memory_tvlp_worker_t(
-    void* context, const model::tvlp_profile_t::series& profile)
-    : tvlp_worker_t(context, endpoint, profile)
+    void* context, const model::tvlp_profile_t::series& series)
+    : tvlp_worker_t(context, endpoint, series)
 {}
 
 memory_tvlp_worker_t::~memory_tvlp_worker_t() { stop(); }

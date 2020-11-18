@@ -13,8 +13,8 @@ using namespace openperf::packet::generator::api;
 using namespace Pistache;
 
 packet_tvlp_worker_t::packet_tvlp_worker_t(
-    void* context, const model::tvlp_profile_t::series& profile)
-    : tvlp_worker_t(context, std::string(endpoint), profile){};
+    void* context, const model::tvlp_profile_t::series& series)
+    : tvlp_worker_t(context, std::string(endpoint), series){};
 
 packet_tvlp_worker_t::~packet_tvlp_worker_t() { stop(); }
 

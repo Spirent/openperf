@@ -11,8 +11,8 @@ namespace swagger = swagger::v1::model;
 using namespace openperf::cpu::api;
 
 cpu_tvlp_worker_t::cpu_tvlp_worker_t(
-    void* context, const model::tvlp_profile_t::series& profile)
-    : tvlp_worker_t(context, endpoint, profile){};
+    void* context, const model::tvlp_profile_t::series& series)
+    : tvlp_worker_t(context, endpoint, series){};
 
 cpu_tvlp_worker_t::~cpu_tvlp_worker_t() { stop(); }
 

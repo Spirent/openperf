@@ -20,9 +20,9 @@ controller_t::controller_t(void* context,
     : model::tvlp_configuration_t(model)
     , m_context(context)
 {
-    auto series_length = [](model::tvlp_profile_t::series& profiles) {
+    auto series_length = [](const model::tvlp_profile_t::series& series) {
         duration total_length = 0ms;
-        for (const auto& p : profiles) {
+        for (const auto& p : series) {
             if (p.length <= 0ms) {
                 throw std::runtime_error(
                     "Invalid field value: profile length cannot be less than "

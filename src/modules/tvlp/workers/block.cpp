@@ -11,8 +11,8 @@ namespace swagger = swagger::v1::model;
 using namespace openperf::block::api;
 
 block_tvlp_worker_t::block_tvlp_worker_t(
-    void* context, const model::tvlp_profile_t::series& profile)
-    : tvlp_worker_t(context, endpoint, profile)
+    void* context, const model::tvlp_profile_t::series& series)
+    : tvlp_worker_t(context, endpoint, series)
 {}
 
 block_tvlp_worker_t::~block_tvlp_worker_t() { stop(); }

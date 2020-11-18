@@ -49,16 +49,16 @@ is_valid(const swagger::TvlpStartConfiguration& config)
 {
     auto errors = std::vector<std::string>();
 
-    auto scale_check = [&errors](auto&& profile) {
-        if (profile->getTimeScale() <= 0.0) {
+    auto scale_check = [&errors](auto&& start_options) {
+        if (start_options->getTimeScale() <= 0.0) {
             errors.emplace_back("Time scale value '"
-                                + std::to_string(profile->getTimeScale())
+                                + std::to_string(start_options->getTimeScale())
                                 + "' should be greater than 0.0");
         }
 
-        if (profile->getLoadScale() <= 0.0) {
+        if (start_options->getLoadScale() <= 0.0) {
             errors.emplace_back("Load scale value '"
-                                + std::to_string(profile->getLoadScale())
+                                + std::to_string(start_options->getLoadScale())
                                 + "' should be greater than 0.0");
         }
     };
@@ -78,9 +78,9 @@ is_valid(const swagger::TvlpStartConfiguration& config)
 
 void apply_defaults(swagger::TvlpStartConfiguration& config)
 {
-    auto apply_scales = [](auto&& profile) {
-        if (!profile->timeScaleIsSet()) profile->setTimeScale(1.0);
-        if (!profile->loadScaleIsSet()) profile->setLoadScale(1.0);
+    auto apply_scales = [](auto&& start_options) {
+        if (!start_options->timeScaleIsSet()) start_options->setTimeScale(1.0);
+        if (!start_options->loadScaleIsSet()) start_options->setLoadScale(1.0);
     };
 
     if (config.blockIsSet()) apply_scales(config.getBlock());

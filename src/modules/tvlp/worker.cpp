@@ -9,9 +9,9 @@ constexpr model::duration THRESHOLD = 100ms;
 
 tvlp_worker_t::tvlp_worker_t(void* context,
                              const std::string& endpoint,
-                             const model::tvlp_profile_t::series& profile)
+                             const model::tvlp_profile_t::series& series)
     : m_socket(op_socket_get_client(context, ZMQ_REQ, endpoint.data()))
-    , m_profile(profile)
+    , m_series(series)
 {
     m_state.state.store(model::READY);
     m_state.offset.store(model::duration::zero());
@@ -41,10 +41,10 @@ tvlp_worker_t::start(const model::time_point& start_time,
     delete m_result.exchange(new model::json_vector());
     m_scheduler_thread = std::async(
         std::launch::async,
-        [this](auto&& profile, auto&& time, auto&& start) {
-            return schedule(profile, time, start);
+        [this](auto&& series, auto&& time, auto&& start) {
+            return schedule(series, time, start);
         },
-        m_profile,
+        m_series,
         start_time,
         start_config);
 
@@ -106,7 +106,7 @@ void tvlp_worker_t::store_results(const nlohmann::json& result,
 }
 
 tl::expected<void, std::string>
-tvlp_worker_t::schedule(const model::tvlp_profile_t::series& profile,
+tvlp_worker_t::schedule(const model::tvlp_profile_t::series& series,
                         const model::time_point& start_time,
                         const model::tvlp_start_t::start_t& start_config)
 {
@@ -125,7 +125,7 @@ tvlp_worker_t::schedule(const model::tvlp_profile_t::series& profile,
 
     m_state.state.store(model::RUNNING);
     model::duration total_offset = model::duration::zero();
-    for (const auto& entry : profile) {
+    for (const auto& entry : series) {
         auto entry_duration =
             std::chrono::duration_cast<std::chrono::nanoseconds>(
                 entry.length * start_config.time_scale);
@@ -154,7 +154,7 @@ tvlp_worker_t::schedule(const model::tvlp_profile_t::series& profile,
         // Add new statistics
         store_results(start_result.value().second, result_store_operation::ADD);
 
-        // Wait until profile entry done
+        // Wait until series entry done
         auto started = ref_clock::now();
         for (auto now = started; now < end_time; now = ref_clock::now()) {
             if (m_state.stopped.load()) {

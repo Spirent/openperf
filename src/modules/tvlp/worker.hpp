@@ -76,7 +76,7 @@ private:
     std::string m_error;
     std::atomic<model::json_vector*> m_result;
     worker_future m_scheduler_thread;
-    model::tvlp_profile_t::series m_profile;
+    model::tvlp_profile_t::series m_series;
 
     enum class result_store_operation { ADD = 0, UPDATE };
     void store_results(const nlohmann::json& result,
