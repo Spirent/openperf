@@ -20,7 +20,7 @@ controller_t::controller_t(void* context,
     : model::tvlp_configuration_t(model)
     , m_context(context)
 {
-    auto scale_length = [](model::tvlp_module_profile_t& profiles) {
+    auto series_length = [](model::tvlp_module_profile_t& profiles) {
         duration total_length = 0ms;
         for (const auto& p : profiles) {
             if (p.length <= 0ms) {
@@ -38,28 +38,28 @@ controller_t::controller_t(void* context,
     duration total_length = 0ms;
     if (m_profile.block) {
         total_length =
-            std::max(total_length, scale_length(m_profile.block.value()));
+            std::max(total_length, series_length(m_profile.block.value()));
         m_block = std::make_unique<worker::block_tvlp_worker_t>(
             m_context, m_profile.block.value());
     }
 
     if (m_profile.memory) {
         total_length =
-            std::max(total_length, scale_length(m_profile.memory.value()));
+            std::max(total_length, series_length(m_profile.memory.value()));
         m_memory = std::make_unique<worker::memory_tvlp_worker_t>(
             m_context, m_profile.memory.value());
     }
 
     if (m_profile.cpu) {
         total_length =
-            std::max(total_length, scale_length(m_profile.cpu.value()));
+            std::max(total_length, series_length(m_profile.cpu.value()));
         m_cpu = std::make_unique<worker::cpu_tvlp_worker_t>(
             m_context, m_profile.cpu.value());
     }
 
     if (m_profile.packet) {
         total_length =
-            std::max(total_length, scale_length(m_profile.packet.value()));
+            std::max(total_length, series_length(m_profile.packet.value()));
         m_packet = std::make_unique<worker::packet_tvlp_worker_t>(
             m_context, m_profile.packet.value());
     }
