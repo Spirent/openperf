@@ -18,7 +18,7 @@ class _be_valid_block_file(Matcher):
         expect(file).to(be_a(client.models.BlockFile))
         expect(file.id).not_to(be_empty)
         expect(file.path).not_to(be_empty)
-        expect(file.file_size).not_to(be_none)
+        expect(file.size).not_to(be_none)
         expect(file.init_percent_complete).not_to(be_none)
         expect(file.state).not_to(be_empty)
         return True, ['is valid block file']

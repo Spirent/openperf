@@ -20,7 +20,7 @@ namespace model {
 BlockFile::BlockFile()
 {
     m_Id = "";
-    m_File_size = 0L;
+    m_Size = 0L;
     m_Init_percent_complete = 0;
     m_Path = "";
     m_State = "";
@@ -41,7 +41,7 @@ nlohmann::json BlockFile::toJson() const
     nlohmann::json val = nlohmann::json::object();
 
     val["id"] = ModelBase::toJson(m_Id);
-    val["file_size"] = m_File_size;
+    val["size"] = m_Size;
     val["init_percent_complete"] = m_Init_percent_complete;
     val["path"] = ModelBase::toJson(m_Path);
     val["state"] = ModelBase::toJson(m_State);
@@ -53,7 +53,7 @@ nlohmann::json BlockFile::toJson() const
 void BlockFile::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
-    setFileSize(val.at("file_size"));
+    setSize(val.at("size"));
     setInitPercentComplete(val.at("init_percent_complete"));
     setPath(val.at("path"));
     setState(val.at("state"));
@@ -70,13 +70,13 @@ void BlockFile::setId(std::string value)
     m_Id = value;
     
 }
-int64_t BlockFile::getFileSize() const
+int64_t BlockFile::getSize() const
 {
-    return m_File_size;
+    return m_Size;
 }
-void BlockFile::setFileSize(int64_t value)
+void BlockFile::setSize(int64_t value)
 {
-    m_File_size = value;
+    m_Size = value;
     
 }
 int32_t BlockFile::getInitPercentComplete() const

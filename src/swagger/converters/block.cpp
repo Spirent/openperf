@@ -15,7 +15,7 @@ namespace swagger::v1::model {
 
 void from_json(const nlohmann::json& j, BlockFile& file)
 {
-    file.setFileSize(j.at("file_size"));
+    file.setSize(j.at("size"));
     file.setPath(j.at("path"));
 
     if (j.find("id") != j.end()) file.setId(j.at("id"));
