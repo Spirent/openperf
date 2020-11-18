@@ -22,6 +22,11 @@ STACK_SOURCES += \
 	server.cpp \
 	utils.cpp
 
+# packet sockets require linux headers
+ifeq ($(PLATFORM), linux)
+	STACK_SOURCES += lwip/packet.cpp
+endif
+
 include $(STACK_SRC_DIR)/$(OP_PACKETIO_DRIVER)/directory.mk
 
 STACK_VERSIONED_FILES := init.cpp
