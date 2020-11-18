@@ -17,21 +17,21 @@ using realtime = timesync::chrono::realtime;
 using duration = std::chrono::nanoseconds;
 using time_point = timesync::chrono::realtime::time_point;
 
-struct tvlp_profile_entry_t
-{
-    duration length;
-    std::optional<std::string> resource_id;
-    nlohmann::json config;
-};
-
-using tvlp_module_profile_t = std::vector<tvlp_profile_entry_t>;
-
 struct tvlp_profile_t
 {
-    std::optional<tvlp_module_profile_t> block;
-    std::optional<tvlp_module_profile_t> cpu;
-    std::optional<tvlp_module_profile_t> memory;
-    std::optional<tvlp_module_profile_t> packet;
+    struct entry
+    {
+        duration length;
+        std::optional<std::string> resource_id;
+        nlohmann::json config;
+    };
+
+    using series = std::vector<entry>;
+
+    std::optional<series> block;
+    std::optional<series> cpu;
+    std::optional<series> memory;
+    std::optional<series> packet;
 };
 
 struct tvlp_start_t

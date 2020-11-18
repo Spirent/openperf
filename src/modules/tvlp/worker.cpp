@@ -9,7 +9,7 @@ constexpr model::duration THRESHOLD = 100ms;
 
 tvlp_worker_t::tvlp_worker_t(void* context,
                              const std::string& endpoint,
-                             const model::tvlp_module_profile_t& profile)
+                             const model::tvlp_profile_t::series& profile)
     : m_socket(op_socket_get_client(context, ZMQ_REQ, endpoint.data()))
     , m_profile(profile)
 {
@@ -41,9 +41,7 @@ tvlp_worker_t::start(const model::time_point& start_time,
     delete m_result.exchange(new model::json_vector());
     m_scheduler_thread = std::async(
         std::launch::async,
-        [this](const model::tvlp_module_profile_t& profile,
-               const model::time_point& time,
-               const model::tvlp_start_t::start_t start) {
+        [this](auto&& profile, auto&& time, auto&& start) {
             return schedule(profile, time, start);
         },
         m_profile,
@@ -108,7 +106,7 @@ void tvlp_worker_t::store_results(const nlohmann::json& result,
 }
 
 tl::expected<void, std::string>
-tvlp_worker_t::schedule(const model::tvlp_module_profile_t& profile,
+tvlp_worker_t::schedule(const model::tvlp_profile_t::series& profile,
                         const model::time_point& start_time,
                         const model::tvlp_start_t::start_t& start_config)
 {

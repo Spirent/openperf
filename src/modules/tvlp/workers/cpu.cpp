@@ -11,13 +11,13 @@ namespace swagger = swagger::v1::model;
 using namespace openperf::cpu::api;
 
 cpu_tvlp_worker_t::cpu_tvlp_worker_t(
-    void* context, const model::tvlp_module_profile_t& profile)
+    void* context, const model::tvlp_profile_t::series& profile)
     : tvlp_worker_t(context, endpoint, profile){};
 
 cpu_tvlp_worker_t::~cpu_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-cpu_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry,
+cpu_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
                                double load_scale)
 {
     auto config = std::make_shared<swagger::CpuGeneratorConfig>();

@@ -20,7 +20,7 @@ controller_t::controller_t(void* context,
     : model::tvlp_configuration_t(model)
     , m_context(context)
 {
-    auto series_length = [](model::tvlp_module_profile_t& profiles) {
+    auto series_length = [](model::tvlp_profile_t::series& profiles) {
         duration total_length = 0ms;
         for (const auto& p : profiles) {
             if (p.length <= 0ms) {

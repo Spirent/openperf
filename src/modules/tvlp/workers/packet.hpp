@@ -10,12 +10,13 @@ class packet_tvlp_worker_t : public tvlp_worker_t
 public:
     packet_tvlp_worker_t() = delete;
     packet_tvlp_worker_t(const packet_tvlp_worker_t&) = delete;
-    packet_tvlp_worker_t(void* context, const model::tvlp_module_profile_t&);
+    packet_tvlp_worker_t(void* context, const model::tvlp_profile_t::series&);
     ~packet_tvlp_worker_t();
 
 protected:
     tl::expected<std::string, std::string>
-    send_create(const model::tvlp_profile_entry_t&, double load_scale) override;
+    send_create(const model::tvlp_profile_t::entry&,
+                double load_scale) override;
     tl::expected<stat_pair_t, std::string>
     send_start(const std::string& id,
                const dynamic::configuration& dynamic_results) override;

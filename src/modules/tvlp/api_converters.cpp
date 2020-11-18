@@ -98,9 +98,9 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
     if (m.getProfile()->blockIsSet()) {
         auto profile_model = m.getProfile()->getBlock();
 
-        profile.block = std::vector<tvlp_profile_entry_t>();
+        profile.block = tvlp_profile_t::series{};
         for (const auto& block_entry : profile_model->getSeries()) {
-            profile.block.value().push_back(tvlp_profile_entry_t{
+            profile.block.value().push_back(tvlp_profile_t::entry{
                 .length = model::duration(block_entry->getLength()),
                 .resource_id = block_entry->getResourceId(),
                 .config = block_entry->getConfig()->toJson(),
@@ -111,9 +111,9 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
     if (m.getProfile()->memoryIsSet()) {
         auto profile_model = m.getProfile()->getMemory();
 
-        profile.memory = std::vector<tvlp_profile_entry_t>();
+        profile.memory = tvlp_profile_t::series{};
         for (const auto& memory_entry : profile_model->getSeries()) {
-            profile.memory.value().push_back(tvlp_profile_entry_t{
+            profile.memory.value().push_back(tvlp_profile_t::entry{
                 .length = model::duration(memory_entry->getLength()),
                 .config = memory_entry->getConfig()->toJson(),
             });
@@ -123,9 +123,9 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
     if (m.getProfile()->cpuIsSet()) {
         auto profile_model = m.getProfile()->getCpu();
 
-        profile.cpu = std::vector<tvlp_profile_entry_t>();
+        profile.cpu = tvlp_profile_t::series{};
         for (const auto& cpu_entry : profile_model->getSeries()) {
-            profile.cpu.value().push_back(tvlp_profile_entry_t{
+            profile.cpu.value().push_back(tvlp_profile_t::entry{
                 .length = model::duration(cpu_entry->getLength()),
                 .config = cpu_entry->getConfig()->toJson(),
             });
@@ -135,9 +135,9 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
     if (m.getProfile()->packetIsSet()) {
         auto profile_model = m.getProfile()->getPacket();
 
-        profile.packet = std::vector<tvlp_profile_entry_t>();
+        profile.packet = tvlp_profile_t::series{};
         for (const auto& packet_entry : profile_model->getSeries()) {
-            profile.packet.value().push_back(tvlp_profile_entry_t{
+            profile.packet.value().push_back(tvlp_profile_t::entry{
                 .length = model::duration(packet_entry->getLength()),
                 .resource_id = packet_entry->getTargetId(),
                 .config = packet_entry->getConfig()->toJson(),

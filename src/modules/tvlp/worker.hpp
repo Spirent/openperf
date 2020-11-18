@@ -36,7 +36,7 @@ public:
     tvlp_worker_t(const tvlp_worker_t&) = delete;
     explicit tvlp_worker_t(void*,
                            const std::string&,
-                           const model::tvlp_module_profile_t&);
+                           const model::tvlp_profile_t::series&);
     virtual ~tvlp_worker_t();
 
     tl::expected<void, std::string> start(const model::time_point& start_time,
@@ -50,7 +50,7 @@ public:
 
 protected:
     virtual tl::expected<std::string, std::string>
-    send_create(const model::tvlp_profile_entry_t&, double load_scale) = 0;
+    send_create(const model::tvlp_profile_t::entry&, double load_scale) = 0;
     virtual tl::expected<stat_pair_t, std::string>
     send_start(const std::string& id,
                const dynamic::configuration& dynamic_results = {}) = 0;
@@ -68,7 +68,7 @@ protected:
 
 private:
     tl::expected<void, std::string>
-    schedule(const model::tvlp_module_profile_t& profile,
+    schedule(const model::tvlp_profile_t::series& profile,
              const model::time_point& time,
              const model::tvlp_start_t::start_t& start_config);
 
@@ -76,7 +76,7 @@ private:
     std::string m_error;
     std::atomic<model::json_vector*> m_result;
     worker_future m_scheduler_thread;
-    model::tvlp_module_profile_t m_profile;
+    model::tvlp_profile_t::series m_profile;
 
     enum class result_store_operation { ADD = 0, UPDATE };
     void store_results(const nlohmann::json& result,

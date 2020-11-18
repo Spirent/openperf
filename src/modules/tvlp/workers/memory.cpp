@@ -12,14 +12,14 @@ using namespace openperf::memory::api;
 // using namespace Pistache;
 
 memory_tvlp_worker_t::memory_tvlp_worker_t(
-    void* context, const model::tvlp_module_profile_t& profile)
+    void* context, const model::tvlp_profile_t::series& profile)
     : tvlp_worker_t(context, endpoint, profile)
 {}
 
 memory_tvlp_worker_t::~memory_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-memory_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry,
+memory_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
                                   double load_scale)
 {
     auto config = swagger::MemoryGeneratorConfig{};

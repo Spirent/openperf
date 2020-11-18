@@ -11,14 +11,14 @@ namespace swagger = swagger::v1::model;
 using namespace openperf::block::api;
 
 block_tvlp_worker_t::block_tvlp_worker_t(
-    void* context, const model::tvlp_module_profile_t& profile)
+    void* context, const model::tvlp_profile_t::series& profile)
     : tvlp_worker_t(context, endpoint, profile)
 {}
 
 block_tvlp_worker_t::~block_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-block_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry,
+block_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
                                  double load_scale)
 {
     assert(entry.resource_id.has_value());

@@ -13,13 +13,13 @@ using namespace openperf::packet::generator::api;
 using namespace Pistache;
 
 packet_tvlp_worker_t::packet_tvlp_worker_t(
-    void* context, const model::tvlp_module_profile_t& profile)
+    void* context, const model::tvlp_profile_t::series& profile)
     : tvlp_worker_t(context, std::string(endpoint), profile){};
 
 packet_tvlp_worker_t::~packet_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-packet_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry,
+packet_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
                                   double load_scale)
 {
     assert(entry.resource_id.has_value());
