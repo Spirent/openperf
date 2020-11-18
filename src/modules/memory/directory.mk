@@ -33,6 +33,7 @@ MEMORY_TEST_DEPENDS += framework timesync_test
 
 MEMORY_TEST_SOURCES += \
 	generator.cpp \
+	info.cpp \
 	memory_stat.cpp \
 	task_memory.cpp \
 	task_memory_read.cpp \

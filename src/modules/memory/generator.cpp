@@ -1,4 +1,5 @@
 #include "generator.hpp"
+#include "info.hpp"
 #include "task_memory_read.hpp"
 #include "task_memory_write.hpp"
 
@@ -240,6 +241,22 @@ void generator::config(const generator::config_t& cfg)
     pause();
 
     m_controller.clear();
+
+    auto requested_size = cfg.buffer_size
+                          + cfg.read.block_size * cfg.read.threads
+                          + cfg.write.block_size * cfg.write.threads;
+
+    if (auto free = memory_info::get().free; free < requested_size) {
+        throw std::runtime_error(
+            "Requested memory size is: " + std::to_string(requested_size)
+            + " bytes (" + std::to_string(cfg.buffer_size) + " for buffer + "
+            + std::to_string(cfg.read.threads) + " x "
+            + std::to_string(cfg.read.block_size) + " for read blocks + "
+            + std::to_string(cfg.write.threads) + " x "
+            + std::to_string(cfg.write.block_size)
+            + " for write blocks), but only " + std::to_string(free)
+            + " bytes are available");
+    }
 
     resize_buffer(cfg.buffer_size);
 
