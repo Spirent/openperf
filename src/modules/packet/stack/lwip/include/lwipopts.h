@@ -108,7 +108,7 @@
  * Enable the next three options plus whatever content you want.
  */
 //#define LWIP_DEBUG 1
-//#define LWIP_DBG_MIN_LEVEL LWIP_DBG_LEVEL_WARNING
+//#define LWIP_DBG_MIN_LEVEL LWIP_DBG_LEVEL_ALL
 //#define LWIP_DBG_TYPES_ON LWIP_DBG_ON
 
 //#define ETHARP_DEBUG     LWIP_DBG_ON
@@ -143,5 +143,9 @@
 //#define AUTOIP_DEBUG     LWIP_DBG_ON
 //#define DNS_DEBUG        LWIP_DBG_ON
 //#define IP6_DEBUG        LWIP_DBG_ON
+
+/* Local implementation options */
+#define LWIP_PACKET 1
+//#define PACKET_DEBUG     LWIP_DBG_ON
 
 #endif /* _OP_PACKETIO_STACK_LWIPOPTS_H_ */

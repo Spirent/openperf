@@ -1,3 +1,5 @@
+#include <net/if.h>
+
 #include "lwip/netifapi.h"
 
 #include "packet/stack/lwip/netif_utils.hpp"
@@ -6,18 +8,31 @@
 
 namespace openperf::packet::stack {
 
-uint8_t netif_id_match(std::string_view id_str)
+const struct netif* netif_get_by_name(std::string_view id_str)
 {
-    for (auto i = 1; i <= UINT8_MAX; i++) {
-        auto n = netif_get_by_index(i);
-        if (n != nullptr) {
-            auto* ifp =
-                reinterpret_cast<openperf::packet::stack::dpdk::net_interface*>(
-                    n->state);
-            if (ifp->id() == id_str) { return netif_get_index(n); }
-        }
+    netif* cursor = nullptr;
+    NETIF_FOREACH (cursor) {
+        auto* ifp =
+            reinterpret_cast<openperf::packet::stack::dpdk::net_interface*>(
+                cursor->state);
+        if (ifp->id().compare(id_str) == 0) { return (cursor); }
+    }
+    return (nullptr);
+}
+
+uint8_t netif_index_by_name(std::string_view id_str)
+{
+    if (auto* netif = netif_get_by_name(id_str)) {
+        return (netif_get_index(netif));
     }
     return (NETIF_NO_INDEX);
+}
+
+std::string interface_id_by_netif(const struct netif* n)
+{
+    auto* ifp = reinterpret_cast<openperf::packet::stack::dpdk::net_interface*>(
+        n->state);
+    return (ifp->id());
 }
 
 err_t netif_inject(struct netif* ifp, void* packet)
