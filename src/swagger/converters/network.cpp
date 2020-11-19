@@ -74,7 +74,6 @@ void from_json(const nlohmann::json& j, NetworkServer& server)
     if (j.find("id") != j.end()) { server.setId(j.at("id")); }
     server.setPort(j.at("port"));
     server.setProtocol(j.at("protocol"));
-    server.setDriver(j.at("driver"));
 }
 
 void from_json(const nlohmann::json& j,
