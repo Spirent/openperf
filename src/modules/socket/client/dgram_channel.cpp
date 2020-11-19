@@ -2,12 +2,12 @@
 #include <unistd.h>
 
 #include "framework/utils/memcpy.hpp"
+#include "socket/client/dgram_channel.hpp"
 #include "socket/circular_buffer_consumer.tcc"
 #include "socket/circular_buffer_producer.tcc"
 #include "socket/event_queue_consumer.tcc"
 #include "socket/event_queue_producer.tcc"
-
-#include "socket/client/dgram_channel.hpp"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf::socket {
 
@@ -128,53 +128,52 @@ static std::optional<dgram_channel_addr> to_addr(const sockaddr* addr)
     if (!addr) return (std::nullopt);
 
     switch (addr->sa_family) {
-    case AF_INET: {
-        auto sa4 = reinterpret_cast<const sockaddr_in*>(addr);
-        return (std::make_optional<dgram_channel_addr>(sa4->sin_addr.s_addr,
-                                                       ntohs(sa4->sin_port)));
-    }
-    case AF_INET6: {
-        auto sa6 = reinterpret_cast<const sockaddr_in6*>(addr);
-        return (std::make_optional<dgram_channel_addr>(
-            reinterpret_cast<const uint32_t*>(&sa6->sin6_addr.s6_addr),
-            ntohs(sa6->sin6_port)));
-    }
+    case AF_INET:
+        return (*reinterpret_cast<const sockaddr_in*>(addr));
+    case AF_INET6:
+        return (*reinterpret_cast<const sockaddr_in6*>(addr));
+    case AF_PACKET:
+        return (*reinterpret_cast<const dgram_sockaddr_ll*>(addr));
     default:
         return (std::nullopt);
     }
 }
 
-static std::optional<sockaddr_storage>
-to_sockaddr(const dgram_channel_addr& addr)
+static sockaddr_storage to_sockaddr(const dgram_channel_addr& addr)
 {
-    struct sockaddr_storage sstorage;
+    auto sstorage = sockaddr_storage{};
 
-    switch (addr.addr().type) {
-    case dgram_ip_addr::type::IPv4: {
-        auto sa4 = reinterpret_cast<sockaddr_in*>(&sstorage);
-        sa4->sin_family = AF_INET;
-        sa4->sin_port = addr.port();
-        sa4->sin_addr.s_addr = addr.addr().u_addr.ip4.addr;
-        return (std::make_optional(sstorage));
-    }
-    case dgram_ip_addr::type::IPv6: {
-        auto sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
-        sa6->sin6_family = AF_INET6;
-        sa6->sin6_port = addr.port();
-        openperf::utils::memcpy(&sa6->sin6_addr.s6_addr,
-                                &addr.addr().u_addr.ip6.addr[0],
-                                sizeof(in6_addr));
-        return (std::make_optional(sstorage));
-    }
-    default:
-        return (std::nullopt);
-    }
+    std::visit(utils::overloaded_visitor(
+                   [&](const sockaddr_in& sin) {
+                       auto* sa4 = reinterpret_cast<sockaddr_in*>(&sstorage);
+                       *sa4 = sin;
+                   },
+                   [&](const sockaddr_in6& sin6) {
+                       auto* sa6 = reinterpret_cast<sockaddr_in6*>(&sstorage);
+                       *sa6 = sin6;
+                   },
+                   [&](const dgram_sockaddr_ll& sll) {
+                       auto* sa =
+                           reinterpret_cast<dgram_sockaddr_ll*>(&sstorage);
+                       *sa = sll;
+                   }),
+               addr);
+
+    return (sstorage);
 }
 
 static socklen_t length_of(const sockaddr_storage& sstorage)
 {
-    return (sstorage.ss_family == AF_INET ? sizeof(sockaddr_in)
-                                          : sizeof(sockaddr_in6));
+    switch (sstorage.ss_family) {
+    case AF_INET:
+        return (sizeof(sockaddr_in));
+    case AF_INET6:
+        return (sizeof(sockaddr_in6));
+    case AF_PACKET:
+        return (sizeof(dgram_sockaddr_ll));
+    default:
+        return (0);
+    }
 }
 
 dgram_channel::dgram_channel(int client_fd, int server_fd)
@@ -319,10 +318,9 @@ tl::expected<size_t, int> dgram_channel::recv(
 
     if (desc->address) {
         auto src = to_sockaddr(desc->address.value());
-        if (src && from && fromlen) {
-            auto srclen = length_of(src.value());
-            openperf::utils::memcpy(
-                from, &src.value(), std::min(*fromlen, srclen));
+        if (from && fromlen) {
+            auto srclen = length_of(src);
+            openperf::utils::memcpy(from, &src, std::min(*fromlen, srclen));
             *fromlen = std::max(*fromlen, srclen);
         }
     }

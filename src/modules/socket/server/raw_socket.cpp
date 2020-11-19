@@ -151,14 +151,14 @@ void raw_socket::handle_io()
 {
     m_channel->ack();
     while (m_channel->recv_available()) {
-        auto [p, dest] = m_channel->recv();
+        auto [p, dest] = m_channel->recv_ip();
 
         assert(p);
 
         if (dest)
             raw_sendto(m_pcb.get(),
                        p,
-                       reinterpret_cast<const ip_addr_t*>(&dest->addr()));
+                       reinterpret_cast<const ip_addr_t*>(&dest->addr));
         else
             raw_send(m_pcb.get(), p);
 

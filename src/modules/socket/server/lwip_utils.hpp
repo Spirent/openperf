@@ -10,6 +10,8 @@ struct tcp_pcb;
 
 namespace openperf::socket::server {
 
+tl::expected<void, int> do_sock_ioctl(const ip_pcb*, const api::request_ioctl&);
+
 tl::expected<socklen_t, int> do_sock_getsockopt(const ip_pcb*,
                                                 const api::request_getsockopt&);
 tl::expected<void, int> do_sock_setsockopt(ip_pcb*,

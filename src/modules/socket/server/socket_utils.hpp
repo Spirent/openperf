@@ -4,10 +4,11 @@
 #include <optional>
 #include <arpa/inet.h>
 
-#include "socket/api.hpp"
-
 #include "core/op_log.h"
 #include "lwip/ip_addr.h"
+
+#include "socket/api.hpp"
+#include "socket/server/generic_socket.hpp"
 
 namespace openperf::socket::server {
 
@@ -63,6 +64,16 @@ tl::expected<void, int> copy_in(char* dst,
                                 socklen_t dstlength,
                                 socklen_t srclength);
 
+template <typename T>
+tl::expected<void, int> copy_in(T& dst, pid_t src_pid, const void* src_ptr)
+{
+    return (copy_in(reinterpret_cast<char*>(std::addressof(dst)),
+                    src_pid,
+                    reinterpret_cast<const char*>(src_ptr),
+                    sizeof(dst),
+                    sizeof(dst)));
+}
+
 tl::expected<int, int> copy_in(pid_t src_pid, const int* src_int);
 
 tl::expected<void, int> copy_out(pid_t dst_pid,
@@ -74,6 +85,15 @@ tl::expected<void, int> copy_out(pid_t dst_pid, void* dst_ptr, int src);
 
 tl::expected<void, int>
 copy_out(pid_t dst_pid, void* dst_ptr, const void* src_ptr, socklen_t length);
+
+template <typename T>
+tl::expected<void, int> copy_out(pid_t dst_pid, void* dst_ptr, const T& src)
+{
+    return (copy_out(dst_pid, dst_ptr, std::addressof(src), sizeof(src)));
+}
+
+tl::expected<generic_socket, int>
+make_socket_common(allocator& allocator, int domain, int type, int protocol);
 
 } // namespace openperf::socket::server
 

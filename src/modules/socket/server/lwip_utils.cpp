@@ -1,13 +1,224 @@
 #include <cassert>
 
+#include <sys/ioctl.h>
+
+#include "socket/server/compat/linux/if.h"
 #include "socket/server/compat/linux/tcp.h"
 #include "socket/server/socket_utils.hpp"
 #include "socket/server/lwip_utils.hpp"
 #include "lwip/tcp.h"
 #include "lwip/priv/tcp_priv.h"
 #include "packet/stack/lwip/netif_utils.hpp"
+#include "timesync/chrono.hpp"
 
 namespace openperf::socket::server {
+
+static std::optional<ifreq> get_siogifconf_ifr(const netif* netif)
+{
+    auto* addr = netif_ip4_addr(netif);
+    if (!addr) { return (std::nullopt); }
+
+    auto id = packet::stack::interface_id_by_netif(netif);
+
+    auto ifr = ifreq{};
+
+    auto* sin = reinterpret_cast<sockaddr_in*>(&ifr.ifr_addr);
+    sin->sin_family = AF_INET;
+    sin->sin_addr.s_addr = addr->addr;
+
+    std::copy_n(id.data(),
+                std::min(static_cast<size_t>(IFNAMSIZ), id.length()),
+                ifr.ifr_name);
+
+    return (ifr);
+}
+
+static std::vector<ifreq> get_siocgifconf_ifrs()
+{
+    auto data = std::vector<ifreq>{};
+    netif* ifp = nullptr;
+    NETIF_FOREACH (ifp) {
+        if (auto ifr = get_siogifconf_ifr(ifp)) { data.push_back(*ifr); }
+    }
+    return (data);
+}
+
+static std::vector<ifreq> get_siocgifconf_ifrs(uint8_t netif_idx)
+{
+    auto data = std::vector<ifreq>{};
+    if (auto* netif = netif_get_by_index(netif_idx)) {
+        if (auto ifr = get_siogifconf_ifr(netif)) { data.push_back(*ifr); }
+    }
+    return (data);
+}
+
+static uint16_t get_siocgifflags(const struct netif* netif)
+{
+    uint16_t flags = IFF_RUNNING;
+
+    if (netif_is_flag_set(netif, NETIF_FLAG_UP)) { flags |= IFF_UP; }
+
+    if (netif_is_flag_set(netif, NETIF_FLAG_BROADCAST)) {
+        flags |= IFF_BROADCAST;
+    }
+
+    /*
+     * This flag is defined in the Linux netdevice manual page, but not
+     * in glibc, apparently.  Leave it out for now.
+     */
+    // if (netif_is_flag_set(netif, NETIF_FLAG_LINK_UP)) {
+    //    flags |= IFF_LOWER_UP;
+    //}
+
+    if (!netif_is_flag_set(netif, NETIF_FLAG_ETHARP)) { flags |= IFF_NOARP; }
+
+    if (netif_is_flag_set(netif, NETIF_FLAG_IGMP)
+        || netif_is_flag_set(netif, NETIF_FLAG_MLD6)) {
+        flags |= IFF_MULTICAST;
+    }
+
+    return (flags);
+}
+
+tl::expected<void, int> do_sock_ioctl(const ip_pcb* pcb,
+                                      const api::request_ioctl& ioctl)
+{
+    switch (ioctl.request) {
+    case SIOCGIFNAME: {
+        auto ifr = ifreq{};
+        auto result = copy_in(ifr, ioctl.id.pid, ioctl.argp);
+        if (!result) { return (tl::make_unexpected(result.error())); }
+
+        auto* netif = netif_get_by_index(ifr.ifr_ifindex);
+        if (!netif) return (tl::make_unexpected(ENODEV));
+
+        auto id = packet::stack::interface_id_by_netif(netif);
+        std::copy_n(id.data(),
+                    std::min(static_cast<size_t>(IFNAMSIZ), id.length()),
+                    ifr.ifr_name);
+        result = copy_out(ioctl.id.pid, ioctl.argp, ifr);
+        if (!result) return (tl::make_unexpected(result.error()));
+        break;
+    }
+    case SIOCGIFINDEX: {
+        auto ifr = ifreq{};
+        auto result = copy_in(ifr, ioctl.id.pid, ioctl.argp);
+        if (!result) { return (tl::make_unexpected(result.error())); }
+
+        auto* netif = packet::stack::netif_get_by_name(ifr.ifr_name);
+        if (!netif) return (tl::make_unexpected(ENODEV));
+
+        ifr.ifr_ifindex = netif_get_index(netif);
+
+        result = copy_out(ioctl.id.pid, ioctl.argp, ifr);
+        if (!result) return (tl::make_unexpected(result.error()));
+        break;
+    }
+    case SIOCGIFFLAGS: {
+        auto ifr = ifreq{};
+        auto result = copy_in(ifr, ioctl.id.pid, ioctl.argp);
+        if (!result) { return (tl::make_unexpected(result.error())); }
+
+        auto* netif = packet::stack::netif_get_by_name(ifr.ifr_name);
+        if (!netif) return (tl::make_unexpected(ENODEV));
+
+        ifr.ifr_flags = get_siocgifflags(netif);
+
+        result = copy_out(ioctl.id.pid, ioctl.argp, ifr);
+        if (!result) return (tl::make_unexpected(result.error()));
+        break;
+    }
+    case SIOCGIFADDR: {
+        auto ifr = ifreq{};
+        auto result = copy_in(ifr, ioctl.id.pid, ioctl.argp);
+        if (!result) { return (tl::make_unexpected(result.error())); }
+
+        auto* netif = packet::stack::netif_get_by_name(ifr.ifr_name);
+        if (!netif) return (tl::make_unexpected(ENODEV));
+
+        auto* sin = reinterpret_cast<sockaddr_in*>(&ifr.ifr_addr);
+        sin->sin_family = AF_INET;
+        sin->sin_addr.s_addr = netif_ip4_addr(netif)->addr;
+
+        result = copy_out(ioctl.id.pid, ioctl.argp, ifr);
+        if (!result) return (tl::make_unexpected(result.error()));
+        break;
+    }
+    case SIOCGIFMTU: {
+        auto ifr = ifreq{};
+        auto result = copy_in(ifr, ioctl.id.pid, ioctl.argp);
+        if (!result) { return (tl::make_unexpected(result.error())); }
+
+        auto* netif = packet::stack::netif_get_by_name(ifr.ifr_name);
+        if (!netif) return (tl::make_unexpected(ENODEV));
+
+        ifr.ifr_mtu = netif->mtu;
+
+        result = copy_out(ioctl.id.pid, ioctl.argp, ifr);
+        if (!result) return (tl::make_unexpected(result.error()));
+        break;
+    }
+    case SIOCGIFHWADDR: {
+        auto ifr = ifreq{};
+        auto result = copy_in(ifr, ioctl.id.pid, ioctl.argp);
+        if (!result) { return (tl::make_unexpected(result.error())); }
+
+        auto* netif = packet::stack::netif_get_by_name(ifr.ifr_name);
+        if (!netif) return (tl::make_unexpected(ENODEV));
+
+        ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
+        std::copy_n(netif->hwaddr, netif->hwaddr_len, ifr.ifr_hwaddr.sa_data);
+
+        result = copy_out(ioctl.id.pid, ioctl.argp, ifr);
+        if (!result) return (tl::make_unexpected(result.error()));
+        break;
+    }
+    case SIOCGIFCONF: {
+        auto conf = ifconf{};
+        auto result = copy_in(conf, ioctl.id.pid, ioctl.argp);
+        if (!result) return (tl::make_unexpected(result.error()));
+
+        auto ifrs = (pcb->netif_idx == NETIF_NO_INDEX
+                         ? get_siocgifconf_ifrs()
+                         : get_siocgifconf_ifrs(pcb->netif_idx));
+
+        if (conf.ifc_req == nullptr) {
+            /* Caller only wants the buffer length */
+            conf.ifc_len = ifrs.size() * sizeof(struct ifreq);
+        } else {
+            /* Caller wants as much data as will fit */
+            auto to_copy =
+                sizeof(ifreq)
+                * std::min(ifrs.size(), (conf.ifc_len / sizeof(ifreq)));
+            result = copy_out(ioctl.id.pid, conf.ifc_buf, ifrs.data(), to_copy);
+            if (!result) return (tl::make_unexpected(result.error()));
+
+            /* Update initial request with buffer length */
+            conf.ifc_len = to_copy;
+        }
+        result = copy_out(ioctl.id.pid, ioctl.argp, conf);
+        if (!result) return (tl::make_unexpected(result.error()));
+        break;
+    }
+    case SIOCGSTAMP: {
+        /*
+         * XXX: Should add the timestamp to the channel and let the
+         * client retrieve it without having to call through the
+         * domain socket.
+         */
+        using clock = openperf::timesync::chrono::realtime;
+        auto now = timesync::to_timeval(clock::now().time_since_epoch());
+
+        auto result = copy_out(ioctl.id.pid, ioctl.argp, now);
+        if (!result) return (tl::make_unexpected(result.error()));
+        break;
+    }
+    default:
+        return (tl::make_unexpected(EINVAL));
+    }
+
+    return {};
+}
 
 tl::expected<socklen_t, int>
 do_sock_getsockopt(const ip_pcb* pcb, const api::request_getsockopt& getsockopt)
@@ -45,6 +256,13 @@ do_sock_getsockopt(const ip_pcb* pcb, const api::request_getsockopt& getsockopt)
         auto result = copy_out(getsockopt.id.pid, getsockopt.optval, size);
         if (!result) return (tl::make_unexpected(result.error()));
         slength = sizeof(size);
+        break;
+    }
+    case SO_ERROR: {
+        int error = 0;
+        auto result = copy_out(getsockopt.id.pid, getsockopt.optval, error);
+        if (!result) return (tl::make_unexpected(result.error()));
+        slength = sizeof(error);
         break;
     }
     default:
@@ -92,18 +310,27 @@ do_sock_setsockopt(ip_pcb* pcb, const api::request_setsockopt& setsockopt)
         break;
     }
     case SO_BINDTODEVICE: {
-        std::string optval(setsockopt.optlen, '\0');
+        /*
+         * Make sure our incoming string data is NULL terminated by ensuring we
+         * have an extra char at the end.
+         */
+        auto optval = std::vector<char>(setsockopt.optlen + 1);
         auto opt = copy_in(optval.data(),
                            setsockopt.id.pid,
                            reinterpret_cast<const char*>(setsockopt.optval),
                            setsockopt.optlen,
                            setsockopt.optlen);
         if (!opt) return (tl::make_unexpected(opt.error()));
-        auto idx = packet::stack::netif_id_match(optval);
+        auto idx = packet::stack::netif_index_by_name(optval.data());
         if (idx == NETIF_NO_INDEX) { return (tl::make_unexpected(ENODEV)); }
         pcb->netif_idx = idx;
         break;
     }
+    case SO_RCVBUF:
+        /* XXX: just ignore this request; our buffers are fixed */
+        break;
+    case SO_DETACH_FILTER:
+        return (tl::make_unexpected(ENOENT));
     default:
         return (tl::make_unexpected(ENOPROTOOPT));
     }
