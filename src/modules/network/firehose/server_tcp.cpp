@@ -1,15 +1,10 @@
 #include "server_tcp.hpp"
 
 #include <assert.h>
-#include <sys/socket.h>
-#include <unistd.h>
 #include <string>
 #include <fcntl.h>
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <netinet/tcp.h>
-
 #include "core/op_log.h"
 #include "core/op_thread.h"
 #include "core/op_socket.h"
@@ -33,7 +28,7 @@ struct connection_msg_t
     };
 };
 
-static int _server(int domain, in_port_t port)
+int server_tcp::new_server(int domain, in_port_t port)
 {
     struct sockaddr_storage client_storage;
     struct sockaddr* server_ptr = (struct sockaddr*)&client_storage;
@@ -61,7 +56,7 @@ static int _server(int domain, in_port_t port)
     }
 
     int sock = 0, enable = true;
-    if ((sock = socket(domain, SOCK_STREAM, 0)) == -1) {
+    if ((sock = m_driver->socket(domain, SOCK_STREAM, 0)) == -1) {
         OP_LOG(OP_LOG_WARNING,
                "Unable to open %s UDP server socket: %s\n",
                domain_str.c_str(),
@@ -69,20 +64,21 @@ static int _server(int domain, in_port_t port)
         return -1;
     }
 
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable))
+    if (m_driver->setsockopt(
+            sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable))
         != 0) {
-        ::close(sock);
+        m_driver->close(sock);
         return (-1);
     }
 
-    if (bind(sock, server_ptr, get_sa_len(server_ptr)) == -1) {
+    if (m_driver->bind(sock, server_ptr, get_sa_len(server_ptr)) == -1) {
         OP_LOG(OP_LOG_ERROR,
                "Unable to bind to socket (domain = %d, protocol = TCP): %s\n",
                domain,
                strerror(errno));
     }
 
-    if (listen(sock, tcp_backlog) == -1) {
+    if (m_driver->listen(sock, tcp_backlog) == -1) {
         OP_LOG(OP_LOG_ERROR,
                "Unable to listen on socket %d: %s\n",
                sock,
@@ -92,16 +88,18 @@ static int _server(int domain, in_port_t port)
     return (sock);
 }
 
-server_tcp::server_tcp(in_port_t port)
+server_tcp::server_tcp(in_port_t port, drivers::network_driver_ptr& driver)
     : m_stopped(false)
     , m_context(zmq_ctx_new())
 {
+    m_driver = driver;
+
     /* IPv6 any supports IPv4 and IPv6 */
-    if ((m_fd = _server(AF_INET6, port)) >= 0) {
+    if ((m_fd = new_server(AF_INET6, port)) >= 0) {
         OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4/IPv6.\n");
     } else {
         /* Couldn't bind IPv6 socket so use IPv4 */
-        if ((m_fd = _server(AF_INET, port)) < 0) { return; }
+        if ((m_fd = new_server(AF_INET, port)) < 0) { return; }
         OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4.\n");
     }
 }
@@ -110,7 +108,7 @@ server_tcp::~server_tcp()
 {
     m_stopped.store(true, std::memory_order_relaxed);
     zmq_ctx_shutdown(m_context);
-    if (m_fd.load() >= 0) shutdown(m_fd.load(), SHUT_RDWR);
+    if (m_fd.load() >= 0) m_driver->shutdown(m_fd.load(), SHUT_RDWR);
 
     if (m_accept_thread.joinable()) m_accept_thread.join();
     for (auto& thread : m_worker_threads) {
@@ -137,20 +135,20 @@ void server_tcp::run_accept_thread()
         while ((connect_fd = accept(m_fd.load(), client, &client_length))
                != -1) {
             int enable = 1;
-            if (setsockopt(connect_fd,
-                           IPPROTO_TCP,
-                           TCP_NODELAY,
-                           &enable,
-                           sizeof(enable))
+            if (m_driver->setsockopt(connect_fd,
+                                     IPPROTO_TCP,
+                                     TCP_NODELAY,
+                                     &enable,
+                                     sizeof(enable))
                 != 0) {
-                close(connect_fd);
+                m_driver->close(connect_fd);
                 continue;
             }
             // Change the socket into non-blocking state
             int flags;
-            if ((flags = fcntl(connect_fd, F_GETFL, 0)); flags >= 0) {
+            if ((flags = m_driver->fcntl(connect_fd, F_GETFL, 0)); flags >= 0) {
                 flags |= O_NONBLOCK;
-                if (fcntl(connect_fd, F_SETFL, O_NONBLOCK)) {
+                if (m_driver->fcntl(connect_fd, F_SETFL, O_NONBLOCK)) {
                     OP_LOG(OP_LOG_WARNING,
                            "Cannot set non blocking socket (%d): %s\n",
                            connect_fd,
@@ -183,7 +181,8 @@ int server_tcp::tcp_write(connection_t& conn, std::vector<uint8_t> send_buffer)
     assert(conn.bytes_left);
 
     size_t to_send = std::min(send_buffer_size, conn.bytes_left);
-    ssize_t send_or_err = send(conn.fd, send_buffer.data(), to_send, flags);
+    ssize_t send_or_err =
+        m_driver->send(conn.fd, send_buffer.data(), to_send, flags);
     if (send_or_err == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) { return 0; }
 
@@ -261,11 +260,11 @@ void server_tcp::run_worker_thread()
                         recv_cursor += conn.request.size();
                     }
 
-                    if ((recv_or_err =
-                             recv(conn.fd,
-                                  recv_cursor,
-                                  recv_buffer.size() - conn.request.size(),
-                                  0))
+                    if ((recv_or_err = m_driver->recv(conn.fd,
+                                                      recv_cursor,
+                                                      recv_buffer.size()
+                                                          - conn.request.size(),
+                                                      0))
                         == -1) {
                         if (errno == EAGAIN || errno == EWOULDBLOCK) { break; }
 

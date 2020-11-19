@@ -14,6 +14,8 @@
 
 #include "firehose/protocol.hpp"
 
+#include "drivers/kernel.hpp"
+
 namespace openperf::network::internal::task {
 
 using ref_clock = timesync::chrono::monotime;
@@ -201,6 +203,22 @@ new_connection(const network_sockaddr& server, const config_t& config)
         return tl::make_unexpected(-errno);
     }
 
+    if (config.target.protocol == IPPROTO_UDP) {
+        static timeval read_timeout = {
+            .tv_sec = 1,
+            .tv_usec = 0,
+        };
+        if (setsockopt(sock,
+                       SOL_SOCKET,
+                       SO_RCVTIMEO,
+                       &read_timeout,
+                       sizeof(read_timeout))
+            != 0) {
+            close(sock);
+            return tl::make_unexpected(-errno);
+        }
+    }
+
     return connection_t{
         .fd = sock,
         .state = STATE_INIT,
@@ -238,6 +256,7 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
     case operation_t::READ:
         send(conn.fd, header.data(), header.size(), flags);
         conn.state = STATE_READING;
+        conn.bytes_left = m_config.block_size;
         break;
     case operation_t::WRITE:
         iovec iov[] = {
@@ -247,7 +266,8 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
             },
             {
                 .iov_base = m_write_buffer.data(),
-                .iov_len = m_write_buffer.size(),
+                .iov_len = std::max(m_write_buffer.size(),
+                                    m_config.block_size - header.size()),
             },
         };
 
@@ -275,11 +295,11 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
             return;
         }
 
-        conn.bytes_left = header.size() + m_write_buffer.size() - send_or_err;
+        conn.bytes_left = header.size() + m_config.block_size - send_or_err;
         if (conn.bytes_left) {
             conn.state = STATE_WRITING;
         } else {
-            stat.bytes_actual += m_config.block_size;
+            stat.bytes_actual += send_or_err;
             stat.ops_actual += 1;
             conn.ops_left--;
             conn.state = STATE_INIT;
@@ -294,8 +314,10 @@ void network_task::do_read(connection_t& conn, stat_t& stat)
     assert(conn.state == STATE_READING);
     ssize_t recv_or_err = 0;
     while (conn.bytes_left) {
-        if ((recv_or_err =
-                 recv(conn.fd, conn.buffer.data(), conn.buffer.size(), 0))
+        if ((recv_or_err = recv(conn.fd,
+                                conn.buffer.data(),
+                                std::min(conn.buffer.size(), conn.bytes_left),
+                                0))
             == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) { return; }
 
