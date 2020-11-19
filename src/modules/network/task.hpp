@@ -93,6 +93,7 @@ class network_task : public framework::generator::task<stat_t>
 private:
     config_t m_config;
     stat_t m_stat;
+    drivers::network_driver_ptr driver;
     realtime::time_point m_operation_timestamp;
     std::vector<connection_t> m_connections;
     std::vector<uint8_t> m_write_buffer;

@@ -5,7 +5,6 @@
 #include <thread>
 #include <vector>
 #include <zmq.h>
-#include <netinet/in.h>
 
 #include "server_common.hpp"
 
@@ -27,9 +26,10 @@ private:
     std::thread m_worker_thread;
 
     int udp_write(connection_t&);
+    int new_server(int domain, in_port_t port);
 
 public:
-    server_udp(in_port_t port);
+    server_udp(in_port_t port, drivers::network_driver_ptr& driver);
     server_udp(const server_udp&) = delete;
     ~server_udp() override;
 

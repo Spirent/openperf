@@ -1,4 +1,4 @@
-#include <unistd.h>
+#include <assert.h>
 #include <stdexcept>
 
 #include "core/op_log.h"
@@ -9,7 +9,7 @@
 
 namespace openperf::network::internal::firehose {
 
-static int _server(int domain, in_port_t port)
+int server_udp::new_server(int domain, in_port_t port)
 {
     struct sockaddr_storage client_storage;
     struct sockaddr* server_ptr = (struct sockaddr*)&client_storage;
@@ -37,7 +37,7 @@ static int _server(int domain, in_port_t port)
     }
 
     int sock = 0, enable = true;
-    if ((sock = socket(domain, SOCK_DGRAM, 0)) == -1) {
+    if ((sock = m_driver->socket(domain, SOCK_DGRAM, 0)) == -1) {
         OP_LOG(OP_LOG_WARNING,
                "Unable to open %s UDP server socket: %s\n",
                domain_str.c_str(),
@@ -45,13 +45,14 @@ static int _server(int domain, in_port_t port)
         return -1;
     }
 
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable))
+    if (m_driver->setsockopt(
+            sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable))
         != 0) {
-        ::close(sock);
+        m_driver->close(sock);
         return (-1);
     }
 
-    if (bind(sock, server_ptr, get_sa_len(server_ptr)) == -1) {
+    if (m_driver->bind(sock, server_ptr, get_sa_len(server_ptr)) == -1) {
         OP_LOG(OP_LOG_ERROR,
                "Unable to bind to socket (domain = %d, protocol = UDP): %s\n",
                domain,
@@ -61,15 +62,17 @@ static int _server(int domain, in_port_t port)
     return (sock);
 }
 
-server_udp::server_udp(in_port_t port)
+server_udp::server_udp(in_port_t port, drivers::network_driver_ptr& driver)
     : m_stopped(false)
 {
+    m_driver = driver;
+
     /* IPv6 any supports IPv4 and IPv6 */
-    if ((m_fd = _server(AF_INET6, port)) >= 0) {
+    if ((m_fd = new_server(AF_INET6, port)) >= 0) {
         OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4/IPv6.\n");
     } else {
         /* Couldn't bind IPv6 socket so use IPv4 */
-        if ((m_fd = _server(AF_INET, port)) < 0) { return; }
+        if ((m_fd = new_server(AF_INET, port)) < 0) { return; }
         OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4.\n");
     }
 }
@@ -77,7 +80,7 @@ server_udp::server_udp(in_port_t port)
 server_udp::~server_udp()
 {
     m_stopped.store(true, std::memory_order_relaxed);
-    if (m_fd.load() >= 0) close(m_fd.load());
+    if (m_fd.load() >= 0) m_driver->close(m_fd.load());
 
     if (m_worker_thread.joinable()) m_worker_thread.join();
 }
@@ -104,12 +107,12 @@ void server_udp::run_accept_thread()
 
         while (!m_stopped.load(std::memory_order_relaxed)) {
             // Receive all accepted connections
-            while ((recv_or_err = recvfrom(m_fd,
-                                           read_buffer.data(),
-                                           read_buffer.size(),
-                                           0,
-                                           &conn.client,
-                                           &client_length))
+            while ((recv_or_err = m_driver->recvfrom(m_fd,
+                                                     read_buffer.data(),
+                                                     read_buffer.size(),
+                                                     0,
+                                                     &conn.client,
+                                                     &client_length))
                    != -1) {
                 uint8_t* recv_cursor = read_buffer.data();
                 size_t bytes_left = recv_or_err;
@@ -147,12 +150,13 @@ void server_udp::run_accept_thread()
                 while (conn.state == STATE_WRITING && conn.bytes_left) {
                     size_t produced =
                         std::min(send_buffer.size(), conn.bytes_left);
-                    ssize_t send_or_err = sendto(m_fd,
-                                                 send_buffer.data(),
-                                                 produced,
-                                                 0,
-                                                 &conn.client,
-                                                 get_sa_len(&conn.client));
+                    ssize_t send_or_err =
+                        m_driver->sendto(m_fd,
+                                         send_buffer.data(),
+                                         produced,
+                                         0,
+                                         &conn.client,
+                                         get_sa_len(&conn.client));
                     if (send_or_err == -1) {
                         char ntopbuf[INET6_ADDRSTRLEN];
                         const char* addr = inet_ntop(conn.client.sa_family,

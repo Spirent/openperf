@@ -5,6 +5,7 @@
 #include <tl/expected.hpp>
 #include <arpa/inet.h>
 #include "protocol.hpp"
+#include "../drivers/driver.hpp"
 
 namespace openperf::network::internal::firehose {
 
@@ -46,7 +47,8 @@ public:
 
 protected:
     std::atomic_int m_fd;
-    int port;
+    int m_port;
+    drivers::network_driver_ptr m_driver;
 };
 
 inline socklen_t get_sa_len(const struct sockaddr* sa)

@@ -5,7 +5,6 @@
 #include <thread>
 #include <vector>
 #include <zmq.h>
-#include <netinet/in.h>
 
 #include "server_common.hpp"
 
@@ -29,9 +28,10 @@ private:
     void* m_context;
 
     int tcp_write(connection_t&, std::vector<uint8_t> send_buffer);
+    int new_server(int domain, in_port_t port);
 
 public:
-    server_tcp(in_port_t port);
+    server_tcp(in_port_t port, drivers::network_driver_ptr& driver);
     server_tcp(const server_tcp&) = delete;
     ~server_tcp() override;
 
