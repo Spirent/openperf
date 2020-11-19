@@ -249,7 +249,7 @@ int libc_socket(int domain, int type, int protocol)
 
 int socket(int domain, int type, int protocol)
 {
-    if (domain != AF_INET && domain != AF_INET6) {
+    if (domain != AF_INET && domain != AF_INET6 && domain != AF_PACKET) {
         return (libc_socket(domain, type, protocol));
     }
 
@@ -327,6 +327,27 @@ int fcntl(int s, int cmd, ...)
             (libc.fcntl(s, cmd, flags) || client_call(fcntl, s, cmd, flags));
     }
 
+    va_end(ap);
+    return (result);
+}
+
+int ioctl(int s, unsigned long req, ...)
+{
+    auto& libc = openperf::socket::libc::wrapper::instance();
+    if (!client_initialized) {
+        va_list ap;
+        va_start(ap, req);
+        auto result = libc.ioctl(s, req, va_arg(ap, void*));
+        va_end(ap);
+        return (result);
+    }
+
+    auto& client = openperf::socket::api::client::instance();
+    va_list ap;
+    va_start(ap, req);
+    auto result = client.is_socket(s)
+                      ? client_call(ioctl, s, req, va_arg(ap, void*))
+                      : libc.ioctl(s, req, va_arg(ap, void*));
     va_end(ap);
     return (result);
 }
