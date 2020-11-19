@@ -16,12 +16,16 @@ NETWORK_SOURCES += \
 	task.cpp \
 	internal_server.cpp \
 	internal_server_stack.cpp \
-	internal_utils.cpp
+	internal_utils.cpp \
+	network_options.c
 
 ifeq ($(PLATFORM), linux)
 	NETWORK_SOURCES += \
 	internal_utils_linux.cpp
 endif
+
+NETWORK_SOURCES += \
+	drivers/kernel.cpp
 
 NETWORK_SOURCES += \
 	firehose/server_tcp.cpp \
