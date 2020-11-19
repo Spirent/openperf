@@ -16,6 +16,10 @@ openperf: deps
 libopenperf-shim: deps
 	@cd targets/libopenperf-shim && $(MAKE)
 
+.PHONY: package
+package: openperf libopenperf-shim deps
+	@cd pkg && $(MAKE)
+
 .PHONY: test
 test: test_unit test_aat
 
@@ -35,6 +39,7 @@ test_unit: deps
 clean: image_clean
 	@cd targets/openperf && $(MAKE) clean
 	@cd targets/libopenperf-shim && $(MAKE) clean
+	@cd pkg && $(MAKE) clean
 	@cd tests/aat && $(MAKE) clean
 	@cd tests/unit && $(MAKE) clean
 	@rm -f compile_commands.json
