@@ -239,6 +239,10 @@ int api_handler::handle_requests(int fd)
                 [&](const api::request_socket& request) -> api::reply_msg {
                     OP_LOG(OP_LOG_TRACE, "socket request received\n");
                     return (handle_request_socket(request));
+                },
+                [&](const api::request_ioctl& request) -> api::reply_msg {
+                    OP_LOG(OP_LOG_TRACE, "ioctl request received\n");
+                    return (handle_request_generic(request));
                 }),
             request);
 

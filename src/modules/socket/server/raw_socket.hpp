@@ -12,6 +12,7 @@
 #include "socket/server/allocator.hpp"
 #include "socket/server/dgram_channel.hpp"
 #include "socket/server/generic_socket.hpp"
+#include "socket/server/lwip_utils.hpp"
 #include "socket/server/socket_utils.hpp"
 
 #include "lwip/raw.h"
@@ -109,6 +110,16 @@ public:
                                 const State&)
     {
         auto result = do_setsockopt(m_pcb.get(), opt);
+        if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
+        return {api::reply_success(), std::nullopt};
+    }
+
+    /* ioctl handler */
+    template <typename State>
+    on_request_reply on_request(const api::request_ioctl& ioctl, const State&)
+    {
+        auto result =
+            do_sock_ioctl(reinterpret_cast<ip_pcb*>(m_pcb.get()), ioctl);
         if (!result) return {tl::make_unexpected(result.error()), std::nullopt};
         return {api::reply_success(), std::nullopt};
     }

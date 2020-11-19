@@ -5,6 +5,9 @@ SOCK_COMMON += \
 
 ifeq ($(PLATFORM),linux)
 	SOCK_COMMON += process_control_linux.cpp
+	SOCKSRV_SOURCES += \
+		server/packet_socket.cpp \
+		server/socket_factory_linux.cpp
 	SOCKSRV_LDLIBS += -lcap
 	SOCKCLI_LDLIBS += -lcap
 endif

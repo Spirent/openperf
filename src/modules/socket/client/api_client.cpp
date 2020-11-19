@@ -471,6 +471,33 @@ int client::fcntl(int s, int cmd, ...)
     return (to_return);
 }
 
+int client::ioctl(int s, unsigned long req, ...)
+{
+    auto result = m_channels.find(s);
+    if (result == m_channels.end()) {
+        errno = EINVAL;
+        return (-1);
+    }
+
+    auto& [id, channel] = result->second;
+
+    va_list ap;
+    va_start(ap, req);
+
+    api::request_msg request =
+        api::request_ioctl{.id = id, .request = req, .argp = va_arg(ap, void*)};
+
+    auto reply = submit_request(m_sock.get(), request);
+    va_end(ap);
+    if (!reply) {
+        errno = reply.error();
+        return (-1);
+    }
+
+    assert(std::holds_alternative<api::reply_success>(*reply));
+    return (0);
+}
+
 /***
  * Receive functions
  ***/

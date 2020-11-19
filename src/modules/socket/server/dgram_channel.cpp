@@ -5,12 +5,14 @@
 #include <unistd.h>
 #include <sys/uio.h>
 
+#include "lwip/pbuf.h"
+
 #include "socket/circular_buffer_consumer.tcc"
 #include "socket/circular_buffer_producer.tcc"
 #include "socket/event_queue_consumer.tcc"
 #include "socket/event_queue_producer.tcc"
 #include "socket/server/dgram_channel.hpp"
-#include "lwip/pbuf.h"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf::socket {
 
@@ -214,14 +216,47 @@ bool dgram_channel::send(const pbuf* p)
     return (true);
 }
 
-bool dgram_channel::send(const pbuf* p,
-                         const dgram_ip_addr* addr,
-                         in_port_t port)
+/*
+ * Sanity check our assumptions about the way IPv6 addresses
+ * are stored in sockaddr_in6 structures. We need to copy that
+ * data out.
+ */
+static constexpr auto ipv6_addr_octets = 16;
+static_assert(
+    std::is_same_v<std::remove_reference_t<decltype(
+                       std::declval<sockaddr_in6>().sin6_addr.s6_addr)>,
+                   uint8_t[ipv6_addr_octets]>);
+
+std::optional<dgram_channel_addr>
+to_dgram_channel_addr(const dgram_ip_addr* addr, in_port_t port)
 {
-    if (writable() < buffer_required(p->len)) return (false);
+    switch (addr->type) {
+    case dgram_ip_addr::type::IPv4:
+        return (sockaddr_in{.sin_family = AF_INET,
+                            .sin_port = port,
+                            .sin_addr.s_addr = addr->u_addr.ip4.addr});
+    case dgram_ip_addr::type::IPv6: {
+        auto sa6 = sockaddr_in6{.sin6_family = AF_INET6,
+                                .sin6_port = port,
+                                .sin6_scope_id = addr->u_addr.ip6.zone};
+
+        std::copy_n(reinterpret_cast<const uint8_t*>(addr->u_addr.ip6.addr),
+                    ipv6_addr_octets,
+                    sa6.sin6_addr.s6_addr);
+        return (sa6);
+    }
+    default:
+        return (std::nullopt);
+    }
+}
+
+template <typename Channel, typename SocketAddress>
+bool channel_send(Channel& channel, const pbuf* p, const SocketAddress& sa)
+{
+    if (channel.writable() < buffer_required(p->len)) { return (false); }
 
     auto desc = dgram_channel_descriptor{
-        .address = dgram_channel_addr(addr, port),
+        .address = sa,
         .length = p->len,
     };
 
@@ -236,11 +271,23 @@ bool dgram_channel::send(const pbuf* p,
         },
     };
 
-    [[maybe_unused]] auto written = write(items.data(), items.size());
+    [[maybe_unused]] auto written = channel.write(items.data(), items.size());
     assert(written == buffer_required(p->len));
-    notify();
+    channel.notify();
 
     return (true);
+}
+
+bool dgram_channel::send(const pbuf* p,
+                         const dgram_ip_addr* addr,
+                         in_port_t port)
+{
+    return (channel_send(*this, p, to_dgram_channel_addr(addr, port)));
+}
+
+bool dgram_channel::send(const pbuf* p, const dgram_sockaddr_ll* sll)
+{
+    return (channel_send(*this, p, *sll));
 }
 
 static dgram_channel_descriptor* to_dgram_descriptor(
@@ -281,35 +328,89 @@ bool dgram_channel::recv_available() const
     return (to_dgram_descriptor(peek(), storage) != nullptr);
 }
 
-std::pair<pbuf*, std::optional<dgram_channel_addr>> dgram_channel::recv()
+template <typename SocketAddress>
+std::enable_if_t<
+    std::is_same_v<SocketAddress, dgram_channel::ip_socket_address>,
+    dgram_channel::ip_socket_address>
+get_socket_address(const dgram_channel_addr& addr)
 {
-    /* Try to get a descriptor to a datagram */
+    if (std::holds_alternative<sockaddr_in>(addr)) {
+        auto& sin = std::get<sockaddr_in>(addr);
+        auto dgram_addr = dgram_ip_addr{
+            .u_addr.ip4.addr = sin.sin_addr.s_addr,
+            .type = dgram_ip_addr::type::IPv4,
+        };
+        return (dgram_channel::ip_socket_address{.addr = dgram_addr,
+                                                 .port = sin.sin_port});
+    }
+
+    auto& sin6 = std::get<sockaddr_in6>(addr);
+    assert(sin6.sin6_scope_id < std::numeric_limits<uint8_t>::max());
+    auto dgram_addr = dgram_ip_addr{
+        .u_addr.ip6.zone = static_cast<uint8_t>(sin6.sin6_scope_id),
+        .type = dgram_ip_addr::type::IPv6,
+    };
+    std::copy_n(sin6.sin6_addr.s6_addr,
+                ipv6_addr_octets,
+                reinterpret_cast<uint8_t*>(dgram_addr.u_addr.ip6.addr));
+
+    return (dgram_channel::ip_socket_address{.addr = dgram_addr,
+                                             .port = sin6.sin6_port});
+}
+
+template <typename SocketAddress>
+std::enable_if_t<std::is_same_v<SocketAddress, dgram_sockaddr_ll>,
+                 dgram_sockaddr_ll>
+get_socket_address(const dgram_channel_addr& addr)
+{
+    return (std::get<dgram_sockaddr_ll>(addr));
+}
+
+template <typename SocketAddress, typename Channel>
+std::pair<pbuf*, std::optional<SocketAddress>> channel_recv(Channel& channel)
+{
+    /* Try to get a datagram descriptor */
     auto storage = dgram_channel_descriptor{};
-    auto desc = to_dgram_descriptor(peek(), storage);
+    auto desc = to_dgram_descriptor(channel.peek(), storage);
     if (!desc) { return (std::make_pair(nullptr, std::nullopt)); }
 
-    /* Descriptor found; let's get the data */
-    auto p_head = pbuf_alloc(PBUF_TRANSPORT, desc->length, PBUF_POOL);
+    /* Descriptor found; unload the data */
+    auto* p_head = pbuf_alloc(PBUF_TRANSPORT, desc->length, PBUF_POOL);
     if (!p_head) { return (std::make_pair(nullptr, std::nullopt)); }
 
     assert(p_head->tot_len == desc->length);
 
     /* Copy ring data into pbuf chain */
     auto copied = 0UL;
-    auto p = p_head;
+    auto* p = p_head;
     while (copied < desc->length && p != nullptr) {
-        copied += pread(p->payload, p->len, sizeof(*desc) + copied);
+        copied += channel.pread(p->payload, p->len, sizeof(*desc) + copied);
         p = p->next;
     }
 
-    auto addr = std::optional<dgram_channel_addr>();
-    if (desc->address) { addr = desc->address.value(); }
-
-    /* We're finished with the ring data; drop descriptor + payload */
-    drop(buffer_required(desc->length));
-    unblock();
+    /*
+     * Copy address data so that we can drop the descriptor + payload
+     * before returning.
+     */
+    auto addr = std::optional<SocketAddress>{};
+    if (desc->address) {
+        addr = get_socket_address<SocketAddress>(desc->address.value());
+    }
+    channel.drop(buffer_required(desc->length));
+    channel.unblock();
 
     return (std::make_pair(p_head, addr));
+}
+
+std::pair<pbuf*, std::optional<dgram_channel::ip_socket_address>>
+dgram_channel::recv_ip()
+{
+    return (channel_recv<dgram_channel::ip_socket_address>(*this));
+}
+
+std::pair<pbuf*, std::optional<dgram_sockaddr_ll>> dgram_channel::recv_ll()
+{
+    return (channel_recv<dgram_sockaddr_ll>(*this));
 }
 
 void dgram_channel::dump() const
