@@ -63,11 +63,6 @@ public:
     /// </summary>
     std::string getProtocol() const;
     void setProtocol(std::string value);
-        /// <summary>
-    /// Driver which is used to establish connection between client and host
-    /// </summary>
-    std::string getDriver() const;
-    void setDriver(std::string value);
     
 protected:
     std::string m_Host;
@@ -75,8 +70,6 @@ protected:
     int64_t m_Port;
 
     std::string m_Protocol;
-
-    std::string m_Driver;
 
 };
 

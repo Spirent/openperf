@@ -33,30 +33,26 @@ class NetworkServer(object):
     swagger_types = {
         'id': 'str',
         'port': 'int',
-        'protocol': 'str',
-        'driver': 'str'
+        'protocol': 'str'
     }
 
     attribute_map = {
         'id': 'id',
         'port': 'port',
-        'protocol': 'protocol',
-        'driver': 'driver'
+        'protocol': 'protocol'
     }
 
-    def __init__(self, id=None, port=3357, protocol=None, driver=None):  # noqa: E501
+    def __init__(self, id=None, port=3357, protocol=None):  # noqa: E501
         """NetworkServer - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._port = None
         self._protocol = None
-        self._driver = None
         self.discriminator = None
 
         self.id = id
         self.port = port
         self.protocol = protocol
-        self.driver = driver
 
     @property
     def id(self):
@@ -123,28 +119,6 @@ class NetworkServer(object):
         :type: str
         """
         self._protocol = protocol
-
-    @property
-    def driver(self):
-        """Gets the driver of this NetworkServer.  # noqa: E501
-
-        Driver which is used to establish client connections  # noqa: E501
-
-        :return: The driver of this NetworkServer.  # noqa: E501
-        :rtype: str
-        """
-        return self._driver
-
-    @driver.setter
-    def driver(self, driver):
-        """Sets the driver of this NetworkServer.
-
-        Driver which is used to establish client connections  # noqa: E501
-
-        :param driver: The driver of this NetworkServer.  # noqa: E501
-        :type: str
-        """
-        self._driver = driver
 
     def to_dict(self):
         """Returns the model properties as a dict"""
