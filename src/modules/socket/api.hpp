@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 
+#include "net/if.h"
+
 #include "tl/expected.hpp"
 
 #include "core/op_uuid.hpp"
@@ -186,6 +188,13 @@ struct request_connect
     socklen_t namelen;
 };
 
+struct request_ioctl
+{
+    socket_id id;
+    unsigned long request;
+    void* argp;
+};
+
 struct request_listen
 {
     socket_id id;
@@ -209,6 +218,7 @@ typedef std::variant<request_init,
                      request_setsockopt,
                      request_close,
                      request_connect,
+                     request_ioctl,
                      request_listen,
                      request_socket>
     request_msg;

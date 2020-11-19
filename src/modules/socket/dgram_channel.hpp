@@ -34,35 +34,20 @@ struct dgram_ip_addr
     type type;
 };
 
-class dgram_channel_addr
+/* Congruent to struct sockaddr_ll */
+struct dgram_sockaddr_ll
 {
-    dgram_ip_addr m_addr;
-    in_port_t m_port = 0;
-
-public:
-    dgram_channel_addr()
-        : m_addr({{{{0, 0, 0, 0}, 0}}, dgram_ip_addr::type::IPv4})
-    {}
-
-    dgram_channel_addr(const dgram_ip_addr* addr, in_port_t port)
-        : m_addr(*addr)
-        , m_port(port)
-    {}
-
-    dgram_channel_addr(uint32_t addr, in_port_t port)
-        : m_addr({{{{addr, 0, 0, 0}, 0}}, dgram_ip_addr::type::IPv4})
-        , m_port(port)
-    {}
-
-    dgram_channel_addr(const uint32_t addr[], in_port_t port)
-        : m_addr({{{{addr[0], addr[1], addr[2], addr[3]}, 0}},
-                  dgram_ip_addr::type::IPv6})
-        , m_port(port)
-    {}
-
-    const dgram_ip_addr& addr() const { return (m_addr); }
-    in_port_t port() const { return (m_port); }
+    uint16_t family;
+    uint16_t protocol;
+    int ifindex;
+    uint16_t hatype;
+    uint8_t pkttype;
+    uint8_t halen;
+    std::array<uint8_t, 8> addr;
 };
+
+using dgram_channel_addr =
+    std::variant<sockaddr_in, sockaddr_in6, dgram_sockaddr_ll>;
 
 /*
  * Static tag for sanity checking random pointers are actually descriptors.
