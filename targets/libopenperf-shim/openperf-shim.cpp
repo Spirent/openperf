@@ -4,10 +4,30 @@
 #include <cstring>
 #include <fcntl.h>
 #include <functional>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
+
+#include <arpa/inet.h>
 
 #include "socket/client/api_client.hpp"
 #include "libc_wrapper.hpp"
+
+/* Don't depend on being in a Linux environment */
+#ifndef AF_PACKET
+#define AF_PACKET 17
+#endif
+
+struct linux_sockaddr_ll
+{
+    uint16_t sll_family;
+    uint16_t sll_protocol;
+    int sll_ifindex;
+    uint16_t sll_hatype;
+    uint8_t sll_pkttype;
+    uint8_t sll_halen;
+    uint8_t sll_addr[8];
+};
 
 static void openperf_shim_init() __attribute__((constructor));
 
@@ -30,6 +50,46 @@ void openperf_shim_init()
     if (envp != nullptr && std::strncmp(envp, "0", 1) != 0) {
         client_trace = true;
     }
+}
+
+template <typename T> std::string to_hex_string(T x)
+{
+    std::ostringstream out;
+    out << "0x" << std::hex << std::setw(2 * sizeof(T)) << std::setfill('0')
+        << x;
+    return (out.str());
+}
+
+/* Provide a pretty printing overload for sockaddr structures */
+std::ostream& operator<<(std::ostream& out, const sockaddr* sa)
+{
+    switch (sa->sa_family) {
+    case AF_INET: {
+        auto buffer = std::array<char, INET_ADDRSTRLEN>{"X.X.X.X"};
+        auto* sin = reinterpret_cast<const sockaddr_in*>(sa);
+        inet_ntop(AF_INET, &sin->sin_addr, buffer.data(), buffer.size());
+        out << "AF_INET:" << buffer.data() << ":" << ntohs(sin->sin_port);
+        break;
+    }
+    case AF_INET6: {
+        auto buffer = std::array<char, INET6_ADDRSTRLEN>{"X::X"};
+        auto* sin6 = reinterpret_cast<const sockaddr_in6*>(sa);
+        inet_ntop(AF_INET6, &sin6->sin6_addr, buffer.data(), buffer.size());
+        out << "AF_INET6:" << buffer.data() << ":" << ntohs(sin6->sin6_port);
+        break;
+    }
+    case AF_PACKET: {
+        auto* sll = reinterpret_cast<const linux_sockaddr_ll*>(sa);
+        out << "AF_PACKET:" << to_hex_string(ntohs(sll->sll_protocol)) << ":"
+            << sll->sll_ifindex;
+        break;
+    }
+    default:
+        out << "sockaddr (family = " << sa->sa_family << ")";
+        break;
+    }
+
+    return (out);
 }
 
 template <typename Function, typename Object, typename Arg, typename... Args>
