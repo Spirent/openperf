@@ -429,10 +429,44 @@ definitions:
         enum:
           - tcp
           - udp
+      stats:
+        $ref: "#/definitions/NetworkServerStats"
     required:
       - id
       - port
       - protocol
+      - stats
+
+  NetworkServerStats:
+    type: object
+    description: Network server statistics
+    properties:
+      bytes_sent:
+        type: integer
+        description: The number of bytes written
+        format: int64
+      bytes_received:
+        type: integer
+        description: The number of bytes read
+        format: int64
+      connections:
+        type: integer
+        description: The number of accepted client connections (the number of operations for UDP socket)
+        format: int64
+      closed:
+        type: integer
+        description: The number of closed client connections
+        format: int64
+      errors:
+        type: integer
+        description: The number of errors observed during connection
+        format: int64
+    required:
+      - bytes_sent
+      - bytes_received
+      - connections
+      - closed
+      - errors
 
   NetworkGenerator:
     type: object
@@ -547,6 +581,7 @@ definitions:
       - timestamp_last
       - read
       - write
+      - connection
 
   NetworkGeneratorStats:
     type: object
