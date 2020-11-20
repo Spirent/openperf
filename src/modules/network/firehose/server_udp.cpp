@@ -116,6 +116,9 @@ void server_udp::run_accept_thread()
                    != -1) {
                 uint8_t* recv_cursor = read_buffer.data();
                 size_t bytes_left = recv_or_err;
+                m_stat.bytes_received += recv_or_err;
+                m_stat.connections++;
+
                 auto req = firehose::parse_request(recv_cursor, bytes_left);
                 if (!req) {
                     char ntopbuf[INET6_ADDRSTRLEN];
@@ -170,12 +173,15 @@ void server_udp::run_accept_thread()
                                strerror(errno));
                         conn.state = STATE_ERROR;
                         conn.bytes_left = 0;
+                        m_stat.errors++;
                     } else {
                         conn.bytes_left -= send_or_err;
+                        m_stat.bytes_sent += send_or_err;
                         OP_LOG(
                             OP_LOG_INFO, "--- SERVER SENT %zd\n", send_or_err);
                     }
                 }
+                m_stat.closed++;
             }
         }
     });

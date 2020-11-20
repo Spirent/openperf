@@ -25,7 +25,6 @@ NetworkGeneratorResult::NetworkGeneratorResult()
     m_Active = false;
     m_Timestamp_first = "";
     m_Timestamp_last = "";
-    m_ConnectionIsSet = false;
     m_Dynamic_resultsIsSet = false;
     
 }
@@ -53,10 +52,7 @@ nlohmann::json NetworkGeneratorResult::toJson() const
     val["timestamp_last"] = ModelBase::toJson(m_Timestamp_last);
     val["read"] = ModelBase::toJson(m_Read);
     val["write"] = ModelBase::toJson(m_Write);
-    if(m_ConnectionIsSet)
-    {
-        val["connection"] = ModelBase::toJson(m_Connection);
-    }
+    val["connection"] = ModelBase::toJson(m_Connection);
     if(m_Dynamic_resultsIsSet)
     {
         val["dynamic_results"] = ModelBase::toJson(m_Dynamic_results);
@@ -77,16 +73,6 @@ void NetworkGeneratorResult::fromJson(nlohmann::json& val)
     setActive(val.at("active"));
     setTimestampFirst(val.at("timestamp_first"));
     setTimestampLast(val.at("timestamp_last"));
-    if(val.find("connection") != val.end())
-    {
-        if(!val["connection"].is_null())
-        {
-            std::shared_ptr<NetworkGeneratorConnectionStats> newItem(new NetworkGeneratorConnectionStats());
-            newItem->fromJson(val["connection"]);
-            setConnection( newItem );
-        }
-        
-    }
     if(val.find("dynamic_results") != val.end())
     {
         if(!val["dynamic_results"].is_null())
@@ -179,15 +165,7 @@ std::shared_ptr<NetworkGeneratorConnectionStats> NetworkGeneratorResult::getConn
 void NetworkGeneratorResult::setConnection(std::shared_ptr<NetworkGeneratorConnectionStats> value)
 {
     m_Connection = value;
-    m_ConnectionIsSet = true;
-}
-bool NetworkGeneratorResult::connectionIsSet() const
-{
-    return m_ConnectionIsSet;
-}
-void NetworkGeneratorResult::unsetConnection()
-{
-    m_ConnectionIsSet = false;
+    
 }
 std::shared_ptr<DynamicResults> NetworkGeneratorResult::getDynamicResults() const
 {

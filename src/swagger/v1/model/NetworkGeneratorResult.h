@@ -93,9 +93,7 @@ public:
     /// </summary>
     std::shared_ptr<NetworkGeneratorConnectionStats> getConnection() const;
     void setConnection(std::shared_ptr<NetworkGeneratorConnectionStats> value);
-    bool connectionIsSet() const;
-    void unsetConnection();
-    /// <summary>
+        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<DynamicResults> getDynamicResults() const;
@@ -119,7 +117,7 @@ protected:
     std::shared_ptr<NetworkGeneratorStats> m_Write;
 
     std::shared_ptr<NetworkGeneratorConnectionStats> m_Connection;
-    bool m_ConnectionIsSet;
+
     std::shared_ptr<DynamicResults> m_Dynamic_results;
     bool m_Dynamic_resultsIsSet;
 };

@@ -16,6 +16,7 @@ public:
     server(const model::server&);
     ~server() override;
     void reset();
+    stat_t stat() const override;
 
 private:
     std::unique_ptr<firehose::server> server_ptr;
