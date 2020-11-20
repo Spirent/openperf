@@ -78,6 +78,7 @@ void worker::start(T&& task, std::optional<uint16_t> core_id)
         OP_LOG(OP_LOG_DEBUG, "Worker thread started");
 
         run(task);
+        op_log_close();
     });
 }
 
