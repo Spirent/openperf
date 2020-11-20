@@ -36,7 +36,7 @@ tx_source::tx_source(uint16_t port_idx,
 {
     if (!m_pool) {
         throw std::runtime_error("No packet pool available for source "
-                                 + source.id());
+                                 + m_source.id());
     }
 }
 
