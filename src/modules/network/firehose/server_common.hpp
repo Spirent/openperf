@@ -38,8 +38,20 @@ struct connection_t
 class server
 {
 public:
+    struct stat_t
+    {
+        std::atomic_uint64_t bytes_sent = 0;
+        std::atomic_uint64_t bytes_received = 0;
+        std::atomic_uint64_t connections = 0;
+        std::atomic_uint64_t closed = 0;
+        std::atomic_uint64_t errors = 0;
+    };
+
     server() = default;
     server(const server&) = delete;
+
+    const stat_t& stat() { return m_stat; }
+
     virtual ~server() = default;
 
     virtual void run_accept_thread() = 0;
@@ -49,6 +61,7 @@ protected:
     std::atomic_int m_fd;
     int m_port;
     drivers::network_driver_ptr m_driver;
+    stat_t m_stat;
 };
 
 inline socklen_t get_sa_len(const struct sockaddr* sa)

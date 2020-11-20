@@ -15,7 +15,7 @@ public:
     using duration = std::chrono::nanoseconds;
     using optional_time_t = std::optional<duration>;
 
-    struct statistics_t
+    struct load_stat_t
     {
         uint64_t ops_target;
         uint64_t ops_actual;
@@ -27,14 +27,23 @@ public:
         optional_time_t latency_max;
     };
 
+    struct conn_stat_t
+    {
+        uint64_t attempted;
+        uint64_t successful;
+        uint64_t closed;
+        uint64_t errors;
+    };
+
 protected:
     std::string m_id;
     std::string m_generator_id;
     bool m_active;
     time_point m_timestamp;
     time_point m_start_timestamp;
-    statistics_t m_read;
-    statistics_t m_write;
+    load_stat_t m_read;
+    load_stat_t m_write;
+    conn_stat_t m_conn;
     dynamic::results m_dynamic_results;
 
 public:
@@ -46,8 +55,9 @@ public:
     bool active() const { return m_active; }
     time_point timestamp() const { return m_timestamp; }
     time_point start_timestamp() const { return m_start_timestamp; }
-    statistics_t read_stats() const { return m_read; }
-    statistics_t write_stats() const { return m_write; }
+    load_stat_t read_stats() const { return m_read; }
+    load_stat_t write_stats() const { return m_write; }
+    conn_stat_t conn_stats() const { return m_conn; }
     dynamic::results dynamic_results() const { return m_dynamic_results; }
 
     void id(std::string_view id) { m_id = id; }
@@ -55,8 +65,9 @@ public:
     void active(bool value) { m_active = value; }
     void timestamp(const time_point& value) { m_timestamp = value; }
     void start_timestamp(const time_point& value) { m_start_timestamp = value; }
-    void read_stats(const statistics_t& s) { m_read = s; }
-    void write_stats(const statistics_t& s) { m_write = s; }
+    void read_stats(const load_stat_t& s) { m_read = s; }
+    void write_stats(const load_stat_t& s) { m_write = s; }
+    void conn_stats(const conn_stat_t& s) { m_conn = s; }
     void dynamic_results(const dynamic::results& d) { m_dynamic_results = d; }
 };
 

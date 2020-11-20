@@ -33,26 +33,30 @@ class NetworkServer(object):
     swagger_types = {
         'id': 'str',
         'port': 'int',
-        'protocol': 'str'
+        'protocol': 'str',
+        'stats': 'NetworkServerStats'
     }
 
     attribute_map = {
         'id': 'id',
         'port': 'port',
-        'protocol': 'protocol'
+        'protocol': 'protocol',
+        'stats': 'stats'
     }
 
-    def __init__(self, id=None, port=3357, protocol=None):  # noqa: E501
+    def __init__(self, id=None, port=3357, protocol=None, stats=None):  # noqa: E501
         """NetworkServer - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._port = None
         self._protocol = None
+        self._stats = None
         self.discriminator = None
 
         self.id = id
         self.port = port
         self.protocol = protocol
+        self.stats = stats
 
     @property
     def id(self):
@@ -119,6 +123,26 @@ class NetworkServer(object):
         :type: str
         """
         self._protocol = protocol
+
+    @property
+    def stats(self):
+        """Gets the stats of this NetworkServer.  # noqa: E501
+
+
+        :return: The stats of this NetworkServer.  # noqa: E501
+        :rtype: NetworkServerStats
+        """
+        return self._stats
+
+    @stats.setter
+    def stats(self, stats):
+        """Sets the stats of this NetworkServer.
+
+
+        :param stats: The stats of this NetworkServer.  # noqa: E501
+        :type: NetworkServerStats
+        """
+        self._stats = stats
 
     def to_dict(self):
         """Returns the model properties as a dict"""

@@ -76,8 +76,7 @@ class NetworkGeneratorResult(object):
         self.timestamp_last = timestamp_last
         self.read = read
         self.write = write
-        if connection is not None:
-            self.connection = connection
+        self.connection = connection
         if dynamic_results is not None:
             self.dynamic_results = dynamic_results
 

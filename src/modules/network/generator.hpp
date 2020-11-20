@@ -17,13 +17,14 @@ class generator : public model::generator
 {
     using controller = ::openperf::framework::generator::controller;
     using chronometer = openperf::timesync::chrono::realtime;
-    using generator_stat_t = model::generator_result::statistics_t;
+    using generator_stat_t = model::generator_result::load_stat_t;
 
 private:
     std::string m_result_id;
     const uint16_t m_serial_number;
 
     task::stat_t m_read_stat, m_write_stat;
+    task::conn_stat_t m_conn_stat;
     chronometer::time_point m_start_time;
 
     dynamic::spool<model::generator_result> m_dynamic;

@@ -41,6 +41,7 @@ nlohmann::json NetworkServer::toJson() const
     val["id"] = ModelBase::toJson(m_Id);
     val["port"] = m_Port;
     val["protocol"] = ModelBase::toJson(m_Protocol);
+    val["stats"] = ModelBase::toJson(m_Stats);
     
 
     return val;
@@ -80,6 +81,15 @@ std::string NetworkServer::getProtocol() const
 void NetworkServer::setProtocol(std::string value)
 {
     m_Protocol = value;
+    
+}
+std::shared_ptr<NetworkServerStats> NetworkServer::getStats() const
+{
+    return m_Stats;
+}
+void NetworkServer::setStats(std::shared_ptr<NetworkServerStats> value)
+{
+    m_Stats = value;
     
 }
 

@@ -21,6 +21,7 @@
 
 #include "ModelBase.h"
 
+#include "NetworkServerStats.h"
 #include <string>
 
 namespace swagger {
@@ -63,6 +64,11 @@ public:
     /// </summary>
     std::string getProtocol() const;
     void setProtocol(std::string value);
+        /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<NetworkServerStats> getStats() const;
+    void setStats(std::shared_ptr<NetworkServerStats> value);
     
 protected:
     std::string m_Id;
@@ -70,6 +76,8 @@ protected:
     int64_t m_Port;
 
     std::string m_Protocol;
+
+    std::shared_ptr<NetworkServerStats> m_Stats;
 
 };
 

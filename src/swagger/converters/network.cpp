@@ -67,6 +67,9 @@ void from_json(const nlohmann::json& j, NetworkGeneratorResult& result)
     auto read_stats = std::make_shared<NetworkGeneratorStats>();
     read_stats->fromJson(const_cast<nlohmann::json&>(j).at("read"));
     result.setRead(read_stats);
+    auto connection_stats = std::make_shared<NetworkGeneratorConnectionStats>();
+    connection_stats->fromJson(const_cast<nlohmann::json&>(j).at("connection"));
+    result.setConnection(connection_stats);
 }
 
 void from_json(const nlohmann::json& j, NetworkServer& server)

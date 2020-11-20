@@ -200,6 +200,7 @@ int server_tcp::tcp_write(connection_t& conn, std::vector<uint8_t> send_buffer)
         return -1;
     }
 
+    m_stat.bytes_sent += send_or_err;
     conn.bytes_left -= send_or_err;
 
     conn.state = STATE_WAITING;
@@ -235,8 +236,9 @@ void server_tcp::run_worker_thread()
                        &conn_buffer.client,
                        get_sa_len(&conn_buffer.client));
                 connections.push_back(conn);
+                m_stat.connections++;
 
-                OP_LOG(OP_LOG_INFO,
+                OP_LOG(OP_LOG_DEBUG,
                        "SERVER: Received new connection %d, total %zu\n",
                        conn.fd,
                        connections.size());
@@ -284,6 +286,7 @@ void server_tcp::run_worker_thread()
                         conn.state = STATE_DONE;
                         break;
                     }
+                    m_stat.bytes_received += recv_or_err;
 
                     if (conn.request.size()) {
                         /* put the cursor back in the right spot */
@@ -376,10 +379,16 @@ void server_tcp::run_worker_thread()
             auto s = connections.size();
             connections.erase(std::remove_if(connections.begin(),
                                              connections.end(),
-                                             [](const auto& conn) {
-                                                 return conn.state == STATE_DONE
-                                                        || conn.state
-                                                               == STATE_ERROR;
+                                             [this](const auto& conn) {
+                                                 if (conn.state == STATE_ERROR)
+                                                     m_stat.errors++;
+                                                 if (conn.state == STATE_DONE
+                                                     || conn.state
+                                                            == STATE_ERROR) {
+                                                     m_stat.closed++;
+                                                     return true;
+                                                 }
+                                                 return false;
                                              }),
                               connections.end());
             if (connections.size() != s) {

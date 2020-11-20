@@ -104,6 +104,7 @@ from client.models.network_generator_connection_stats import NetworkGeneratorCon
 from client.models.network_generator_result import NetworkGeneratorResult
 from client.models.network_generator_stats import NetworkGeneratorStats
 from client.models.network_server import NetworkServer
+from client.models.network_server_stats import NetworkServerStats
 from client.models.packet_analyzer import PacketAnalyzer
 from client.models.packet_analyzer_config import PacketAnalyzerConfig
 from client.models.packet_analyzer_flow_counters import PacketAnalyzerFlowCounters

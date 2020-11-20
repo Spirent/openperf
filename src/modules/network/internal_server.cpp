@@ -48,4 +48,16 @@ server::~server() { server_ptr.reset(nullptr); }
 
 void server::reset() {}
 
+server::stat_t server::stat() const
+{
+    auto& istat = server_ptr->stat();
+    auto& stat = const_cast<stat_t&>(m_stat);
+    stat.connections = istat.connections;
+    stat.errors = istat.errors;
+    stat.bytes_received = istat.bytes_received;
+    stat.closed = istat.closed;
+    stat.bytes_sent = istat.bytes_sent;
+    return m_stat;
+}
+
 } // namespace openperf::network::internal

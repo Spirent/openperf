@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 **timestamp_last** | **datetime** | The ISO8601-formatted date of the last result update | 
 **read** | [**NetworkGeneratorStats**](NetworkGeneratorStats.md) |  | 
 **write** | [**NetworkGeneratorStats**](NetworkGeneratorStats.md) |  | 
-**connection** | [**NetworkGeneratorConnectionStats**](NetworkGeneratorConnectionStats.md) |  | [optional] 
+**connection** | [**NetworkGeneratorConnectionStats**](NetworkGeneratorConnectionStats.md) |  | 
 **dynamic_results** | [**DynamicResults**](DynamicResults.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

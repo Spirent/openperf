@@ -10,9 +10,9 @@ using namespace std::chrono_literals;
 static uint16_t serial_counter = 0;
 constexpr auto NAME_PREFIX = "op_network";
 
-auto to_statistics_t(const task::stat_t& task_stat)
+auto to_load_stat_t(const task::stat_t& task_stat)
 {
-    return model::generator_result::statistics_t{
+    return model::generator_result::load_stat_t{
         .bytes_actual = task_stat.bytes_actual,
         .bytes_target = task_stat.bytes_target,
         .io_errors = task_stat.errors,
@@ -21,6 +21,19 @@ auto to_statistics_t(const task::stat_t& task_stat)
         .latency = task_stat.latency,
         .latency_min = task_stat.latency_min,
         .latency_max = task_stat.latency_max};
+};
+
+auto to_conn_stat_t(const task::stat_t& write_stat,
+                    const task::stat_t& read_stat)
+{
+    return model::generator_result::conn_stat_t{
+        .attempted =
+            read_stat.conn_stat.attempted + write_stat.conn_stat.attempted,
+        .successful =
+            read_stat.conn_stat.successful + write_stat.conn_stat.successful,
+        .closed = read_stat.conn_stat.closed + write_stat.conn_stat.closed,
+        .errors = read_stat.conn_stat.errors + write_stat.conn_stat.errors,
+    };
 };
 
 std::optional<double> get_field(const model::generator_result& stat,
@@ -88,8 +101,9 @@ generator::generator(const model::generator& generator_model)
         }
 
         auto complete_stat = model::generator_result();
-        complete_stat.read_stats(to_statistics_t(m_read_stat));
-        complete_stat.write_stats(to_statistics_t(m_write_stat));
+        complete_stat.read_stats(to_load_stat_t(m_read_stat));
+        complete_stat.write_stats(to_load_stat_t(m_write_stat));
+        complete_stat.conn_stats(to_conn_stat_t(m_write_stat, m_read_stat));
         complete_stat.timestamp(
             std::max(m_write_stat.updated, m_read_stat.updated));
         complete_stat.dynamic_results(m_dynamic.result());
@@ -165,8 +179,9 @@ model::generator_result generator::statistics() const
     stat.active(m_running);
     stat.timestamp(timesync::chrono::realtime::now());
     stat.start_timestamp(m_start_time);
-    stat.read_stats(to_statistics_t(m_read_stat));
-    stat.write_stats(to_statistics_t(m_write_stat));
+    stat.read_stats(to_load_stat_t(m_read_stat));
+    stat.write_stats(to_load_stat_t(m_write_stat));
+    stat.conn_stats(to_conn_stat_t(m_write_stat, m_read_stat));
     stat.dynamic_results(m_dynamic.result());
 
     return stat;

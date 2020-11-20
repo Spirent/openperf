@@ -187,7 +187,7 @@ to_swagger(const model::generator& model)
 }
 
 swagger::NetworkGeneratorStats
-to_swagger(const model::generator_result::statistics_t& stat)
+to_swagger(const model::generator_result::load_stat_t& stat)
 {
     swagger::NetworkGeneratorStats model;
     model.setBytesActual(stat.bytes_actual);
@@ -216,6 +216,18 @@ to_swagger(const model::generator_result::statistics_t& stat)
     return model;
 }
 
+swagger::NetworkGeneratorConnectionStats
+to_swagger(const model::generator_result::conn_stat_t& stat)
+{
+    swagger::NetworkGeneratorConnectionStats model;
+    model.setAttempted(stat.attempted);
+    model.setSuccessful(stat.successful);
+    model.setClosed(stat.closed);
+    model.setErrors(stat.errors);
+
+    return model;
+}
+
 std::shared_ptr<swagger::NetworkGeneratorResult>
 to_swagger(const model::generator_result& result)
 {
@@ -231,6 +243,9 @@ to_swagger(const model::generator_result& result)
         to_swagger(result.read_stats())));
     gen->setWrite(std::make_shared<swagger::NetworkGeneratorStats>(
         to_swagger(result.write_stats())));
+    gen->setConnection(
+        std::make_shared<swagger::NetworkGeneratorConnectionStats>(
+            to_swagger(result.conn_stats())));
 
     gen->setDynamicResults(std::make_shared<swagger::DynamicResults>(
         dynamic::to_swagger(result.dynamic_results())));
@@ -240,10 +255,19 @@ to_swagger(const model::generator_result& result)
 
 std::shared_ptr<swagger::NetworkServer> to_swagger(const model::server& model)
 {
+    auto mstat = model.stat();
+    auto stats = std::make_shared<swagger::NetworkServerStats>();
+    stats->setBytesReceived(mstat.bytes_received);
+    stats->setBytesSent(mstat.bytes_sent);
+    stats->setConnections(mstat.connections);
+    stats->setClosed(mstat.closed);
+    stats->setErrors(mstat.errors);
+
     auto server = std::make_shared<swagger::NetworkServer>();
     server->setId(model.id());
     server->setPort(model.port());
     server->setProtocol(to_string(model.protocol()));
+    server->setStats(stats);
     return server;
 }
 
