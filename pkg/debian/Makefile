@@ -1,15 +1,12 @@
 # Build the debian package
 
-# Pull in common build varables
+# Pull in common build variables
 PKG_TYPE := debian
-OP_ROOT := $(shell pwd)/../..
-OP_TARGET := package-$(PKG_TYPE)
-include $(OP_ROOT)/mk/bootstrap.mk
+OP_ROOT := $(abspath $(shell pwd)/../..)
+include $(OP_ROOT)/pkg/common.mk
 
 # Make sure we have version information to use
-$(call op_check_var,VERSION)
-$(call op_check_var,PKG_VERSION)
-$(call op_check_var,PKG_BASE_NAME)
+$(call op_check_vars,VERSION PKG_VERSION PKG_BASE_NAME)
 
 # Adjust the package architecture name (if needed)
 PKG_ARCH := $(ARCH)
@@ -31,7 +28,7 @@ VARS_MK := $(STAGE_DIR)/vars.mk
 
 .PHONY: all clean
 
-all: $(PKG_FILE_PATH)
+all: version_check $(PKG_FILE_PATH)
 
 # Use a make file to copy files from the openperf build
 $(INSTALLER_MK): install.mk
