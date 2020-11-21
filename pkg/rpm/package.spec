@@ -1,13 +1,12 @@
-Buildroot: {{BUILD_ROOT}}
 Name: openperf
 Version: {{VERSION}}
 Release: {{PKG_VERSION}}
 Summary: Spirent Network and Load Generator
-License: see /usr/share/doc/openperf/copyright
-Distribution: Debian
+License: Apache License 2.0
+Vendor: Spirent Communications
 Group: utils
 
-%define _rpmdir ../
+%define _rpmdir {{OUTPUT_DIR}}
 %define _rpmfilename %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm
 %define _unpackaged_files_terminate_build 0
 
@@ -20,12 +19,7 @@ to allow users to access and control its functionality.
 https://github.com/Spirent/openperf
 
 %files
-%dir "/"
-%dir "/etc/"
-%dir "/etc/openperf/"
-%config "/etc/openperf/config.yaml"
-%dir "/usr/"
-%dir "/usr/bin/"
-"/usr/bin/openperf"
-%dir "/usr/lib/"
-"/usr/lib/libopenperf-shim.so"
+%defattr(-,root,root)
+%config %attr(644, root, root) "/etc/openperf/config.yaml"
+%attr(755, root, root) "/usr/bin/openperf"
+%attr(755, root, root) "/usr/lib/libopenperf-shim.so"

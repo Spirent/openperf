@@ -1,20 +1,14 @@
 # Build the RPM package
 
-# Pull in common build varables
+# Pull in common build variables
 PKG_TYPE := rpm
-OP_ROOT ?= $(shell pwd)/../..
-OP_TARGET := package-$(PKG_TYPE)
-include $(OP_ROOT)/mk/bootstrap.mk
-
-# Include the common packaging definitions
-include ../common.mk
+OP_ROOT := $(abspath $(shell pwd)/../..)
+include $(OP_ROOT)/pkg/common.mk
 
 # Make sure we have version information to use
-$(call op_check_var,VERSION)
-$(call op_check_var,PKG_VERSION)
-$(call op_check_var,PKG_BASE_NAME)
+$(call op_check_vars,PKG_VERSION PKG_BASE_NAME)
 
-PKG_NAME := $(PKG_BASE_NAME)_$(VERSION)-$(PKG_VERSION)_$(ARCH)
+PKG_NAME := $(PKG_BASE_NAME)-$(VERSION)-$(PKG_VERSION).$(ARCH)
 OP_BIN_NAME := openperf
 OP_LIB_NAME := libopenperf-shim
 STAGE_DIR := $(OP_BUILD_ROOT)/$(PKG_NAME)
@@ -27,22 +21,20 @@ TGT_ETC_DIR := $(RPM_TGT_DIR)/etc/$(PKG_BASE_NAME)
 PKG_FILE_PATH := $(OP_BUILD_ROOT)/$(PKG_NAME).rpm
 TGT_SPEC_FILE := $(STAGE_DIR)/SPECS/$(PKG_BASE_NAME)-$(VERSION).spec
 
-.PHONY: all clean rpm_build_dir
+.PHONY: all clean
 
-all: $(PKG_FILE_PATH)
+all: version_check $(PKG_FILE_PATH)
 
 # Build the RPM package
-$(PKG_FILE_PATH): rpm_build_dir
-	cd $(STAGE_DIR) && rpmbuild --define "_topdir $(STAGE_DIR)" -bb $(TGT_SPEC_FILE)
-
-# Setup the RPM build directory
-rpm_build_dir: \
+$(PKG_FILE_PATH): \
 		$(TGT_SPEC_FILE) \
 		$(TGT_BIN_DIR)/$(OP_BIN_NAME) \
 		$(TGT_LIB_DIR)/$(OP_LIB_NAME).so \
-		$(TGT_ETC_DIR)/config.yaml \
+		$(TGT_ETC_DIR)/config.yaml
 	# Fill in any directories that RPM expects but may have not been created
 	$(foreach d,BUILD BUILDROOT RPMS SOURCES SPECS SRPMS, $(shell mkdir -p $(STAGE_DIR)/$(d)))
+	# Build the package
+	rpmbuild --define "_topdir $(STAGE_DIR)" -bb $(TGT_SPEC_FILE)
 
 # Create the package spec file (replace template parameters and name appropriately)
 $(TGT_SPEC_FILE): ./package.spec
@@ -73,9 +65,9 @@ define copy_template
 	mkdir -p $(dir $(2))
 	cp -pf $(1) $(2)
 	sed -i \
-		-e 's/{{BUILD_ROOT}}/'"$(subst /,\/,$(abspath $(STAGE_DIR)))"'/g' \
 		-e 's/{{VERSION}}/'"$(VERSION)"'/g' \
 		-e 's/{{PKG_VERSION}}/'"$(PKG_VERSION)"'/g' \
+		-e 's/{{OUTPUT_DIR}}/'"$(subst /,\/,$(abspath $(OP_BUILD_ROOT)))"'/g' \
 		$(2)
 endef
 
