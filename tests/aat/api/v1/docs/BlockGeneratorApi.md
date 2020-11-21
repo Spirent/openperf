@@ -933,7 +933,7 @@ from pprint import pprint
 # create an instance of the API class
 api_instance = client.BlockGeneratorApi()
 id = 'id_example' # str | Unique resource identifier
-dynamic_results = client.DynamicResultsConfig() # DynamicResultsConfig | Dynamic results configuration (optional)
+dynamic_results = client.DynamicResults() # DynamicResults | Dynamic results configuration (optional)
 
 try:
     # Start a block generator
@@ -948,7 +948,7 @@ except ApiException as e:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **id** | **str**| Unique resource identifier | 
- **dynamic_results** | [**DynamicResultsConfig**](DynamicResultsConfig.md)| Dynamic results configuration | [optional] 
+ **dynamic_results** | [**DynamicResults**](DynamicResults.md)| Dynamic results configuration | [optional] 
 
 ### Return type
 

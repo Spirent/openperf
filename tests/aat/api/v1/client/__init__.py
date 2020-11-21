@@ -207,4 +207,6 @@ from client.models.tvlp_profile_memory_series import TvlpProfileMemorySeries
 from client.models.tvlp_profile_packet import TvlpProfilePacket
 from client.models.tvlp_profile_packet_series import TvlpProfilePacketSeries
 from client.models.tvlp_result import TvlpResult
+from client.models.tvlp_start_configuration import TvlpStartConfiguration
+from client.models.tvlp_start_series_configuration import TvlpStartSeriesConfiguration
 from client.models.tx_flow import TxFlow

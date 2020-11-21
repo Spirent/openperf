@@ -50,10 +50,14 @@ cpu_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
 }
 
 tl::expected<stat_pair_t, std::string>
-cpu_tvlp_worker_t::send_start(const std::string& id)
+cpu_tvlp_worker_t::send_start(const std::string& id,
+                              const dynamic::configuration& dynamic_results)
 {
     auto api_reply =
-        submit_request(serialize_request(request_cpu_generator_start{.id = id}))
+        submit_request(serialize_request(request_cpu_generator_start{
+                           .id = id,
+                           .dynamic_results = dynamic_results,
+                       }))
             .and_then(deserialize_reply);
 
     if (auto r = std::get_if<reply_cpu_generator_results>(&api_reply.value())) {

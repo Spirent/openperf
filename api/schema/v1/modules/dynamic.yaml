@@ -5,7 +5,7 @@ parameters:
     description: Dynamic results configuration
     required: false
     schema:
-      $ref: "#/definitions/DynamicResultsConfig"
+      $ref: "#/definitions/DynamicResults"
 
 definitions:
   DynamicResultsConfig:

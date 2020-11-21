@@ -53,8 +53,8 @@ packet_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
     return tl::make_unexpected("Unexpected error");
 }
 
-tl::expected<stat_pair_t, std::string>
-packet_tvlp_worker_t::send_start(const std::string& id)
+tl::expected<stat_pair_t, std::string> packet_tvlp_worker_t::send_start(
+    const std::string& id, const dynamic::configuration& /* dynamic_results */)
 {
     auto api_reply =
         submit_request(serialize_request(request_start_generator{id}))
