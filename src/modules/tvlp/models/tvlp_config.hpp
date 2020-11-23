@@ -32,6 +32,7 @@ struct tvlp_profile_t
     std::optional<series> cpu;
     std::optional<series> memory;
     std::optional<series> packet;
+    std::optional<series> network;
 };
 
 struct tvlp_start_t

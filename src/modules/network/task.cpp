@@ -65,6 +65,12 @@ network_task::network_task(const config_t& configuration,
     config(configuration);
 }
 
+network_task::~network_task()
+{
+    for (auto& conn : m_connections) { do_shutdown(conn, m_stat); }
+    m_connections.clear();
+}
+
 // Methods : public
 void network_task::reset()
 {
@@ -420,11 +426,6 @@ stat_t network_task::worker_spin(uint64_t nb_ops, realtime::time_point deadline)
         }
         stat.conn_stat.successful++;
         m_connections.push_back(std::move(conn.value()));
-
-        OP_LOG(OP_LOG_INFO,
-               "CLIENT: Created new connection %d, total %zu\n",
-               conn.value().fd,
-               m_connections.size());
     }
 
     for (size_t i = 0; i < nb_ops && i < m_connections.size(); i++) {
@@ -445,8 +446,6 @@ stat_t network_task::worker_spin(uint64_t nb_ops, realtime::time_point deadline)
     }
 
     // Remove closed connections
-    auto s = m_connections.size();
-
     m_connections.erase(std::remove_if(m_connections.begin(),
                                        m_connections.end(),
                                        [](const auto& conn) {
@@ -454,12 +453,6 @@ stat_t network_task::worker_spin(uint64_t nb_ops, realtime::time_point deadline)
                                                   || conn.state == STATE_ERROR;
                                        }),
                         m_connections.end());
-    if (m_connections.size() != s) {
-        OP_LOG(OP_LOG_INFO,
-               "CLIENT: Removed %zu connections, current %zu\n",
-               s - m_connections.size(),
-               m_connections.size());
-    }
     return stat;
 }
 

@@ -102,6 +102,42 @@ void from_json(const nlohmann::json& j, TvlpProfile_packet& packet_profile)
     }
 }
 
+void from_json(const nlohmann::json& j,
+               TvlpProfile_network_series& network_series)
+{
+    auto val = const_cast<nlohmann::json&>(j);
+
+    network_series.setLength(val.at("length"));
+
+    auto gc = std::make_shared<NetworkGeneratorConfig>();
+    gc->fromJson(val.at("config"));
+    network_series.setConfig(gc);
+}
+
+void from_json(const nlohmann::json& j, TvlpProfile_network& network_profile)
+{
+    auto val = const_cast<nlohmann::json&>(j);
+
+    if (j.find("time_scale") != j.end())
+        network_profile.setTimeScale(j.at("time_scale"));
+    else
+        network_profile.setTimeScale(1.0);
+
+    if (j.find("load_scale") != j.end())
+        network_profile.setLoadScale(j.at("load_scale"));
+    else
+        network_profile.setLoadScale(1.0);
+
+    network_profile.getSeries().clear();
+    if (val.find("series") != val.end()) {
+        for (auto& item : val["series"]) {
+            auto newItem = std::make_shared<TvlpProfile_network_series>(
+                item.get<TvlpProfile_network_series>());
+            network_profile.getSeries().push_back(newItem);
+        }
+    }
+}
+
 void from_json(const nlohmann::json& j, TvlpProfile& profile)
 {
     auto val = const_cast<nlohmann::json&>(j);
@@ -134,6 +170,14 @@ void from_json(const nlohmann::json& j, TvlpProfile& profile)
             auto newItem = std::make_shared<TvlpProfile_packet>(
                 val.at("packet").get<TvlpProfile_packet>());
             profile.setPacket(newItem);
+        }
+    }
+
+    if (val.find("network") != val.end()) {
+        if (!val["network"].is_null()) {
+            auto newItem = std::make_shared<TvlpProfile_network>(
+                val.at("network").get<TvlpProfile_network>());
+            profile.setNetwork(newItem);
         }
     }
 }

@@ -171,7 +171,6 @@ void log_intf_addresses(void)
                               address,
                               buffer,
                               INET6_ADDRSTRLEN);
-                    OP_LOG(OP_LOG_INFO, "%s: %s\n", ifa->ifa_name, buffer);
                 }
             }
         }
