@@ -1,10 +1,12 @@
 #include "config/op_config_file.hpp"
 #include "framework/core/op_log.h"
 #include "internal_server.hpp"
+
 #include "firehose/server_tcp.hpp"
 #include "firehose/server_udp.hpp"
+
 #include "drivers/kernel.hpp"
-//#include "drivers/dpdk.hpp"
+#include "drivers/dpdk.hpp"
 
 namespace openperf::network::internal {
 
@@ -26,6 +28,8 @@ server::server(const model::server& server_model)
     std::shared_ptr<drivers::network_driver> nd;
     if (!driver || !driver.value().compare(drivers::KERNEL)) {
         nd = std::make_shared<drivers::kernel>(drivers::kernel());
+    } else if (!driver.value().compare(drivers::DPDK)) {
+        nd = std::make_shared<drivers::dpdk>(drivers::dpdk());
     } else {
         throw std::runtime_error("Network driver " + driver.value()
                                  + " is unsupported");
@@ -39,9 +43,6 @@ server::server(const model::server& server_model)
         server_ptr = std::make_unique<firehose::server_udp>(port(), nd);
         break;
     }
-
-    server_ptr->run_accept_thread();
-    server_ptr->run_worker_thread();
 }
 
 server::~server() { server_ptr.reset(nullptr); }

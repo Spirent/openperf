@@ -25,7 +25,8 @@ ifeq ($(PLATFORM), linux)
 endif
 
 NETWORK_SOURCES += \
-	drivers/kernel.cpp
+	drivers/kernel.cpp \
+	drivers/dpdk.cpp
 
 NETWORK_SOURCES += \
 	firehose/server_tcp.cpp \

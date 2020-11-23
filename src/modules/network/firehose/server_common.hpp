@@ -54,9 +54,6 @@ public:
 
     virtual ~server() = default;
 
-    virtual void run_accept_thread() = 0;
-    virtual void run_worker_thread() = 0;
-
 protected:
     std::atomic_int m_fd;
     int m_port;
