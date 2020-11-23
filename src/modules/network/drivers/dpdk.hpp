@@ -1,16 +1,20 @@
-#ifndef _OP_NETWORK_DRIVER_KERNEL_HPP_
-#define _OP_NETWORK_DRIVER_KERNEL_HPP_
+#ifndef _OP_NETWORK_DRIVER_DPDK_HPP_
+#define _OP_NETWORK_DRIVER_DPDK_HPP_
 
 #include "driver.hpp"
+#include <atomic>
 
 namespace openperf::network::internal::drivers {
 
-static constexpr std::string_view KERNEL = "kernel";
-class kernel : public network_driver
+static constexpr std::string_view DPDK = "dpdk";
+class dpdk : public network_driver
 {
 public:
-    kernel() = default;
-    ~kernel() = default;
+    dpdk() = default;
+    dpdk(const dpdk&);
+    ~dpdk() = default;
+
+    void init() override;
 
     /* General socket functions */
     int accept(int s,
@@ -60,6 +64,9 @@ public:
                    socklen_t tolen) override;
     ssize_t write(int s, const void* dataptr, size_t len) override;
     ssize_t writev(int s, const struct iovec* iov, int iovcnt) override;
+
+private:
+    std::atomic_bool m_init_flag;
 };
 } // namespace openperf::network::internal::drivers
 

@@ -11,6 +11,8 @@ public:
     network_driver() = default;
     virtual ~network_driver() = default;
 
+    virtual void init(){};
+
     /* General socket functions */
     virtual int
     accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags = 0) = 0;

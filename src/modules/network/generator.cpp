@@ -1,7 +1,9 @@
-#include <future>
-
 #include "generator.hpp"
+
+#include <future>
 #include "config/op_config_file.hpp"
+#include "drivers/kernel.hpp"
+#include "drivers/dpdk.hpp"
 
 namespace openperf::network::internal {
 
@@ -137,33 +139,53 @@ void generator::config(const model::generator_config& config)
     m_controller.pause();
     m_controller.clear();
 
+    static auto driver =
+        openperf::config::file::op_config_get_param<OP_OPTION_TYPE_STRING>(
+            "modules.network.drivers");
+
+    std::shared_ptr<drivers::network_driver> nd;
+    if (!driver || !driver.value().compare(drivers::KERNEL)) {
+        nd = std::make_shared<drivers::kernel>(drivers::kernel());
+    } else if (!driver.value().compare(drivers::DPDK)) {
+        nd = std::make_shared<drivers::dpdk>(drivers::dpdk());
+    } else {
+        throw std::runtime_error("Network driver " + driver.value()
+                                 + " is unsupported");
+    }
+
     if (config.reads_per_sec > 0) {
         auto task = task::network_task(
-            task::config_t{.operation = task::operation_t::READ,
-                           .block_size = m_config.read_size,
-                           .ops_per_sec = m_config.reads_per_sec,
-                           .connections = m_config.connections,
-                           .ops_per_connection = m_config.ops_per_connection,
-                           .target = task::target_t{
-                               .host = m_target.host,
-                               .port = m_target.port,
-                               .protocol = to_task_protocol(m_target.protocol),
-                           }});
+            task::config_t{
+                .operation = task::operation_t::READ,
+                .block_size = m_config.read_size,
+                .ops_per_sec = m_config.reads_per_sec,
+                .connections = m_config.connections,
+                .ops_per_connection = m_config.ops_per_connection,
+                .target =
+                    task::target_t{
+                        .host = m_target.host,
+                        .port = m_target.port,
+                        .protocol = to_task_protocol(m_target.protocol),
+                    }},
+            nd);
         m_controller.add(std::move(task),
                          NAME_PREFIX + std::to_string(m_serial_number) + "r");
     }
     if (config.writes_per_sec > 0) {
         auto task = task::network_task(
-            task::config_t{.operation = task::operation_t::WRITE,
-                           .block_size = m_config.write_size,
-                           .ops_per_sec = m_config.writes_per_sec,
-                           .connections = m_config.connections,
-                           .ops_per_connection = m_config.ops_per_connection,
-                           .target = task::target_t{
-                               .host = m_target.host,
-                               .port = m_target.port,
-                               .protocol = to_task_protocol(m_target.protocol),
-                           }});
+            task::config_t{
+                .operation = task::operation_t::WRITE,
+                .block_size = m_config.write_size,
+                .ops_per_sec = m_config.writes_per_sec,
+                .connections = m_config.connections,
+                .ops_per_connection = m_config.ops_per_connection,
+                .target =
+                    task::target_t{
+                        .host = m_target.host,
+                        .port = m_target.port,
+                        .protocol = to_task_protocol(m_target.protocol),
+                    }},
+            nd);
         m_controller.add(std::move(task),
                          NAME_PREFIX + std::to_string(m_serial_number) + "w");
     }

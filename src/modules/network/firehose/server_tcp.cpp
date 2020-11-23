@@ -61,14 +61,14 @@ int server_tcp::new_server(int domain, in_port_t port)
                "Unable to open %s UDP server socket: %s\n",
                domain_str.c_str(),
                strerror(errno));
-        return -1;
+        return -errno;
     }
 
     if (m_driver->setsockopt(
             sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable))
         != 0) {
         m_driver->close(sock);
-        return (-1);
+        return -errno;
     }
 
     if (m_driver->bind(sock, server_ptr, get_sa_len(server_ptr)) == -1) {
@@ -76,6 +76,7 @@ int server_tcp::new_server(int domain, in_port_t port)
                "Unable to bind to socket (domain = %d, protocol = TCP): %s\n",
                domain,
                strerror(errno));
+        return -errno;
     }
 
     if (m_driver->listen(sock, tcp_backlog) == -1) {
@@ -83,25 +84,34 @@ int server_tcp::new_server(int domain, in_port_t port)
                "Unable to listen on socket %d: %s\n",
                sock,
                strerror(errno));
+        return -errno;
     }
 
     return (sock);
 }
 
-server_tcp::server_tcp(in_port_t port, drivers::network_driver_ptr& driver)
+server_tcp::server_tcp(in_port_t port,
+                       const drivers::network_driver_ptr& driver)
     : m_stopped(false)
     , m_context(zmq_ctx_new())
 {
     m_driver = driver;
+    m_driver->init();
 
     /* IPv6 any supports IPv4 and IPv6 */
     if ((m_fd = new_server(AF_INET6, port)) >= 0) {
         OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4/IPv6.\n");
     } else {
         /* Couldn't bind IPv6 socket so use IPv4 */
-        if ((m_fd = new_server(AF_INET, port)) < 0) { return; }
+        if ((m_fd = new_server(AF_INET, port)) < 0) {
+            throw std::runtime_error("Cannot create TCP server: "
+                                     + std::string(strerror(-m_fd)));
+        }
         OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4.\n");
     }
+
+    run_accept_thread();
+    run_worker_thread();
 }
 
 server_tcp::~server_tcp()
@@ -213,6 +223,7 @@ void server_tcp::run_worker_thread()
     m_worker_threads.push_back(std::make_unique<std::thread>([&] {
         // Set the thread name
         op_thread_setname("op_net_srv_w");
+
         std::vector<connection_t> connections;
         connection_msg_t conn_buffer;
         std::vector<uint8_t> send_buffer(send_buffer_size);
