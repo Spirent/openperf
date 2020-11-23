@@ -14,6 +14,10 @@ endif
 
 SOCKSRV_SOURCES += \
 	$(SOCK_COMMON) \
+	client/api_client.cpp \
+	client/io_channel_wrapper.cpp \
+	client/dgram_channel.cpp \
+	client/stream_channel.cpp \
 	server/api_handler.cpp \
 	server/api_server.cpp \
 	server/api_server_options.c \

@@ -20,7 +20,7 @@ template <typename T> class thread_singleton
 public:
     static T& instance()
     {
-        static T instance;
+        static thread_local T instance;
         return instance;
     }
 
@@ -29,7 +29,6 @@ public:
 
 protected:
     thread_singleton() = default;
-    ;
 };
 
 class client : public thread_singleton<client>

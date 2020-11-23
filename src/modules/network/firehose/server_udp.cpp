@@ -33,7 +33,7 @@ int server_udp::new_server(int domain, in_port_t port)
         break;
     }
     default:
-        return (-EINVAL);
+        return -EINVAL;
     }
 
     int sock = 0, enable = true;
@@ -42,14 +42,14 @@ int server_udp::new_server(int domain, in_port_t port)
                "Unable to open %s UDP server socket: %s\n",
                domain_str.c_str(),
                strerror(errno));
-        return -1;
+        return -errno;
     }
 
     if (m_driver->setsockopt(
             sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable))
         != 0) {
         m_driver->close(sock);
-        return (-1);
+        return -errno;
     }
 
     if (m_driver->bind(sock, server_ptr, get_sa_len(server_ptr)) == -1) {
@@ -57,24 +57,32 @@ int server_udp::new_server(int domain, in_port_t port)
                "Unable to bind to socket (domain = %d, protocol = UDP): %s\n",
                domain,
                strerror(errno));
+        return -errno;
     }
 
     return (sock);
 }
 
-server_udp::server_udp(in_port_t port, drivers::network_driver_ptr& driver)
+server_udp::server_udp(in_port_t port,
+                       const drivers::network_driver_ptr& driver)
     : m_stopped(false)
 {
     m_driver = driver;
+    m_driver->init();
 
     /* IPv6 any supports IPv4 and IPv6 */
     if ((m_fd = new_server(AF_INET6, port)) >= 0) {
         OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4/IPv6.\n");
     } else {
         /* Couldn't bind IPv6 socket so use IPv4 */
-        if ((m_fd = new_server(AF_INET, port)) < 0) { return; }
+        if ((m_fd = new_server(AF_INET, port)) < 0) {
+            throw std::runtime_error("Cannot create UDP server: "
+                                     + std::string(strerror(-m_fd)));
+        }
         OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4.\n");
     }
+
+    run_worker_thread();
 }
 
 server_udp::~server_udp()
@@ -86,11 +94,12 @@ server_udp::~server_udp()
 }
 
 // One worker for udp connections
-void server_udp::run_accept_thread()
+void server_udp::run_worker_thread()
 {
     m_worker_thread = std::thread([&] {
         // Set the thread name
         op_thread_setname("op_net_srv_w");
+
         std::vector<connection_t> connections;
         ssize_t recv_or_err = 0;
         connection_t conn;

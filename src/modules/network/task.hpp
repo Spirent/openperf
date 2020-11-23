@@ -8,6 +8,9 @@
 #include "framework/generator/task.hpp"
 #include "modules/timesync/chrono.hpp"
 
+#include "internal_utils.hpp"
+#include "drivers/driver.hpp"
+
 namespace openperf::network::internal::task {
 
 using realtime = timesync::chrono::realtime;
@@ -90,16 +93,8 @@ struct stat_t
 
 class network_task : public framework::generator::task<stat_t>
 {
-private:
-    config_t m_config;
-    stat_t m_stat;
-    // drivers::network_driver_ptr driver;
-    realtime::time_point m_operation_timestamp;
-    std::vector<connection_t> m_connections;
-    std::vector<uint8_t> m_write_buffer;
-
 public:
-    network_task(const config_t&);
+    network_task(const config_t&, const drivers::network_driver_ptr& driver);
 
     config_t config() const { return m_config; }
 
@@ -109,11 +104,20 @@ public:
 private:
     void config(const config_t&);
     void reset_spin_stat();
+    tl::expected<connection_t, int>
+    new_connection(const network_sockaddr& server, const config_t& config);
     void do_init(connection_t& conn, stat_t& stat);
     void do_read(connection_t& conn, stat_t& stat);
     void do_write(connection_t& conn, stat_t& stat);
     void do_shutdown(connection_t& conn, stat_t& stat);
     stat_t worker_spin(uint64_t nb_ops, time_point deadline);
+
+    config_t m_config;
+    stat_t m_stat;
+    drivers::network_driver_ptr m_driver;
+    realtime::time_point m_operation_timestamp;
+    std::vector<connection_t> m_connections;
+    std::vector<uint8_t> m_write_buffer;
 };
 
 } // namespace openperf::network::internal::task

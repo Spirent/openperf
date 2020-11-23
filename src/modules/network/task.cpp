@@ -10,7 +10,6 @@
 
 #include "framework/core/op_log.h"
 #include "framework/utils/random.hpp"
-#include "internal_utils.hpp"
 
 #include "firehose/protocol.hpp"
 
@@ -57,7 +56,9 @@ stat_t& stat_t::operator+=(const stat_t& stat)
 }
 
 // Constructors & Destructor
-network_task::network_task(const config_t& configuration)
+network_task::network_task(const config_t& configuration,
+                           const drivers::network_driver_ptr& driver)
+    : m_driver(driver)
 {
     m_write_buffer.resize(std::min(configuration.block_size, max_buffer_size));
     utils::op_prbs23_fill(m_write_buffer.data(), m_write_buffer.size());
@@ -144,43 +145,45 @@ stat_t network_task::spin()
     return stat;
 }
 
-static tl::expected<connection_t, int>
-new_connection(const network_sockaddr& server, const config_t& config)
+tl::expected<connection_t, int>
+network_task::new_connection(const network_sockaddr& server,
+                             const config_t& config)
 {
     int sock = 0;
-    if ((sock = socket(server.sa.sa_family,
-                       config.target.protocol == IPPROTO_TCP ? SOCK_STREAM
-                                                             : SOCK_DGRAM,
-                       config.target.protocol))
+    if ((sock = m_driver->socket(
+             server.sa.sa_family,
+             config.target.protocol == IPPROTO_TCP ? SOCK_STREAM : SOCK_DGRAM,
+             config.target.protocol))
         == -1) {
         return tl::make_unexpected(-errno);
     }
 
     /* Update to non-blocking socket */
-    int flags = fcntl(sock, F_GETFD);
+    int flags = m_driver->fcntl(sock, F_GETFD);
     if (flags == -1) {
-        close(sock);
+        m_driver->close(sock);
         return tl::make_unexpected(-errno);
     }
 
-    if (fcntl(sock, F_SETFD, flags | O_NONBLOCK) == -1) {
-        close(sock);
+    if (m_driver->fcntl(sock, F_SETFD, flags | O_NONBLOCK) == -1) {
+        m_driver->close(sock);
         return tl::make_unexpected(-errno);
     }
 
 #if defined(SO_NOSIGPIPE)
     int enable = 1;
-    if (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &enable, sizeof(enable))
+    if (m_driver->setsockopt(
+            sock, SOL_SOCKET, SO_NOSIGPIPE, &enable, sizeof(enable))
         != 0) {
-        close(sock);
+        m_driver->close(sock);
         return tl::make_unexpected(-errno);
     }
 #endif
 
-    if (connect(sock, &server.sa, network_sockaddr_size(server)) == -1
+    if (m_driver->connect(sock, &server.sa, network_sockaddr_size(server)) == -1
         && errno != EINPROGRESS) {
         /* not what we were expecting */
-        close(sock);
+        m_driver->close(sock);
         return tl::make_unexpected(-errno);
     }
 
@@ -197,9 +200,10 @@ new_connection(const network_sockaddr& server, const config_t& config)
      * until the delayed ack timer fired (100ms on BSD, 40ms on Linux).
      */
     if ((config.target.protocol == IPPROTO_TCP)
-        && (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &enable, sizeof(enable))
+        && (m_driver->setsockopt(
+                sock, IPPROTO_TCP, TCP_NODELAY, &enable, sizeof(enable))
             != 0)) {
-        close(sock);
+        m_driver->close(sock);
         return tl::make_unexpected(-errno);
     }
 
@@ -208,13 +212,13 @@ new_connection(const network_sockaddr& server, const config_t& config)
             .tv_sec = 1,
             .tv_usec = 0,
         };
-        if (setsockopt(sock,
-                       SOL_SOCKET,
-                       SO_RCVTIMEO,
-                       &read_timeout,
-                       sizeof(read_timeout))
+        if (m_driver->setsockopt(sock,
+                                 SOL_SOCKET,
+                                 SO_RCVTIMEO,
+                                 &read_timeout,
+                                 sizeof(read_timeout))
             != 0) {
-            close(sock);
+            m_driver->close(sock);
             return tl::make_unexpected(-errno);
         }
     }
@@ -254,7 +258,7 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
 
     switch (m_config.operation) {
     case operation_t::READ:
-        send(conn.fd, header.data(), header.size(), flags);
+        m_driver->send(conn.fd, header.data(), header.size(), flags);
         conn.state = STATE_READING;
         conn.bytes_left = m_config.block_size;
         break;
@@ -276,7 +280,7 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
             .msg_iovlen = 2,
         };
 
-        ssize_t send_or_err = sendmsg(conn.fd, &to_send, flags);
+        ssize_t send_or_err = m_driver->sendmsg(conn.fd, &to_send, flags);
         /*
          * Obviously check to see if we could send our data.
          * Non-obviously, make sure we could get the full request header out.
@@ -314,7 +318,8 @@ void network_task::do_read(connection_t& conn, stat_t& stat)
     assert(conn.state == STATE_READING);
     ssize_t recv_or_err = 0;
     while (conn.bytes_left) {
-        if ((recv_or_err = recv(conn.fd,
+        if ((recv_or_err =
+                 m_driver->recv(conn.fd,
                                 conn.buffer.data(),
                                 std::min(conn.buffer.size(), conn.bytes_left),
                                 0))
@@ -356,10 +361,10 @@ void network_task::do_write(connection_t& conn, stat_t& stat)
 
     while (conn.bytes_left) {
         ssize_t send_or_err =
-            send(conn.fd,
-                 m_write_buffer.data(),
-                 std::min(conn.bytes_left, m_write_buffer.size()),
-                 flags);
+            m_driver->send(conn.fd,
+                           m_write_buffer.data(),
+                           std::min(conn.bytes_left, m_write_buffer.size()),
+                           flags);
         if (send_or_err == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) { return; }
 
@@ -388,13 +393,15 @@ void network_task::do_shutdown(connection_t& conn, stat_t& stat)
 {
     if (conn.state == STATE_ERROR) stat.errors++;
 
-    close(conn.fd);
+    m_driver->close(conn.fd);
     stat.conn_stat.closed++;
 }
 
 // Methods : private
 stat_t network_task::worker_spin(uint64_t nb_ops, realtime::time_point deadline)
 {
+    m_driver->init();
+
     stat_t stat{.operation = m_config.operation};
 
     /* Make sure we have the right number of connections */
