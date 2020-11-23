@@ -5,6 +5,7 @@
 #include "swagger/converters/block.hpp"
 #include "swagger/converters/memory.hpp"
 #include "swagger/converters/cpu.hpp"
+#include "swagger/converters/network.hpp"
 #include "swagger/converters/packet_generator.hpp"
 #include "modules/dynamic/api.hpp"
 
@@ -71,6 +72,9 @@ is_valid(const swagger::TvlpStartConfiguration& config)
         if (auto time = from_rfc3339(config.getStartTime()); !time)
             errors.emplace_back("Wrong start_time format");
     }
+
+    if (config.getProfile()->networkIsSet())
+        scale_check(config.getProfile()->getNetwork());
 
     if (!errors.empty()) return tl::make_unexpected(std::move(errors));
     return true;
@@ -141,6 +145,22 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
                 .length = model::duration(packet_entry->getLength()),
                 .resource_id = packet_entry->getTargetId(),
                 .config = packet_entry->getConfig()->toJson(),
+            });
+        }
+    }
+
+    if (m.getProfile()->networkIsSet()) {
+        auto profile_model = m.getProfile()->getNetwork();
+        auto time_scale = profile_model->getTimeScale();
+        auto load_scale = profile_model->getLoadScale();
+
+        profile.network = std::vector<tvlp_profile_entry_t>();
+        for (const auto& network_entry : profile_model->getSeries()) {
+            profile.network.value().push_back(tvlp_profile_entry_t{
+                .length = model::duration(network_entry->getLength()),
+                .config = network_entry->getConfig()->toJson(),
+                .time_scale = time_scale,
+                .load_scale = load_scale,
             });
         }
     }
@@ -333,6 +353,31 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
         model.getProfile()->setPacket(packet);
     }
 
+    if (config.profile().network) {
+        auto network = std::make_shared<swagger::TvlpProfile_network>();
+        auto network_vector = config.profile().network.value();
+        std::transform(
+            network_vector.begin(),
+            network_vector.end(),
+            std::back_inserter(network->getSeries()),
+            [&network](auto& network_entry) {
+                auto entry =
+                    std::make_shared<swagger::TvlpProfile_network_series>();
+                entry->setLength(network_entry.length.count());
+
+                network->setTimeScale(network_entry.time_scale);
+                network->setLoadScale(network_entry.load_scale);
+
+                auto g_config =
+                    std::make_shared<swagger::NetworkGeneratorConfig>();
+                g_config->fromJson(network_entry.config);
+                entry->setConfig(g_config);
+
+                return entry;
+            });
+        model.getProfile()->setNetwork(network);
+    }
+
     return model;
 }
 
@@ -393,6 +438,20 @@ swagger::TvlpResult to_swagger(const tvlp_result_t& result)
             [](auto& res) {
                 auto g_result =
                     std::make_shared<swagger::PacketGeneratorResult>();
+                swagger::from_json(res, *g_result);
+                return g_result;
+            });
+    }
+
+    if (modules_results.network) {
+        auto network_results = modules_results.network.value();
+        std::transform(
+            network_results.begin(),
+            network_results.end(),
+            std::back_inserter(model.getNetwork()),
+            [](auto& res) {
+                auto g_result =
+                    std::make_shared<swagger::NetworkGeneratorResult>();
                 swagger::from_json(res, *g_result);
                 return g_result;
             });

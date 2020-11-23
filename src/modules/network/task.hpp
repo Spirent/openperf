@@ -95,6 +95,7 @@ class network_task : public framework::generator::task<stat_t>
 {
 public:
     network_task(const config_t&, const drivers::network_driver_ptr& driver);
+    ~network_task();
 
     config_t config() const { return m_config; }
 
