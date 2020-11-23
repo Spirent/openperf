@@ -357,10 +357,6 @@ void server_tcp::run_worker_thread()
                                 conn.state = STATE_WAITING;
                             }
 
-                            OP_LOG(OP_LOG_INFO,
-                                   "-=- CLIENT READ %zu SIMBOLS\n",
-                                   consumed);
-
                             break;
                         }
                         default: {
@@ -387,7 +383,6 @@ void server_tcp::run_worker_thread()
             }
 
             // Remove closed connections
-            auto s = connections.size();
             connections.erase(std::remove_if(connections.begin(),
                                              connections.end(),
                                              [this](const auto& conn) {
@@ -402,12 +397,6 @@ void server_tcp::run_worker_thread()
                                                  return false;
                                              }),
                               connections.end());
-            if (connections.size() != s) {
-                OP_LOG(OP_LOG_INFO,
-                       "SERVER: Removed %zu connections, current %zu\n",
-                       s - connections.size(),
-                       connections.size());
-            }
         }
     }));
 }

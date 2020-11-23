@@ -106,13 +106,8 @@ void server_udp::run_worker_thread()
         socklen_t client_length = sizeof(struct sockaddr_in6);
 
         std::vector<uint8_t> read_buffer(net_request_size);
-        OP_LOG(
-            OP_LOG_INFO, "Initialized read buffer %zu\n", read_buffer.size());
-
         std::vector<uint8_t> send_buffer(send_buffer_size);
         utils::op_prbs23_fill(send_buffer.data(), send_buffer.size());
-        OP_LOG(
-            OP_LOG_INFO, "Initialized write buffer %zu\n", send_buffer.size());
 
         while (!m_stopped.load(std::memory_order_relaxed)) {
             // Receive all accepted connections
@@ -152,12 +147,6 @@ void server_udp::run_worker_thread()
                 conn.bytes_left = req.value().length;
                 bytes_left -= firehose::net_request_size;
                 recv_cursor += firehose::net_request_size;
-                OP_LOG(OP_LOG_INFO,
-                       "=== RECEIVED FH REQUEST %d %zu %u %s",
-                       m_fd.load(),
-                       recv_or_err,
-                       req.value().length,
-                       conn.state == STATE_WRITING ? "WRITE" : "READ");
 
                 while (conn.state == STATE_WRITING && conn.bytes_left) {
                     size_t produced =
@@ -186,8 +175,6 @@ void server_udp::run_worker_thread()
                     } else {
                         conn.bytes_left -= send_or_err;
                         m_stat.bytes_sent += send_or_err;
-                        OP_LOG(
-                            OP_LOG_INFO, "--- SERVER SENT %zd\n", send_or_err);
                     }
                 }
                 m_stat.closed++;

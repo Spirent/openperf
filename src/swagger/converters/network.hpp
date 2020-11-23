@@ -12,6 +12,8 @@ class BulkStartNetworkGeneratorsRequest;
 class BulkStopNetworkGeneratorsRequest;
 class NetworkGeneratorResult;
 class NetworkServer;
+class BulkCreateNetworkServersRequest;
+class BulkDeleteNetworkServersRequest;
 
 void from_json(const nlohmann::json&, NetworkGenerator&);
 void from_json(const nlohmann::json&, BulkCreateNetworkGeneratorsRequest&);
