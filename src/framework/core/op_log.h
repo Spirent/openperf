@@ -120,6 +120,11 @@ int op_vlog(enum op_log_level level,
             va_list argp);
 
 /**
+ * Explicit close the logging socket of the calling thread.
+ */
+void op_log_close(void);
+
+/**
  * Intialize the logging subsystem
  *
  * @param context

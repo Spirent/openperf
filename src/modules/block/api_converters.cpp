@@ -83,9 +83,7 @@ bool is_valid(const BlockFile& file, std::vector<std::string>& errors)
 {
     auto init_errors = errors.size();
 
-    if (file.getFileSize() <= 0) {
-        errors.emplace_back("File size is not valid.");
-    }
+    if (file.getSize() <= 0) { errors.emplace_back("File size is not valid."); }
 
     return (errors.size() == init_errors);
 }
@@ -149,7 +147,7 @@ std::shared_ptr<BlockFile> to_swagger(const model::file& p_file)
     auto blkfile = std::make_shared<BlockFile>();
     blkfile->setId(p_file.id());
     blkfile->setPath(p_file.path());
-    blkfile->setFileSize(p_file.size());
+    blkfile->setSize(p_file.size());
     blkfile->setInitPercentComplete(p_file.init_percent_complete());
     blkfile->setState(std::string(to_string(p_file.state())));
     return blkfile;
@@ -224,7 +222,7 @@ model::file from_swagger(const BlockFile& p_file)
     model::file f;
     f.id(p_file.getId());
     f.path(p_file.getPath());
-    f.size(p_file.getFileSize());
+    f.size(p_file.getSize());
     f.init_percent_complete(p_file.getInitPercentComplete());
     return f;
 }

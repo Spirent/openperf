@@ -225,21 +225,29 @@ void handler::start_tvlp(const Rest::Request& request,
         return;
     }
 
-    auto start_time = realtime::now();
+    auto data = request::tvlp::start{
+        .id = id,
+        .start_time = realtime::now(),
+    };
+
     if (request.query().has("time")) {
         auto time = from_rfc3339(request.query().get("time").get());
         if (!time) {
             response.send(Http::Code::Bad_Request, "Wrong time format");
             return;
         }
-        start_time = time.value();
+        data.start_time = time.value();
     }
 
-    auto api_reply = submit_request(request::tvlp::start{
-        .id = id,
-        .start_time = start_time,
-    });
+    if (!request.body().empty()) {
+        auto json_obj = json::parse(request.body());
+        model::TvlpStartConfiguration model;
+        model.fromJson(json_obj);
 
+        data.dynamic_results = from_swagger(model);
+    }
+
+    auto api_reply = submit_request(data);
     if (auto item = std::get_if<reply::tvlp::result::item>(&api_reply)) {
         auto model = to_swagger(*item);
         response.headers().add<Http::Header::ContentType>(

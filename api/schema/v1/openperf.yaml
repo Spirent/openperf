@@ -673,6 +673,9 @@ definitions:
   BlockGeneratorStats:
     $ref: ./modules/block.yaml#/definitions/BlockGeneratorStats
 
+  BulkStartBlockGeneratorsRequest:
+    $ref: ./modules/block.yaml#/definitions/BulkStartBlockGeneratorsRequest
+
   ###
   # Memory definitions
   ###
@@ -687,6 +690,9 @@ definitions:
 
   MemoryGeneratorStats:
     $ref: ./modules/memory.yaml#/definitions/MemoryGeneratorStats
+
+  BulkStartMemoryGeneratorsRequest:
+    $ref: ./modules/memory.yaml#/definitions/BulkStartMemoryGeneratorsRequest
 
   ###
   # CPU definitions
@@ -711,6 +717,9 @@ definitions:
 
   CpuGeneratorTargetStats:
     $ref: ./modules/cpu.yaml#/definitions/CpuGeneratorTargetStats
+
+  BulkStartCpuGeneratorsRequest:
+    $ref: ./modules/cpu.yaml#/definitions/BulkStartCpuGeneratorsRequest
 
   ###
   # Dynamic Results definitions
@@ -747,3 +756,9 @@ definitions:
 
   TvlpResult:
     $ref: ./modules/tvlp.yaml#/definitions/TvlpResult
+
+  TvlpStartConfiguration:
+    $ref: ./modules/tvlp.yaml#/definitions/TvlpStartConfiguration
+
+  TvlpStartSeriesConfiguration:
+    $ref: ./modules/tvlp.yaml#/definitions/TvlpStartSeriesConfiguration

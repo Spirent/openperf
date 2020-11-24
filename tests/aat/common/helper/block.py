@@ -33,10 +33,10 @@ def block_generator_model(resource_id = None):
     return bg
 
 
-def file_model(file_size = None, path = None):
+def file_model(size = None, path = None):
     ba = client.models.BlockFile()
     ba.id = ''
-    ba.file_size = file_size
+    ba.size = size
     ba.path = path
     ba.init_percent_complete = 0
     ba.state = 'none'

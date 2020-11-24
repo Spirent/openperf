@@ -32,7 +32,7 @@ class BlockFile(object):
     """
     swagger_types = {
         'id': 'str',
-        'file_size': 'int',
+        'size': 'int',
         'init_percent_complete': 'int',
         'path': 'str',
         'state': 'str'
@@ -40,24 +40,24 @@ class BlockFile(object):
 
     attribute_map = {
         'id': 'id',
-        'file_size': 'file_size',
+        'size': 'size',
         'init_percent_complete': 'init_percent_complete',
         'path': 'path',
         'state': 'state'
     }
 
-    def __init__(self, id=None, file_size=None, init_percent_complete=None, path=None, state=None):  # noqa: E501
+    def __init__(self, id=None, size=None, init_percent_complete=None, path=None, state=None):  # noqa: E501
         """BlockFile - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
-        self._file_size = None
+        self._size = None
         self._init_percent_complete = None
         self._path = None
         self._state = None
         self.discriminator = None
 
         self.id = id
-        self.file_size = file_size
+        self.size = size
         self.init_percent_complete = init_percent_complete
         self.path = path
         self.state = state
@@ -85,26 +85,26 @@ class BlockFile(object):
         self._id = id
 
     @property
-    def file_size(self):
-        """Gets the file_size of this BlockFile.  # noqa: E501
+    def size(self):
+        """Gets the size of this BlockFile.  # noqa: E501
 
         Size of test file (in bytes)  # noqa: E501
 
-        :return: The file_size of this BlockFile.  # noqa: E501
+        :return: The size of this BlockFile.  # noqa: E501
         :rtype: int
         """
-        return self._file_size
+        return self._size
 
-    @file_size.setter
-    def file_size(self, file_size):
-        """Sets the file_size of this BlockFile.
+    @size.setter
+    def size(self, size):
+        """Sets the size of this BlockFile.
 
         Size of test file (in bytes)  # noqa: E501
 
-        :param file_size: The file_size of this BlockFile.  # noqa: E501
+        :param size: The size of this BlockFile.  # noqa: E501
         :type: int
         """
-        self._file_size = file_size
+        self._size = size
 
     @property
     def init_percent_complete(self):

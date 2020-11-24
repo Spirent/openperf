@@ -118,6 +118,8 @@ std::enable_if_t<!std::is_pointer_v<S>, void> controller::start(T&& processor)
                 if (!m_stop) throw e;
             }
         }
+
+        op_log_close();
     });
 }
 
@@ -143,6 +145,8 @@ std::enable_if_t<std::is_pointer_v<S>, void> controller::start(T&& processor)
                 if (!m_stop) throw e;
             }
         }
+
+        op_log_close();
     });
 }
 

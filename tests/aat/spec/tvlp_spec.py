@@ -37,7 +37,8 @@ from common.helper import (tvlp_model,
                            tvlp_memory_profile_model,
                            tvlp_cpu_profile_model,
                            tvlp_packet_profile_model,
-                           tvlp_profile_length)
+                           tvlp_profile_length,
+                           tvlp_start_configuration)
 
 from common.matcher import (be_valid_tvlp_configuration,
                             be_valid_block_tvlp_profile,
@@ -50,6 +51,7 @@ from common.matcher import (be_valid_tvlp_configuration,
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                              os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
+
 def wait_for_tvlp_state(api_client, id, state, timeout):
     for i in range(timeout * 10):
         f = api_client.get_tvlp_configuration(id)
@@ -58,6 +60,7 @@ def wait_for_tvlp_state(api_client, id, state, timeout):
             return
         time.sleep(.1)
     expect(False).to(be_true)
+
 
 with description('TVLP,', 'tvlp') as self:
     with description('REST API,'):
@@ -315,6 +318,16 @@ with description('TVLP,', 'tvlp') as self:
                     config = self.tvlp_api.get_tvlp_configuration(self._config.id)
                     expect(config).to(be_valid_tvlp_configuration)
                     expect(config.state).to(equal("countdown"))
+
+            with description('with dynamic results'):
+                with it('succeeded'):
+                    result = self.tvlp_api.start_tvlp_configuration_with_http_info(
+                        id=self._config.id, start=tvlp_start_configuration())
+                    expect(result[1]).to(equal(201))
+                    expect(result[2]).to(has_location('/tvlp-results/' + result[0].id))
+                    expect(result[0]).to(be_valid_tvlp_result)
+                    result = self.tvlp_api.get_tvlp_result(result[0].id)
+                    expect(result).to(be_valid_tvlp_result)
 
             with description('running,'):
                 with it('returns 400'):

@@ -36,6 +36,11 @@ struct request_interface_add
     interface_data data;
 };
 
+struct request_interface
+{
+    std::string interface_id;
+};
+
 struct request_interface_del
 {
     interface_data data;
@@ -118,6 +123,11 @@ struct request_worker_ids
     packet::traffic_direction direction;
 };
 
+struct reply_interface
+{
+    interface_data data;
+};
+
 struct reply_task_add
 {
     std::string task_id;
@@ -151,7 +161,8 @@ struct reply_error
     int value;
 };
 
-using request_msg = std::variant<request_interface_add,
+using request_msg = std::variant<request_interface,
+                                 request_interface_add,
                                  request_interface_del,
                                  request_port_index,
                                  request_sink_add,
@@ -164,7 +175,8 @@ using request_msg = std::variant<request_interface_add,
                                  request_transmit_function,
                                  request_worker_ids>;
 
-using reply_msg = std::variant<reply_port_index,
+using reply_msg = std::variant<reply_interface,
+                               reply_port_index,
                                reply_task_add,
                                reply_transmit_function,
                                reply_worker_ids,

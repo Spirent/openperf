@@ -89,6 +89,12 @@ paths:
       parameters:
         - $ref: "#/parameters/id"
         - $ref: "#/parameters/start_time"
+        - name: start
+          in: body
+          description: TVLP Start parameters
+          required: false
+          schema:
+            $ref: "#/definitions/TvlpStartConfiguration"
       responses:
         201:
           description: Created
@@ -390,3 +396,23 @@ definitions:
     required:
       - id
       - tvlp_id
+
+  TvlpStartConfiguration:
+    type: object
+    description: TVLP start configuration
+    properties:
+      cpu:
+        $ref: "#/definitions/TvlpStartSeriesConfiguration"
+      memory:
+        $ref: "#/definitions/TvlpStartSeriesConfiguration"
+      block:
+        $ref: "#/definitions/TvlpStartSeriesConfiguration"
+      packet:
+        $ref: "#/definitions/TvlpStartSeriesConfiguration"
+
+  TvlpStartSeriesConfiguration:
+    type: object
+    description: TVLP series start configuration
+    properties:
+      dynamic_results:
+        $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"

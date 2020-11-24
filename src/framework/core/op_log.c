@@ -246,6 +246,18 @@ static void* get_thread_log_socket(void)
 }
 
 /**
+ * Explicit close the logging socket of the calling thread.
+ */
+void op_log_close(void)
+{
+    if (_log_socket == NULL) return;
+    if (op_list_delete_head(_thread_log_sockets, _log_socket)) {
+        zmq_close(_log_socket);
+        _log_socket = NULL;
+    }
+}
+
+/**
  * Take a message from an arbitrary context and send it to the logging
  * thread.  Not sure what to do about errors in this function, as the
  * inability to log messages probably ought to be fatal...

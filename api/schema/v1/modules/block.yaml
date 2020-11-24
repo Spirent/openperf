@@ -127,9 +127,9 @@ paths:
               items:
                 type: array
                 description: List of block files
+                minItems: 1
                 items:
                   $ref: "#/definitions/BlockFile"
-                minItems: 1
             required:
               - items
       responses:
@@ -138,9 +138,9 @@ paths:
           schema:
             type: array
             description: List of created block files
+            minItems: 1
             items:
               $ref: "#/definitions/BlockFile"
-            minItems: 1
 
   /block-files/x/bulk-delete:
     post:
@@ -164,9 +164,9 @@ paths:
               ids:
                 type: array
                 description: List of block file ids
+                minItems: 1
                 items:
                   type: string
-                minItems: 1
             required:
               - ids
       responses:
@@ -259,9 +259,9 @@ paths:
               items:
                 type: array
                 description: List of block generators
+                minItems: 1
                 items:
                   $ref: "#/definitions/BlockGenerator"
-                minItems: 1
             required:
               - items
       responses:
@@ -295,9 +295,9 @@ paths:
               ids:
                 type: array
                 description: List of block generator ids
+                minItems: 1
                 items:
                   type: string
-                minItems: 1
             required:
               - ids
       responses:
@@ -350,20 +350,7 @@ paths:
           description: Bulk start
           required: true
           schema:
-            type: object
-            title: BulkStartBlockGeneratorsRequest
-            description: Parameters for the bulk start operation
-            properties:
-              ids:
-                type: array
-                description: List of block generator identifiers
-                items:
-                  type: string
-                minItems: 1
-              dynamic_results:
-                $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"
-            required:
-              - ids
+            $ref: "#/definitions/BulkStartBlockGeneratorsRequest"
       responses:
         200:
           description: Success
@@ -393,9 +380,9 @@ paths:
               ids:
                 type: array
                 description: List of block generator identifiers
+                minItems: 1
                 items:
                   type: string
-                minItems: 1
             required:
               - ids
       responses:
@@ -490,7 +477,7 @@ definitions:
       id:
         type: string
         description: Unique file identifier
-      file_size:
+      size:
         type: integer
         description: Size of test file (in bytes)
         format: int64
@@ -511,7 +498,7 @@ definitions:
           - ready
     required:
       - id
-      - file_size
+      - size
       - init_percent_complete
       - path
       - state
@@ -665,3 +652,18 @@ definitions:
       - bytes_actual
       - io_errors
       - latency_total
+
+  BulkStartBlockGeneratorsRequest:
+    type: object
+    description: Parameters for the bulk start operation
+    properties:
+      ids:
+        type: array
+        description: List of block generator identifiers
+        minItems: 1
+        items:
+          type: string
+      dynamic_results:
+        $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"
+    required:
+      - ids
