@@ -50,6 +50,10 @@ from common.helper.packet import (get_first_port_id,
                                   packet_generator_model,
                                   packet_generator_models)
 
+# network.py
+from common.helper.network import (get_network_dynamic_results_fields,
+                                  network_generator_model)
+
 # tvlp.py
 from common.helper.tvlp import (tvlp_model,
                                 tvlp_block_profile_model,
