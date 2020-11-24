@@ -102,7 +102,7 @@ void device_stack::init_device_stack()
         if (!is_raw_device(entry->d_name)) continue;
 
         auto blkdev = std::make_shared<device>();
-        blkdev->id(core::to_string(core::uuid::random()));
+        blkdev->id(std::string(entry->d_name));
         blkdev->path(std::string(device_dir) + "/"
                      + std::string(entry->d_name));
 
