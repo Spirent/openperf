@@ -10,10 +10,12 @@ from common import Config, Service
 from common.helper import (make_dynamic_results_config,
                         check_modules_exists,
                         get_network_dynamic_results_fields,
-                        network_generator_model)
+                        network_generator_model,
+                        network_server_model)
 from common.matcher import (has_location,
                             has_json_content_type,
                             raise_api_exception,
+                            be_valid_network_server,
                             be_valid_network_generator,
                             be_valid_network_generator_result,
                             be_valid_dynamic_results)
@@ -37,12 +39,149 @@ with description('Network Generator Module', 'network') as self:
         except AttributeError:
             pass
 
+    with description('Network Servers'):
+        with description('/network/servers'):
+            with context('POST'):
+                with shared_context('create server'):
+                    with before.all:
+                        self._result = self._api.create_network_server_with_http_info(
+                            self._model, _return_http_data_only=False)
+
+                    with after.all:
+                        if hasattr(self, '_result') and len(self._result) > 0:
+                            self._api.delete_network_server(self._result[0].id)
+
+                    with it('created'):
+                        expect(self._result[1]).to(equal(201))
+
+                    with it('has valid Location header'):
+                        expect(self._result[2]).to(has_location('/network/servers/' + self._result[0].id))
+
+                    with it('has Content-Type: application/json header'):
+                        expect(self._result[2]).to(has_json_content_type)
+
+                    with it('returned valid server'):
+                        expect(self._result[0]).to(be_valid_network_server)
+
+                    with it('has same config'):
+                        if (not self._model.id):
+                            self._model.id = self._result[0].id
+                        self._model.stats = self._result[0].stats
+                        expect(self._result[0]).to(equal(self._model))
+
+                with description('with empty ID'):
+                    with before.all:
+                        self._model = network_server_model(self._api.api_client)
+
+                    with included_context('create server'):
+                        with it('random ID assigned'):
+                            expect(self._result[0].id).not_to(be_empty)
+
+                with description('with udp protocol'):
+                    with before.all:
+                        self._model = network_server_model(self._api.api_client, protocol='udp')
+
+                    with included_context('create server'):
+                        pass
+
+                with description('with specified ID'):
+                    with before.all:
+                        self._model = network_server_model(self._api.api_client, id='some-specified-id')
+
+                    with included_context('create server'):
+                        pass
+
+                with description('unknown protocol'):
+                    with it('bad request (400)'):
+                        model = network_server_model(
+                            self._api.api_client, protocol='foo')
+                        expr = lambda: self._api.create_network_server(model)
+                        expect(expr).to(raise_api_exception(400))
+
+            with context('GET'):
+                with before.all:
+                    model = network_server_model(self._api.api_client)
+                    self._servers = []
+                    for a in range(3):
+                        model.port = 3357+a
+                        self._servers.append(self._api.create_network_server(model))
+                    self._result = self._api.list_network_servers_with_http_info(
+                        _return_http_data_only=False)
+
+                with after.all:
+                    if hasattr(self, '_servers') and len(self._servers) > 0:
+                        for server in self._servers:
+                            self._api.delete_network_server(server.id)
+
+                with it('succeeded'):
+                    expect(self._result[1]).to(equal(200))
+
+                with it('has Content-Type: application/json header'):
+                    expect(self._result[2]).to(has_json_content_type)
+
+                with it('return list'):
+                    expect(self._result[0]).not_to(be_empty)
+                    for gen in self._result[0]:
+                        expect(gen).to(be_valid_network_server)
+
+        with description('/network/servers/{id}'):
+            with before.all:
+                model = network_server_model(self._api.api_client)
+                server = self._api.create_network_server(model)
+                expect(server).to(be_valid_network_server)
+                self._server = server
+
+            with context('GET'):
+                with description('by existing ID'):
+                    with before.all:
+                        self._result = self._api.get_network_server_with_http_info(
+                            self._server.id, _return_http_data_only=False)
+
+                    with it('succeeded'):
+                        expect(self._result[1]).to(equal(200))
+
+                    with it('has Content-Type: application/json header'):
+                        expect(self._result[2]).to(has_json_content_type)
+
+                    with it('server object'):
+                        expect(self._result[0]).to(be_valid_network_server)
+
+                with description('by non-existent ID'):
+                    with it('not found (404)'):
+                        expr = lambda: self._api.get_network_server('unknown')
+                        expect(expr).to(raise_api_exception(404))
+
+                with description('by invalid ID'):
+                    with it('bad request (400)'):
+                        expr = lambda: self._api.get_network_server('bad_id')
+                        expect(expr).to(raise_api_exception(400))
+
+            with context('DELETE'):
+                with description('by existing ID'):
+                    with it('removed'):
+                        result = self._api.delete_network_server_with_http_info(
+                            self._server.id, _return_http_data_only=False)
+                        expect(result[1]).to(equal(204))
+
+                    with it('not found'):
+                        expr = lambda: self._api.get_network_server(self._server.id)
+                        expect(expr).to(raise_api_exception(404))
+
+                with description('by non-existent ID'):
+                    with it('not found (404)'):
+                        expr = lambda: self._api.delete_network_server('unknown')
+                        expect(expr).to(raise_api_exception(404))
+
+                with description('by invalid ID'):
+                    with it('bad request (400)'):
+                        expr = lambda: self._api.delete_network_server('bad_id')
+                        expect(expr).to(raise_api_exception(400))
+
     with description('Network Generators'):
         with description('/network/generators'):
             with context('POST'):
                 with shared_context('create generator'):
                     with before.all:
-                        self._model = network_generator_model(self._api.api_client)
                         self._result = self._api.create_network_generator_with_http_info(
                             self._model, _return_http_data_only=False)
 
@@ -69,28 +208,31 @@ with description('Network Generator Module', 'network') as self:
                 with description('with empty ID'):
                     with before.all:
                         self._model = network_generator_model(self._api.api_client)
-                        self._result = self._api.create_network_generator_with_http_info(
-                            self._model, _return_http_data_only=False)
-
-                    with after.all:
-                        self._api.delete_network_generator(self._result[0].id)
 
                     with included_context('create generator'):
                         with it('random ID assigned'):
                             expect(self._result[0].id).not_to(be_empty)
 
-                with description('with specified ID'):
+                with description('with udp protocol'):
                     with before.all:
-                        self._model = network_generator_model(
-                            self._api.api_client, id='some-specified-id')
-                        self._result = self._api.create_network_generator_with_http_info(
-                            self._model, _return_http_data_only=False)
-
-                    with after.all:
-                        self._api.delete_network_generator(self._result[0].id)
+                        self._model = network_generator_model(self._api.api_client, protocol='udp')
 
                     with included_context('create generator'):
                         pass
+
+                with description('with specified ID'):
+                    with before.all:
+                        self._model = network_generator_model(self._api.api_client, id='some-specified-id')
+
+                    with included_context('create generator'):
+                        pass
+
+                with description('unknown protocol'):
+                    with it('bad request (400)'):
+                        model = network_generator_model(
+                            self._api.api_client, protocol='foo')
+                        expr = lambda: self._api.create_network_generator(model)
+                        expect(expr).to(raise_api_exception(400))
 
             with context('GET'):
                 with before.all:
@@ -120,7 +262,7 @@ with description('Network Generator Module', 'network') as self:
                 g7r = self._api.create_network_generator(model)
                 expect(g7r).to(be_valid_network_generator)
                 self._g7r = g7r
-            
+
             with after.all:
                         self._api.delete_network_generator(self._g7r.id)
 
