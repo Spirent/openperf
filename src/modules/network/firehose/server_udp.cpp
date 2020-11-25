@@ -9,7 +9,8 @@
 
 namespace openperf::network::internal::firehose {
 
-int server_udp::new_server(int domain, in_port_t port)
+tl::expected<int, std::string> server_udp::new_server(int domain,
+                                                      in_port_t port)
 {
     struct sockaddr_storage client_storage;
     struct sockaddr* server_ptr = (struct sockaddr*)&client_storage;
@@ -33,7 +34,7 @@ int server_udp::new_server(int domain, in_port_t port)
         break;
     }
     default:
-        return -EINVAL;
+        return tl::make_unexpected<std::string>(strerror(EINVAL));
     }
 
     int sock = 0, enable = true;
@@ -42,14 +43,14 @@ int server_udp::new_server(int domain, in_port_t port)
                "Unable to open %s UDP server socket: %s\n",
                domain_str.c_str(),
                strerror(errno));
-        return -errno;
+        return tl::make_unexpected<std::string>(strerror(errno));
     }
 
     if (m_driver->setsockopt(
             sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable))
         != 0) {
         m_driver->close(sock);
-        return -errno;
+        return tl::make_unexpected<std::string>(strerror(errno));
     }
 
     if (m_driver->bind(sock, server_ptr, get_sa_len(server_ptr)) == -1) {
@@ -57,10 +58,21 @@ int server_udp::new_server(int domain, in_port_t port)
                "Unable to bind to socket (domain = %d, protocol = UDP): %s\n",
                domain,
                strerror(errno));
-        return -errno;
+        return tl::make_unexpected<std::string>(strerror(errno));
     }
 
-    return (sock);
+    static timeval read_timeout = {
+        .tv_sec = 1,
+        .tv_usec = 0,
+    };
+    if (m_driver->setsockopt(
+            sock, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout))
+        != 0) {
+        m_driver->close(sock);
+        return tl::make_unexpected<std::string>(strerror(errno));
+    }
+
+    return sock;
 }
 
 server_udp::server_udp(in_port_t port,
@@ -71,16 +83,16 @@ server_udp::server_udp(in_port_t port,
     m_driver->init();
 
     /* IPv6 any supports IPv4 and IPv6 */
-    if ((m_fd = new_server(AF_INET6, port)) >= 0) {
-        OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4/IPv6.\n");
+    tl::expected<int, std::string> res;
+    if ((res = new_server(AF_INET6, port)); res) {
+        OP_LOG(OP_LOG_INFO, "Network UDP load server IPv4/IPv6.\n");
+    } else if ((res = new_server(AF_INET, port)); !res) {
+        OP_LOG(OP_LOG_INFO, "Network UDP load server IPv4.\n");
     } else {
-        /* Couldn't bind IPv6 socket so use IPv4 */
-        if ((m_fd = new_server(AF_INET, port)) < 0) {
-            throw std::runtime_error("Cannot create UDP server: "
-                                     + std::string(strerror(-m_fd)));
-        }
-        OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4.\n");
+        throw std::runtime_error("Cannot create UDP server: "
+                                 + std::string(strerror(-m_fd)));
     }
+    m_fd = res.value();
 
     run_worker_thread();
 }

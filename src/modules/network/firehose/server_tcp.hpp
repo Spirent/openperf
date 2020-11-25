@@ -28,7 +28,7 @@ private:
     void* m_context;
 
     int tcp_write(connection_t&, std::vector<uint8_t> send_buffer);
-    int new_server(int domain, in_port_t port);
+    tl::expected<int, std::string> new_server(int domain, in_port_t port);
     void run_accept_thread();
     void run_worker_thread();
 

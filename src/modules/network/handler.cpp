@@ -254,7 +254,7 @@ void handler::get_server(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -278,7 +278,7 @@ void handler::delete_server(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found);
+        response.send(Http::Code::Bad_Request);
         return;
     }
 
