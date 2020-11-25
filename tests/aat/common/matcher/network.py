@@ -3,6 +3,15 @@ from expects.matchers import Matcher
 
 import client.models
 
+
+class _be_valid_network_server(Matcher):
+    def _match(self, g7r):
+        expect(g7r).to(be_a(client.models.NetworkServer))
+        expect(g7r.id).not_to(be_empty)
+        expect(g7r.port).to(be_a(int))
+        expect(g7r.protocol).not_to(be_empty)
+        return True, ['is valid Network Server']
+
 class _be_valid_network_generator(Matcher):
     def _match(self, g7r):
         expect(g7r).to(be_a(client.models.NetworkGenerator))
@@ -10,11 +19,6 @@ class _be_valid_network_generator(Matcher):
         expect(g7r.running).to(be_a(bool))
         expect(g7r.config).to(be_a(client.models.NetworkGeneratorConfig))
         return True, ['is valid Network Generator']
-
-class _be_valid_network_generator_config(Matcher):
-    def _match(self, conf):
-        expect(conf).to(be_a(client.models.NetworkGeneratorConfig))
-        return True, ['is valid Network Generator Configuration']
 
 class _be_valid_network_generator_stats(Matcher):
     def _match(self, stats):
@@ -52,5 +56,6 @@ class _be_valid_network_generator_result(Matcher):
         expect(result.write).to(_be_valid_network_generator_stats())
         return True, ['is valid Network Generator Result']
 
+be_valid_network_server = _be_valid_network_server()
 be_valid_network_generator = _be_valid_network_generator()
 be_valid_network_generator_result = _be_valid_network_generator_result()
