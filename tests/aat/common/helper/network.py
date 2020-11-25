@@ -12,8 +12,7 @@ def get_network_dynamic_results_fields():
             fields.append('write.' + name)
     return fields
 
-
-def config_model(protocol = 'tcp'):
+def config_model(protocol):
     config = client.models.NetworkGeneratorConfig()
     config.connections = 1
     config.ops_per_connection = 1
@@ -28,9 +27,16 @@ def config_model(protocol = 'tcp'):
     return config
 
 
-def network_generator_model(api_client, id = ''):
+def network_generator_model(api_client, protocol = 'tcp', id = ''):
     gen = client.models.NetworkGenerator()
     gen.running = False
-    gen.config = config_model()
+    gen.config = config_model(protocol)
+    gen.id = id
+    return gen
+
+def network_server_model(api_client, protocol = 'tcp', id = ''):
+    gen = client.models.NetworkServer()
+    gen.port = 3357
+    gen.protocol = protocol
     gen.id = id
     return gen

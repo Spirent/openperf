@@ -66,6 +66,7 @@ from common.matcher.cpu import be_valid_cpu_generator
 from common.matcher.cpu import be_valid_cpu_generator_result
 
 # network.py
+from common.matcher.network import be_valid_network_server
 from common.matcher.network import be_valid_network_generator
 from common.matcher.network import be_valid_network_generator_result
 

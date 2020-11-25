@@ -52,7 +52,8 @@ from common.helper.packet import (get_first_port_id,
 
 # network.py
 from common.helper.network import (get_network_dynamic_results_fields,
-                                  network_generator_model)
+                                  network_generator_model,
+                                  network_server_model)
 
 # tvlp.py
 from common.helper.tvlp import (tvlp_model,
