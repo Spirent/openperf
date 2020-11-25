@@ -295,7 +295,7 @@ reply_msg server::handle_request(const request::server::erase& request)
     if (!config::op_config_validate_id_string(request.id))
         return to_error(error_type::CUSTOM_ERROR, 0, "ID is not valid");
 
-    if (!m_generator_stack.erase(request.id))
+    if (!m_server_stack.erase(request.id))
         return to_error(api::error_type::NOT_FOUND);
 
     return reply::ok{};

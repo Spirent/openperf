@@ -26,7 +26,7 @@ private:
     std::thread m_worker_thread;
 
     int udp_write(connection_t&);
-    int new_server(int domain, in_port_t port);
+    tl::expected<int, std::string> new_server(int domain, in_port_t port);
     void run_worker_thread();
 
 public:
