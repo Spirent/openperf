@@ -54,7 +54,8 @@ packet_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
     return tl::make_unexpected("Unexpected error");
 }
 
-tl::expected<stat_pair_t, std::string> packet_tvlp_worker_t::send_start(
+tl::expected<packet_tvlp_worker_t::start_result_t, std::string>
+packet_tvlp_worker_t::send_start(
     const std::string& id, const dynamic::configuration& /* dynamic_results */)
 {
     auto api_reply =
@@ -62,8 +63,11 @@ tl::expected<stat_pair_t, std::string> packet_tvlp_worker_t::send_start(
             .and_then(deserialize_reply);
 
     if (auto r = std::get_if<reply_generator_results>(&api_reply.value())) {
-        return std::pair(r->generator_results.front()->getId(),
-                         r->generator_results.front()->toJson());
+        auto& result = r->generator_results.front();
+        return start_result_t{
+            .result_id = result->getId(),
+            .statistics = result->toJson(),
+        };
     } else if (auto error = std::get_if<reply_error>(&api_reply.value())) {
         return tl::make_unexpected(to_string(*error));
     }
