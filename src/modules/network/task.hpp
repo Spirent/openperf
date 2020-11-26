@@ -50,6 +50,7 @@ struct connection_t
     connection_state_t state;
     std::vector<uint8_t> buffer;
     size_t bytes_left;
+    time_point operation_start_time;
     uint_fast64_t ops_left;
 };
 

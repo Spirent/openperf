@@ -107,6 +107,17 @@ static int populate_sockaddr(union network_sockaddr& s,
     return (0);
 }
 
+void update_stat_latency(stat_t& stat, duration dur)
+{
+    stat.latency += dur;
+    if (!stat.latency_min || dur < stat.latency_min.value()) {
+        stat.latency_min = dur;
+    }
+    if (!stat.latency_max || dur < stat.latency_max.value()) {
+        stat.latency_max = dur;
+    }
+}
+
 stat_t network_task::spin()
 {
     if (!m_config.ops_per_sec || !m_config.block_size) {
@@ -262,6 +273,8 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
         return;
     }
 
+    conn.operation_start_time = ref_clock::now();
+
     switch (m_config.operation) {
     case operation_t::READ:
         m_driver->send(conn.fd, header.data(), header.size(), flags);
@@ -310,7 +323,9 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
             conn.state = STATE_WRITING;
         } else {
             stat.bytes_actual += send_or_err;
-            stat.ops_actual += 1;
+            stat.ops_actual++;
+            update_stat_latency(stat,
+                                ref_clock::now() - conn.operation_start_time);
             conn.ops_left--;
             conn.state = STATE_INIT;
         }
@@ -350,6 +365,7 @@ void network_task::do_read(connection_t& conn, stat_t& stat)
     stat.ops_actual++;
     conn.ops_left--;
     stat.bytes_actual += m_config.block_size;
+    update_stat_latency(stat, ref_clock::now() - conn.operation_start_time);
 
     conn.state = STATE_INIT;
 
@@ -389,6 +405,7 @@ void network_task::do_write(connection_t& conn, stat_t& stat)
     stat.ops_actual++;
     conn.ops_left--;
     stat.bytes_actual += m_config.block_size;
+    update_stat_latency(stat, ref_clock::now() - conn.operation_start_time);
 
     conn.state = STATE_INIT;
 
