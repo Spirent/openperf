@@ -30,7 +30,7 @@ private:
     void run_worker_thread();
 
 public:
-    server_udp(in_port_t port, const drivers::network_driver_ptr& driver);
+    server_udp(in_port_t port, const drivers::driver_ptr& driver);
     server_udp(const server_udp&) = delete;
     ~server_udp() override;
 };

@@ -6,7 +6,7 @@
 
 namespace openperf::network::internal::firehose {
 
-const std::string protocol = "ICP Firehose 2.0";
+constexpr auto protocol = "ICP Firehose 2.0";
 const size_t protocol_len = 16;
 
 enum action_t { NONE = 0, GET, PUT };
@@ -32,7 +32,7 @@ inline tl::expected<request_t, int> parse_request(uint8_t*& data,
     auto net_request = (net_request_t*)data;
 
     /* Verify protocol string header */
-    if (strncmp(net_request->protocol, protocol.c_str(), protocol_len) != 0) {
+    if (strncmp(net_request->protocol, protocol, protocol_len) != 0) {
         return tl::make_unexpected(-1);
     }
 
@@ -48,7 +48,7 @@ inline tl::expected<void, int> build_request(const request_t& request,
 {
     net_request_t net_request;
 
-    strncpy(net_request.protocol, protocol.c_str(), protocol_len);
+    strncpy(net_request.protocol, protocol, protocol_len);
 
     net_request.action = htonl(request.action);
     net_request.length = htonl(request.length);

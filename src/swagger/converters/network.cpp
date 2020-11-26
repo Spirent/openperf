@@ -28,14 +28,11 @@ void from_json(const nlohmann::json& j,
     request.getItems().clear();
     nlohmann::json jsonArray;
     for (auto& item : const_cast<nlohmann::json&>(j).at("items")) {
-        if (item.is_null()) {
-            continue;
-        } else {
-            std::shared_ptr<NetworkGenerator> newItem =
-                std::make_shared<NetworkGenerator>();
-            from_json(item, *newItem);
-            request.getItems().push_back(newItem);
-        }
+        if (item.is_null()) { continue; }
+        std::shared_ptr<NetworkGenerator> newItem =
+            std::make_shared<NetworkGenerator>();
+        from_json(item, *newItem);
+        request.getItems().push_back(newItem);
     }
 }
 
@@ -85,14 +82,11 @@ void from_json(const nlohmann::json& j,
     request.getItems().clear();
     nlohmann::json jsonArray;
     for (auto& item : const_cast<nlohmann::json&>(j).at("items")) {
-        if (item.is_null()) {
-            continue;
-        } else {
-            std::shared_ptr<NetworkServer> newItem =
-                std::make_shared<NetworkServer>();
-            from_json(item, *newItem);
-            request.getItems().push_back(newItem);
-        }
+        if (item.is_null()) { continue; }
+        std::shared_ptr<NetworkServer> newItem =
+            std::make_shared<NetworkServer>();
+        from_json(item, *newItem);
+        request.getItems().push_back(newItem);
     }
 }
 

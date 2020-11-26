@@ -5,10 +5,11 @@
 
 namespace openperf::network::internal::drivers {
 
-static constexpr std::string_view KERNEL = "kernel";
-class kernel : public network_driver
+class kernel : public driver
 {
 public:
+    static constexpr std::string_view key = "kernel";
+
     kernel() = default;
     ~kernel() = default;
 

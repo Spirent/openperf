@@ -9,7 +9,6 @@ namespace openperf::tvlp::internal::worker {
 
 namespace swagger = swagger::v1::model;
 using namespace openperf::network::api;
-// using namespace Pistache;
 
 network_tvlp_worker_t::network_tvlp_worker_t(
     void* context, const model::tvlp_module_profile_t& profile)
@@ -38,7 +37,7 @@ network_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
     gen.setConfig(config);
 
     auto request = request::generator::create{
-        std::make_unique<network_generator_t>(from_swagger(gen))};
+        std::make_unique<network::model::generator>(from_swagger(gen))};
 
     auto api_reply = submit_request(serialize_request(std::move(request)))
                          .and_then(deserialize_reply);

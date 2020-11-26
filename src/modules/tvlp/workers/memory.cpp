@@ -9,7 +9,6 @@ namespace openperf::tvlp::internal::worker {
 
 namespace swagger = swagger::v1::model;
 using namespace openperf::memory::api;
-// using namespace Pistache;
 
 memory_tvlp_worker_t::memory_tvlp_worker_t(
     void* context, const model::tvlp_profile_t::series& series)

@@ -5,11 +5,11 @@
 #include <memory>
 
 namespace openperf::network::internal::drivers {
-class network_driver
+class driver
 {
 public:
-    network_driver() = default;
-    virtual ~network_driver() = default;
+    driver() = default;
+    virtual ~driver() = default;
 
     virtual void init(){};
 
@@ -61,7 +61,7 @@ public:
     virtual ssize_t writev(int s, const struct iovec* iov, int iovcnt) = 0;
 };
 
-using network_driver_ptr = std::shared_ptr<network_driver>;
+using driver_ptr = std::shared_ptr<driver>;
 
 } // namespace openperf::network::internal::drivers
 

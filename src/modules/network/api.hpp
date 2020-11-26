@@ -24,7 +24,7 @@ namespace openperf::network::api {
 
 using serialized_msg = openperf::message::serialized_message;
 
-const std::string endpoint = "inproc://openperf_network";
+static constexpr auto endpoint = "inproc://openperf_network";
 
 /**
  * List of supported server requests.
@@ -32,22 +32,18 @@ const std::string endpoint = "inproc://openperf_network";
 
 /* zmq api objects models */
 
-using network_generator_t = model::generator;
-using network_generator_result_t = model::generator_result;
-using network_server_t = model::server;
-using network_generator_ptr = std::unique_ptr<network_generator_t>;
-using network_generator_result_ptr =
-    std::unique_ptr<network_generator_result_t>;
-using network_server_ptr = std::unique_ptr<network_server_t>;
-using id_ptr = std::unique_ptr<std::string>;
-
-enum class error_type { NONE = 0, NOT_FOUND, ZMQ_ERROR, CUSTOM_ERROR };
+enum class error_type : uint8_t {
+    NONE = 0,
+    NOT_FOUND,
+    ZMQ_ERROR,
+    CUSTOM_ERROR
+};
 
 struct reply_error
 {
     error_type type = error_type::NONE;
     int code = 0;
-    std::string value;
+    std::string message;
 };
 
 /* zmq api request models */
@@ -58,6 +54,11 @@ struct id_message : message
 {
     std::string id;
 };
+struct id_list_message : message
+{
+    std::vector<std::string> ids;
+};
+
 namespace request {
 namespace generator {
 struct list : message
@@ -68,7 +69,7 @@ struct erase : id_message
 {};
 struct create
 {
-    network_generator_ptr source;
+    std::unique_ptr<model::generator> source;
 };
 
 struct start
@@ -82,13 +83,11 @@ struct stop : id_message
 namespace bulk {
 struct create
 {
-    std::vector<network_generator_ptr> generators;
+    std::vector<std::unique_ptr<model::generator>> generators;
 };
 
-struct erase
-{
-    std::vector<id_ptr> ids;
-};
+struct erase : id_list_message
+{};
 
 struct start
 {
@@ -96,10 +95,8 @@ struct start
     dynamic::configuration dynamic_results;
 };
 
-struct stop
-{
-    std::vector<id_ptr> ids;
-};
+struct stop : id_list_message
+{};
 
 } // namespace bulk
 } // namespace generator
@@ -123,7 +120,7 @@ struct get : id_message
 
 struct create
 {
-    network_server_ptr source;
+    std::unique_ptr<model::server> source;
 };
 
 struct erase : id_message
@@ -132,13 +129,11 @@ struct erase : id_message
 namespace bulk {
 struct create
 {
-    std::vector<network_server_ptr> servers;
+    std::vector<std::unique_ptr<model::server>> servers;
 };
 
-struct erase
-{
-    std::vector<id_ptr> ids;
-};
+struct erase : id_list_message
+{};
 } // namespace bulk
 } // namespace server
 } // namespace request
@@ -149,20 +144,20 @@ namespace reply {
 namespace generator {
 struct list
 {
-    std::vector<network_generator_ptr> generators;
+    std::vector<std::unique_ptr<model::generator>> generators;
 };
 } // namespace generator
 namespace statistic {
 struct list
 {
-    std::vector<network_generator_result_ptr> results;
+    std::vector<std::unique_ptr<model::generator_result>> results;
 };
 } // namespace statistic
 
 namespace server {
 struct list
 {
-    std::vector<network_server_ptr> servers;
+    std::vector<std::unique_ptr<model::server>> servers;
 };
 } // namespace server
 
@@ -208,7 +203,7 @@ tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
 
 std::string to_string(const api::reply_error& error);
 reply::error
-to_error(error_type type, int code = 0, const std::string& value = "");
+to_error(error_type type, int code = 0, const std::string& message = "");
 
 } // namespace openperf::network::api
 
