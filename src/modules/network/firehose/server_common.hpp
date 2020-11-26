@@ -57,7 +57,7 @@ public:
 protected:
     std::atomic_int m_fd;
     int m_port;
-    drivers::network_driver_ptr m_driver;
+    drivers::driver_ptr m_driver;
     stat_t m_stat;
 };
 

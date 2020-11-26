@@ -23,9 +23,6 @@ serialized_msg serialize_request(request_msg&& msg)
                      return openperf::message::push(serialized,
                                                     request.generators);
                  },
-                 [&](request::generator::bulk::erase& request) {
-                     return openperf::message::push(serialized, request.ids);
-                 },
                  [&](request::generator::start& request) -> int {
                      return openperf::message::push(serialized, request.id)
                             || openperf::message::push(
@@ -43,9 +40,6 @@ serialized_msg serialize_request(request_msg&& msg)
                                 std::make_unique<dynamic::configuration>(
                                     std::move(request.dynamic_results)));
                  },
-                 [&](request::generator::bulk::stop& request) {
-                     return openperf::message::push(serialized, request.ids);
-                 },
                  [&](request::server::create& network_server) {
                      return openperf::message::push(
                          serialized, std::move(network_server.source));
@@ -54,11 +48,13 @@ serialized_msg serialize_request(request_msg&& msg)
                      return openperf::message::push(serialized,
                                                     request.servers);
                  },
-                 [&](request::server::bulk::erase& request) {
-                     return openperf::message::push(serialized, request.ids);
-                 },
                  [&](id_message& msg) {
                      return openperf::message::push(serialized, msg.id);
+                 },
+                 [&](id_list_message& msg) {
+                     return openperf::message::push(
+                         serialized,
+                         std::make_unique<id_list_message>(std::move(msg)));
                  },
                  [&](const message&) { return 0; }),
              msg));
@@ -105,7 +101,7 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     }
     case utils::variant_index<request_msg, request::generator::create>(): {
         auto request = request::generator::create{};
-        request.source.reset(openperf::message::pop<network_generator_t*>(msg));
+        request.source.reset(openperf::message::pop<model::generator*>(msg));
         return request;
     }
     case utils::variant_index<request_msg, request::generator::get>(): {
@@ -119,11 +115,11 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     case utils::variant_index<request_msg,
                               request::generator::bulk::create>(): {
         return request::generator::bulk::create{
-            openperf::message::pop_unique_vector<network_generator_t>(msg)};
+            openperf::message::pop_unique_vector<model::generator>(msg)};
     }
     case utils::variant_index<request_msg, request::generator::bulk::erase>(): {
-        return request::generator::bulk::erase{
-            openperf::message::pop_unique_vector<std::string>(msg)};
+        return std::move(
+            *openperf::message::pop<request::generator::bulk::erase*>(msg));
     }
     case utils::variant_index<request_msg, request::generator::start>(): {
         auto request = request::generator::start{};
@@ -145,8 +141,8 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
         return request;
     }
     case utils::variant_index<request_msg, request::generator::bulk::stop>(): {
-        return request::generator::bulk::stop{
-            openperf::message::pop_unique_vector<std::string>(msg)};
+        return std::move(
+            *openperf::message::pop<request::generator::bulk::stop*>(msg));
     }
     case utils::variant_index<request_msg, request::statistic::list>(): {
         return request::statistic::list{};
@@ -164,7 +160,7 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     }
     case utils::variant_index<request_msg, request::server::create>(): {
         auto request = request::server::create{};
-        request.source.reset(openperf::message::pop<network_server_t*>(msg));
+        request.source.reset(openperf::message::pop<model::server*>(msg));
         return request;
     }
     case utils::variant_index<request_msg, request::server::get>(): {
@@ -176,11 +172,11 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     }
     case utils::variant_index<request_msg, request::server::bulk::create>(): {
         return request::server::bulk::create{
-            openperf::message::pop_unique_vector<network_server_t>(msg)};
+            openperf::message::pop_unique_vector<model::server>(msg)};
     }
     case utils::variant_index<request_msg, request::server::bulk::erase>(): {
-        return request::server::bulk::erase{
-            openperf::message::pop_unique_vector<std::string>(msg)};
+        return std::move(
+            *openperf::message::pop<request::server::bulk::erase*>(msg));
     }
     }
 
@@ -194,16 +190,15 @@ tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg)
     switch (idx) {
     case utils::variant_index<reply_msg, reply::generator::list>(): {
         return reply::generator::list{
-            openperf::message::pop_unique_vector<network_generator_t>(msg)};
+            openperf::message::pop_unique_vector<model::generator>(msg)};
     }
     case utils::variant_index<reply_msg, reply::statistic::list>(): {
         return reply::statistic::list{
-            openperf::message::pop_unique_vector<network_generator_result_t>(
-                msg)};
+            openperf::message::pop_unique_vector<model::generator_result>(msg)};
     }
     case utils::variant_index<reply_msg, reply::server::list>(): {
         return reply::server::list{
-            openperf::message::pop_unique_vector<network_server_t>(msg)};
+            openperf::message::pop_unique_vector<model::server>(msg)};
     }
     case utils::variant_index<reply_msg, reply::ok>():
         return reply::ok{};
@@ -224,16 +219,16 @@ std::string to_string(const api::reply_error& error)
     case api::error_type::ZMQ_ERROR:
         return zmq_strerror(error.code);
     case api::error_type::CUSTOM_ERROR:
-        return error.value;
+        return error.message;
     default:
         return "unknown error type";
     }
 }
 
-reply::error to_error(error_type type, int code, const std::string& value)
+reply::error to_error(error_type type, int code, const std::string& message)
 {
     return reply::error{.info = std::make_unique<reply_error>(reply_error{
-                            .type = type, .code = code, .value = value})};
+                            .type = type, .code = code, .message = message})};
 }
 
 } // namespace openperf::network::api

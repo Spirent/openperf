@@ -91,8 +91,7 @@ tl::expected<int, std::string> server_tcp::new_server(int domain,
     return sock;
 }
 
-server_tcp::server_tcp(in_port_t port,
-                       const drivers::network_driver_ptr& driver)
+server_tcp::server_tcp(in_port_t port, const drivers::driver_ptr& driver)
     : m_stopped(false)
     , m_context(zmq_ctx_new())
 {

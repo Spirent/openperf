@@ -125,9 +125,7 @@ request::generator::bulk::erase
 from_swagger(swagger::BulkDeleteNetworkGeneratorsRequest& p_request)
 {
     request::generator::bulk::erase request{};
-    for (auto& id : p_request.getIds()) {
-        request.ids.push_back(std::make_unique<std::string>(id));
-    }
+    for (const auto& id : p_request.getIds()) { request.ids.push_back(id); }
     return request;
 }
 
@@ -155,9 +153,7 @@ request::server::bulk::erase
 from_swagger(swagger::BulkDeleteNetworkServersRequest& p_request)
 {
     request::server::bulk::erase request{};
-    for (auto& id : p_request.getIds()) {
-        request.ids.push_back(std::make_unique<std::string>(id));
-    }
+    for (auto& id : p_request.getIds()) { request.ids.push_back(id); }
     return request;
 }
 

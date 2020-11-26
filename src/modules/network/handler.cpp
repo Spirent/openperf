@@ -93,7 +93,7 @@ enum Http::Code to_code(const api::reply::error& error)
 }
 
 handler::handler(void* context, Rest::Router& router)
-    : m_socket(op_socket_get_client(context, ZMQ_REQ, api::endpoint.data()))
+    : m_socket(op_socket_get_client(context, ZMQ_REQ, api::endpoint))
 {
     Rest::Routes::Get(router,
                       "/network/servers",
@@ -383,7 +383,7 @@ void handler::create_generator(const Rest::Request& request,
         }
 
         auto api_request = api::request::generator::create{
-            std::make_unique<api::network_generator_t>(
+            std::make_unique<model::generator>(
                 api::from_swagger(generator_model))};
         auto api_reply = submit_request(m_socket.get(), std::move(api_request));
         if (auto reply = std::get_if<api::reply::generator::list>(&api_reply)) {
@@ -614,7 +614,7 @@ void handler::bulk_stop_generators(const Rest::Request& request,
             response.send(Http::Code::Bad_Request, r.error());
             return;
         }
-        bulk_request.ids.push_back(std::make_unique<std::string>(id));
+        bulk_request.ids.push_back(id);
     }
 
     auto api_reply = submit_request(m_socket.get(), std::move(bulk_request));

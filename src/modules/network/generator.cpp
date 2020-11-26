@@ -86,17 +86,20 @@ generator::generator(const model::generator& generator_model)
         switch (stat.operation) {
         case task::operation_t::READ:
             m_read_stat += stat;
-            m_read_stat.ops_target =
-                elapsed_time.count() * m_config.reads_per_sec
-                * std::min(m_config.read_size, 1UL) / std::nano::den;
+            using double_time = std::chrono::duration<double>;
+            m_read_stat.ops_target = static_cast<uint64_t>(
+                (std::chrono::duration_cast<double_time>(elapsed_time)
+                 * std::min(m_config.read_size, 1UL) * m_config.reads_per_sec)
+                    .count());
             m_read_stat.bytes_target =
                 m_read_stat.ops_target * m_config.read_size;
             break;
         case task::operation_t::WRITE:
             m_write_stat += stat;
-            m_write_stat.ops_target =
-                elapsed_time.count() * m_config.writes_per_sec
-                * std::min(m_config.write_size, 1UL) / std::nano::den;
+            m_write_stat.ops_target = static_cast<uint64_t>(
+                (std::chrono::duration_cast<double_time>(elapsed_time)
+                 * std::min(m_config.write_size, 1UL) * m_config.writes_per_sec)
+                    .count());
             m_write_stat.bytes_target =
                 m_write_stat.ops_target * m_config.write_size;
             break;
@@ -143,10 +146,10 @@ void generator::config(const model::generator_config& config)
         openperf::config::file::op_config_get_param<OP_OPTION_TYPE_STRING>(
             "modules.network.driver");
 
-    std::shared_ptr<drivers::network_driver> nd;
-    if (!driver || !driver.value().compare(drivers::KERNEL)) {
+    std::shared_ptr<drivers::driver> nd;
+    if (!driver || !driver.value().compare(drivers::kernel::key)) {
         nd = std::make_shared<drivers::kernel>(drivers::kernel());
-    } else if (!driver.value().compare(drivers::DPDK)) {
+    } else if (!driver.value().compare(drivers::dpdk::key)) {
         nd = std::make_shared<drivers::dpdk>(drivers::dpdk());
     } else {
         throw std::runtime_error("Network driver " + driver.value()

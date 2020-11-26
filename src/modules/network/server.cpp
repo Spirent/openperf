@@ -107,7 +107,7 @@ reply_msg server::handle_request(const request::generator::bulk::erase& request)
 {
     bool failed = false;
     for (const auto& id : request.ids) {
-        failed = !m_generator_stack.erase(*id) || failed;
+        failed = !m_generator_stack.erase(id) || failed;
     }
     if (failed)
         return to_error(api::error_type::CUSTOM_ERROR,
@@ -190,13 +190,13 @@ reply_msg server::handle_request(const request::generator::bulk::start& request)
 reply_msg server::handle_request(const request::generator::bulk::stop& request)
 {
     for (const auto& id : request.ids)
-        if (!m_generator_stack.generator(*id))
+        if (!m_generator_stack.generator(id))
             return to_error(api::error_type::NOT_FOUND,
                             0,
-                            "Generator from the list with ID '" + *id
+                            "Generator from the list with ID '" + id
                                 + "' was not found");
 
-    for (const auto& id : request.ids) m_generator_stack.stop_generator(*id);
+    for (const auto& id : request.ids) m_generator_stack.stop_generator(id);
 
     return api::reply::ok{};
 }
@@ -340,7 +340,7 @@ reply_msg server::handle_request(const request::server::bulk::erase& request)
 {
     bool failed = false;
     for (const auto& id : request.ids) {
-        failed = !m_server_stack.erase(*id) || failed;
+        failed = !m_server_stack.erase(id) || failed;
     }
     if (failed)
         return to_error(api::error_type::CUSTOM_ERROR,
@@ -375,7 +375,7 @@ static int _handle_rpc_request(const op_event_data* data, void* arg)
 }
 
 server::server(void* context, openperf::core::event_loop& loop)
-    : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint.data()))
+    : m_socket(op_socket_get_server(context, ZMQ_REP, endpoint))
 {
     struct op_event_callbacks callbacks = {.on_read = _handle_rpc_request};
     loop.add(m_socket.get(), &callbacks, this);

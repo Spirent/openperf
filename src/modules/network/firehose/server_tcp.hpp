@@ -33,7 +33,7 @@ private:
     void run_worker_thread();
 
 public:
-    server_tcp(in_port_t port, const drivers::network_driver_ptr& driver);
+    server_tcp(in_port_t port, const drivers::driver_ptr& driver);
     server_tcp(const server_tcp&) = delete;
     ~server_tcp() override;
 };
