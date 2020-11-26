@@ -57,7 +57,7 @@ block_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
     return tl::make_unexpected("Unexpected error");
 }
 
-tl::expected<stat_pair_t, std::string>
+tl::expected<block_tvlp_worker_t::start_result_t, std::string>
 block_tvlp_worker_t::send_start(const std::string& id,
                                 const dynamic::configuration& dynamic_results)
 {
@@ -70,8 +70,12 @@ block_tvlp_worker_t::send_start(const std::string& id,
 
     if (auto r =
             std::get_if<reply_block_generator_results>(&api_reply.value())) {
-        return std::pair(r->results.front()->id(),
-                         to_swagger(*r->results.front())->toJson());
+        auto& result = r->results.front();
+        return start_result_t{
+            .result_id = result->id(),
+            .statistics = to_swagger(*result)->toJson(),
+            .start_time = result->start_timestamp(),
+        };
     } else if (auto error = std::get_if<reply_error>(&api_reply.value())) {
         return tl::make_unexpected(to_string(error->info));
     }
