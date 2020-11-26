@@ -4,7 +4,7 @@
 MAKE_OPTION_DATA(network,
                  NULL,
                  MAKE_OPT("specifies Network driver for generators and server",
-                          "modules.network.drivers",
+                          "modules.network.driver",
                           0,
                           OP_OPTION_TYPE_STRING), );
 

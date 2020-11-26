@@ -141,7 +141,7 @@ void generator::config(const model::generator_config& config)
 
     static auto driver =
         openperf::config::file::op_config_get_param<OP_OPTION_TYPE_STRING>(
-            "modules.network.drivers");
+            "modules.network.driver");
 
     std::shared_ptr<drivers::network_driver> nd;
     if (!driver || !driver.value().compare(drivers::KERNEL)) {
