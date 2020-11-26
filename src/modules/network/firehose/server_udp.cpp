@@ -75,8 +75,7 @@ tl::expected<int, std::string> server_udp::new_server(int domain,
     return sock;
 }
 
-server_udp::server_udp(in_port_t port,
-                       const drivers::network_driver_ptr& driver)
+server_udp::server_udp(in_port_t port, const drivers::driver_ptr& driver)
     : m_stopped(false)
 {
     m_driver = driver;

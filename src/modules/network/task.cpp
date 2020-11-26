@@ -57,7 +57,7 @@ stat_t& stat_t::operator+=(const stat_t& stat)
 
 // Constructors & Destructor
 network_task::network_task(const config_t& configuration,
-                           const drivers::network_driver_ptr& driver)
+                           const drivers::driver_ptr& driver)
     : m_driver(driver)
 {
     m_write_buffer.resize(std::min(configuration.block_size, max_buffer_size));
