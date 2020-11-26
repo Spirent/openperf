@@ -17,9 +17,6 @@
 
 namespace openperf::tvlp::internal::worker {
 
-using namespace std::chrono_literals;
-using stat_pair_t = std::pair<std::string, nlohmann::json>;
-
 struct tvlp_worker_state_t
 {
     std::atomic<model::tvlp_state_t> state;
@@ -30,6 +27,14 @@ struct tvlp_worker_state_t
 class tvlp_worker_t
 {
     using worker_future = std::future<tl::expected<void, std::string>>;
+
+protected:
+    struct start_result_t
+    {
+        std::string result_id;
+        nlohmann::json statistics;
+        model::realtime::time_point start_time = model::realtime::now();
+    };
 
 public:
     tvlp_worker_t() = delete;
@@ -51,7 +56,7 @@ public:
 protected:
     virtual tl::expected<std::string, std::string>
     send_create(const model::tvlp_profile_t::entry&, double load_scale) = 0;
-    virtual tl::expected<stat_pair_t, std::string>
+    virtual tl::expected<start_result_t, std::string>
     send_start(const std::string& id,
                const dynamic::configuration& dynamic_results = {}) = 0;
     virtual tl::expected<void, std::string>

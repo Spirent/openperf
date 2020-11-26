@@ -5,6 +5,8 @@
 
 namespace openperf::tvlp::internal::worker {
 
+using namespace std::chrono_literals;
+
 constexpr model::duration THRESHOLD = 100ms;
 
 tvlp_worker_t::tvlp_worker_t(void* context,
@@ -35,8 +37,8 @@ tvlp_worker_t::start(const model::time_point& start_time,
 
     if (m_scheduler_thread.valid()) m_scheduler_thread.wait();
     m_state.offset = model::duration::zero();
-    m_state.state = start_time > model::ref_clock::now() ? model::COUNTDOWN
-                                                         : model::RUNNING;
+    m_state.state =
+        start_time > model::realtime::now() ? model::COUNTDOWN : model::RUNNING;
     m_state.stopped = false;
     delete m_result.exchange(new model::json_vector());
     m_scheduler_thread = std::async(
@@ -105,8 +107,18 @@ void tvlp_worker_t::store_results(const nlohmann::json& result,
     delete m_result.exchange(updated, std::memory_order_release);
 }
 
+template <typename ToClock, typename FromClock>
+std::chrono::time_point<ToClock>
+clock_cast(const std::chrono::time_point<FromClock>& point)
+{
+    auto from_now = FromClock::now().time_since_epoch();
+    auto to_now = ToClock::now().time_since_epoch();
+    return std::chrono::time_point<ToClock>(
+        to_now + (point.time_since_epoch() - from_now));
+}
+
 tl::expected<void, std::string>
-tvlp_worker_t::schedule(const model::tvlp_profile_t::series& series,
+tvlp_worker_t::schedule(const model::tvlp_profile_t::series& profile,
                         const model::time_point& start_time,
                         const model::tvlp_start_t::start_t& start_config)
 {
@@ -125,11 +137,7 @@ tvlp_worker_t::schedule(const model::tvlp_profile_t::series& series,
 
     m_state.state.store(model::RUNNING);
     model::duration total_offset = model::duration::zero();
-    for (const auto& entry : series) {
-        auto entry_duration =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(
-                entry.length * start_config.time_scale);
-
+    for (const auto& entry : profile) {
         if (m_state.stopped.load()) {
             m_state.state.store(model::READY);
             return {};
@@ -142,7 +150,6 @@ tvlp_worker_t::schedule(const model::tvlp_profile_t::series& series,
             return tl::make_unexpected(create_result.error());
         }
         auto gen_id = create_result.value();
-        auto end_time = ref_clock::now() + entry_duration;
 
         // Start generator
         auto start_result = send_start(gen_id, start_config.dynamic_results);
@@ -152,10 +159,18 @@ tvlp_worker_t::schedule(const model::tvlp_profile_t::series& series,
         }
 
         // Add new statistics
-        store_results(start_result.value().second, result_store_operation::ADD);
+        store_results(start_result.value().statistics,
+                      result_store_operation::ADD);
 
-        // Wait until series entry done
-        auto started = ref_clock::now();
+        // Calculate end time of profile
+        auto entry_duration =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(
+                entry.length * start_config.time_scale);
+
+        auto started = clock_cast<ref_clock>(start_result.value().start_time);
+        auto end_time = started + entry_duration;
+
+        // Wait until profile entry done
         for (auto now = started; now < end_time; now = ref_clock::now()) {
             if (m_state.stopped.load()) {
                 m_state.state.store(model::READY);
@@ -163,7 +178,7 @@ tvlp_worker_t::schedule(const model::tvlp_profile_t::series& series,
             }
 
             // Update statistics
-            auto stat_result = send_stat(start_result.value().first);
+            auto stat_result = send_stat(start_result.value().result_id);
             if (!stat_result) {
                 m_state.state.store(model::ERROR);
                 return tl::make_unexpected(stat_result.error());
@@ -185,7 +200,7 @@ tvlp_worker_t::schedule(const model::tvlp_profile_t::series& series,
         }
 
         // Update statistics
-        auto stat_result = send_stat(start_result.value().first);
+        auto stat_result = send_stat(start_result.value().result_id);
         if (!stat_result) {
             m_state.state.store(model::ERROR);
             return tl::make_unexpected(stat_result.error());
@@ -202,15 +217,14 @@ tvlp_worker_t::schedule(const model::tvlp_profile_t::series& series,
     return {};
 }
 
-using namespace openperf::message;
-tl::expected<serialized_message, int>
-tvlp_worker_t::submit_request(serialized_message request)
+tl::expected<message::serialized_message, int>
+tvlp_worker_t::submit_request(message::serialized_message request)
 {
     if (auto error = send(m_socket.get(), std::move(request)); error != 0) {
         return tl::make_unexpected(error);
     }
 
-    auto reply = recv(m_socket.get());
+    auto reply = message::recv(m_socket.get());
     if (!reply) { return tl::make_unexpected(reply.error()); }
 
     return std::move(*reply);
