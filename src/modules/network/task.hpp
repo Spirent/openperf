@@ -112,7 +112,7 @@ private:
     void do_read(connection_t& conn, stat_t& stat);
     void do_write(connection_t& conn, stat_t& stat);
     void do_shutdown(connection_t& conn, stat_t& stat);
-    stat_t worker_spin(uint64_t nb_ops, time_point deadline);
+    stat_t worker_spin(uint64_t nb_ops);
 
     config_t m_config;
     stat_t m_stat;

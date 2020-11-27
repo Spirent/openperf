@@ -1,7 +1,7 @@
 #include <thread>
 #include <limits>
-#include <errno.h>
-#include <stdlib.h>
+#include <cerrno>
+#include <cstdlib>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 #include <tl/expected.hpp>
@@ -144,7 +144,7 @@ stat_t network_task::spin()
                        + 1;
 
         assert(ops_req);
-        auto worker_spin_stat = worker_spin(ops_req, cur_time + 1s);
+        auto worker_spin_stat = worker_spin(ops_req);
         stat += worker_spin_stat;
 
         cur_time = ref_clock::now();
@@ -421,7 +421,7 @@ void network_task::do_shutdown(connection_t& conn, stat_t& stat)
 }
 
 // Methods : private
-stat_t network_task::worker_spin(uint64_t nb_ops, realtime::time_point deadline)
+stat_t network_task::worker_spin(uint64_t nb_ops)
 {
     m_driver->init();
 
