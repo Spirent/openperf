@@ -1,6 +1,6 @@
 #include "server_tcp.hpp"
 
-#include <assert.h>
+#include <cassert>
 #include <string>
 #include <fcntl.h>
 
@@ -32,12 +32,12 @@ tl::expected<int, std::string> server_tcp::new_server(int domain,
                                                       in_port_t port)
 {
     struct sockaddr_storage client_storage;
-    struct sockaddr* server_ptr = (struct sockaddr*)&client_storage;
+    auto server_ptr = (struct sockaddr*)&client_storage;
     std::string domain_str;
 
     switch (domain) {
     case AF_INET: {
-        struct sockaddr_in* server4 = (struct sockaddr_in*)server_ptr;
+        auto server4 = (struct sockaddr_in*)server_ptr;
         server4->sin_family = AF_INET;
         server4->sin_port = htons(port);
         server4->sin_addr.s_addr = htonl(INADDR_ANY);
@@ -45,7 +45,7 @@ tl::expected<int, std::string> server_tcp::new_server(int domain,
         break;
     }
     case AF_INET6: {
-        struct sockaddr_in6* server6 = (struct sockaddr_in6*)server_ptr;
+        auto server6 = (struct sockaddr_in6*)server_ptr;
         server6->sin6_family = AF_INET6;
         server6->sin6_port = htons(port);
         server6->sin6_addr = in6addr_any;
@@ -136,7 +136,7 @@ void server_tcp::run_accept_thread()
 
         // Run the loop of the thread
         struct sockaddr_storage client_storage;
-        struct sockaddr* client = (struct sockaddr*)&client_storage;
+        auto client = (struct sockaddr*)&client_storage;
         socklen_t client_length = sizeof(client_storage);
 
         void* sync = op_socket_get_server(m_context, ZMQ_PUSH, endpoint.data());
@@ -262,9 +262,7 @@ void server_tcp::run_worker_thread()
 
                     if (conn.request.size()) {
                         /* handle leftovers from last go round */
-                        memcpy(&recv_buffer,
-                               conn.request.data(),
-                               conn.request.size());
+                        recv_buffer = conn.request;
                         recv_cursor += conn.request.size();
                     }
 

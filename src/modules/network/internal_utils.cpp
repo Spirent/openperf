@@ -1,9 +1,9 @@
 #include "internal_utils.hpp"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cstddef>
+#include <cstring>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
@@ -12,7 +12,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include <errno.h>
+#include <cerrno>
 #include <poll.h>
 
 namespace openperf::network::internal {
@@ -25,7 +25,7 @@ static void* get_sa_addr(const sockaddr* sa)
     case AF_INET6:
         return (&((sockaddr_in6*)sa)->sin6_addr);
     default:
-        return (NULL);
+        return nullptr;
     }
 }
 
@@ -70,7 +70,7 @@ network_sockaddr_addr_str(const network_sockaddr& s, char* buf, size_t buf_len)
 {
     void* addr = network_sockaddr_addr(s);
     if (!addr) {
-        if (buf_len < 1) return 0;
+        if (buf_len < 1) return nullptr;
         buf[0] = 0;
         return buf;
     }
@@ -103,7 +103,7 @@ bool ipv6_addr_is_link_local(const in6_addr* addr)
  */
 bool ipv6_addr_is_ipv4_mapped(const in6_addr* addr)
 {
-    uint16_t* words = (uint16_t*)addr->s6_addr;
+    auto words = (uint16_t*)addr->s6_addr;
     if (words[0] == 0 && words[1] == 0 && words[2] == 0 && words[3] == 0
         && words[4] == 0 && words[5] == 0xffff) {
         return true;
@@ -125,14 +125,15 @@ void ipv6_get_ipv4_mapped(const in6_addr* v6, in_addr* v4)
  */
 char* get_peer_address(int socket)
 {
-    char* host = NULL;
+    char* host = nullptr;
     network_sockaddr peer;
     socklen_t peer_length = sizeof(peer);
     memset(&peer, 0, peer_length);
 
     if ((getpeername(socket, &peer.sa, &peer_length) != 0)
-        || ((host = (char*)calloc(INET6_ADDRSTRLEN, sizeof(char))) == NULL)) {
-        return (NULL);
+        || ((host = (char*)calloc(INET6_ADDRSTRLEN, sizeof(char)))
+            == nullptr)) {
+        return (nullptr);
     }
 
     if (peer.sa.sa_family == AF_INET6) {
@@ -155,18 +156,18 @@ char* get_peer_address(int socket)
  */
 void log_intf_addresses(void)
 {
-    ifaddrs *ifa = NULL, *ifa_free = NULL;
+    ifaddrs *ifa = nullptr, *ifa_free = nullptr;
 
     char buffer[INET6_ADDRSTRLEN];
-    void* address = NULL;
+    void* address = nullptr;
     memset(buffer, 0, INET6_ADDRSTRLEN);
 
     if (getifaddrs(&ifa_free) == 0) {
-        for (ifa = ifa_free; ifa != NULL && ifa->ifa_addr != NULL;
+        for (ifa = ifa_free; ifa != nullptr && ifa->ifa_addr != nullptr;
              ifa = ifa->ifa_next) {
             if ((ifa->ifa_flags & IFF_LOOPBACK) == 0) {
                 address = get_sa_addr(ifa->ifa_addr);
-                if (address != NULL) {
+                if (address != nullptr) {
                     inet_ntop(ifa->ifa_addr->sa_family,
                               address,
                               buffer,
@@ -249,13 +250,13 @@ static int ipv6_send_icmp_echo_req(int sock,
         cmsg->cmsg_len = CMSG_LEN(sizeof(in6_pktinfo));
         cmsg->cmsg_type = IPV6_PKTINFO;
 
-        in6_pktinfo* pi = (in6_pktinfo*)CMSG_DATA(cmsg);
+        auto pi = (in6_pktinfo*)CMSG_DATA(cmsg);
         pi->ipi6_ifindex = ifindex;
         pi->ipi6_addr = *src_addr;
         msg.msg_controllen += CMSG_SPACE(sizeof(in6_pktinfo));
     }
 
-    icmp6_hdr* icmp6 = (icmp6_hdr*)req;
+    auto icmp6 = (icmp6_hdr*)req;
     icmp6->icmp6_type = ICMP6_ECHO_REQUEST;
     icmp6->icmp6_code = 0;
     icmp6->icmp6_cksum = 0;
@@ -279,11 +280,11 @@ static int ipv6_send_icmp_echo_req(int sock,
  */
 static int ipv6_get_recv_msg_ifindex(msghdr* msg)
 {
-    for (cmsghdr* cmsg = CMSG_FIRSTHDR(msg); cmsg != NULL;
+    for (cmsghdr* cmsg = CMSG_FIRSTHDR(msg); cmsg != nullptr;
          cmsg = CMSG_NXTHDR(msg, cmsg)) {
         if (cmsg->cmsg_level == IPPROTO_IPV6
             && cmsg->cmsg_type == IPV6_PKTINFO) {
-            in6_pktinfo* pktinfo = (in6_pktinfo*)CMSG_DATA(cmsg);
+            auto pktinfo = (in6_pktinfo*)CMSG_DATA(cmsg);
             return pktinfo->ipi6_ifindex;
         }
     }
@@ -297,7 +298,7 @@ int ipv6_get_neighbor_ifindex_from_ping_socket(const in6_addr* addr)
 {
     const int max_retry = 2;
     const int wait_timeout = 2000; /* msec */
-    ifaddrs* ifaddrs = NULL;
+    ifaddrs* ifaddrs = nullptr;
     int sock;
     int enable = 1;
     int ifindex = -1;
@@ -340,11 +341,10 @@ int ipv6_get_neighbor_ifindex_from_ping_socket(const in6_addr* addr)
 
         if (link_local) {
             /* Send ECHO request out all interfaces */
-            for (struct ifaddrs* ifa = ifaddrs; ifa != NULL;
-                 ifa = ifa->ifa_next) {
+            for (auto ifa = ifaddrs; ifa != nullptr; ifa = ifa->ifa_next) {
                 if (ifa->ifa_flags & IFF_LOOPBACK) continue;
                 if (ifa->ifa_addr->sa_family == AF_INET6) {
-                    sockaddr_in6* src_addr = (sockaddr_in6*)ifa->ifa_addr;
+                    auto src_addr = (sockaddr_in6*)ifa->ifa_addr;
                     if (!ipv6_addr_is_link_local(&src_addr->sin6_addr))
                         continue;
 
@@ -368,7 +368,7 @@ int ipv6_get_neighbor_ifindex_from_ping_socket(const in6_addr* addr)
                 }
             }
         } else {
-            if (ipv6_send_icmp_echo_req(sock, -1, NULL, addr, 0, retry + 1)
+            if (ipv6_send_icmp_echo_req(sock, -1, nullptr, addr, 0, retry + 1)
                 == 0) {
                 ++echo_req_count;
             }
@@ -384,12 +384,12 @@ int ipv6_get_neighbor_ifindex_from_ping_socket(const in6_addr* addr)
             uint64_t now, end_time;
             int resp_len;
 
-            gettimeofday(&tv, NULL);
+            gettimeofday(&tv, nullptr);
             now = tv.tv_sec * 1000000 + tv.tv_usec;
             end_time = now + wait_timeout * 1000;
 
-            while (1) {
-                gettimeofday(&tv, NULL);
+            while (true) {
+                gettimeofday(&tv, nullptr);
                 now = tv.tv_sec * 1000000 + tv.tv_usec;
                 if (now > end_time) break;
 
@@ -411,7 +411,7 @@ int ipv6_get_neighbor_ifindex_from_ping_socket(const in6_addr* addr)
                 msg.msg_namelen = sizeof(src_addr);
 
                 while ((resp_len = recvmsg(sock, &msg, MSG_DONTWAIT)) > 0) {
-                    icmp6_hdr* icmp6 = (icmp6_hdr*)resp;
+                    auto icmp6 = (icmp6_hdr*)resp;
                     if (icmp6->icmp6_type != ICMP6_ECHO_REPLY) continue;
                     if (src_addr.sin6_family == AF_INET6
                         && memcmp(addr, &src_addr.sin6_addr, sizeof(*addr))

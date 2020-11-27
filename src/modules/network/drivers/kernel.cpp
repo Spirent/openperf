@@ -1,7 +1,7 @@
 #include "kernel.hpp"
 #include <unistd.h>
 #include <fcntl.h>
-#include <stdarg.h>
+#include <cstdarg>
 #include <sys/uio.h>
 #include <netinet/in.h>
 #include <utility>

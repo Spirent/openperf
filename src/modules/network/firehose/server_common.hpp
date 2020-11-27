@@ -93,7 +93,7 @@ inline void* get_sa_addr(const struct sockaddr* sa)
     case AF_INET6:
         return (&((struct sockaddr_in6*)sa)->sin6_addr);
     default:
-        return (NULL);
+        return (nullptr);
     }
 }
 
