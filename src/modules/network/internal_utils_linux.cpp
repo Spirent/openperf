@@ -3,17 +3,17 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <net/if.h>
-#include <errno.h>
+#include <cerrno>
 #include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 #include <poll.h>
-#include <assert.h>
+#include <cassert>
 #include <string>
 
 #include "framework/core/op_log.h"
@@ -25,18 +25,18 @@ char* get_mac_address(const char* ifname)
 {
     int s;
     ifreq buffer;
-    unsigned char* ptr = NULL;
-    char* mac_addr = NULL;
+    unsigned char* ptr = nullptr;
+    char* mac_addr = nullptr;
 
     if ((s = socket(PF_INET, SOCK_DGRAM, 0)) == -1) {
         OP_LOG(OP_LOG_ERROR,
                "Could not open inet dgram socket: %s\n",
                strerror(errno));
-        return NULL;
+        return nullptr;
     }
 
     memset(&buffer, 0, sizeof(buffer));
-    strcpy(buffer.ifr_name, ifname);
+    strncpy(buffer.ifr_name, ifname, sizeof(buffer.ifr_name));
 
     if (ioctl(s, SIOCGIFHWADDR, &buffer) == -1) {
         OP_LOG(OP_LOG_ERROR,
@@ -44,7 +44,7 @@ char* get_mac_address(const char* ifname)
                ifname,
                strerror(errno));
         close(s);
-        return NULL;
+        return nullptr;
     }
 
     close(s);
@@ -84,7 +84,7 @@ int ipv6_get_neighbor_ifindex_from_cache(const in6_addr* addr)
         nlmsghdr n;
         ndmsg r;
     } req;
-    uint8_t* resp_buf = NULL;
+    uint8_t* resp_buf = nullptr;
     size_t resp_buf_size = 8192;
     msghdr msghdr;
     iovec iov;
@@ -107,7 +107,7 @@ int ipv6_get_neighbor_ifindex_from_cache(const in6_addr* addr)
         goto done;
     }
 
-    if ((resp_buf = (uint8_t*)calloc(1, resp_buf_size)) == NULL) {
+    if ((resp_buf = (uint8_t*)calloc(1, resp_buf_size)) == nullptr) {
         OP_LOG(OP_LOG_ERROR, "Failed allocating resp bufer.\n");
         goto done;
     }
@@ -141,7 +141,7 @@ int ipv6_get_neighbor_ifindex_from_cache(const in6_addr* addr)
         goto done;
     }
 
-    while (1) {
+    while (true) {
         nlmsghdr* msg_ptr;
         int len;
         pollfd fds[1];
@@ -166,8 +166,7 @@ int ipv6_get_neighbor_ifindex_from_cache(const in6_addr* addr)
              msg_ptr = NLMSG_NEXT(msg_ptr, len)) {
             if (msg_ptr->nlmsg_type == NLMSG_DONE) { goto done; }
             if (msg_ptr->nlmsg_type == NLMSG_ERROR) {
-                struct nlmsgerr* nlmsgerr =
-                    (struct nlmsgerr*)NLMSG_DATA(msg_ptr);
+                auto nlmsgerr = (struct nlmsgerr*)NLMSG_DATA(msg_ptr);
                 if (msg_ptr->nlmsg_len < NLMSG_LENGTH(sizeof(nlmsgerr))) {
                     OP_LOG(OP_LOG_ERROR, "NLMSG_ERROR too short\n");
                 } else {
@@ -176,13 +175,13 @@ int ipv6_get_neighbor_ifindex_from_cache(const in6_addr* addr)
                 goto done;
             }
             size_t ndm_len = RTM_PAYLOAD(msg_ptr);
-            ndmsg* ndm = (ndmsg*)NLMSG_DATA(msg_ptr);
+            auto ndm = (ndmsg*)NLMSG_DATA(msg_ptr);
             rtattr* rta;
             int found_addr = 0;
             for (rta = RTM_RTA(ndm); RTA_OK(rta, ndm_len);
                  rta = RTA_NEXT(rta, ndm_len)) {
                 if (rta->rta_type == NDA_DST) {
-                    in6_addr* dst_addr = (in6_addr*)RTA_DATA(rta);
+                    auto dst_addr = (in6_addr*)RTA_DATA(rta);
                     if (memcmp(addr, dst_addr, sizeof(*addr)) == 0) {
                         found_addr = 1;
                     }
@@ -259,7 +258,7 @@ struct pinger
  *  The IPv6 address to ping.
  *
  * @return
- *  A struct pinger for the ping session if successful or NULL if an error
+ *  A struct pinger for the ping session if successful or nullptr if an error
  * occurs.
  */
 pinger* start_pinger(const char* ifname, const in6_addr* addr)
@@ -268,11 +267,11 @@ pinger* start_pinger(const char* ifname, const in6_addr* addr)
     std::string ping_cmd = "ping6";
     char addr_str[INET6_ADDRSTRLEN];
 
-    if (inet_ntop(AF_INET6, addr, addr_str, INET6_ADDRSTRLEN) == NULL) {
+    if (inet_ntop(AF_INET6, addr, addr_str, INET6_ADDRSTRLEN) == nullptr) {
         OP_LOG(OP_LOG_ERROR,
                "Failed to convert IPv6 address to string.  %s\n",
                strerror(errno));
-        return NULL;
+        return nullptr;
     }
 
     char* const ping_args[] = {(char*)ping_cmd.c_str(),
@@ -281,12 +280,12 @@ pinger* start_pinger(const char* ifname, const in6_addr* addr)
                                (char*)"-c",
                                (char*)"1",
                                addr_str,
-                               NULL};
+                               nullptr};
 
     pinger = (struct pinger*)calloc(1, sizeof(*pinger));
     if (!pinger) {
         OP_LOG(OP_LOG_ERROR, "Failed to allocate memory for pinger\n");
-        return NULL;
+        return nullptr;
     }
 
     strncpy(pinger->ifname, ifname, IF_NAMESIZE);
@@ -295,7 +294,7 @@ pinger* start_pinger(const char* ifname, const in6_addr* addr)
     if ((pinger->pid = exec_cmd(ping_cmd.c_str(), ping_args, true)) < 0) {
         OP_LOG(OP_LOG_ERROR, "Failed running %s command.\n", ping_cmd.c_str());
         free(pinger);
-        return NULL;
+        return nullptr;
     }
 
     return pinger;
@@ -412,14 +411,14 @@ int delete_completed_pingers(pinger* pingers[], size_t n_pingers)
     for (i = 0, j = 0; i < n_pingers; ++i) {
         if (!pingers[i]->exited) {
             if (i != j) {
-                assert(pingers[j] == NULL);
+                assert(pingers[j] == nullptr);
                 pingers[j] = pingers[i];
-                pingers[i] = NULL;
+                pingers[i] = nullptr;
             }
             ++j;
         } else {
             delete_pinger(pingers[i]);
-            pingers[i] = NULL;
+            pingers[i] = nullptr;
         }
     }
     return j;
@@ -448,7 +447,7 @@ int ipv6_get_neighbor_ifindex_from_ping_exec(const in6_addr* addr)
     int wait_result;
 
     if_nidxs = if_nameindex();
-    if (if_nidxs == NULL) {
+    if (if_nidxs == nullptr) {
         OP_LOG(OP_LOG_ERROR,
                "Failed getting interface names.  %s\n",
                strerror(errno));
@@ -456,7 +455,7 @@ int ipv6_get_neighbor_ifindex_from_ping_exec(const in6_addr* addr)
     }
 
     /* Send ping out all interfaces until it is successful */
-    for (intf = if_nidxs; intf->if_index != 0 || intf->if_name != NULL;
+    for (intf = if_nidxs; intf->if_index != 0 || intf->if_name != nullptr;
          intf++) {
         if (strcmp(intf->if_name, "lo") == 0) continue;
         if (n_pingers >= max_pingers) {
@@ -479,7 +478,8 @@ int ipv6_get_neighbor_ifindex_from_ping_exec(const in6_addr* addr)
     }
 
     wait_result = wait_pingers(pingers, n_pingers, n_pingers);
-    if (ifindex < 0) ifindex = if_nametoindex(pingers[wait_result]->ifname);
+    if (ifindex < 0)
+        ifindex = if_nametoindex(pingers[wait_result]->ifname); // NOLINT
 
     for (i = 0; i < n_pingers; ++i) { delete_pinger(pingers[i]); }
 

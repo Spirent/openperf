@@ -6,13 +6,13 @@
 #include <linux/rtnetlink.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <errno.h>
+#include <cstdlib>
+#include <cerrno>
 #include <poll.h>
 #include <net/if.h>
 #include <fcntl.h>
 #include <sys/wait.h>
-#include <assert.h>
+#include <cassert>
 
 #include "framework/core/op_log.h"
 
