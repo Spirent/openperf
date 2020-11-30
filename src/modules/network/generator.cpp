@@ -148,9 +148,9 @@ void generator::config(const model::generator_config& config)
 
     std::shared_ptr<drivers::driver> nd;
     if (!driver || !driver.value().compare(drivers::kernel::key)) {
-        nd = std::make_shared<drivers::kernel>(drivers::kernel());
+        nd = drivers::driver::instance<drivers::kernel>();
     } else if (!driver.value().compare(drivers::dpdk::key)) {
-        nd = std::make_shared<drivers::dpdk>(drivers::dpdk());
+        nd = drivers::driver::instance<drivers::dpdk>();
     } else {
         throw std::runtime_error("Network driver " + driver.value()
                                  + " is unsupported");

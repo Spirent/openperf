@@ -1,5 +1,6 @@
 #include <cassert>
 #include <stdexcept>
+#include <fcntl.h>
 
 #include "core/op_log.h"
 #include "core/op_thread.h"
@@ -49,8 +50,9 @@ tl::expected<int, std::string> server_udp::new_server(int domain,
     if (m_driver->setsockopt(
             sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable))
         != 0) {
+        auto err = errno;
         m_driver->close(sock);
-        return tl::make_unexpected<std::string>(strerror(errno));
+        return tl::make_unexpected<std::string>(strerror(err));
     }
 
     if (m_driver->bind(sock, server_ptr, get_sa_len(server_ptr)) == -1) {
@@ -58,7 +60,9 @@ tl::expected<int, std::string> server_udp::new_server(int domain,
                "Unable to bind to socket (domain = %d, protocol = UDP): %s\n",
                domain,
                strerror(errno));
-        return tl::make_unexpected<std::string>(strerror(errno));
+        auto err = errno;
+        m_driver->close(sock);
+        return tl::make_unexpected<std::string>(strerror(err));
     }
 
     static timeval read_timeout = {
@@ -68,8 +72,11 @@ tl::expected<int, std::string> server_udp::new_server(int domain,
     if (m_driver->setsockopt(
             sock, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout))
         != 0) {
-        m_driver->close(sock);
-        return tl::make_unexpected<std::string>(strerror(errno));
+        OP_LOG(OP_LOG_WARNING,
+               "Unable to set socket timeout (domain = %d, protocol = "
+               "UDP): %s\n",
+               domain,
+               strerror(errno));
     }
 
     return sock;
@@ -79,17 +86,15 @@ server_udp::server_udp(in_port_t port, const drivers::driver_ptr& driver)
     : m_stopped(false)
 {
     m_driver = driver;
-    m_driver->init();
 
     /* IPv6 any supports IPv4 and IPv6 */
     tl::expected<int, std::string> res;
     if ((res = new_server(AF_INET6, port)); res) {
         OP_LOG(OP_LOG_INFO, "Network UDP load server IPv4/IPv6.\n");
-    } else if ((res = new_server(AF_INET, port)); !res) {
+    } else if ((res = new_server(AF_INET, port)); res) {
         OP_LOG(OP_LOG_INFO, "Network UDP load server IPv4.\n");
     } else {
-        throw std::runtime_error("Cannot create UDP server: "
-                                 + std::string(strerror(-m_fd)));
+        throw std::runtime_error("Cannot create UDP server: " + res.error());
     }
     m_fd = res.value();
 
@@ -99,7 +104,7 @@ server_udp::server_udp(in_port_t port, const drivers::driver_ptr& driver)
 server_udp::~server_udp()
 {
     m_stopped.store(true, std::memory_order_relaxed);
-    if (m_fd.load() >= 0) m_driver->close(m_fd.load());
+    if (m_fd.load() >= 0) { m_driver->close(m_fd); }
 
     if (m_worker_thread.joinable()) m_worker_thread.join();
 }

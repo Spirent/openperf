@@ -12,7 +12,7 @@ public:
     static constexpr std::string_view key = "dpdk";
 
     dpdk() = default;
-    dpdk(const dpdk&);
+    dpdk(const dpdk&) = default;
     ~dpdk() = default;
 
     void init() override;
@@ -65,9 +65,6 @@ public:
                    socklen_t tolen) override;
     ssize_t write(int s, const void* dataptr, size_t len) override;
     ssize_t writev(int s, const struct iovec* iov, int iovcnt) override;
-
-private:
-    std::atomic_bool m_init_flag;
 };
 } // namespace openperf::network::internal::drivers
 

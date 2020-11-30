@@ -176,13 +176,13 @@ network_task::new_connection(const network_sockaddr& server,
     }
 
     /* Update to non-blocking socket */
-    int flags = m_driver->fcntl(sock, F_GETFD);
+    int flags = m_driver->fcntl(sock, F_GETFL);
     if (flags == -1) {
         m_driver->close(sock);
         return tl::make_unexpected(-errno);
     }
 
-    if (m_driver->fcntl(sock, F_SETFD, flags | O_NONBLOCK) == -1) {
+    if (m_driver->fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
         m_driver->close(sock);
         return tl::make_unexpected(-errno);
     }
@@ -423,8 +423,6 @@ void network_task::do_shutdown(connection_t& conn, stat_t& stat)
 // Methods : private
 stat_t network_task::worker_spin(uint64_t nb_ops)
 {
-    m_driver->init();
-
     stat_t stat{.operation = m_config.operation};
 
     /* Make sure we have the right number of connections */

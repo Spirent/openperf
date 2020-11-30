@@ -68,8 +68,9 @@ tl::expected<int, std::string> server_tcp::new_server(int domain,
     if (m_driver->setsockopt(
             sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable))
         != 0) {
+        auto err = errno;
         m_driver->close(sock);
-        return -errno;
+        return tl::make_unexpected<std::string>(strerror(err));
     }
 
     if (m_driver->bind(sock, server_ptr, get_sa_len(server_ptr)) == -1) {
@@ -77,7 +78,9 @@ tl::expected<int, std::string> server_tcp::new_server(int domain,
                "Unable to bind to socket (domain = %d, protocol = TCP): %s\n",
                domain,
                strerror(errno));
-        return -errno;
+        auto err = errno;
+        m_driver->close(sock);
+        return tl::make_unexpected<std::string>(strerror(err));
     }
 
     if (m_driver->listen(sock, tcp_backlog) == -1) {
@@ -85,7 +88,9 @@ tl::expected<int, std::string> server_tcp::new_server(int domain,
                "Unable to listen on socket %d: %s\n",
                sock,
                strerror(errno));
-        return -errno;
+        auto err = errno;
+        m_driver->close(sock);
+        return tl::make_unexpected<std::string>(strerror(err));
     }
 
     return sock;
@@ -96,17 +101,15 @@ server_tcp::server_tcp(in_port_t port, const drivers::driver_ptr& driver)
     , m_context(zmq_ctx_new())
 {
     m_driver = driver;
-    m_driver->init();
 
     /* IPv6 any supports IPv4 and IPv6 */
     tl::expected<int, std::string> res;
     if ((res = new_server(AF_INET6, port)); res) {
         OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4/IPv6.\n");
-    } else if ((res = new_server(AF_INET, port)); !res) {
+    } else if ((res = new_server(AF_INET, port)); res) {
         OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4.\n");
     } else {
-        throw std::runtime_error("Cannot create TCP server: "
-                                 + std::string(strerror(-m_fd)));
+        throw std::runtime_error("Cannot create TCP server: " + res.error());
     }
     m_fd = res.value();
 
@@ -118,7 +121,10 @@ server_tcp::~server_tcp()
 {
     m_stopped.store(true, std::memory_order_relaxed);
     zmq_ctx_shutdown(m_context);
-    if (m_fd.load() >= 0) m_driver->shutdown(m_fd.load(), SHUT_RDWR);
+    if (m_fd.load() >= 0) {
+        m_driver->shutdown(m_fd.load(), SHUT_RDWR);
+        m_driver->close(m_fd);
+    }
 
     if (m_accept_thread.joinable()) m_accept_thread.join();
     for (auto& thread : m_worker_threads) {
