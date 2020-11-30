@@ -10,6 +10,18 @@ class driver
 public:
     driver() = default;
     virtual ~driver() = default;
+    driver(const driver&) = delete;
+    driver& operator=(const driver&) = delete;
+
+    template <typename T> static std::shared_ptr<driver> instance()
+    {
+        static std::shared_ptr<driver> s_instance = nullptr;
+        if (s_instance == nullptr) {
+            s_instance = std::make_shared<T>();
+            s_instance->init();
+        }
+        return (s_instance);
+    }
 
     virtual void init(){};
 
@@ -60,7 +72,6 @@ public:
     virtual ssize_t write(int s, const void* dataptr, size_t len) = 0;
     virtual ssize_t writev(int s, const struct iovec* iov, int iovcnt) = 0;
 };
-
 using driver_ptr = std::shared_ptr<driver>;
 
 } // namespace openperf::network::internal::drivers
