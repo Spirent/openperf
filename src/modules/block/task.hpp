@@ -69,24 +69,26 @@ struct task_stat_t
     task_stat_t& operator+=(const task_stat_t&);
 };
 
-enum aio_state : uint8_t {
-    IDLE = 0,
-    PENDING,
-    COMPLETE,
-    FAILED,
-};
-
-struct operation_state
-{
-    ref_clock::time_point start;
-    ref_clock::time_point stop;
-    uint64_t io_bytes;
-    enum aio_state state;
-    aiocb aiocb;
-};
-
 class block_task : public framework::generator::task<task_stat_t>
 {
+    enum aio_state : uint8_t {
+        IDLE = 0,
+        PENDING,
+        COMPLETE,
+        FAILED,
+    };
+
+    struct operation_state
+    {
+        ref_clock::time_point start;
+        ref_clock::time_point stop;
+        uint64_t io_bytes;
+        enum aio_state state;
+        aiocb aiocb;
+    };
+
+    struct operation_config;
+
 private:
     task_config_t m_task_config;
     task_stat_t m_stat;
@@ -108,6 +110,13 @@ private:
     void reset_spin_stat();
     int32_t calculate_rate();
     task_stat_t worker_spin(uint64_t nb_ops, ref_clock::time_point deadline);
+
+private:
+    static int complete_aio_op(struct operation_state& aio_op);
+    static int wait_for_aio_ops(std::vector<operation_state>& aio_ops,
+                                size_t nb_ops);
+    static int submit_aio_op(const operation_config& op_config,
+                             operation_state& op_state);
 };
 
 } // namespace openperf::block::worker
