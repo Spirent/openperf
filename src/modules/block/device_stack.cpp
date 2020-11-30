@@ -1,5 +1,6 @@
 #include <dirent.h>
 #include <fcntl.h>
+#include <fstream>
 #include <linux/fs.h>
 #include <mntent.h>
 #include <regex>
@@ -43,6 +44,41 @@ uint64_t block_device_size(std::string_view dev)
     close(fd);
 
     return (nb_blocks << 9);
+}
+
+std::string block_device_info(const std::string& dev)
+{
+    if (dev.substr(0, 4) == "loop") {
+        return "Loopback Device " + dev.substr(4);
+    }
+
+    if (dev.substr(0, 2) == "md") {
+        return "Software RAID device " + dev.substr(2);
+    }
+
+    if (dev.substr(0, 3) == "dm-") {
+        return "Device Mapper device " + dev.substr(3);
+    }
+
+    auto sysfs_path = "/sys/block/" + dev + "/device/model";
+    if (std::ifstream ifs(sysfs_path); ifs.is_open()) {
+        std::string model;
+        std::getline(ifs, model);
+        model.erase(std::find_if(model.rbegin(),
+                                 model.rend(),
+                                 [](auto ch) { return !std::isspace(ch); })
+                        .base(),
+                    model.end());
+        return model;
+    }
+
+    {
+        auto pos = dev.find_last_not_of("0123456789");
+        return "Partition " + dev.substr(pos + 1) + " of device "
+               + dev.substr(0, pos);
+    }
+
+    return {};
 }
 
 bool is_block_device(std::string_view dev)
@@ -159,6 +195,7 @@ void device_stack::init_device_stack()
         auto blkdev = std::make_shared<device>();
         blkdev->id(std::string(entry->d_name));
         blkdev->path(path);
+        blkdev->info(block_device_info(entry->d_name));
 
         if (auto size = block_device_size(path)) {
             blkdev->size(size);
