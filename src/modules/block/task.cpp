@@ -226,7 +226,7 @@ task_stat_t block_task::spin()
 
 // Methods : private
 task_stat_t block_task::worker_spin(uint64_t nb_ops,
-                                    realtime::time_point deadline)
+                                    ref_clock::time_point deadline)
 {
     auto op_conf = operation_config{
         .fd = m_task_config.fd,
