@@ -13,6 +13,53 @@
 
 namespace openperf::block::device {
 
+//
+// Functions
+//
+uint64_t block_device_size(std::string_view dev)
+{
+    off_t nb_blocks = 0;
+    int fd = open(dev.data(), O_RDONLY);
+
+    if (fd < 0) {
+        const auto log_level = (errno == EACCES ? OP_LOG_DEBUG : OP_LOG_ERROR);
+        OP_LOG(log_level,
+               "Could not open device %s: %s\n",
+               dev.data(),
+               strerror(errno));
+        return 0;
+    }
+
+    if (ioctl(fd, BLKGETSIZE, &nb_blocks) == -1) {
+        OP_LOG(OP_LOG_ERROR,
+               "BLKGETSIZE ioctl call failed for %s (fd = %d): %s\n",
+               dev.data(),
+               fd,
+               strerror(errno));
+        close(fd);
+        return 0;
+    }
+
+    close(fd);
+
+    return (nb_blocks << 9);
+}
+
+bool is_block_device(std::string_view dev)
+{
+    struct stat st;
+    if ((stat(dev.data(), &st)) != 0 || !S_ISBLK(st.st_mode))
+        return false; /* Not a block device */
+
+    // if (minor(st.st_rdev) != 0)
+    //    return (false); /* Not an unpartioned block device */
+
+    return true;
+}
+
+//
+// class device
+//
 device::~device() { terminate_scrub(); }
 
 tl::expected<virtual_device_descriptors, int> device::open()
@@ -28,7 +75,10 @@ tl::expected<virtual_device_descriptors, int> device::open()
         return tl::make_unexpected(errno);
     }
 
-    return (virtual_device_descriptors){m_read_fd, m_write_fd};
+    return virtual_device_descriptors{
+        .read = m_read_fd,
+        .write = m_write_fd,
+    };
 }
 
 void device::close()
@@ -79,6 +129,9 @@ tl::expected<void, std::string> device::initialize()
     return {};
 }
 
+//
+// class device_stack
+//
 device_stack::device_stack() { init_device_stack(); }
 
 void device_stack::init_device_stack()
@@ -99,14 +152,15 @@ void device_stack::init_device_stack()
     while ((entry = readdir(dir)) != nullptr) {
         if (entry->d_type == DT_DIR) continue; /* skip directories */
 
-        if (!is_raw_device(entry->d_name)) continue;
+        auto path = std::string(device_dir) + "/" + std::string(entry->d_name);
+
+        if (!is_block_device(path)) continue;
 
         auto blkdev = std::make_shared<device>();
         blkdev->id(std::string(entry->d_name));
-        blkdev->path(std::string(device_dir) + "/"
-                     + std::string(entry->d_name));
+        blkdev->path(path);
 
-        if (auto size = block_device_size(entry->d_name)) {
+        if (auto size = block_device_size(path)) {
             blkdev->size(size);
             blkdev->usable(true);
         } else {
@@ -120,58 +174,6 @@ void device_stack::init_device_stack()
     }
 
     closedir(dir);
-}
-
-uint64_t device_stack::block_device_size(std::string_view id)
-{
-    off_t nb_blocks = 0;
-    char devname[PATH_MAX + 1];
-    snprintf(devname, PATH_MAX, "%s/%s", device_dir.data(), id.data());
-
-    int fd = open(devname, O_RDONLY);
-    if (fd < 0) {
-        const auto log_level = (errno == EACCES ? OP_LOG_DEBUG : OP_LOG_ERROR);
-        OP_LOG(log_level,
-               "Could not open device %s: %s\n",
-               devname,
-               strerror(errno));
-        return (0);
-    }
-
-    if (ioctl(fd, BLKGETSIZE, &nb_blocks) == -1) {
-        OP_LOG(OP_LOG_ERROR,
-               "BLKGETSIZE ioctl call failed for %s (fd = %d): %s\n",
-               devname,
-               fd,
-               strerror(errno));
-        close(fd);
-        return (0);
-    }
-
-    close(fd);
-
-    return (nb_blocks << 9);
-}
-
-std::optional<std::string> device_stack::block_device_info(std::string_view)
-{
-    return std::nullopt;
-}
-
-bool device_stack::is_raw_device(std::string_view id)
-{
-    char devname[PATH_MAX + 1];
-    struct stat st;
-
-    snprintf(devname, PATH_MAX, "%s/%s", device_dir.data(), id.data());
-
-    if ((stat(devname, &st)) != 0 || !S_ISBLK(st.st_mode))
-        return (false); /* Not a block device */
-
-    if (minor(st.st_rdev) != 0)
-        return (false); /* Not an unpartioned block device */
-
-    return (true);
 }
 
 device_stack::device_ptr device_stack::block_device(const std::string& id) const
