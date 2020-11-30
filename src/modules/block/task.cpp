@@ -11,7 +11,7 @@ namespace openperf::block::worker {
 using namespace std::chrono_literals;
 constexpr duration TASK_SPIN_THRESHOLD = 100ms;
 
-struct operation_config
+struct block_task::operation_config
 {
     int fd;
     size_t f_size;
@@ -48,107 +48,6 @@ task_stat_t& task_stat_t::operator+=(const task_stat_t& stat)
     }();
 
     return *this;
-}
-
-static int submit_aio_op(const operation_config& op_config,
-                         operation_state& op_state)
-{
-    /* XXX: Proper initialization order depends on platform! */
-    op_state.aiocb = aiocb{
-        .aio_fildes = op_config.fd,
-        .aio_reqprio = 0,
-        .aio_buf = op_config.buffer,
-        .aio_nbytes = op_config.block_size,
-        .aio_sigevent.sigev_notify = SIGEV_NONE,
-        .aio_offset = static_cast<off_t>(op_config.block_size * op_config.offset
-                                         + op_config.header_size),
-    };
-
-    /* Reset stat related variables */
-    op_state.state = PENDING;
-    op_state.start = ref_clock::now();
-    op_state.stop = op_state.start;
-    op_state.io_bytes = 0;
-
-    /* Submit operation to the kernel */
-    if (op_config.queue_aio_op(&op_state.aiocb) == -1) {
-        if (errno == EAGAIN) {
-            OP_LOG(OP_LOG_WARNING, "AIO queue is full!\n");
-            op_state.state = IDLE;
-        } else {
-            OP_LOG(OP_LOG_ERROR,
-                   "Could not queue AIO operation: %s\n",
-                   strerror(errno));
-        }
-        return -errno;
-    }
-
-    return 0;
-}
-
-static int wait_for_aio_ops(std::vector<operation_state>& aio_ops,
-                            size_t nb_ops)
-{
-    const aiocb* aiocblist[nb_ops];
-    size_t nb_cbs = 0;
-    /*
-     * Loop through all of our aio cb's and build a list with all pending
-     * operations.
-     */
-    for (size_t i = 0; i < nb_ops; ++i) {
-        if (aio_ops.at(i).state == PENDING) {
-            aiocblist[nb_cbs++] = &aio_ops.at(i).aiocb;
-        }
-    }
-
-    int error = 0;
-    if (nb_cbs) {
-        /*
-         * Wait for one of our outstanding requests to finish.  The one
-         * second timeout is a failsafe to prevent hanging here indefinitely.
-         * It should (hopefully?) be high enough to prevent interrupting valid
-         * block requests...
-         */
-        struct timespec timeout = {.tv_sec = 1, .tv_nsec = 0};
-        if (aio_suspend(aiocblist, nb_cbs, &timeout) == -1) {
-            error = -errno;
-            OP_LOG(OP_LOG_ERROR, "aio_suspend failed: %s\n", strerror(errno));
-        }
-    }
-
-    return error;
-}
-
-static int complete_aio_op(struct operation_state& aio_op)
-{
-    int err = 0;
-    auto aiocb = &aio_op.aiocb;
-
-    if (aio_op.state != PENDING) return (-1);
-
-    switch (err = aio_error(aiocb)) {
-    case 0: {
-        /* AIO operation completed */
-        ssize_t nb_bytes = aio_return(aiocb);
-        aio_op.stop = ref_clock::now();
-        aio_op.io_bytes = nb_bytes;
-        aio_op.state = COMPLETE;
-        break;
-    }
-    case EINPROGRESS:
-        /* Still waiting */
-        break;
-    case ECANCELED:
-    default:
-        /* could be canceled or error; we don't make a distinction */
-        aio_return(aiocb); /* free resources */
-        aio_op.stop = ref_clock::now();
-        aio_op.io_bytes = 0;
-        aio_op.state = FAILED;
-        err = 0;
-    }
-
-    return err;
 }
 
 // Constructors & Destructor
@@ -388,6 +287,108 @@ int32_t block_task::calculate_rate()
                         static_cast<long>(m_task_config.ops_per_sec));
     }
     }
+}
+
+// Methods : private, static
+int block_task::submit_aio_op(const operation_config& op_config,
+                              operation_state& op_state)
+{
+    /* XXX: Proper initialization order depends on platform! */
+    op_state.aiocb = aiocb{
+        .aio_fildes = op_config.fd,
+        .aio_reqprio = 0,
+        .aio_buf = op_config.buffer,
+        .aio_nbytes = op_config.block_size,
+        .aio_sigevent.sigev_notify = SIGEV_NONE,
+        .aio_offset = static_cast<off_t>(op_config.block_size * op_config.offset
+                                         + op_config.header_size),
+    };
+
+    /* Reset stat related variables */
+    op_state.state = PENDING;
+    op_state.start = ref_clock::now();
+    op_state.stop = op_state.start;
+    op_state.io_bytes = 0;
+
+    /* Submit operation to the kernel */
+    if (op_config.queue_aio_op(&op_state.aiocb) == -1) {
+        if (errno == EAGAIN) {
+            OP_LOG(OP_LOG_WARNING, "AIO queue is full!\n");
+            op_state.state = IDLE;
+        } else {
+            OP_LOG(OP_LOG_ERROR,
+                   "Could not queue AIO operation: %s\n",
+                   strerror(errno));
+        }
+        return -errno;
+    }
+
+    return 0;
+}
+
+int block_task::wait_for_aio_ops(std::vector<operation_state>& aio_ops,
+                                 size_t nb_ops)
+{
+    const aiocb* aiocblist[nb_ops];
+    size_t nb_cbs = 0;
+    /*
+     * Loop through all of our aio cb's and build a list with all pending
+     * operations.
+     */
+    for (size_t i = 0; i < nb_ops; ++i) {
+        if (aio_ops.at(i).state == PENDING) {
+            aiocblist[nb_cbs++] = &aio_ops.at(i).aiocb;
+        }
+    }
+
+    int error = 0;
+    if (nb_cbs) {
+        /*
+         * Wait for one of our outstanding requests to finish.  The one
+         * second timeout is a failsafe to prevent hanging here indefinitely.
+         * It should (hopefully?) be high enough to prevent interrupting valid
+         * block requests...
+         */
+        struct timespec timeout = {.tv_sec = 1, .tv_nsec = 0};
+        if (aio_suspend(aiocblist, nb_cbs, &timeout) == -1) {
+            error = -errno;
+            OP_LOG(OP_LOG_ERROR, "aio_suspend failed: %s\n", strerror(errno));
+        }
+    }
+
+    return error;
+}
+
+int block_task::complete_aio_op(struct operation_state& aio_op)
+{
+    int err = 0;
+    auto aiocb = &aio_op.aiocb;
+
+    if (aio_op.state != PENDING) return (-1);
+
+    switch (err = aio_error(aiocb)) {
+    case 0: {
+        /* AIO operation completed */
+        ssize_t nb_bytes = aio_return(aiocb);
+        aio_op.stop = ref_clock::now();
+        aio_op.io_bytes = nb_bytes;
+        aio_op.state = COMPLETE;
+        break;
+    }
+    case EINPROGRESS:
+        /* Still waiting */
+        break;
+    case ECANCELED:
+    default:
+        /* could be canceled or error; we don't make a distinction */
+        aio_return(aiocb); /* free resources */
+        aio_op.stop = ref_clock::now();
+        aio_op.io_bytes = 0;
+        aio_op.state = FAILED;
+        err = 0;
+    }
+
+    return err;
 }
 
 } // namespace openperf::block::worker
