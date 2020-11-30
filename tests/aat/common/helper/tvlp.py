@@ -13,8 +13,8 @@ def tvlp_model():
     return tc
 
 
-def tvlp_block_profile_model(entries, length, resource_id, time_scale=1.0, load_scale=1.0):
-    tp = client.models.TvlpProfileBlock(series=[], time_scale=time_scale, load_scale=load_scale)
+def tvlp_block_profile_model(entries, length, resource_id):
+    tp = client.models.TvlpProfileBlock(series=[])
     for i in range(entries):
         ps = client.models.TvlpProfileBlockSeries()
         ps.length = length
@@ -24,8 +24,8 @@ def tvlp_block_profile_model(entries, length, resource_id, time_scale=1.0, load_
     return tp
 
 
-def tvlp_memory_profile_model(entries, length, time_scale=1.0, load_scale=1.0):
-    tp = client.models.TvlpProfileMemory(series=[], time_scale=time_scale, load_scale=load_scale)
+def tvlp_memory_profile_model(entries, length):
+    tp = client.models.TvlpProfileMemory(series=[])
     for i in range(entries):
         ps = client.models.TvlpProfileMemorySeries()
         ps.length = length
@@ -34,8 +34,8 @@ def tvlp_memory_profile_model(entries, length, time_scale=1.0, load_scale=1.0):
     return tp
 
 
-def tvlp_cpu_profile_model(entries, length, time_scale=1.0, load_scale=1.0):
-    tp = client.models.TvlpProfileCpu(series=[], time_scale=time_scale, load_scale=load_scale)
+def tvlp_cpu_profile_model(entries, length):
+    tp = client.models.TvlpProfileCpu(series=[])
     for i in range(entries):
         ps = client.models.TvlpProfileCpuSeries()
         ps.length = length
@@ -44,8 +44,8 @@ def tvlp_cpu_profile_model(entries, length, time_scale=1.0, load_scale=1.0):
     return tp
 
 
-def tvlp_packet_profile_model(entries, length, target_id, time_scale=1.0, load_scale=1.0):
-    tp = client.models.TvlpProfilePacket(series=[], time_scale=time_scale, load_scale=load_scale)
+def tvlp_packet_profile_model(entries, length, target_id):
+    tp = client.models.TvlpProfilePacket(series=[])
     for i in range(entries):
         ps = client.models.TvlpProfilePacketSeries()
         ps.length = length
@@ -55,15 +55,21 @@ def tvlp_packet_profile_model(entries, length, target_id, time_scale=1.0, load_s
     return tp
 
 
-def tvlp_start_configuration():
+def tvlp_start_configuration(time_scale=1.0, load_scale=1.0):
     start = client.models.TvlpStartConfiguration()
     start.memory = client.models.TvlpStartSeriesConfiguration()
+    start.memory.load_scale = load_scale
+    start.memory.time_scale = time_scale
     start.memory.dynamic_results = dynamic.make_dynamic_results_config(
         memory.get_memory_dynamic_results_fields())
     start.block = client.models.TvlpStartSeriesConfiguration()
+    start.block.load_scale = load_scale
+    start.block.time_scale = time_scale
     start.block.dynamic_results = dynamic.make_dynamic_results_config(
         block.get_block_dynamic_results_fields())
     start.cpu = client.models.TvlpStartSeriesConfiguration()
+    start.cpu.load_scale = load_scale
+    start.cpu.time_scale = time_scale
     start.cpu.dynamic_results = dynamic.make_dynamic_results_config(
         ["utilization", "steal"])
     return start

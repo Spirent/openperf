@@ -13,13 +13,14 @@ using namespace openperf::packet::generator::api;
 using namespace Pistache;
 
 packet_tvlp_worker_t::packet_tvlp_worker_t(
-    void* context, const model::tvlp_module_profile_t& profile)
-    : tvlp_worker_t(context, std::string(endpoint), profile){};
+    void* context, const model::tvlp_profile_t::series& series)
+    : tvlp_worker_t(context, std::string(endpoint), series){};
 
 packet_tvlp_worker_t::~packet_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-packet_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
+packet_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
+                                  double load_scale)
 {
     assert(entry.resource_id.has_value());
 
@@ -29,10 +30,10 @@ packet_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
 
     auto load = config->getLoad();
     load->setBurstSize(
-        static_cast<uint32_t>(load->getBurstSize() * entry.load_scale));
+        static_cast<uint32_t>(load->getBurstSize() * load_scale));
 
     auto rate = config->getLoad()->getRate();
-    rate->setValue(static_cast<uint64_t>(rate->getValue() * entry.load_scale));
+    rate->setValue(static_cast<uint64_t>(rate->getValue() * load_scale));
 
     PacketGenerator gen;
     gen.setTargetId(entry.resource_id.value());

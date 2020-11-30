@@ -136,17 +136,6 @@ void handler::create_tvlp(const Rest::Request& request,
         auto model =
             json::parse(request.body()).get<model::TvlpConfiguration>();
 
-        if (auto ok = api::is_valid(model); !ok) {
-            throw json::other_error::create(
-                0,
-                std::accumulate(
-                    ok.error().begin(),
-                    ok.error().end(),
-                    std::string{},
-                    [](auto& acc, auto& s) { return acc += "; " + s; })
-                    .c_str());
-        }
-
         auto api_reply =
             submit_request(request::tvlp::create{from_swagger(model)});
 
@@ -225,26 +214,26 @@ void handler::start_tvlp(const Rest::Request& request,
         return;
     }
 
-    auto data = request::tvlp::start{
-        .id = id,
-        .start_time = realtime::now(),
-    };
-
-    if (request.query().has("time")) {
-        auto time = from_rfc3339(request.query().get("time").get());
-        if (!time) {
-            response.send(Http::Code::Bad_Request, "Wrong time format");
-            return;
-        }
-        data.start_time = time.value();
-    }
+    auto data = request::tvlp::start{.id = id};
 
     if (!request.body().empty()) {
         auto json_obj = json::parse(request.body());
         model::TvlpStartConfiguration model;
         model.fromJson(json_obj);
 
-        data.dynamic_results = from_swagger(model);
+        api::apply_defaults(model);
+        if (auto ok = api::is_valid(model); !ok) {
+            throw json::other_error::create(
+                0,
+                std::accumulate(
+                    ok.error().begin(),
+                    ok.error().end(),
+                    std::string{},
+                    [](auto& acc, auto& s) { return acc += "; " + s; })
+                    .c_str());
+        }
+
+        data.start_configuration = from_swagger(model);
     }
 
     auto api_reply = submit_request(data);

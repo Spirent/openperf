@@ -12,7 +12,6 @@ namespace openperf::tvlp::internal {
 
 class controller_stack
 {
-    using time_point = std::chrono::time_point<timesync::chrono::realtime>;
     using tvlp_controller_ptr = std::shared_ptr<controller_t>;
     using tvlp_controller_map =
         std::unordered_map<std::string, tvlp_controller_ptr>;
@@ -36,7 +35,7 @@ public:
     tl::expected<void, std::string> erase(const std::string& id);
 
     tl::expected<tvlp_result_ptr, std::string>
-    start(const std::string&, const time_point&, const model::tvlp_dynamic_t&);
+    start(const std::string&, const model::tvlp_start_t&);
     tl::expected<void, std::string> stop(const std::string&);
 
     std::vector<tvlp_result_ptr> results() const;

@@ -5,16 +5,16 @@
 
 namespace openperf::tvlp::internal::worker {
 
-constexpr duration THRESHOLD = 100ms;
+constexpr model::duration THRESHOLD = 100ms;
 
 tvlp_worker_t::tvlp_worker_t(void* context,
                              const std::string& endpoint,
-                             const model::tvlp_module_profile_t& profile)
+                             const model::tvlp_profile_t::series& series)
     : m_socket(op_socket_get_client(context, ZMQ_REQ, endpoint.data()))
-    , m_profile(profile)
+    , m_series(series)
 {
     m_state.state.store(model::READY);
-    m_state.offset.store(duration::zero());
+    m_state.offset.store(model::duration::zero());
     m_result.store(new model::json_vector());
 }
 
@@ -24,9 +24,9 @@ tvlp_worker_t::~tvlp_worker_t()
     delete m_result.exchange(nullptr);
 }
 
-tl::expected<void, std::string> tvlp_worker_t::start(
-    const realtime::time_point& start_time,
-    const std::optional<dynamic::configuration>& dynamic_results)
+tl::expected<void, std::string>
+tvlp_worker_t::start(const model::time_point& start_time,
+                     const model::tvlp_start_t::start_t& start_config)
 {
     auto state = m_state.state.load();
     if (state == model::RUNNING || state == model::COUNTDOWN) {
@@ -34,21 +34,19 @@ tl::expected<void, std::string> tvlp_worker_t::start(
     }
 
     if (m_scheduler_thread.valid()) m_scheduler_thread.wait();
-    m_state.offset = duration::zero();
-    m_state.state =
-        start_time > ref_clock::now() ? model::COUNTDOWN : model::RUNNING;
+    m_state.offset = model::duration::zero();
+    m_state.state = start_time > model::ref_clock::now() ? model::COUNTDOWN
+                                                         : model::RUNNING;
     m_state.stopped = false;
     delete m_result.exchange(new model::json_vector());
     m_scheduler_thread = std::async(
         std::launch::async,
-        [this](realtime::time_point tp,
-               const model::tvlp_module_profile_t& p,
-               const std::optional<dynamic::configuration>& dynamic_results) {
-            return schedule(tp, p, dynamic_results);
+        [this](auto&& series, auto&& time, auto&& start) {
+            return schedule(series, time, start);
         },
+        m_series,
         start_time,
-        m_profile,
-        dynamic_results);
+        start_config);
 
     return {};
 }
@@ -77,7 +75,7 @@ std::optional<std::string> tvlp_worker_t::error() const
     return m_error;
 }
 
-duration tvlp_worker_t::offset() const { return m_state.offset.load(); }
+model::duration tvlp_worker_t::offset() const { return m_state.offset.load(); }
 
 model::json_vector tvlp_worker_t::results() const
 {
@@ -107,27 +105,30 @@ void tvlp_worker_t::store_results(const nlohmann::json& result,
     delete m_result.exchange(updated, std::memory_order_release);
 }
 
-tl::expected<void, std::string> tvlp_worker_t::schedule(
-    realtime::time_point start_time,
-    const model::tvlp_module_profile_t& profile,
-    const std::optional<dynamic::configuration>& dynamic_results)
+tl::expected<void, std::string>
+tvlp_worker_t::schedule(const model::tvlp_profile_t::series& series,
+                        const model::time_point& start_time,
+                        const model::tvlp_start_t::start_t& start_config)
 {
+    using model::realtime;
+    using model::ref_clock;
+
     m_state.state.store(model::COUNTDOWN);
     for (auto now = realtime::now(); now < start_time; now = realtime::now()) {
         if (m_state.stopped.load()) {
             m_state.state.store(model::READY);
             return {};
         }
-        duration sleep_time = std::min(start_time - now, THRESHOLD);
+        model::duration sleep_time = std::min(start_time - now, THRESHOLD);
         std::this_thread::sleep_for(sleep_time);
     }
 
     m_state.state.store(model::RUNNING);
-    duration total_offset = duration::zero();
-    for (const auto& entry : profile) {
+    model::duration total_offset = model::duration::zero();
+    for (const auto& entry : series) {
         auto entry_duration =
             std::chrono::duration_cast<std::chrono::nanoseconds>(
-                entry.length * entry.time_scale);
+                entry.length * start_config.time_scale);
 
         if (m_state.stopped.load()) {
             m_state.state.store(model::READY);
@@ -135,7 +136,7 @@ tl::expected<void, std::string> tvlp_worker_t::schedule(
         }
 
         // Create generator
-        auto create_result = send_create(entry);
+        auto create_result = send_create(entry, start_config.load_scale);
         if (!create_result) {
             m_state.state.store(model::ERROR);
             return tl::make_unexpected(create_result.error());
@@ -144,9 +145,7 @@ tl::expected<void, std::string> tvlp_worker_t::schedule(
         auto end_time = ref_clock::now() + entry_duration;
 
         // Start generator
-        auto start_result = (dynamic_results.has_value())
-                                ? send_start(gen_id, dynamic_results.value())
-                                : send_start(gen_id);
+        auto start_result = send_start(gen_id, start_config.dynamic_results);
         if (!start_result) {
             m_state.state.store(model::ERROR);
             return tl::make_unexpected(start_result.error());
@@ -155,7 +154,7 @@ tl::expected<void, std::string> tvlp_worker_t::schedule(
         // Add new statistics
         store_results(start_result.value().second, result_store_operation::ADD);
 
-        // Wait until profile entry done
+        // Wait until series entry done
         auto started = ref_clock::now();
         for (auto now = started; now < end_time; now = ref_clock::now()) {
             if (m_state.stopped.load()) {
@@ -172,7 +171,7 @@ tl::expected<void, std::string> tvlp_worker_t::schedule(
             store_results(stat_result.value(), result_store_operation::UPDATE);
 
             m_state.offset.store(total_offset + now - started);
-            duration sleep_time = std::min(end_time - now, THRESHOLD);
+            model::duration sleep_time = std::min(end_time - now, THRESHOLD);
             std::this_thread::sleep_for(sleep_time);
         }
 

@@ -11,24 +11,25 @@ namespace swagger = swagger::v1::model;
 using namespace openperf::cpu::api;
 
 cpu_tvlp_worker_t::cpu_tvlp_worker_t(
-    void* context, const model::tvlp_module_profile_t& profile)
-    : tvlp_worker_t(context, endpoint, profile){};
+    void* context, const model::tvlp_profile_t::series& series)
+    : tvlp_worker_t(context, endpoint, series){};
 
 cpu_tvlp_worker_t::~cpu_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-cpu_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
+cpu_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
+                               double load_scale)
 {
     auto config = std::make_shared<swagger::CpuGeneratorConfig>();
     config->fromJson(const_cast<nlohmann::json&>(entry.config));
     if (config->getMethod() == "system") {
         config->getSystem()->setUtilization(
-            std::min(config->getSystem()->getUtilization() * entry.load_scale,
+            std::min(config->getSystem()->getUtilization() * load_scale,
                      100.0 * op_get_cpu_count()));
     } else if (config->getMethod() == "cores") {
         for (auto& core : config->getCores()) {
             core->setUtilization(
-                std::min(core->getUtilization() * entry.load_scale, 100.0));
+                std::min(core->getUtilization() * load_scale, 100.0));
         }
     }
 

@@ -11,14 +11,15 @@ namespace swagger = swagger::v1::model;
 using namespace openperf::block::api;
 
 block_tvlp_worker_t::block_tvlp_worker_t(
-    void* context, const model::tvlp_module_profile_t& profile)
-    : tvlp_worker_t(context, endpoint, profile)
+    void* context, const model::tvlp_profile_t::series& series)
+    : tvlp_worker_t(context, endpoint, series)
 {}
 
 block_tvlp_worker_t::~block_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-block_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
+block_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
+                                 double load_scale)
 {
     assert(entry.resource_id.has_value());
 
@@ -27,13 +28,13 @@ block_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
 
     // Apply Load Scale to generator configuration
     config->setReadSize(
-        static_cast<uint32_t>(config->getReadSize() * entry.load_scale));
+        static_cast<uint32_t>(config->getReadSize() * load_scale));
     config->setReadsPerSec(
-        static_cast<uint32_t>(config->getReadsPerSec() * entry.load_scale));
+        static_cast<uint32_t>(config->getReadsPerSec() * load_scale));
     config->setWriteSize(
-        static_cast<uint32_t>(config->getWriteSize() * entry.load_scale));
+        static_cast<uint32_t>(config->getWriteSize() * load_scale));
     config->setWritesPerSec(
-        static_cast<uint32_t>(config->getWritesPerSec() * entry.load_scale));
+        static_cast<uint32_t>(config->getWritesPerSec() * load_scale));
 
     swagger::BlockGenerator gen;
     gen.setResourceId(entry.resource_id.value());

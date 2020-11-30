@@ -12,34 +12,42 @@
 
 namespace openperf::tvlp::model {
 
+using ref_clock = timesync::chrono::monotime;
+using realtime = timesync::chrono::realtime;
 using duration = std::chrono::nanoseconds;
-using time_point = std::chrono::time_point<timesync::chrono::realtime>;
-
-struct tvlp_profile_entry_t
-{
-    duration length;
-    std::optional<std::string> resource_id;
-    nlohmann::json config;
-    double time_scale = 1.0;
-    double load_scale = 1.0;
-};
-
-using tvlp_module_profile_t = std::vector<tvlp_profile_entry_t>;
+using time_point = timesync::chrono::realtime::time_point;
 
 struct tvlp_profile_t
 {
-    std::optional<tvlp_module_profile_t> block;
-    std::optional<tvlp_module_profile_t> cpu;
-    std::optional<tvlp_module_profile_t> memory;
-    std::optional<tvlp_module_profile_t> packet;
+    struct entry
+    {
+        duration length;
+        std::optional<std::string> resource_id;
+        nlohmann::json config;
+    };
+
+    using series = std::vector<entry>;
+
+    std::optional<series> block;
+    std::optional<series> cpu;
+    std::optional<series> memory;
+    std::optional<series> packet;
 };
 
-struct tvlp_dynamic_t
+struct tvlp_start_t
 {
-    std::optional<dynamic::configuration> block;
-    std::optional<dynamic::configuration> cpu;
-    std::optional<dynamic::configuration> memory;
-    std::optional<dynamic::configuration> packet;
+    struct start_t
+    {
+        double time_scale = 1.0;
+        double load_scale = 1.0;
+        dynamic::configuration dynamic_results;
+    };
+
+    time_point start_time = realtime::now();
+    start_t block;
+    start_t cpu;
+    start_t memory;
+    start_t packet;
 };
 
 enum tvlp_state_t { READY = 0, COUNTDOWN, RUNNING, ERROR };

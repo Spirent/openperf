@@ -21,13 +21,11 @@ serialized_msg serialize(api_request&& msg)
                  },
                  [&](request::tvlp::start& start) -> int {
                      return openperf::message::push(serialized, start.id)
-                            || openperf::message::push(serialized,
-                                                       start.start_time)
                             || openperf::message::push(
                                 serialized,
                                 std::make_unique<decltype(
-                                    start.dynamic_results)>(
-                                    std::move(start.dynamic_results)));
+                                    start.start_configuration)>(
+                                    std::move(start.start_configuration)));
                  },
                  [&](const id_message& msg) {
                      return openperf::message::push(serialized, msg.id);
@@ -101,10 +99,9 @@ tl::expected<api_request, int> deserialize_request(serialized_msg&& msg)
     case utils::variant_index<api_request, request::tvlp::start>(): {
         request::tvlp::start request{};
         request.id = openperf::message::pop_string(msg);
-        request.start_time = openperf::message::pop<time_point>(msg);
-        request.dynamic_results =
-            std::move(*std::unique_ptr<decltype(request.dynamic_results)>(
-                openperf::message::pop<decltype(request.dynamic_results)*>(
+        request.start_configuration =
+            std::move(*std::unique_ptr<decltype(request.start_configuration)>(
+                openperf::message::pop<decltype(request.start_configuration)*>(
                     msg)));
         return request;
     }
