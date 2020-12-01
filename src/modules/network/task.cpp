@@ -310,10 +310,6 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
         if (send_or_err == -1 || send_or_err < (ssize_t)header.size()) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) { return; }
 
-            OP_LOG(OP_LOG_ERROR,
-                   "Error sending to %d: %s\n",
-                   conn.fd,
-                   strerror(errno));
             conn.state = STATE_ERROR;
             return;
         }
@@ -390,10 +386,6 @@ void network_task::do_write(connection_t& conn, stat_t& stat)
         if (send_or_err == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) { return; }
 
-            OP_LOG(OP_LOG_ERROR,
-                   "Error sending to %d: %s\n",
-                   conn.fd,
-                   strerror(errno));
             conn.state = STATE_ERROR;
             return;
         }
