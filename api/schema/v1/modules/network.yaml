@@ -7,6 +7,9 @@ parameters:
     format: string
     required: true
 
+  dynamic_results:
+    $ref: "./dynamic.yaml#/parameters/dynamic_results"
+
 paths:
   /network/servers:
     get:
@@ -281,7 +284,7 @@ paths:
       description: Start an existing network generator.
       parameters:
         - $ref: "#/parameters/id"
-        - $ref: "./modules/dynamic.yaml#/parameters/dynamic_results"
+        - $ref: "#/parameters/dynamic_results"
       responses:
         201:
           description: Created
@@ -318,20 +321,7 @@ paths:
           description: Bulk start
           required: true
           schema:
-            type: object
-            title: BulkStartNetworkGeneratorsRequest
-            description: Parameters for the bulk start operation
-            properties:
-              ids:
-                type: array
-                description: List of network generator identifiers
-                items:
-                  type: string
-                minItems: 1
-              dynamic_results:
-                $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"
-            required:
-              - ids
+            $ref: "#/definitions/BulkStartNetworkGeneratorsRequest"
       responses:
         200:
           description: Success
@@ -652,3 +642,19 @@ definitions:
       - successful
       - errors
       - closed
+
+  BulkStartNetworkGeneratorsRequest:
+    type: object
+    description: Parameters for the bulk start operation
+    properties:
+      ids:
+        type: array
+        description: List of network generator identifiers
+        minItems: 1
+        items:
+          type: string
+      dynamic_results:
+        $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"
+    required:
+      - ids
+

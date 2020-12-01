@@ -35,7 +35,8 @@ class TvlpStartConfiguration(object):
         'cpu': 'TvlpStartSeriesConfiguration',
         'memory': 'TvlpStartSeriesConfiguration',
         'block': 'TvlpStartSeriesConfiguration',
-        'packet': 'TvlpStartSeriesConfiguration'
+        'packet': 'TvlpStartSeriesConfiguration',
+        'network': 'TvlpStartSeriesConfiguration'
     }
 
     attribute_map = {
@@ -43,10 +44,11 @@ class TvlpStartConfiguration(object):
         'cpu': 'cpu',
         'memory': 'memory',
         'block': 'block',
-        'packet': 'packet'
+        'packet': 'packet',
+        'network': 'network'
     }
 
-    def __init__(self, start_time=None, cpu=None, memory=None, block=None, packet=None):  # noqa: E501
+    def __init__(self, start_time=None, cpu=None, memory=None, block=None, packet=None, network=None):  # noqa: E501
         """TvlpStartConfiguration - a model defined in Swagger"""  # noqa: E501
 
         self._start_time = None
@@ -54,6 +56,7 @@ class TvlpStartConfiguration(object):
         self._memory = None
         self._block = None
         self._packet = None
+        self._network = None
         self.discriminator = None
 
         if start_time is not None:
@@ -66,6 +69,8 @@ class TvlpStartConfiguration(object):
             self.block = block
         if packet is not None:
             self.packet = packet
+        if network is not None:
+            self.network = network
 
     @property
     def start_time(self):
@@ -168,6 +173,26 @@ class TvlpStartConfiguration(object):
         :type: TvlpStartSeriesConfiguration
         """
         self._packet = packet
+
+    @property
+    def network(self):
+        """Gets the network of this TvlpStartConfiguration.  # noqa: E501
+
+
+        :return: The network of this TvlpStartConfiguration.  # noqa: E501
+        :rtype: TvlpStartSeriesConfiguration
+        """
+        return self._network
+
+    @network.setter
+    def network(self, network):
+        """Sets the network of this TvlpStartConfiguration.
+
+
+        :param network: The network of this TvlpStartConfiguration.  # noqa: E501
+        :type: TvlpStartSeriesConfiguration
+        """
+        self._network = network
 
     def to_dict(self):
         """Returns the model properties as a dict"""

@@ -11,27 +11,28 @@ namespace swagger = swagger::v1::model;
 using namespace openperf::network::api;
 
 network_tvlp_worker_t::network_tvlp_worker_t(
-    void* context, const model::tvlp_module_profile_t& profile)
+    void* context, const model::tvlp_profile_t::series& profile)
     : tvlp_worker_t(context, endpoint, profile)
 {}
 
 network_tvlp_worker_t::~network_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-network_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
+network_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
+                                   double load_scale)
 {
     auto config = std::make_shared<swagger::NetworkGeneratorConfig>();
     config->fromJson(const_cast<nlohmann::json&>(entry.config));
 
     // Apply Load Scale to generator configuration
     config->setReadSize(
-        static_cast<uint32_t>(config->getReadSize() * entry.load_scale));
+        static_cast<uint32_t>(config->getReadSize() * load_scale));
     config->setReadsPerSec(
-        static_cast<uint32_t>(config->getReadsPerSec() * entry.load_scale));
+        static_cast<uint32_t>(config->getReadsPerSec() * load_scale));
     config->setWriteSize(
-        static_cast<uint32_t>(config->getWriteSize() * entry.load_scale));
+        static_cast<uint32_t>(config->getWriteSize() * load_scale));
     config->setWritesPerSec(
-        static_cast<uint32_t>(config->getWritesPerSec() * entry.load_scale));
+        static_cast<uint32_t>(config->getWritesPerSec() * load_scale));
 
     swagger::NetworkGenerator gen;
     gen.setConfig(config);
