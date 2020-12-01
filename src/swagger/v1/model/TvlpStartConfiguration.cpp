@@ -25,6 +25,7 @@ TvlpStartConfiguration::TvlpStartConfiguration()
     m_MemoryIsSet = false;
     m_BlockIsSet = false;
     m_PacketIsSet = false;
+    m_NetworkIsSet = false;
     
 }
 
@@ -60,6 +61,10 @@ nlohmann::json TvlpStartConfiguration::toJson() const
     if(m_PacketIsSet)
     {
         val["packet"] = ModelBase::toJson(m_Packet);
+    }
+    if(m_NetworkIsSet)
+    {
+        val["network"] = ModelBase::toJson(m_Network);
     }
     
 
@@ -110,6 +115,16 @@ void TvlpStartConfiguration::fromJson(nlohmann::json& val)
             std::shared_ptr<TvlpStartSeriesConfiguration> newItem(new TvlpStartSeriesConfiguration());
             newItem->fromJson(val["packet"]);
             setPacket( newItem );
+        }
+        
+    }
+    if(val.find("network") != val.end())
+    {
+        if(!val["network"].is_null())
+        {
+            std::shared_ptr<TvlpStartSeriesConfiguration> newItem(new TvlpStartSeriesConfiguration());
+            newItem->fromJson(val["network"]);
+            setNetwork( newItem );
         }
         
     }
@@ -201,6 +216,23 @@ bool TvlpStartConfiguration::packetIsSet() const
 void TvlpStartConfiguration::unsetPacket()
 {
     m_PacketIsSet = false;
+}
+std::shared_ptr<TvlpStartSeriesConfiguration> TvlpStartConfiguration::getNetwork() const
+{
+    return m_Network;
+}
+void TvlpStartConfiguration::setNetwork(std::shared_ptr<TvlpStartSeriesConfiguration> value)
+{
+    m_Network = value;
+    m_NetworkIsSet = true;
+}
+bool TvlpStartConfiguration::networkIsSet() const
+{
+    return m_NetworkIsSet;
+}
+void TvlpStartConfiguration::unsetNetwork()
+{
+    m_NetworkIsSet = false;
 }
 
 }

@@ -67,7 +67,7 @@ controller_t::controller_t(void* context,
 
     if (m_profile.network) {
         total_length =
-            std::max(total_length, scale_length(m_profile.network.value()));
+            std::max(total_length, series_length(m_profile.network.value()));
         m_network = std::make_unique<worker::network_tvlp_worker_t>(
             m_context, m_profile.network.value());
     }
@@ -124,7 +124,8 @@ controller_t::start(const model::tvlp_start_t& start_configuration)
     if (m_profile.network) {
         modules_results.network = model::json_vector();
         // Starting already running worker should never happen
-        assert(m_network->start(start_time));
+        assert(m_network->start(start_configuration.start_time,
+                                start_configuration.network));
     }
 
     m_start_time = start_configuration.start_time;

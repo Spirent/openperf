@@ -68,13 +68,11 @@ is_valid(const swagger::TvlpStartConfiguration& config)
     if (config.memoryIsSet()) scale_check(config.getMemory());
     if (config.cpuIsSet()) scale_check(config.getCpu());
     if (config.packetIsSet()) scale_check(config.getPacket());
+    if (config.networkIsSet()) scale_check(config.getNetwork());
     if (config.startTimeIsSet()) {
         if (auto time = from_rfc3339(config.getStartTime()); !time)
             errors.emplace_back("Wrong start_time format");
     }
-
-    if (config.getProfile()->networkIsSet())
-        scale_check(config.getProfile()->getNetwork());
 
     if (!errors.empty()) return tl::make_unexpected(std::move(errors));
     return true;
@@ -151,16 +149,12 @@ tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
 
     if (m.getProfile()->networkIsSet()) {
         auto profile_model = m.getProfile()->getNetwork();
-        auto time_scale = profile_model->getTimeScale();
-        auto load_scale = profile_model->getLoadScale();
 
-        profile.network = std::vector<tvlp_profile_entry_t>();
+        profile.network = tvlp_profile_t::series{};
         for (const auto& network_entry : profile_model->getSeries()) {
-            profile.network.value().push_back(tvlp_profile_entry_t{
+            profile.network.value().push_back(tvlp_profile_t::entry{
                 .length = model::duration(network_entry->getLength()),
                 .config = network_entry->getConfig()->toJson(),
-                .time_scale = time_scale,
-                .load_scale = load_scale,
             });
         }
     }
@@ -360,13 +354,10 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
             network_vector.begin(),
             network_vector.end(),
             std::back_inserter(network->getSeries()),
-            [&network](auto& network_entry) {
+            [](auto& network_entry) {
                 auto entry =
                     std::make_shared<swagger::TvlpProfile_network_series>();
                 entry->setLength(network_entry.length.count());
-
-                network->setTimeScale(network_entry.time_scale);
-                network->setLoadScale(network_entry.load_scale);
 
                 auto g_config =
                     std::make_shared<swagger::NetworkGeneratorConfig>();

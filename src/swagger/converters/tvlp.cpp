@@ -118,16 +118,6 @@ void from_json(const nlohmann::json& j, TvlpProfile_network& network_profile)
 {
     auto val = const_cast<nlohmann::json&>(j);
 
-    if (j.find("time_scale") != j.end())
-        network_profile.setTimeScale(j.at("time_scale"));
-    else
-        network_profile.setTimeScale(1.0);
-
-    if (j.find("load_scale") != j.end())
-        network_profile.setLoadScale(j.at("load_scale"));
-    else
-        network_profile.setLoadScale(1.0);
-
     network_profile.getSeries().clear();
     if (val.find("series") != val.end()) {
         for (auto& item : val["series"]) {
