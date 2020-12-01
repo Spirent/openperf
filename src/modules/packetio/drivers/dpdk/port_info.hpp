@@ -25,6 +25,8 @@ uint64_t rx_offloads(uint16_t port_id);
 uint64_t tx_offloads(uint16_t port_id);
 uint64_t rss_offloads(uint16_t port_id);
 
+enum rte_eth_rx_mq_mode rx_mq_mode(uint16_t port_id);
+
 uint16_t rx_queue_count(uint16_t port_id);
 uint16_t rx_queue_max(uint16_t port_id);
 uint16_t rx_queue_default(uint16_t port_id);
