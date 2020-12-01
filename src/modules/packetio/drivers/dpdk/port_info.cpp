@@ -109,6 +109,16 @@ uint64_t rss_offloads(uint16_t port_id)
     return (get_info_field(port_id, &rte_eth_dev_info::flow_type_rss_offloads));
 }
 
+enum rte_eth_rx_mq_mode rx_mq_mode(uint16_t port_id)
+{
+    auto driver = driver_name(port_id);
+    if (driver == "net_virtio") {
+        return ETH_MQ_RX_NONE;
+    } else {
+        return ETH_MQ_RX_RSS;
+    }
+}
+
 uint16_t rx_queue_count(uint16_t port_id)
 {
     return (get_info_field(port_id, &rte_eth_dev_info::nb_rx_queues));
