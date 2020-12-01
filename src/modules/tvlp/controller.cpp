@@ -20,19 +20,16 @@ controller_t::controller_t(void* context,
     : model::tvlp_configuration_t(model)
     , m_context(context)
 {
-
-    auto scale_length = [](model::tvlp_module_profile_t& profiles) {
+    auto series_length = [](const model::tvlp_profile_t::series& series) {
         duration total_length = 0ms;
-        for (const auto& p : profiles) {
+        for (const auto& p : series) {
             if (p.length <= 0ms) {
                 throw std::runtime_error(
                     "Invalid field value: profile length cannot be less than "
                     "or equal to zero");
             }
 
-            total_length +=
-                std::chrono::duration_cast<std::chrono::nanoseconds>(
-                    p.length * p.time_scale);
+            total_length += p.length;
         }
 
         return total_length;
@@ -41,28 +38,28 @@ controller_t::controller_t(void* context,
     duration total_length = 0ms;
     if (m_profile.block) {
         total_length =
-            std::max(total_length, scale_length(m_profile.block.value()));
+            std::max(total_length, series_length(m_profile.block.value()));
         m_block = std::make_unique<worker::block_tvlp_worker_t>(
             m_context, m_profile.block.value());
     }
 
     if (m_profile.memory) {
         total_length =
-            std::max(total_length, scale_length(m_profile.memory.value()));
+            std::max(total_length, series_length(m_profile.memory.value()));
         m_memory = std::make_unique<worker::memory_tvlp_worker_t>(
             m_context, m_profile.memory.value());
     }
 
     if (m_profile.cpu) {
         total_length =
-            std::max(total_length, scale_length(m_profile.cpu.value()));
+            std::max(total_length, series_length(m_profile.cpu.value()));
         m_cpu = std::make_unique<worker::cpu_tvlp_worker_t>(
             m_context, m_profile.cpu.value());
     }
 
     if (m_profile.packet) {
         total_length =
-            std::max(total_length, scale_length(m_profile.packet.value()));
+            std::max(total_length, series_length(m_profile.packet.value()));
         m_packet = std::make_unique<worker::packet_tvlp_worker_t>(
             m_context, m_profile.packet.value());
     }
@@ -78,8 +75,7 @@ controller_t::controller_t(void* context,
 }
 
 std::shared_ptr<model::tvlp_result_t>
-controller_t::start(const time_point& start_time,
-                    const model::tvlp_dynamic_t& dynamic_results)
+controller_t::start(const model::tvlp_start_t& start_configuration)
 {
     if (is_running()) return m_result;
 
@@ -87,30 +83,38 @@ controller_t::start(const time_point& start_time,
 
     if (m_profile.block) {
         modules_results.block = model::json_vector();
+
         // Starting already running worker should never happen
-        assert(m_block->start(start_time, dynamic_results.block));
+        assert(m_block->start(start_configuration.start_time,
+                              start_configuration.block));
     }
 
     if (m_profile.memory) {
         modules_results.memory = model::json_vector();
+
         // Starting already running worker should never happen
-        assert(m_memory->start(start_time, dynamic_results.memory));
+        assert(m_memory->start(start_configuration.start_time,
+                               start_configuration.memory));
     }
 
     if (m_profile.cpu) {
         modules_results.cpu = model::json_vector();
+
         // Starting already running worker should never happen
-        assert(m_cpu->start(start_time, dynamic_results.cpu));
+        assert(m_cpu->start(start_configuration.start_time,
+                            start_configuration.cpu));
     }
 
     if (m_profile.packet) {
         modules_results.packet = model::json_vector();
+
         // Starting already running worker should never happen
-        assert(m_packet->start(start_time, dynamic_results.packet));
+        assert(m_packet->start(start_configuration.start_time,
+                               start_configuration.packet));
     }
 
-    m_start_time = start_time;
-    if (start_time > timesync::chrono::realtime::now())
+    m_start_time = start_configuration.start_time;
+    if (m_start_time > timesync::chrono::realtime::now())
         m_state = model::COUNTDOWN;
     else
         m_state = model::RUNNING;

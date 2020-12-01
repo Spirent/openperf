@@ -99,7 +99,7 @@ void task_memory::config(const task_memory_config& msg)
         op_prbs23_fill(m_scratch.ptr, m_scratch.size);
     }
 
-    m_rate = msg.op_per_sec;
+    m_rate = msg.op_per_sec * std::min(msg.block_size, 1UL);
     m_pid.reset(m_rate);
     m_pid.max(m_rate * 2);
 
@@ -112,14 +112,14 @@ void task_memory::reset()
     m_stat = {};
     m_op_index = 0;
 
-    m_rate = m_config.op_per_sec;
+    m_rate = m_config.op_per_sec * std::min(m_config.block_size, 1UL);
     m_pid.reset(m_rate);
 }
 
 memory_stat task_memory::spin()
 {
     /* If we have a rate to generate, then we need indexes */
-    assert(m_config.op_per_sec == 0 || m_config.indexes->size() > 0);
+    assert(m_rate == 0 || m_config.indexes->size() > 0);
 
     m_pid.start();
 
@@ -162,13 +162,18 @@ memory_stat task_memory::spin()
         to_do_ops -= spin_ops;
     }
 
+    using double_time = std::chrono::duration<double>;
     stat.operations_target =
-        (stat.run_time + stat.sleep_time).count() * m_rate / std::nano::den;
+        static_cast<uint64_t>((std::chrono::duration_cast<double_time>(
+                                   stat.run_time + stat.sleep_time)
+                               * m_rate)
+                                  .count());
     stat.bytes_target = stat.operations_target * m_config.block_size;
     m_stat += stat;
 
     auto adjust = m_pid.stop(stat.operations);
-    m_rate = static_cast<size_t>(m_config.op_per_sec + adjust);
+    m_rate = static_cast<size_t>(
+        m_config.op_per_sec * std::min(m_config.block_size, 1UL) + adjust);
     return make_stat(stat);
 }
 

@@ -7,14 +7,6 @@ parameters:
     format: string
     required: true
 
-  start_time:
-    name: time
-    in: query
-    description: The ISO8601-formatted date and time to start profile replay
-    type: string
-    format: date-time
-    required: false
-
 paths:
   /tvlp:
     get:
@@ -88,7 +80,6 @@ paths:
       description: Start an existing TVLP configuration.
       parameters:
         - $ref: "#/parameters/id"
-        - $ref: "#/parameters/start_time"
         - name: start
           in: body
           description: TVLP Start parameters
@@ -215,20 +206,6 @@ definitions:
       memory:
         type: object
         properties:
-          load_scale:
-            type: number
-            format: double
-            description: The scale multiplier for load parameters of generators
-            default: 1.0
-            minimum: 0.0
-            exclusiveMinimum: true
-          time_scale:
-            type: number
-            format: double
-            description: The scale multiplier for the length of each profile entry
-            default: 1.0
-            minimum: 0.0
-            exclusiveMinimum: true
           series:
             type: array
             items:
@@ -251,20 +228,6 @@ definitions:
       block:
         type: object
         properties:
-          load_scale:
-            type: number
-            format: double
-            description: The scale multiplier for load parameters of generators
-            default: 1.0
-            minimum: 0.0
-            exclusiveMinimum: true
-          time_scale:
-            type: number
-            format: double
-            description: The scale multiplier for the length of each profile entry
-            default: 1.0
-            minimum: 0.0
-            exclusiveMinimum: true
           series:
             type: array
             items:
@@ -291,20 +254,6 @@ definitions:
       cpu:
         type: object
         properties:
-          load_scale:
-            type: number
-            format: double
-            description: The scale multiplier for load parameters of generators
-            default: 1.0
-            minimum: 0.0
-            exclusiveMinimum: true
-          time_scale:
-            type: number
-            format: double
-            description: The scale multiplier for the length of each profile entry
-            default: 1.0
-            minimum: 0.0
-            exclusiveMinimum: true
           series:
             type: array
             items:
@@ -327,20 +276,6 @@ definitions:
       packet:
         type: object
         properties:
-          load_scale:
-            type: number
-            format: double
-            description: The scale multiplier for load parameters of generators
-            default: 1.0
-            minimum: 0.0
-            exclusiveMinimum: true
-          time_scale:
-            type: number
-            format: double
-            description: The scale multiplier for the length of each profile entry
-            default: 1.0
-            minimum: 0.0
-            exclusiveMinimum: true
           series:
             type: array
             items:
@@ -401,6 +336,12 @@ definitions:
     type: object
     description: TVLP start configuration
     properties:
+      start_time:
+        type: string
+        format: date-time
+        description: |
+          The ISO8601-formatted date and time to start profile replay.
+          If not specified the profile will start immediately.
       cpu:
         $ref: "#/definitions/TvlpStartSeriesConfiguration"
       memory:
@@ -414,5 +355,19 @@ definitions:
     type: object
     description: TVLP series start configuration
     properties:
+      load_scale:
+        type: number
+        format: double
+        description: The scale multiplier for load parameters of generators
+        default: 1.0
+        minimum: 0.0
+        exclusiveMinimum: true
+      time_scale:
+        type: number
+        format: double
+        description: The scale multiplier for the length of each profile entry
+        default: 1.0
+        minimum: 0.0
+        exclusiveMinimum: true
       dynamic_results:
         $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"

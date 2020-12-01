@@ -20,8 +20,6 @@ namespace openperf::tvlp::api {
 
 static constexpr auto endpoint = "inproc://openperf_tvlp";
 
-using realtime = timesync::chrono::realtime;
-using time_point = realtime::time_point;
 using serialized_msg = openperf::message::serialized_message;
 
 struct message
@@ -47,8 +45,7 @@ using create = model::tvlp_configuration_t;
 struct start : message
 {
     std::string id;
-    time_point start_time;
-    model::tvlp_dynamic_t dynamic_results;
+    model::tvlp_start_t start_configuration;
 };
 struct stop : id_message
 {};

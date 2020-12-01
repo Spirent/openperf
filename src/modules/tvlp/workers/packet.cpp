@@ -13,13 +13,14 @@ using namespace openperf::packet::generator::api;
 using namespace Pistache;
 
 packet_tvlp_worker_t::packet_tvlp_worker_t(
-    void* context, const model::tvlp_module_profile_t& profile)
-    : tvlp_worker_t(context, std::string(endpoint), profile){};
+    void* context, const model::tvlp_profile_t::series& series)
+    : tvlp_worker_t(context, std::string(endpoint), series){};
 
 packet_tvlp_worker_t::~packet_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-packet_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
+packet_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
+                                  double load_scale)
 {
     assert(entry.resource_id.has_value());
 
@@ -29,10 +30,10 @@ packet_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
 
     auto load = config->getLoad();
     load->setBurstSize(
-        static_cast<uint32_t>(load->getBurstSize() * entry.load_scale));
+        static_cast<uint32_t>(load->getBurstSize() * load_scale));
 
     auto rate = config->getLoad()->getRate();
-    rate->setValue(static_cast<uint64_t>(rate->getValue() * entry.load_scale));
+    rate->setValue(static_cast<uint64_t>(rate->getValue() * load_scale));
 
     PacketGenerator gen;
     gen.setTargetId(entry.resource_id.value());
@@ -53,7 +54,8 @@ packet_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
     return tl::make_unexpected("Unexpected error");
 }
 
-tl::expected<stat_pair_t, std::string> packet_tvlp_worker_t::send_start(
+tl::expected<packet_tvlp_worker_t::start_result_t, std::string>
+packet_tvlp_worker_t::send_start(
     const std::string& id, const dynamic::configuration& /* dynamic_results */)
 {
     auto api_reply =
@@ -61,8 +63,11 @@ tl::expected<stat_pair_t, std::string> packet_tvlp_worker_t::send_start(
             .and_then(deserialize_reply);
 
     if (auto r = std::get_if<reply_generator_results>(&api_reply.value())) {
-        return std::pair(r->generator_results.front()->getId(),
-                         r->generator_results.front()->toJson());
+        auto& result = r->generator_results.front();
+        return start_result_t{
+            .result_id = result->getId(),
+            .statistics = result->toJson(),
+        };
     } else if (auto error = std::get_if<reply_error>(&api_reply.value())) {
         return tl::make_unexpected(to_string(*error));
     }

@@ -15,7 +15,6 @@ namespace openperf::block::worker {
 
 using ref_clock = timesync::chrono::monotime;
 using realtime = timesync::chrono::realtime;
-using time_point = realtime::time_point;
 using duration = std::chrono::nanoseconds;
 
 enum class task_operation : uint8_t { READ = 0, WRITE };
@@ -57,7 +56,7 @@ struct task_stat_t
      */
 
     task_operation operation;
-    time_point updated = realtime::now();
+    realtime::time_point updated = realtime::now();
     uint_fast64_t ops_target = 0;
     uint_fast64_t ops_actual = 0;
     uint_fast64_t bytes_target = 0;
@@ -70,31 +69,33 @@ struct task_stat_t
     task_stat_t& operator+=(const task_stat_t&);
 };
 
-enum aio_state : uint8_t {
-    IDLE = 0,
-    PENDING,
-    COMPLETE,
-    FAILED,
-};
-
-struct operation_state
-{
-    time_point start;
-    time_point stop;
-    uint64_t io_bytes;
-    enum aio_state state;
-    aiocb aiocb;
-};
-
 class block_task : public framework::generator::task<task_stat_t>
 {
+    enum aio_state : uint8_t {
+        IDLE = 0,
+        PENDING,
+        COMPLETE,
+        FAILED,
+    };
+
+    struct operation_state
+    {
+        ref_clock::time_point start;
+        ref_clock::time_point stop;
+        uint64_t io_bytes;
+        enum aio_state state;
+        aiocb aiocb;
+    };
+
+    struct operation_config;
+
 private:
     task_config_t m_task_config;
     task_stat_t m_stat;
     std::vector<operation_state> m_aio_ops;
     std::vector<uint8_t> m_buf;
     pattern_generator m_pattern;
-    realtime::time_point m_operation_timestamp;
+    ref_clock::time_point m_operation_timestamp;
 
 public:
     block_task(const task_config_t&);
@@ -108,7 +109,14 @@ private:
     void config(const task_config_t&);
     void reset_spin_stat();
     int32_t calculate_rate();
-    task_stat_t worker_spin(uint64_t nb_ops, time_point deadline);
+    task_stat_t worker_spin(uint64_t nb_ops, ref_clock::time_point deadline);
+
+private:
+    static int complete_aio_op(struct operation_state& aio_op);
+    static int wait_for_aio_ops(std::vector<operation_state>& aio_ops,
+                                size_t nb_ops);
+    static int submit_aio_op(const operation_config& op_config,
+                             operation_state& op_state);
 };
 
 } // namespace openperf::block::worker

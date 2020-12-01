@@ -49,6 +49,20 @@ public:
     /// TvlpStartSeriesConfiguration members
 
     /// <summary>
+    /// The scale multiplier for load parameters of generators
+    /// </summary>
+    double getLoadScale() const;
+    void setLoadScale(double value);
+    bool loadScaleIsSet() const;
+    void unsetLoad_scale();
+    /// <summary>
+    /// The scale multiplier for the length of each profile entry
+    /// </summary>
+    double getTimeScale() const;
+    void setTimeScale(double value);
+    bool timeScaleIsSet() const;
+    void unsetTime_scale();
+    /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<DynamicResultsConfig> getDynamicResults() const;
@@ -57,6 +71,10 @@ public:
     void unsetDynamic_results();
 
 protected:
+    double m_Load_scale;
+    bool m_Load_scaleIsSet;
+    double m_Time_scale;
+    bool m_Time_scaleIsSet;
     std::shared_ptr<DynamicResultsConfig> m_Dynamic_results;
     bool m_Dynamic_resultsIsSet;
 };

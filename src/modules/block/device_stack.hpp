@@ -52,9 +52,6 @@ public:
 
 private:
     void init_device_stack();
-    uint64_t block_device_size(std::string_view id);
-    std::optional<std::string> block_device_info(std::string_view id);
-    bool is_raw_device(std::string_view id);
 };
 
 } // namespace openperf::block::device

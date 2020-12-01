@@ -111,7 +111,7 @@ struct monotime
     using duration = std::chrono::nanoseconds;
     using rep = duration::rep;
     using period = duration::period;
-    using time_point = std::chrono::time_point<realtime, duration>;
+    using time_point = std::chrono::time_point<monotime, duration>;
 
     static constexpr bool is_steady = true;
 

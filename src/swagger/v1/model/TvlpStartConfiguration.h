@@ -22,6 +22,7 @@
 #include "ModelBase.h"
 
 #include "TvlpStartSeriesConfiguration.h"
+#include <string>
 
 namespace swagger {
 namespace v1 {
@@ -48,6 +49,13 @@ public:
     /////////////////////////////////////////////
     /// TvlpStartConfiguration members
 
+    /// <summary>
+    /// The ISO8601-formatted date and time to start profile replay. If not specified the profile will start immediately. 
+    /// </summary>
+    std::string getStartTime() const;
+    void setStartTime(std::string value);
+    bool startTimeIsSet() const;
+    void unsetStart_time();
     /// <summary>
     /// 
     /// </summary>
@@ -78,6 +86,8 @@ public:
     void unsetPacket();
 
 protected:
+    std::string m_Start_time;
+    bool m_Start_timeIsSet;
     std::shared_ptr<TvlpStartSeriesConfiguration> m_Cpu;
     bool m_CpuIsSet;
     std::shared_ptr<TvlpStartSeriesConfiguration> m_Memory;

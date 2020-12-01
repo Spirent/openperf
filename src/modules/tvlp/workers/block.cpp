@@ -11,14 +11,15 @@ namespace swagger = swagger::v1::model;
 using namespace openperf::block::api;
 
 block_tvlp_worker_t::block_tvlp_worker_t(
-    void* context, const model::tvlp_module_profile_t& profile)
-    : tvlp_worker_t(context, endpoint, profile)
+    void* context, const model::tvlp_profile_t::series& series)
+    : tvlp_worker_t(context, endpoint, series)
 {}
 
 block_tvlp_worker_t::~block_tvlp_worker_t() { stop(); }
 
 tl::expected<std::string, std::string>
-block_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
+block_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
+                                 double load_scale)
 {
     assert(entry.resource_id.has_value());
 
@@ -27,13 +28,13 @@ block_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
 
     // Apply Load Scale to generator configuration
     config->setReadSize(
-        static_cast<uint32_t>(config->getReadSize() * entry.load_scale));
+        static_cast<uint32_t>(config->getReadSize() * load_scale));
     config->setReadsPerSec(
-        static_cast<uint32_t>(config->getReadsPerSec() * entry.load_scale));
+        static_cast<uint32_t>(config->getReadsPerSec() * load_scale));
     config->setWriteSize(
-        static_cast<uint32_t>(config->getWriteSize() * entry.load_scale));
+        static_cast<uint32_t>(config->getWriteSize() * load_scale));
     config->setWritesPerSec(
-        static_cast<uint32_t>(config->getWritesPerSec() * entry.load_scale));
+        static_cast<uint32_t>(config->getWritesPerSec() * load_scale));
 
     swagger::BlockGenerator gen;
     gen.setResourceId(entry.resource_id.value());
@@ -57,7 +58,7 @@ block_tvlp_worker_t::send_create(const model::tvlp_profile_entry_t& entry)
     return tl::make_unexpected("Unexpected error");
 }
 
-tl::expected<stat_pair_t, std::string>
+tl::expected<block_tvlp_worker_t::start_result_t, std::string>
 block_tvlp_worker_t::send_start(const std::string& id,
                                 const dynamic::configuration& dynamic_results)
 {
@@ -70,8 +71,12 @@ block_tvlp_worker_t::send_start(const std::string& id,
 
     if (auto r =
             std::get_if<reply_block_generator_results>(&api_reply.value())) {
-        return std::pair(r->results.front()->id(),
-                         to_swagger(*r->results.front())->toJson());
+        auto& result = r->results.front();
+        return start_result_t{
+            .result_id = result->id(),
+            .statistics = to_swagger(*result)->toJson(),
+            .start_time = result->start_timestamp(),
+        };
     } else if (auto error = std::get_if<reply_error>(&api_reply.value())) {
         return tl::make_unexpected(to_string(error->info));
     }

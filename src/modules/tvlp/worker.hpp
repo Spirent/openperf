@@ -17,16 +17,10 @@
 
 namespace openperf::tvlp::internal::worker {
 
-using namespace std::chrono_literals;
-using ref_clock = timesync::chrono::monotime;
-using realtime = timesync::chrono::realtime;
-using duration = std::chrono::nanoseconds;
-using stat_pair_t = std::pair<std::string, nlohmann::json>;
-
 struct tvlp_worker_state_t
 {
     std::atomic<model::tvlp_state_t> state;
-    std::atomic<duration> offset;
+    std::atomic<model::duration> offset;
     std::atomic_bool stopped;
 };
 
@@ -34,29 +28,35 @@ class tvlp_worker_t
 {
     using worker_future = std::future<tl::expected<void, std::string>>;
 
+protected:
+    struct start_result_t
+    {
+        std::string result_id;
+        nlohmann::json statistics;
+        model::realtime::time_point start_time = model::realtime::now();
+    };
+
 public:
     tvlp_worker_t() = delete;
     tvlp_worker_t(const tvlp_worker_t&) = delete;
     explicit tvlp_worker_t(void*,
                            const std::string&,
-                           const model::tvlp_module_profile_t&);
+                           const model::tvlp_profile_t::series&);
     virtual ~tvlp_worker_t();
 
-    tl::expected<void, std::string>
-    start(const realtime::time_point& start_time = realtime::now(),
-          const std::optional<dynamic::configuration>& dynamic_results =
-              std::nullopt);
+    tl::expected<void, std::string> start(const model::time_point& start_time,
+                                          const model::tvlp_start_t::start_t&);
     void stop();
 
     model::tvlp_state_t state() const;
     std::optional<std::string> error() const;
-    duration offset() const;
+    model::duration offset() const;
     model::json_vector results() const;
 
 protected:
     virtual tl::expected<std::string, std::string>
-    send_create(const model::tvlp_profile_entry_t&) = 0;
-    virtual tl::expected<stat_pair_t, std::string>
+    send_create(const model::tvlp_profile_t::entry&, double load_scale) = 0;
+    virtual tl::expected<start_result_t, std::string>
     send_start(const std::string& id,
                const dynamic::configuration& dynamic_results = {}) = 0;
     virtual tl::expected<void, std::string>
@@ -73,16 +73,15 @@ protected:
 
 private:
     tl::expected<void, std::string>
-    schedule(realtime::time_point start_time,
-             const model::tvlp_module_profile_t& profile,
-             const std::optional<dynamic::configuration>& dynamic_results =
-                 std::nullopt);
+    schedule(const model::tvlp_profile_t::series& profile,
+             const model::time_point& time,
+             const model::tvlp_start_t::start_t& start_config);
 
     tvlp_worker_state_t m_state;
     std::string m_error;
     std::atomic<model::json_vector*> m_result;
     worker_future m_scheduler_thread;
-    model::tvlp_module_profile_t m_profile;
+    model::tvlp_profile_t::series m_series;
 
     enum class result_store_operation { ADD = 0, UPDATE };
     void store_results(const nlohmann::json& result,

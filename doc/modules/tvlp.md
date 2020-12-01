@@ -44,11 +44,22 @@ The TVLP module responds to the following configuration properties:
 
 #### Profile
 
-* **load_scale** - scale multiplier for load parameters of generators.
-* **time_scale** - scale multiplier for the length of each profile entry.
 * **series** - sequence of generator configurations
     * **config** - generator configuration
     * **length** - time of execution current configuration
+
+#### Start parameters
+
+* **start_time** - time of start profile in ISO8601 format.
+* **memory** - start options for the _memory_ series.
+* **block** - start options for the _block_ series.
+* **cpu** - start options for the _cpu_ series.
+* **packet** - start options for the _packet_ series.
+
+Start options:
+* **load_scale** - scale multiplier for load parameters of generators.
+* **time_scale** - scale multiplier for the length of each profile entry.
+* **dynamic_results** - dynamic results set for series.
 
 ### Load Scale
 
@@ -180,8 +191,19 @@ curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/tvlp' \
 
 ### Start existing TVLP Configuration
 
+Start immediately:
 ```bash
-curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/tvlp/:id/start?time=2020-10-01T00:00:00.000000Z'
+curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/tvlp/:id/start'
+```
+
+Start at specific time:
+```bash
+curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/tvlp/:id/start' \
+--header 'Content-Type: application/json' \
+--data-raw '
+{
+    "start_time": "2020-10-01T00:00:00.000000Z"
+}'
 ```
 
 ### Check the created TVLP Result
