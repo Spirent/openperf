@@ -41,25 +41,6 @@ test_unit: deps
 
 .PHONY: clean
 clean: image_clean
-
-
-.PHONY: test
-test: test_unit test_aat
-
-.PHONY: test_aat
-test_aat: openperf libopenperf-shim
-	@cd tests/aat && $(MAKE)
-
-.PHONY: test_aat_%
-test_aat_%: openperf libopenperf-shim
-	@cd tests/aat && $(MAKE) progress_$*
-
-.PHONY: test_unit
-test_unit: deps
-	@cd tests/unit && $(MAKE)
-
-.PHONY: clean
-clean: image_clean
 	@cd targets/openperf && $(MAKE) clean
 	@cd targets/libopenperf-shim && $(MAKE) clean
 	@cd pkg && $(MAKE) clean
