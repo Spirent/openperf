@@ -175,16 +175,6 @@ void server_udp::run_worker_thread()
                                          &conn.client,
                                          get_sa_len(&conn.client));
                     if (send_or_err == -1) {
-                        char ntopbuf[INET6_ADDRSTRLEN];
-                        const char* addr = inet_ntop(conn.client.sa_family,
-                                                     get_sa_addr(&conn.client),
-                                                     ntopbuf,
-                                                     INET6_ADDRSTRLEN);
-                        OP_LOG(OP_LOG_ERROR,
-                               "Error sending to %s:%d: %s\n",
-                               addr ? addr : "unknown",
-                               ntohs(get_sa_port(&conn.client)),
-                               strerror(errno));
                         conn.state = STATE_ERROR;
                         conn.bytes_left = 0;
                         m_stat.errors++;
