@@ -56,8 +56,8 @@ def tvlp_packet_profile_model(entries, length, target_id):
     return tp
 
 
-def tvlp_network_profile_model(entries, length, time_scale=1.0, load_scale=1.0):
-    tp = client.models.TvlpProfileNetwork(series=[], time_scale=time_scale, load_scale=load_scale)
+def tvlp_network_profile_model(entries, length):
+    tp = client.models.TvlpProfileNetwork(series=[])
     for i in range(entries):
         ps = client.models.TvlpProfileNetworkSeries()
         ps.length = length
@@ -84,6 +84,8 @@ def tvlp_start_configuration(time_scale=1.0, load_scale=1.0):
     start.cpu.dynamic_results = dynamic.make_dynamic_results_config(
         ["utilization", "steal"])
     start.network = client.models.TvlpStartSeriesConfiguration()
+    start.network.load_scale = load_scale
+    start.network.time_scale = time_scale
     start.network.dynamic_results = dynamic.make_dynamic_results_config(
         network.get_network_dynamic_results_fields())
     return start

@@ -758,6 +758,10 @@ definitions:
   NetworkGeneratorConnectionStats:
     $ref: ./modules/network.yaml#/definitions/NetworkGeneratorConnectionStats
 
+  BulkStartNetworkGeneratorsRequest:
+    $ref: ./modules/network.yaml#/definitions/BulkStartNetworkGeneratorsRequest
+
+
   ###
   # CPU definitions
   ###

@@ -84,6 +84,13 @@ public:
     void setPacket(std::shared_ptr<TvlpStartSeriesConfiguration> value);
     bool packetIsSet() const;
     void unsetPacket();
+    /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<TvlpStartSeriesConfiguration> getNetwork() const;
+    void setNetwork(std::shared_ptr<TvlpStartSeriesConfiguration> value);
+    bool networkIsSet() const;
+    void unsetNetwork();
 
 protected:
     std::string m_Start_time;
@@ -96,6 +103,8 @@ protected:
     bool m_BlockIsSet;
     std::shared_ptr<TvlpStartSeriesConfiguration> m_Packet;
     bool m_PacketIsSet;
+    std::shared_ptr<TvlpStartSeriesConfiguration> m_Network;
+    bool m_NetworkIsSet;
 };
 
 }
