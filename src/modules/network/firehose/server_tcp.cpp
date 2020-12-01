@@ -202,16 +202,6 @@ int server_tcp::tcp_write(connection_t& conn, std::vector<uint8_t> send_buffer)
     if (send_or_err == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) { return 0; }
 
-        char ntopbuf[INET6_ADDRSTRLEN];
-        const char* addr = inet_ntop(conn.client.sa_family,
-                                     get_sa_addr(&conn.client),
-                                     ntopbuf,
-                                     INET6_ADDRSTRLEN);
-        OP_LOG(OP_LOG_ERROR,
-               "Error sending to %s:%d: %s\n",
-               addr ? addr : "unknown",
-               ntohs(get_sa_port(&conn.client)),
-               strerror(errno));
         conn.state = STATE_ERROR;
         return -1;
     }
