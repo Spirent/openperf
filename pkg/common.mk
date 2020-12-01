@@ -1,7 +1,7 @@
-# Common packaging definitions
+# Common packaging definitions/functionality
 
-# This file expects the following values to be defined
-# (Note: the handle op_check_var define is not available yet)
+# This file expects the following values to be defined (Note:
+# the error checking op_check_var define is not available yet)
 ifeq ($(PKG_TYPE),)
 	$(error PKG_TYPE is not defined)
 endif
@@ -12,23 +12,15 @@ endif
 # Initialize commonly used values
 OP_TARGET := package-$(PKG_TYPE)
 include $(OP_ROOT)/mk/bootstrap.mk
+include $(OP_ROOT)/mk/versions.mk
 
-# Get the version to use for the packaging from the output of the openperf command (Note: If
-# the command does not exist, we still set the version so goals such as clean will work. The
-# version is set to NO_VERSION in this case so it can be detected when no version is available)
-export NO_VERSION := NO_VERSION
-VERSION_SRC	:= $(abspath $(OP_ROOT)/build/openperf-$(PLATFORM)-$(ARCH)-$(MODE)/bin/openperf)
-ifeq ($(wildcard $(VERSION_SRC)),$(VERSION_SRC))
-	VERSION := $(shell $(VERSION_SRC) --version 2>&1 | head -n 1 \
-		| sed -e 's/^.*version v//g;' -e 's/-.*$$//;')
-else
-	VERSION := $(NO_VERSION)
-endif
+# The version of the packaging of the software (could be the same
+# version of the software, but changes to the package for example)
+export PKG_VERSION ?= 1
 
-# Create a role that can be used to verify that a package version has been obtained
-.PHONY: version_check
-version_check:
-	@if [[ -z "$(VERSION)" || "$(VERSION)" == "$(NO_VERSION)" ]]; then \
-		echo "ERROR: Unable to obtain the packaging version number"; \
-		exit 1; \
-	fi
+# The basename for the generated package
+export PKG_BASE_NAME ?= openperf
+
+# Get the version number to be used within the package file name
+VERSION := $(shell echo "$(GIT_VERSION)" | sed -e 's/^v//;' -e 's/-.*$$//;')
+$(call op_check_var,VERSION)

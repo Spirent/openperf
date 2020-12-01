@@ -23,7 +23,7 @@ TGT_SPEC_FILE := $(STAGE_DIR)/SPECS/$(PKG_BASE_NAME)-$(VERSION).spec
 
 .PHONY: all clean
 
-all: version_check $(PKG_FILE_PATH)
+all: $(PKG_FILE_PATH)
 
 # Build the RPM package
 $(PKG_FILE_PATH): \
@@ -59,8 +59,8 @@ $(TGT_ETC_DIR)/config.yaml: ./config.yaml
 # stage the package build. Template parameters are replaced should they exist in the copied file.
 # $1: The path to the file to be copied from.
 # $2: The to copy the file to. If any parent directories are missing, they will be created. The
-# 	file is copied to preserve file permissions and its timestamp. Any supported template parameters
-#	found in the file will be replaced.
+#    file is copied to preserve file permissions and its timestamp. Any supported template parameters
+#    found in the file will be replaced.
 define copy_template
 	mkdir -p $(dir $(2))
 	cp -pf $(1) $(2)

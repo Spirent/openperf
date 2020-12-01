@@ -4,8 +4,8 @@
 # before calling debuild since debuild does not provide a way to pass through the values)
 include ../vars.mk
 
-# Pull in common build varables (requires OP_ROOT to be defined)
-OP_ROOT ?= $(shell pwd)/../../../..
+# Pull in common build variables
+OP_ROOT := $(shell pwd)/../../../..
 OP_TARGET := package
 include $(OP_ROOT)/mk/build.mk
 
@@ -19,7 +19,6 @@ OP_LIB_NAME = libopenperf-shim.so
 .PHONY: all install
 
 all:
-	# Do nothing
 
 install:
 	# Install the openperf binaries

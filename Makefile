@@ -16,9 +16,32 @@ openperf: deps
 libopenperf-shim: deps
 	@cd targets/libopenperf-shim && $(MAKE)
 
-.PHONY: package
-package: openperf libopenperf-shim deps
-	@cd pkg && $(MAKE)
+.PHONY: package-deb
+package-deb: openperf libopenperf-shim deps
+	@cd pkg && $(MAKE) package-deb
+
+.PHONY: package-rpm
+package-rpm: openperf libopenperf-shim deps
+	@cd pkg && $(MAKE) package-rpm
+
+.PHONY: test
+test: test_unit test_aat
+
+.PHONY: test_aat
+test_aat: openperf libopenperf-shim
+	@cd tests/aat && $(MAKE)
+
+.PHONY: test_aat_%
+test_aat_%: openperf libopenperf-shim
+	@cd tests/aat && $(MAKE) progress_$*
+
+.PHONY: test_unit
+test_unit: deps
+	@cd tests/unit && $(MAKE)
+
+.PHONY: clean
+clean: image_clean
+
 
 .PHONY: test
 test: test_unit test_aat
