@@ -10,7 +10,7 @@
 
 namespace openperf::network::internal::firehose {
 
-class server_udp : public server
+class server_udp final : public server
 {
 private:
     struct zmq_ctx_deleter
