@@ -125,9 +125,13 @@ request::generator::bulk::create
 from_swagger(swagger::BulkCreateNetworkGeneratorsRequest& p_request)
 {
     request::generator::bulk::create request;
-    for (const auto& item : p_request.getItems())
-        request.generators.emplace_back(
-            std::make_unique<model::generator>(from_swagger(*item)));
+    std::transform(std::begin(p_request.getItems()),
+                   std::end(p_request.getItems()),
+                   std::back_inserter(request.generators),
+                   [](const auto& item) {
+                       return std::make_unique<model::generator>(
+                           from_swagger(*item));
+                   });
     return request;
 }
 
@@ -135,7 +139,9 @@ request::generator::bulk::erase
 from_swagger(swagger::BulkDeleteNetworkGeneratorsRequest& p_request)
 {
     request::generator::bulk::erase request{};
-    for (const auto& id : p_request.getIds()) { request.ids.push_back(id); }
+    std::copy(p_request.getIds().begin(),
+              p_request.getIds().end(),
+              back_inserter(request.ids));
     return request;
 }
 
@@ -153,9 +159,13 @@ request::server::bulk::create
 from_swagger(swagger::BulkCreateNetworkServersRequest& p_request)
 {
     request::server::bulk::create request;
-    for (const auto& item : p_request.getItems())
-        request.servers.emplace_back(
-            std::make_unique<model::server>(from_swagger(*item)));
+    std::transform(std::begin(p_request.getItems()),
+                   std::end(p_request.getItems()),
+                   std::back_inserter(request.servers),
+                   [](const auto& item) {
+                       return std::make_unique<model::server>(
+                           from_swagger(*item));
+                   });
     return request;
 }
 
@@ -163,7 +173,9 @@ request::server::bulk::erase
 from_swagger(swagger::BulkDeleteNetworkServersRequest& p_request)
 {
     request::server::bulk::erase request{};
-    for (auto& id : p_request.getIds()) { request.ids.push_back(id); }
+    std::copy(p_request.getIds().begin(),
+              p_request.getIds().end(),
+              back_inserter(request.ids));
     return request;
 }
 
