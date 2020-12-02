@@ -10,7 +10,7 @@ $(call op_check_vars,$(LIBZMQ_REQ_VARS))
 LIBZMQ_SRC_DIR := $(OP_ROOT)/deps/libzmq
 LIBZMQ_OBJ_DIR := $(OP_BUILD_ROOT)/obj/libzmq
 LIBZMQ_BLD_DIR := $(OP_BUILD_ROOT)/libzmq
-LIBZMQ_INC_DIR := $(LIBZMQ_BLD_DIR)/include
+LIBZMQ_INC_DIR := $(LIBZMQ_SRC_DIR)/include
 LIBZMQ_LIB_DIR := $(LIBZMQ_BLD_DIR)/lib
 
 # Update global variables
