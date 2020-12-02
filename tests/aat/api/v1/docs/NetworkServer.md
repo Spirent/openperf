@@ -4,7 +4,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** | Unique network server identifier | 
-**port** | **int** | UDP/TCP port on which to listen for client connections | [default to 3357]
+**port** | **int** | UDP/TCP port on which to listen for client connections | 
 **protocol** | **str** | Protocol which is used to establish client connections | 
 **stats** | [**NetworkServerStats**](NetworkServerStats.md) |  | 
 

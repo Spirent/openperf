@@ -17,7 +17,7 @@ server::server(const model::server& server_model)
     : model::server(server_model)
 {
     OP_LOG(OP_LOG_INFO,
-           "Starting %s server on port %ld\n",
+           "Starting %s server on port %hu\n",
            (protocol() == protocol_t::TCP) ? "TCP" : "UDP",
            port());
 

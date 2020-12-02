@@ -4,6 +4,7 @@
 #include <cinttypes>
 #include <string>
 #include <vector>
+#include <netinet/in.h>
 
 namespace openperf::network::model {
 
@@ -32,8 +33,8 @@ public:
     virtual std::string id() const { return m_id; }
     virtual void id(std::string_view id) { m_id = id; }
 
-    virtual int64_t port() const { return m_port; }
-    virtual void port(int64_t p) { m_port = p; }
+    virtual in_port_t port() const { return m_port; }
+    virtual void port(in_port_t p) { m_port = p; }
 
     virtual protocol_t protocol() const { return m_protocol; }
     virtual void protocol(protocol_t p) { m_protocol = p; }
@@ -43,7 +44,7 @@ public:
 
 protected:
     std::string m_id;
-    int64_t m_port;
+    in_port_t m_port;
     protocol_t m_protocol;
     stat_t m_stat;
 };

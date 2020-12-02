@@ -20,7 +20,7 @@ namespace model {
 NetworkGeneratorConfig_target::NetworkGeneratorConfig_target()
 {
     m_Host = "";
-    m_Port = 0L;
+    m_Port = 0;
     m_Protocol = "";
     
 }
@@ -64,11 +64,11 @@ void NetworkGeneratorConfig_target::setHost(std::string value)
     m_Host = value;
     
 }
-int64_t NetworkGeneratorConfig_target::getPort() const
+int32_t NetworkGeneratorConfig_target::getPort() const
 {
     return m_Port;
 }
-void NetworkGeneratorConfig_target::setPort(int64_t value)
+void NetworkGeneratorConfig_target::setPort(int32_t value)
 {
     m_Port = value;
     
