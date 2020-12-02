@@ -8,6 +8,7 @@
 #include "framework/generator/pid_control.hpp"
 #include "modules/timesync/chrono.hpp"
 
+#include "buffer.hpp"
 #include "io_pattern.hpp"
 #include "memory_stat.hpp"
 
@@ -18,11 +19,7 @@ struct task_memory_config
     size_t block_size = 0;
     size_t op_per_sec = 0;
     io_pattern pattern = io_pattern::NONE;
-    struct
-    {
-        void* ptr = nullptr;
-        size_t size = 0;
-    } buffer;
+    std::weak_ptr<buffer> buffer;
     std::vector<uint64_t>* indexes = nullptr;
 };
 
@@ -33,7 +30,7 @@ class task_memory : public openperf::framework::generator::task<memory_stat>
 
 protected:
     task_memory_config m_config;
-    uint8_t* m_buffer = nullptr;
+    std::shared_ptr<buffer> m_buffer;
 
     struct
     {

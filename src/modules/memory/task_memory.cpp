@@ -87,7 +87,7 @@ void task_memory::config(const task_memory_config& msg)
     m_op_index = utils::random_uniform(msg.indexes->size());
     m_config.pattern = msg.pattern;
 
-    m_buffer = reinterpret_cast<uint8_t*>(msg.buffer.ptr);
+    m_buffer = msg.buffer.lock();
 
     if ((m_config.block_size = msg.block_size) > m_scratch.size) {
         OP_LOG(OP_LOG_DEBUG,

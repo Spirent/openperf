@@ -4,6 +4,7 @@
 #include <future>
 #include <atomic>
 
+#include "buffer.hpp"
 #include "memory_stat.hpp"
 #include "task_memory.hpp"
 
@@ -43,11 +44,7 @@ private:
     std::thread m_scrub_thread;
     std::atomic_bool m_scrub_aborted;
 
-    struct buffer_t
-    {
-        void* ptr;
-        size_t size;
-    } m_buffer;
+    std::shared_ptr<buffer> m_buffer;
 
     struct operation_data
     {
@@ -100,8 +97,6 @@ public:
     bool is_paused() const { return m_paused; }
 
 private:
-    void free_buffer();
-    void resize_buffer(size_t);
     void scrub_worker();
 
     void init_index(operation_data& op);
@@ -131,11 +126,7 @@ void generator::configure_tasks(operation_data& op,
             .block_size = op.config.block_size,
             .op_per_sec = op.config.op_per_sec / op.config.threads,
             .pattern = op.config.pattern,
-            .buffer =
-                {
-                    .ptr = m_buffer.ptr,
-                    .size = m_buffer.size,
-                },
+            .buffer = m_buffer,
             .indexes = &op.indexes,
         });
 
