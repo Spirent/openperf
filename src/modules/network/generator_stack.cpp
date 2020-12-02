@@ -55,7 +55,6 @@ generator_stack::statistics(const std::string& id) const
     } catch (const std::out_of_range&) {
         return tl::make_unexpected("Result not found");
     }
-    return tl::make_unexpected("Result implemented");
 }
 
 std::vector<model::generator_result> generator_stack::list_statistics() const
