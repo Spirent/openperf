@@ -288,8 +288,9 @@ generator::config_t generator::config() const
 void generator::scrub_worker()
 {
     size_t current = 0;
+    auto page_size = sysconf(_SC_PAGESIZE);
     auto block_size =
-        ((m_buffer.size / 100 - 1) / getpagesize() + 1) * getpagesize();
+        ((m_buffer->size() / 100 - 1) / page_size + 1) * page_size;
     auto seed = utils::random_uniform<uint32_t>();
 
     while (!m_scrub_aborted.load() && current < m_buffer->size()) {
