@@ -8,7 +8,7 @@
 #include "framework/generator/task.hpp"
 #include "modules/timesync/chrono.hpp"
 
-#include "internal_utils.hpp"
+#include "utils/network_sockaddr.hpp"
 #include "drivers/driver.hpp"
 
 namespace openperf::network::internal::task {

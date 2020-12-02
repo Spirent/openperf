@@ -17,53 +17,11 @@
 #include <string>
 
 #include "framework/core/op_log.h"
-#include "internal_utils.hpp"
+#include "ipv6.hpp"
 
 namespace openperf::network::internal {
 
-char* get_mac_address(const char* ifname)
-{
-    int s;
-    ifreq buffer;
-    unsigned char* ptr = nullptr;
-    char* mac_addr = nullptr;
-
-    if ((s = socket(PF_INET, SOCK_DGRAM, 0)) == -1) {
-        OP_LOG(OP_LOG_ERROR,
-               "Could not open inet dgram socket: %s\n",
-               strerror(errno));
-        return nullptr;
-    }
-
-    memset(&buffer, 0, sizeof(buffer));
-    strncpy(buffer.ifr_name, ifname, sizeof(buffer.ifr_name));
-
-    if (ioctl(s, SIOCGIFHWADDR, &buffer) == -1) {
-        OP_LOG(OP_LOG_ERROR,
-               "Could not get SIOCGIFHWADDR for %s: %s\n",
-               ifname,
-               strerror(errno));
-        close(s);
-        return nullptr;
-    }
-
-    close(s);
-
-    ptr = (unsigned char*)&buffer.ifr_hwaddr.sa_data;
-
-    asprintf(&mac_addr,
-             "%02x:%02x:%02x:%02x:%02x:%02x",
-             *ptr,
-             *(ptr + 1),
-             *(ptr + 2),
-             *(ptr + 3),
-             *(ptr + 4),
-             *(ptr + 5));
-
-    return mac_addr;
-}
-
-bool ipv6_link_local_requires_scope() { return true; }
+int ipv6_get_neighbor_ifindex_from_ping_socket(const in6_addr* addr);
 
 /**
  * Find neighbor interface from IPv6 neighbor cache.

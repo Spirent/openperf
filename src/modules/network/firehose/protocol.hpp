@@ -3,13 +3,14 @@
 
 #include "tl/expected.hpp"
 #include "string.h"
+#include "packet/type/endian.hpp"
 
 namespace openperf::network::internal::firehose {
 
 constexpr auto protocol = "ICP Firehose 2.0";
 const size_t protocol_len = 16;
 
-enum action_t { NONE = 0, GET, PUT };
+enum action_t : uint8_t { NONE = 0, GET, PUT };
 
 struct request_t
 {
@@ -20,9 +21,9 @@ struct request_t
 struct net_request_t
 {
     char protocol[16];
-    int32_t action;
-    uint32_t length;
-} __attribute__((packed));
+    libpacket::type::endian::field<1> action;
+    libpacket::type::endian::field<4> length;
+};
 const size_t net_request_size = sizeof(net_request_t);
 
 inline tl::expected<request_t, int> parse_request(uint8_t*& data,
@@ -30,15 +31,15 @@ inline tl::expected<request_t, int> parse_request(uint8_t*& data,
 {
     if (length < net_request_size) { return tl::make_unexpected(-1); }
     auto net_request = (net_request_t*)data;
-
     /* Verify protocol string header */
     if (strncmp(net_request->protocol, protocol, protocol_len) != 0) {
         return tl::make_unexpected(-1);
     }
 
-    auto request =
-        request_t{.action = static_cast<action_t>(ntohl(net_request->action)),
-                  .length = ntohl(net_request->length)};
+    auto request = request_t{
+        .action = static_cast<action_t>(net_request->action.load<uint8_t>()),
+        .length = net_request->length.load<uint32_t>(),
+    };
 
     return request;
 }
@@ -50,8 +51,8 @@ inline tl::expected<void, int> build_request(const request_t& request,
 
     strncpy(net_request.protocol, protocol, protocol_len);
 
-    net_request.action = htonl(request.action);
-    net_request.length = htonl(request.length);
+    net_request.action = request.action;
+    net_request.length = request.length;
 
     data.resize(sizeof(net_request));
     memcpy(data.data(), &net_request, sizeof(net_request));

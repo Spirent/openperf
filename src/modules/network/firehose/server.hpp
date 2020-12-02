@@ -4,8 +4,10 @@
 #include <atomic>
 #include <tl/expected.hpp>
 #include <arpa/inet.h>
+#include <variant>
 #include "protocol.hpp"
 #include "../drivers/driver.hpp"
+#include "../utils/network_sockaddr.hpp"
 
 namespace openperf::network::internal::firehose {
 
@@ -27,12 +29,7 @@ struct connection_t
     connection_state_t state;
     size_t bytes_left;
     std::vector<uint8_t> request;
-    union
-    {
-        struct sockaddr client;
-        struct sockaddr_in client4;
-        struct sockaddr_in6 client6;
-    };
+    network_sockaddr client;
 };
 
 class server
@@ -60,42 +57,6 @@ protected:
     drivers::driver_ptr m_driver;
     stat_t m_stat;
 };
-
-inline socklen_t get_sa_len(const struct sockaddr* sa)
-{
-    switch (sa->sa_family) {
-    case AF_INET:
-        return sizeof(struct sockaddr_in);
-    case AF_INET6:
-        return sizeof(struct sockaddr_in6);
-    default:
-        return sizeof(struct sockaddr);
-    }
-}
-
-inline in_port_t get_sa_port(const struct sockaddr* sa)
-{
-    switch (sa->sa_family) {
-    case AF_INET:
-        return (((struct sockaddr_in*)sa)->sin_port);
-    case AF_INET6:
-        return (((struct sockaddr_in6*)sa)->sin6_port);
-    default:
-        return (0);
-    }
-}
-
-inline void* get_sa_addr(const struct sockaddr* sa)
-{
-    switch (sa->sa_family) {
-    case AF_INET:
-        return (&((struct sockaddr_in*)sa)->sin_addr);
-    case AF_INET6:
-        return (&((struct sockaddr_in6*)sa)->sin6_addr);
-    default:
-        return (nullptr);
-    }
-}
 
 inline const char* get_state_string(connection_state_t state)
 {

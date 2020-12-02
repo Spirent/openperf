@@ -41,7 +41,7 @@ std::string to_string(model::protocol_t protocol)
     case model::protocol_t::TCP:
         return "tcp";
     default:
-        return "";
+        return "unknown";
     }
 }
 

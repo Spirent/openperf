@@ -1,4 +1,4 @@
-#include "internal_utils.hpp"
+#include "ipv6.hpp"
 
 #include <cstdlib>
 #include <cstdio>
@@ -15,200 +15,15 @@
 #include <cerrno>
 #include <poll.h>
 
+#include "core/op_log.h"
+
 namespace openperf::network::internal {
-
-static void* get_sa_addr(const sockaddr* sa)
-{
-    switch (sa->sa_family) {
-    case AF_INET:
-        return (&((sockaddr_in*)sa)->sin_addr);
-    case AF_INET6:
-        return (&((sockaddr_in6*)sa)->sin6_addr);
-    default:
-        return nullptr;
-    }
-}
-
-socklen_t network_sockaddr_size(const network_sockaddr& s)
-{
-    switch (s.sa.sa_family) {
-    case AF_INET:
-        return (sizeof(s.sa4));
-    case AF_INET6:
-        return (sizeof(s.sa6));
-    default:
-        return 0;
-    }
-}
-
-in_port_t network_sockaddr_port(const network_sockaddr& s)
-{
-    switch (s.sa.sa_family) {
-    case AF_INET:
-        return (s.sa4.sin_port);
-    case AF_INET6:
-        return (s.sa6.sin6_port);
-    default:
-        return 0;
-    }
-}
-
-void* network_sockaddr_addr(const network_sockaddr& s)
-{
-    switch (s.sa.sa_family) {
-    case AF_INET:
-        return ((void*)&s.sa4.sin_addr);
-    case AF_INET6:
-        return ((void*)&s.sa6.sin6_addr);
-    default:
-        return nullptr;
-    }
-}
-
-const char*
-network_sockaddr_addr_str(const network_sockaddr& s, char* buf, size_t buf_len)
-{
-    void* addr = network_sockaddr_addr(s);
-    if (!addr) {
-        if (buf_len < 1) return nullptr;
-        buf[0] = 0;
-        return buf;
-    }
-
-    return inet_ntop(s.sa.sa_family, addr, buf, buf_len);
-}
-
-size_t network_addr_mask_to_prefix_len(const uint8_t* bytes, size_t n_bytes)
-{
-    for (size_t i = 0; i < n_bytes; ++i) {
-        uint8_t val = bytes[n_bytes - i - 1];
-        if (val == 0) continue;
-        /* Find first bit in byte which is set */
-        int bit_pos = __builtin_ffs((long)val) - 1;
-        size_t pos = 8 * (n_bytes - i) - bit_pos;
-        return pos;
-    }
-    return 0;
-}
 
 bool ipv6_addr_is_link_local(const in6_addr* addr)
 {
     if (addr->s6_addr[0] == 0xfe && (addr->s6_addr[1] & 0xC0) == 0x80)
         return true;
     return false;
-}
-
-/**
- * Check if IPv6 address is an IPv4 mapped address.
- */
-bool ipv6_addr_is_ipv4_mapped(const in6_addr* addr)
-{
-    auto words = (uint16_t*)addr->s6_addr;
-    if (words[0] == 0 && words[1] == 0 && words[2] == 0 && words[3] == 0
-        && words[4] == 0 && words[5] == 0xffff) {
-        return true;
-    }
-    return false;
-}
-
-/**
- * Get IPv4 address represented by the IPv6 mapped address.
- */
-void ipv6_get_ipv4_mapped(const in6_addr* v6, in_addr* v4)
-{
-    v4->s_addr = (v6->s6_addr[15] << 24) | (v6->s6_addr[14] << 16)
-                 | (v6->s6_addr[13] << 8) | v6->s6_addr[12];
-}
-
-/**
- * Return the peer of the given socket in a freshly allocated string.
- */
-char* get_peer_address(int socket)
-{
-    char* host = nullptr;
-    network_sockaddr peer;
-    socklen_t peer_length = sizeof(peer);
-    memset(&peer, 0, peer_length);
-
-    if ((getpeername(socket, &peer.sa, &peer_length) != 0)
-        || ((host = (char*)calloc(INET6_ADDRSTRLEN, sizeof(char)))
-            == nullptr)) {
-        return (nullptr);
-    }
-
-    if (peer.sa.sa_family == AF_INET6) {
-        if (ipv6_addr_is_ipv4_mapped(&peer.sa6.sin6_addr)) {
-            /* Return IPv4 address for mapped addresses */
-            in_addr v4;
-            ipv6_get_ipv4_mapped(&peer.sa6.sin6_addr, &v4);
-            inet_ntop(AF_INET, &v4, host, INET6_ADDRSTRLEN);
-            return host;
-        }
-    }
-
-    inet_ntop(peer.sa.sa_family, get_sa_addr(&peer.sa), host, INET6_ADDRSTRLEN);
-
-    return (host);
-}
-
-/**
- * Logs the name and IP address of all interfaces.
- */
-void log_intf_addresses(void)
-{
-    ifaddrs *ifa = nullptr, *ifa_free = nullptr;
-
-    char buffer[INET6_ADDRSTRLEN];
-    void* address = nullptr;
-    memset(buffer, 0, INET6_ADDRSTRLEN);
-
-    if (getifaddrs(&ifa_free) == 0) {
-        for (ifa = ifa_free; ifa != nullptr && ifa->ifa_addr != nullptr;
-             ifa = ifa->ifa_next) {
-            if ((ifa->ifa_flags & IFF_LOOPBACK) == 0) {
-                address = get_sa_addr(ifa->ifa_addr);
-                if (address != nullptr) {
-                    inet_ntop(ifa->ifa_addr->sa_family,
-                              address,
-                              buffer,
-                              INET6_ADDRSTRLEN);
-                }
-            }
-        }
-        freeifaddrs(ifa_free);
-    }
-}
-
-/**
- * Get the prefix length for the mask.
- */
-size_t addr_mask_to_prefix_len(const uint8_t* bytes, size_t n_bytes)
-{
-    for (size_t i = 0; i < n_bytes; ++i) {
-        uint8_t val = bytes[n_bytes - i - 1];
-        if (val == 0) continue;
-        /* Find first bit in byte which is set */
-        int bit_pos = __builtin_ffs((long)val) - 1;
-        size_t pos = 8 * (n_bytes - i) - bit_pos;
-        return pos;
-    }
-    return 0;
-}
-
-/**
- * Get the prefix length for the IPv4 mask.
- */
-size_t ipv4_addr_mask_to_prefix_len(const in_addr* addr)
-{
-    return addr_mask_to_prefix_len((const uint8_t*)&addr->s_addr, 4);
-}
-
-/**
- * Get the prefix length for the IPv6 mask.
- */
-size_t ipv6_addr_mask_to_prefix_len(const in6_addr* addr)
-{
-    return addr_mask_to_prefix_len(addr->s6_addr, 16);
 }
 
 /**
