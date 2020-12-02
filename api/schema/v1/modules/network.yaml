@@ -434,22 +434,27 @@ definitions:
         type: integer
         description: The number of bytes written
         format: int64
+        minimum: 0
       bytes_received:
         type: integer
         description: The number of bytes read
         format: int64
+        minimum: 0
       connections:
         type: integer
         description: The number of accepted client connections (the number of operations for UDP socket)
         format: int64
+        minimum: 0
       closed:
         type: integer
         description: The number of closed client connections
         format: int64
+        minimum: 0
       errors:
         type: integer
         description: The number of errors observed during connection
         format: int64
+        minimum: 0
     required:
       - bytes_sent
       - bytes_received
@@ -579,34 +584,42 @@ definitions:
         type: integer
         description: The intended number of operations performed
         format: int64
+        minimum: 0
       ops_actual:
         type: integer
         description: The actual number of operations performed
         format: int64
+        minimum: 0
       bytes_target:
         type: integer
         description: The intended number of bytes read or written
         format: int64
+        minimum: 0
       bytes_actual:
         type: integer
         description: The actual number of bytes read or written
         format: int64
+        minimum: 0
       io_errors:
         type: integer
         description: The number of io_errors observed during reading or writing
         format: int64
+        minimum: 0
       latency_total:
         type: integer
         description: The total amount of time required to perform all operations (in nanoseconds)
         format: int64
+        minimum: 0
       latency_min:
         type: integer
         description: The minimum observed latency value (in nanoseconds)
         format: int64
+        minimum: 0
       latency_max:
         type: integer
         description: The maximum observed latency value (in nanoseconds)
         format: int64
+        minimum: 0
     required:
       - ops_target
       - ops_actual
