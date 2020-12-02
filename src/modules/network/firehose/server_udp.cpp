@@ -7,7 +7,7 @@
 #include "utils/random.hpp"
 #include "server_udp.hpp"
 #include "protocol.hpp"
-
+#include "../utils/network_sockaddr.hpp"
 namespace openperf::network::internal::firehose {
 
 tl::expected<int, std::string> server_udp::new_server(int domain,
@@ -119,6 +119,8 @@ void server_udp::run_worker_thread()
         std::vector<connection_t> connections;
         ssize_t recv_or_err = 0;
         connection_t conn;
+        sockaddr_storage client_storage;
+        auto client = (sockaddr*)&client_storage;
         socklen_t client_length = sizeof(struct sockaddr_in6);
 
         std::vector<uint8_t> read_buffer(net_request_size);
@@ -131,7 +133,7 @@ void server_udp::run_worker_thread()
                                                      read_buffer.data(),
                                                      read_buffer.size(),
                                                      0,
-                                                     &conn.client,
+                                                     client,
                                                      &client_length))
                    != -1) {
                 uint8_t* recv_cursor = read_buffer.data();
@@ -142,15 +144,15 @@ void server_udp::run_worker_thread()
                 auto req = firehose::parse_request(recv_cursor, bytes_left);
                 if (!req) {
                     char ntopbuf[INET6_ADDRSTRLEN];
-                    const char* addr = inet_ntop(conn.client.sa_family,
-                                                 get_sa_addr(&conn.client),
+                    const char* addr = inet_ntop(client->sa_family,
+                                                 get_sa_addr(client),
                                                  ntopbuf,
                                                  INET6_ADDRSTRLEN);
                     OP_LOG(OP_LOG_ERROR,
                            "Invalid firehose request received "
                            "from %s:%d\n",
                            addr ? addr : "unknown",
-                           ntohs(get_sa_port(&conn.client)));
+                           ntohs(get_sa_port(client)));
                     OP_LOG(OP_LOG_ERROR,
                            "recv = %zu, bytes_left = %zu\n",
                            recv_or_err,
@@ -167,13 +169,12 @@ void server_udp::run_worker_thread()
                 while (conn.state == STATE_WRITING && conn.bytes_left) {
                     size_t produced =
                         std::min(send_buffer.size(), conn.bytes_left);
-                    ssize_t send_or_err =
-                        m_driver->sendto(m_fd,
-                                         send_buffer.data(),
-                                         produced,
-                                         0,
-                                         &conn.client,
-                                         get_sa_len(&conn.client));
+                    ssize_t send_or_err = m_driver->sendto(m_fd,
+                                                           send_buffer.data(),
+                                                           produced,
+                                                           0,
+                                                           client,
+                                                           get_sa_len(client));
                     if (send_or_err == -1) {
                         conn.state = STATE_ERROR;
                         conn.bytes_left = 0;
