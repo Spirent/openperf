@@ -5,14 +5,16 @@
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 #include <tl/expected.hpp>
+#include <fcntl.h>
 
 #include "task.hpp"
 
 #include "framework/core/op_log.h"
 #include "framework/utils/random.hpp"
-
+#include "framework/utils/overloaded_visitor.hpp"
 #include "firehose/protocol.hpp"
-
+#include "utils/network_sockaddr.hpp"
+#include "utils/ipv6.hpp"
 #include "drivers/kernel.hpp"
 
 namespace openperf::network::internal::task {
@@ -78,29 +80,34 @@ void network_task::reset()
     m_operation_timestamp = {};
 }
 
-static int populate_sockaddr(union network_sockaddr& s,
-                             const std::string& host,
-                             uint16_t port)
+static int
+populate_sockaddr(network_sockaddr& s, const std::string& host, uint16_t port)
 {
-    if (inet_pton(AF_INET, host.c_str(), &s.sa4.sin_addr) == 1) {
-        s.sa4.sin_family = AF_INET;
-        s.sa4.sin_port = htons(port);
-    } else if (inet_pton(AF_INET6, host.c_str(), &s.sa6.sin6_addr) == 1) {
-        s.sa6.sin6_family = AF_INET6;
-        s.sa6.sin6_port = htons(port);
-        if (ipv6_addr_is_link_local(&s.sa6.sin6_addr)) {
+    sockaddr_storage client_storage;
+    auto sa4 = (sockaddr_in*)&client_storage;
+    auto sa6 = (sockaddr_in6*)&client_storage;
+
+    if (inet_pton(AF_INET, host.c_str(), &sa4->sin_addr) == 1) {
+        sa4->sin_family = AF_INET;
+        sa4->sin_port = htons(port);
+        network_sockaddr_assign((sockaddr*)sa4, s);
+    } else if (inet_pton(AF_INET6, host.c_str(), &sa6->sin6_addr) == 1) {
+        sa6->sin6_family = AF_INET6;
+        sa6->sin6_port = htons(port);
+        if (ipv6_addr_is_link_local(&sa6->sin6_addr)) {
             /* Need to set sin6_scope_id for link local IPv6 */
             int ifindex;
-            if ((ifindex = ipv6_get_neighbor_ifindex(&s.sa6.sin6_addr)) >= 0) {
-                s.sa6.sin6_scope_id = ifindex;
+            if ((ifindex = ipv6_get_neighbor_ifindex(&sa6->sin6_addr)) >= 0) {
+                sa6->sin6_scope_id = ifindex;
             } else {
                 OP_LOG(OP_LOG_WARNING,
                        "Unable to find interface for link local %s\n",
                        host.c_str());
             }
         }
+        network_sockaddr_assign((sockaddr*)sa6, s);
     } else {
-        /* host is not a valid IPv4 or IPv6 address; bail */
+        /* host is not a valid IPv4 or IPv6 address; fail */
         return (-EINVAL);
     }
 
@@ -168,7 +175,7 @@ network_task::new_connection(const network_sockaddr& server,
 {
     int sock = 0;
     if ((sock = m_driver->socket(
-             server.sa.sa_family,
+             network_sockaddr_family(server),
              config.target.protocol == IPPROTO_TCP ? SOCK_STREAM : SOCK_DGRAM,
              config.target.protocol))
         == -1) {
@@ -197,7 +204,8 @@ network_task::new_connection(const network_sockaddr& server,
     }
 #endif
 
-    if (m_driver->connect(sock, &server.sa, network_sockaddr_size(server)) == -1
+    auto sa = std::visit([](auto&& sa) { return (sockaddr*)&sa; }, server);
+    if (m_driver->connect(sock, sa, network_sockaddr_size(server)) == -1
         && errno != EINPROGRESS) {
         /* not what we were expecting */
         m_driver->close(sock);

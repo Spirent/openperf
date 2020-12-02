@@ -141,8 +141,8 @@ void server_tcp::run_accept_thread()
         op_thread_setname("op_net_srv_acc");
 
         // Run the loop of the thread
-        struct sockaddr_storage client_storage;
-        auto client = (struct sockaddr*)&client_storage;
+        sockaddr_storage client_storage;
+        auto client = (sockaddr*)&client_storage;
         socklen_t client_length = sizeof(client_storage);
 
         void* sync = op_socket_get_server(m_context, ZMQ_PUSH, endpoint.data());
@@ -239,10 +239,8 @@ void server_tcp::run_worker_thread()
                     .fd = conn_buffer.fd,
                     .state = STATE_WAITING,
                 };
-                memcpy(&conn.client,
-                       &conn_buffer.client,
-                       get_sa_len(&conn_buffer.client));
-                connections.push_back(conn);
+                network_sockaddr_assign(&conn_buffer.client, conn.client);
+                connections.push_back(std::move(conn));
                 m_stat.connections++;
             }
 
@@ -271,14 +269,15 @@ void server_tcp::run_worker_thread()
                         if (errno == EAGAIN || errno == EWOULDBLOCK) { break; }
 
                         char ntopbuf[INET6_ADDRSTRLEN];
-                        const char* addr = inet_ntop(conn.client.sa_family,
-                                                     get_sa_addr(&conn.client),
-                                                     ntopbuf,
-                                                     INET6_ADDRSTRLEN);
+                        const char* addr =
+                            inet_ntop(network_sockaddr_family(conn.client),
+                                      network_sockaddr_addr(conn.client),
+                                      ntopbuf,
+                                      INET6_ADDRSTRLEN);
                         OP_LOG(OP_LOG_ERROR,
                                "Error reading from %s:%d: %s\n",
                                addr ? addr : "unknown",
-                               ntohs(get_sa_port(&conn.client)),
+                               ntohs(network_sockaddr_port(conn.client)),
                                strerror(errno));
                         conn.state = STATE_ERROR;
                         break;
@@ -314,16 +313,17 @@ void server_tcp::run_worker_thread()
                                                                bytes_left);
                             if (!req) {
                                 char ntopbuf[INET6_ADDRSTRLEN];
-                                const char* addr =
-                                    inet_ntop(conn.client.sa_family,
-                                              get_sa_addr(&conn.client),
-                                              ntopbuf,
-                                              INET6_ADDRSTRLEN);
-                                OP_LOG(OP_LOG_ERROR,
-                                       "Invalid firehose request received "
-                                       "from %s:%d\n",
-                                       addr ? addr : "unknown",
-                                       ntohs(get_sa_port(&conn.client)));
+                                const char* addr = inet_ntop(
+                                    network_sockaddr_family(conn.client),
+                                    network_sockaddr_addr(conn.client),
+                                    ntopbuf,
+                                    INET6_ADDRSTRLEN);
+                                OP_LOG(
+                                    OP_LOG_ERROR,
+                                    "Invalid firehose request received "
+                                    "from %s:%d\n",
+                                    addr ? addr : "unknown",
+                                    ntohs(network_sockaddr_port(conn.client)));
                                 conn.state = STATE_ERROR;
                                 bytes_left = 0;
                             }
@@ -351,8 +351,8 @@ void server_tcp::run_worker_thread()
                         default: {
                             char ntopbuf[INET6_ADDRSTRLEN];
                             const char* addr =
-                                inet_ntop(conn.client.sa_family,
-                                          get_sa_addr(&conn.client),
+                                inet_ntop(network_sockaddr_family(conn.client),
+                                          network_sockaddr_addr(conn.client),
                                           ntopbuf,
                                           INET6_ADDRSTRLEN);
                             OP_LOG(OP_LOG_WARNING,
@@ -360,7 +360,7 @@ void server_tcp::run_worker_thread()
                                    " with %zu bytes left to read. Dropping "
                                    "connection.\n",
                                    addr ? addr : "unknown",
-                                   ntohs(get_sa_port(&conn.client)),
+                                   ntohs(network_sockaddr_port(conn.client)),
                                    get_state_string(conn.state),
                                    bytes_left);
                             conn.state = STATE_ERROR;
