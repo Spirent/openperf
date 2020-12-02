@@ -100,6 +100,14 @@ server_tcp::server_tcp(in_port_t port, const drivers::driver_ptr& driver)
     : m_stopped(false)
     , m_context(zmq_ctx_new())
 {
+    // Set ZMQ threads to 0 for context
+    // Note: Value 0 valid only for inproc:// transport
+    if (zmq_ctx_set(m_context, ZMQ_IO_THREADS, 0)) {
+        OP_LOG(OP_LOG_ERROR,
+               "Controller ZMQ set IO threads to 0: %s",
+               zmq_strerror(errno));
+    }
+
     m_driver = driver;
 
     /* IPv6 any supports IPv4 and IPv6 */

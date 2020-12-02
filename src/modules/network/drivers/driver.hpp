@@ -8,19 +8,15 @@ namespace openperf::network::internal::drivers {
 class driver
 {
 public:
-    driver() = default;
+    inline driver() { init(); };
     virtual ~driver() = default;
     driver(const driver&) = delete;
     driver& operator=(const driver&) = delete;
 
     template <typename T> static std::shared_ptr<driver> instance()
     {
-        static std::shared_ptr<driver> s_instance = nullptr;
-        if (s_instance == nullptr) {
-            s_instance = std::make_shared<T>();
-            s_instance->init();
-        }
-        return (s_instance);
+        static std::shared_ptr<driver> s_instance = std::make_shared<T>();
+        return s_instance;
     }
 
     virtual void init(){};
