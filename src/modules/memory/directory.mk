@@ -7,6 +7,7 @@ MEMORY_DEPENDS += api framework pistache swagger_model json versions timesync
 MEMORY_SOURCES += \
 	api_converters.cpp \
 	api_transmogrify.cpp \
+	buffer.cpp \
 	generator.cpp \
 	generator_collection.cpp \
 	handler.cpp \
