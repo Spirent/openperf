@@ -5,6 +5,8 @@
 #include "modules/network/api.hpp"
 #include "modules/network/api_converters.hpp"
 
+#include "swagger/v1/model/NetworkGeneratorResult.h"
+
 namespace openperf::tvlp::internal::worker {
 
 namespace swagger = swagger::v1::model;

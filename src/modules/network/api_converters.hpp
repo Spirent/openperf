@@ -6,15 +6,18 @@
 
 #include "api.hpp"
 
-#include "swagger/v1/model/BulkCreateNetworkServersRequest.h"
-#include "swagger/v1/model/BulkDeleteNetworkServersRequest.h"
-#include "swagger/v1/model/BulkCreateNetworkGeneratorsRequest.h"
-#include "swagger/v1/model/BulkDeleteNetworkGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStartNetworkGeneratorsRequest.h"
-#include "swagger/v1/model/BulkStopNetworkGeneratorsRequest.h"
-#include "swagger/v1/model/NetworkGenerator.h"
-#include "swagger/v1/model/NetworkGeneratorResult.h"
-#include "swagger/v1/model/NetworkServer.h"
+namespace swagger::v1::model {
+class BulkCreateNetworkServersRequest;
+class BulkDeleteNetworkServersRequest;
+class BulkCreateNetworkGeneratorsRequest;
+class BulkDeleteNetworkGeneratorsRequest;
+class BulkStartNetworkGeneratorsRequest;
+class BulkStopNetworkGeneratorsRequest;
+class NetworkGenerator;
+class NetworkGeneratorConfig;
+class NetworkGeneratorResult;
+class NetworkServer;
+} // namespace swagger::v1::model
 
 namespace openperf::network::api {
 

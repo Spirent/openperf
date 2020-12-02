@@ -9,6 +9,16 @@
 
 #include "swagger/converters/network.hpp"
 
+#include "swagger/v1/model/BulkCreateNetworkServersRequest.h"
+#include "swagger/v1/model/BulkDeleteNetworkServersRequest.h"
+#include "swagger/v1/model/BulkCreateNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/BulkDeleteNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStopNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/NetworkGenerator.h"
+#include "swagger/v1/model/NetworkGeneratorResult.h"
+#include "swagger/v1/model/NetworkServer.h"
+
 namespace openperf::network {
 
 using namespace Pistache;
@@ -382,8 +392,8 @@ void handler::create_generator(const Rest::Request& request,
                     .c_str());
         }
 
-        auto api_request = api::request::generator::create{
-            std::make_unique<model::generator>(
+        auto api_request =
+            api::request::generator::create{std::make_unique<model::generator>(
                 api::from_swagger(generator_model))};
         auto api_reply = submit_request(m_socket.get(), std::move(api_request));
         if (auto reply = std::get_if<api::reply::generator::list>(&api_reply)) {
