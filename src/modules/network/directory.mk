@@ -3,7 +3,7 @@
 #
 
 NETWORK_DEPENDS += api expected framework json pistache swagger_model \
-	timesync versions
+	timesync versions socket_client socket_server
 
 NETWORK_SOURCES += \
 	api_converters.cpp \
