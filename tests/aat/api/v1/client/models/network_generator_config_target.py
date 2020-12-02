@@ -42,7 +42,7 @@ class NetworkGeneratorConfigTarget(object):
         'protocol': 'protocol'
     }
 
-    def __init__(self, host='127.0.0.1', port=3357, protocol=None):  # noqa: E501
+    def __init__(self, host='127.0.0.1', port=None, protocol=None):  # noqa: E501
         """NetworkGeneratorConfigTarget - a model defined in Swagger"""  # noqa: E501
 
         self._host = None

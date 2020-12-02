@@ -20,7 +20,7 @@ namespace model {
 NetworkServer::NetworkServer()
 {
     m_Id = "";
-    m_Port = 0L;
+    m_Port = 0;
     m_Protocol = "";
     
 }
@@ -65,11 +65,11 @@ void NetworkServer::setId(std::string value)
     m_Id = value;
     
 }
-int64_t NetworkServer::getPort() const
+int32_t NetworkServer::getPort() const
 {
     return m_Port;
 }
-void NetworkServer::setPort(int64_t value)
+void NetworkServer::setPort(int32_t value)
 {
     m_Port = value;
     

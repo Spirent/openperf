@@ -44,7 +44,7 @@ class NetworkServer(object):
         'stats': 'stats'
     }
 
-    def __init__(self, id=None, port=3357, protocol=None, stats=None):  # noqa: E501
+    def __init__(self, id=None, port=None, protocol=None, stats=None):  # noqa: E501
         """NetworkServer - a model defined in Swagger"""  # noqa: E501
 
         self._id = None

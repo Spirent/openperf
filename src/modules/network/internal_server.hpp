@@ -5,7 +5,7 @@
 #include <thread>
 
 #include "modules/dynamic/spool.hpp"
-#include "firehose/server_common.hpp"
+#include "firehose/server.hpp"
 #include "models/server.hpp"
 
 namespace openperf::network::internal {
