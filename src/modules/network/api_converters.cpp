@@ -3,6 +3,16 @@
 #include <iomanip>
 #include <sstream>
 
+#include "swagger/v1/model/BulkCreateNetworkServersRequest.h"
+#include "swagger/v1/model/BulkDeleteNetworkServersRequest.h"
+#include "swagger/v1/model/BulkCreateNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/BulkDeleteNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStopNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/NetworkGenerator.h"
+#include "swagger/v1/model/NetworkGeneratorResult.h"
+#include "swagger/v1/model/NetworkServer.h"
+
 namespace openperf::network::api {
 
 template <typename Rep, typename Period>
