@@ -291,11 +291,13 @@ template <typename ProcessType> driver<ProcessType>::driver()
     auto port_ids = config::dpdk_id_map();
 
     /* Drop any configured ports we don't know about */
-    for (const auto& pair : port_ids) {
+    for (auto it = std::begin(port_ids); it != std::end(port_ids);) {
         if (std::find(
-                std::begin(port_indexes), std::end(port_indexes), pair.first)
+                std::begin(port_indexes), std::end(port_indexes), it->first)
             == std::end(port_indexes)) {
-            port_ids.erase(pair.first);
+            port_ids.erase(it++);
+        } else {
+            ++it;
         }
     }
 
@@ -336,8 +338,8 @@ driver<ProcessType>::driver(driver&& other) noexcept
 {}
 
 template <typename ProcessType>
-driver<ProcessType>&
-driver<ProcessType>::driver::operator=(driver&& other) noexcept
+driver<ProcessType>& driver<ProcessType>::driver::
+operator=(driver&& other) noexcept
 {
     if (this != &other) {
         m_process = std::move(other.m_process);
