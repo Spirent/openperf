@@ -6,7 +6,7 @@
 #include <vector>
 #include <zmq.h>
 
-#include "server_common.hpp"
+#include "server.hpp"
 
 namespace openperf::network::internal::firehose {
 

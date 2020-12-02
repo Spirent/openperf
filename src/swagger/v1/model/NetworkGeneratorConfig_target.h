@@ -56,8 +56,8 @@ public:
         /// <summary>
     /// Port on which client is trying to establish connection
     /// </summary>
-    int64_t getPort() const;
-    void setPort(int64_t value);
+    int32_t getPort() const;
+    void setPort(int32_t value);
         /// <summary>
     /// Protocol to establish connection between client and host
     /// </summary>
@@ -67,7 +67,7 @@ public:
 protected:
     std::string m_Host;
 
-    int64_t m_Port;
+    int32_t m_Port;
 
     std::string m_Protocol;
 

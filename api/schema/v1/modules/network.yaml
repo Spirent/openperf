@@ -410,7 +410,6 @@ definitions:
         description: Unique network server identifier
       port:
         type: integer
-        format: int64
         description: UDP/TCP port on which to listen for client connections
         default: 3357
       protocol:
@@ -489,7 +488,6 @@ definitions:
             default: 127.0.0.1
           port:
             type: integer
-            format: int64
             description: Port on which client is trying to establish connection
             default: 3357
           protocol:

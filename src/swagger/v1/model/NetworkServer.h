@@ -57,8 +57,8 @@ public:
         /// <summary>
     /// UDP/TCP port on which to listen for client connections
     /// </summary>
-    int64_t getPort() const;
-    void setPort(int64_t value);
+    int32_t getPort() const;
+    void setPort(int32_t value);
         /// <summary>
     /// Protocol which is used to establish client connections
     /// </summary>
@@ -73,7 +73,7 @@ public:
 protected:
     std::string m_Id;
 
-    int64_t m_Port;
+    int32_t m_Port;
 
     std::string m_Protocol;
 
