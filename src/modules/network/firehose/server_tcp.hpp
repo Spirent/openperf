@@ -10,7 +10,7 @@
 
 namespace openperf::network::internal::firehose {
 
-class server_tcp : public server
+class server_tcp final : public server
 {
 private:
     struct zmq_ctx_deleter

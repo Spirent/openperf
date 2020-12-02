@@ -5,7 +5,7 @@
 
 namespace openperf::network::internal::drivers {
 
-class kernel : public driver
+class kernel final : public driver
 {
 public:
     static constexpr std::string_view key = "kernel";

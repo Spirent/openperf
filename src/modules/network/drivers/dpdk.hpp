@@ -6,7 +6,7 @@
 
 namespace openperf::network::internal::drivers {
 
-class dpdk : public driver
+class dpdk final : public driver
 {
 public:
     static constexpr std::string_view key = "dpdk";
