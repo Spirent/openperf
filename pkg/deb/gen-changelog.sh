@@ -5,6 +5,8 @@
 # packaging tools). Furthermore, the script does not report the very first commit due to how the
 # git log query ranges work (i.e. omitting the last entry).
 #
+set -euo pipefail
+
 # The script takes an optional package version. If not supplied, it is defaulted to 1.
 PKG_VERSION="${1:-1}"
 
@@ -17,19 +19,21 @@ TAGS=($(git --no-pager for-each-ref --sort=creatordate \
     grep -E '^v[0-9]+\.[0-9]+\.[0-9]+\|' | tac))
 IFS="${OIFS}"
 
-# Get the hash for the oldest comment (we put a fake date on
-# the end to make the hash look like one of the release tags)
-TAGS+=("$(git log --reverse | head -n 1 | cut -d' ' -f 2)|DATE_NOT_USED")
+# Get the hash for the oldest comment (We put a fake date on the end to make the hash look like
+# one of the release tags. Also, we check for pipe failures on the script. Because of the early
+# terminate from the head command, we can receive a SIGPIPE(141). The code ignores the false error.)
+TAGS+=("$(git --no-pager log --reverse | head -n 1 \
+    | cut -d' ' -f 2 || test $? -eq 141)|DATE_NOT_USED")
 
 # Create a changelog section for each release tag
 CURR_INDEX=0
+TAG_COUNT=${#TAGS[@]}
 while : ; do
     # Going from newest tags to older tags, get the previous tag (this exits the
     # loop if we find there is no previous tag and hence at the end of the sections)
     PREV_INDEX=$((CURR_INDEX+1))
-    PREV="${TAGS[${PREV_INDEX}]}"
-    [[ -n "${PREV}" ]] || break
-    PREV_TAG="${PREV%%|*}"
+    ((PREV_INDEX < TAG_COUNT)) || break
+    PREV_TAG="${TAGS[${PREV_INDEX}]%%|*}"
 
     # Get the current release tag
     CURR="${TAGS[$CURR_INDEX]}"
