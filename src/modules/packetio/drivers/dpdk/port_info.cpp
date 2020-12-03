@@ -41,7 +41,13 @@ std::optional<std::string> interface_name(uint16_t port_id)
 
 uint32_t max_rx_pktlen(uint16_t port_id)
 {
-    return (get_info_field(port_id, &rte_eth_dev_info::max_rx_pktlen));
+    /*
+     * XXX: The E1000 driver can't actually use the maximum value, 16383, it
+     * advertises. So, we just clamp the value here to prevent issues.
+     * If 9k frames are insufficient, adjust as necessary.
+     */
+    return (std::min(
+        9 * 1024U, get_info_field(port_id, &rte_eth_dev_info::max_rx_pktlen)));
 }
 
 uint32_t max_lro_pkt_size(uint16_t port_id)
