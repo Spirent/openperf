@@ -59,8 +59,12 @@ tcpip_input_queue::tcpip_input_queue()
     m_queue = std::unique_ptr<rte_ring, rte_ring_deleter>(
         (rte_ring_create(ring_name,
                          rx_queue_size,
-                         static_cast<int>(rte_lcore_id()),
+                         static_cast<int>(rte_socket_id()),
                          RING_F_SC_DEQ)));
+    if (!m_queue) {
+        throw std::runtime_error("Could not allocate stack input queue: "
+                                 + std::string(rte_strerror(rte_errno)));
+    }
 }
 
 void tcpip_input_queue::ack() { m_notify.clear(std::memory_order_release); }
