@@ -20,10 +20,6 @@ libopenperf-shim: deps
 package-deb: openperf libopenperf-shim deps
 	@cd pkg && $(MAKE) package-deb
 
-.PHONY: package-rpm
-package-rpm: openperf libopenperf-shim deps
-	@cd pkg && $(MAKE) package-rpm
-
 .PHONY: test
 test: test_unit test_aat
 

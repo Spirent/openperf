@@ -43,11 +43,10 @@ $(CONFIG_FILE): ./config.yaml
 	@mkdir -p $(dir $@)
 	@cp -pf $< $@
 
-# Generate the changelog from the git log content (the generated file
-# will be line wrapped at 80 characters to avoid lintian warnings)
+# Generate the changelog from the git log content
 $(CHANGELOG_FILE):
 	@mkdir -p $(dir $@)
-	@./gen-changelog.sh "${PKG_VERSION}" | fmt -w80 -s > $@
+	@./gen-changelog.sh "${PKG_VERSION}" > $@
 
 # Pass variables to the makefile called from debuild
 $(VARS_MK):

@@ -38,10 +38,11 @@ while : ; do
     CURR_DATE="${CURR_DATE%% *}"
     CURR_DATE="$(date -d "${CURR_DATE}" +"%a, %d %b %Y %X %z")"
 
-    # Create the section of output for the current release tag
+    # Create the section of output for the current release tag (we format
+    # the output to no more than 80 columns to avoid lintian warnings)
     echo "openperf (${CURR_TAG#v}-${PKG_VERSION}) unstable; urgency=low";
     echo
-    git --no-pager log --pretty=format:'  * %s' "${PREV_TAG}".."${CURR_TAG}"
+    git --no-pager log --pretty=format:'  * %s' "${PREV_TAG}".."${CURR_TAG}" | fmt -w80 -s
     echo
     echo
     echo " -- Spirent Builder <support@spirent.com>  ${CURR_DATE}"

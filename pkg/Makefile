@@ -4,25 +4,17 @@
 	all \
 	package \
 	package-deb \
-	package-rpm \
 	clean \
-	clean-deb \
-	clean-rpm
+	clean-deb
 
 all: package
 
-package: package-deb package-rpm
+package: package-deb
 
 package-deb:
 	cd deb && $(MAKE) all
 
-package-rpm:
-	cd rpm && $(MAKE) all
-
 clean-deb:
 	cd deb && $(MAKE) clean
 
-clean-rpm:
-	cd rpm && $(MAKE) clean
-
-clean: clean-deb clean-rpm
+clean: clean-deb
