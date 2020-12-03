@@ -12,8 +12,8 @@ ENV LLVM_VERSION 7
 RUN apt-get clean && \
     apt-get update && \
     apt-get install -y --no-install-recommends autoconf automake \
-    bison build-essential ca-certificates flex git \
-    libcap-dev libcap2-bin libnuma-dev libtool netcat-openbsd \
+    bison build-essential ca-certificates debhelper devscripts flex \
+    git libcap-dev libcap2-bin libnuma-dev libtool lintian netcat-openbsd \
     pkg-config python sudo virtualenv wget \
     clang-${LLVM_VERSION} clang-format-${LLVM_VERSION} \
     clang-tidy-${LLVM_VERSION} \
