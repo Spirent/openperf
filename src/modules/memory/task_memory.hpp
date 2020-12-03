@@ -31,12 +31,7 @@ class task_memory : public openperf::framework::generator::task<memory_stat>
 protected:
     task_memory_config m_config;
     std::shared_ptr<buffer> m_buffer;
-
-    struct
-    {
-        void* ptr;
-        size_t size;
-    } m_scratch;
+    buffer m_scratch;
 
     task_memory_stat m_stat;
     size_t m_op_index;
@@ -50,7 +45,6 @@ public:
     task_memory(task_memory&&) noexcept;
     task_memory(const task_memory&) = delete;
     explicit task_memory(const task_memory_config&);
-    ~task_memory() override;
 
     void reset() override;
 
@@ -61,10 +55,6 @@ protected:
     void config(const task_memory_config&);
     virtual void operation(uint64_t nb_ops) = 0;
     virtual memory_stat make_stat(const task_memory_stat&) = 0;
-
-private:
-    void scratch_allocate(size_t size);
-    void scratch_free();
 };
 
 } // namespace openperf::memory::internal

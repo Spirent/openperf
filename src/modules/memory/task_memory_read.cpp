@@ -12,7 +12,7 @@ void task_memory_read::operation(uint64_t nb_ops)
     auto buffer_pointer = reinterpret_cast<uint8_t*>(m_buffer->data());
     for (size_t i = 0; i < nb_ops; ++i) {
         auto idx = m_config.indexes->at(m_op_index++);
-        std::memcpy(m_scratch.ptr,
+        std::memcpy(m_scratch.data(),
                     buffer_pointer + (idx * m_config.block_size),
                     m_config.block_size);
         if (m_op_index == m_config.indexes->size()) { m_op_index = 0; }
