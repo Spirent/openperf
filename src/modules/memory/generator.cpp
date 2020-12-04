@@ -256,6 +256,14 @@ void generator::config(const generator::config_t& cfg)
             + " bytes are available");
     }
 
+    if (std::max(cfg.read.block_size, cfg.write.block_size) > cfg.buffer_size) {
+        throw std::runtime_error(
+            "Requested block size is greater than buffer (buffer: "
+            + std::to_string(cfg.buffer_size)
+            + ", read_block: " + std::to_string(cfg.read.block_size)
+            + ", write_block: " + std::to_string(cfg.write.block_size));
+    }
+
     m_buffer_size = cfg.buffer_size;
     if (auto buffer = cfg.buffer.lock()) {
         assert(m_buffer_size <= buffer->size());
