@@ -4,9 +4,14 @@
 
 #include <cassert>
 #include <algorithm>
+#include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <vector>
+
+#include "lib/packet/type/mac_address.hpp"
+#include "utils/enum_flags.hpp"
 
 /* Linux headers */
 #include <sys/socket.h>
@@ -20,6 +25,19 @@
 #include "netif/ethernet.h"
 #include "stack/lwip/packet.h"
 
+enum class packet_netif_status_flags {
+    none = 0,
+    promiscuous = (1 << 0),
+    all_multicast = (1 << 1)
+};
+
+declare_enum_flags(packet_netif_status_flags);
+
+struct packet_netif_status {
+    openperf::utils::bit_flags<packet_netif_status_flags> flags = packet_netif_status_flags::none;
+    std::set<libpacket::type::mac_address> memberships;
+};
+
 struct packet_pcb
 {
     IP_PCB; /* needed for {get,set}sockopt compatibility */
@@ -28,6 +46,7 @@ struct packet_pcb
     void* packet_arg = nullptr;
     packet_type_t type = PACKET_TYPE_NONE;
     u16_t proto = 0;
+    std::map<uint8_t, packet_netif_status> ifstatus;
     struct {
         unsigned nb_packets = 0;
         unsigned nb_drops = 0;
@@ -38,18 +57,51 @@ struct packet_pcb
 static std::vector<std::unique_ptr<packet_pcb>> packet_pcbs;
 
 static bool packet_match(const struct packet_pcb* pcb,
-                        const struct netif* inp,
-                        const struct eth_hdr* ethhdr)
+                         const struct netif* inp,
+                         const struct eth_hdr* ethhdr)
 {
+    /* Start by filtering out obvious false matches. */
     if (!pcb->recv) { return (false); }
 
-    if (pcb->netif_idx != netif_get_index(inp)) {
+    /* Verify proper protocol */
+    if (pcb->proto != PP_HTONS(ETH_P_ALL)
+        && pcb->proto != ethhdr->type) { return (false); }
+
+    /* Verify proper index */
+    if (pcb->netif_idx != NETIF_NO_INDEX
+        && pcb->netif_idx != netif_get_index(inp)) {
         return (false);
     }
 
-    if (pcb->proto == PP_HTONS(ETH_P_ALL)
-        || pcb->proto == ethhdr->type) { return (true); }
+    /*
+     * At this point, we can receive the packet and we have a protocol
+     * and index match. Check for addresses we are supposed to receive.
+     */
+    auto dst_mac = libpacket::type::mac_address(ethhdr->dest.addr);
+    if (dst_mac == libpacket::type::mac_address(inp->hwaddr)) {
+        return (true);
+    }
 
+    /* Check socket membership status */
+    if (pcb->ifstatus.count(netif_get_index(inp))) {
+        const auto& status = pcb->ifstatus.at(netif_get_index(inp));
+        if (status.flags & packet_netif_status_flags::promiscuous) {
+            return (true);
+        }
+
+        /* Not promiscuous */
+        if (is_multicast(dst_mac)) {
+            if (status.flags & packet_netif_status_flags::all_multicast) {
+                return (true);
+            }
+
+            if (status.memberships.count(dst_mac)) {
+                return (true);
+            }
+        }
+    }
+
+    /* No match found */
     return (false);
 }
 
@@ -96,7 +148,7 @@ void packet_input(struct pbuf* p, struct netif* inp)
                         to_drop = SIZEOF_ETH_HDR + SIZEOF_VLAN_HDR;
                     }
 #endif
-                    pbuf_remove_header(p, to_drop);
+                    pbuf_remove_header(clone, to_drop);
                 }
 
                 pcb->stats.nb_packets++;
@@ -211,6 +263,54 @@ err_t packet_getsockname(const struct packet_pcb* pcb, struct sockaddr_ll* sll)
 packet_type_t packet_getsocktype(const struct packet_pcb* pcb)
 {
     return (pcb->type);
+}
+
+void packet_set_promiscuous(struct packet_pcb* pcb, uint8_t ifindex, int enable)
+{
+    if (!pcb->ifstatus.count(ifindex)) {
+        pcb->ifstatus.emplace(ifindex, packet_netif_status{});
+    }
+
+    if (enable) {
+        pcb->ifstatus[ifindex].flags |= packet_netif_status_flags::promiscuous;
+    } else {
+        pcb->ifstatus[ifindex].flags &= ~packet_netif_status_flags::promiscuous;
+    }
+}
+
+void packet_set_multicast(struct packet_pcb* pcb, uint8_t ifindex, int enable)
+{
+    if (!pcb->ifstatus.count(ifindex)) {
+        pcb->ifstatus.emplace(ifindex, packet_netif_status{});
+    }
+
+    if (enable) {
+        pcb->ifstatus[ifindex].flags |= packet_netif_status_flags::all_multicast;
+    } else {
+        pcb->ifstatus[ifindex].flags &= ~packet_netif_status_flags::all_multicast;
+    }
+}
+
+err_t packet_add_membership(struct packet_pcb* pcb, uint8_t ifindex, const uint8_t addr[8])
+{
+    auto mac = libpacket::type::mac_address(addr);
+    if (!is_multicast(mac)) {
+        return (ERR_ARG);
+    }
+
+    if (!pcb->ifstatus.count(ifindex)) {
+        pcb->ifstatus.emplace(ifindex, packet_netif_status{});
+    }
+
+    pcb->ifstatus[ifindex].memberships.insert(mac);
+    return (ERR_OK);
+}
+
+void packet_drop_membership(struct packet_pcb* pcb, uint8_t ifindex, const uint8_t addr[8])
+{
+    if (pcb->ifstatus.count(ifindex)) {
+        pcb->ifstatus[ifindex].memberships.erase(libpacket::type::mac_address(addr));
+    }
 }
 
 unsigned packet_stat_total(const struct packet_pcb* pcb)
