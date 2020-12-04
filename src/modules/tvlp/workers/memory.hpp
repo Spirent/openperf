@@ -2,11 +2,17 @@
 #define _OP_TVLP_MEMORY_WORKER_HPP_
 
 #include "tvlp/worker.hpp"
+#include "modules/memory/buffer.hpp"
 
 namespace openperf::tvlp::internal::worker {
 
 class memory_tvlp_worker_t : public tvlp_worker_t
 {
+private:
+    using buffer = memory::internal::buffer;
+
+    std::shared_ptr<buffer> m_buffer;
+
 public:
     memory_tvlp_worker_t() = delete;
     memory_tvlp_worker_t(const memory_tvlp_worker_t&) = delete;
