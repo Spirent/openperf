@@ -9,12 +9,24 @@ namespace openperf::tvlp::internal::worker {
 
 namespace swagger = swagger::v1::model;
 using namespace openperf::memory::api;
-// using namespace Pistache;
 
 memory_tvlp_worker_t::memory_tvlp_worker_t(
     void* context, const model::tvlp_profile_t::series& series)
     : tvlp_worker_t(context, endpoint, series)
-{}
+{
+    // Find the largest buffer from configuration
+    int64_t buffer_size = 0;
+    for (const auto& entry : series) {
+        auto config = swagger::MemoryGeneratorConfig{};
+        config.fromJson(const_cast<nlohmann::json&>(entry.config));
+        buffer_size = std::max(config.getBufferSize(), buffer_size);
+    }
+
+    // Initialize the shared buffer
+    assert(buffer_size > 0);
+    m_buffer = std::make_shared<buffer>();
+    m_buffer->resize(buffer_size);
+}
 
 memory_tvlp_worker_t::~memory_tvlp_worker_t() { stop(); }
 
@@ -35,9 +47,12 @@ memory_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
     config.setWritesPerSec(
         static_cast<uint32_t>(config.getWritesPerSec() * load_scale));
 
+    auto memgen_config = from_swagger(config);
+    memgen_config.buffer = m_buffer;
+
     request::generator::create data{
         .is_running = false,
-        .config = from_swagger(config),
+        .config = memgen_config,
     };
 
     auto api_reply =
