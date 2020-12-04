@@ -356,14 +356,14 @@ with description('Packet Capture,', 'packet_capture') as self:
             with description('manual stop,'):
                 with description('counters,'):
                     with it('has packets'):
-                        cap = self.api.create_packet_capture(capture_model(self.api.api_client, 'dataplane-server'))
+                        cap = self.api.create_packet_capture(capture_model(self.api.api_client, 'server-v4'))
                         expect(cap).to(be_valid_packet_capture)
                         self.capture = cap
 
                         self.result = self.api.start_packet_capture(self.capture.id)
                         expect(self.result).to(be_valid_packet_capture_result)
                         do_ping(self.intf_api, self.temp_ping,
-                                'dataplane-client', 'dataplane-server',
+                                'client-v4', 'server-v4',
                                 socket.AF_INET, 2)
                         self.api.stop_packet_capture(self.capture.id)
                         result = self.api.get_packet_capture_result(id=self.result.id)
@@ -372,14 +372,14 @@ with description('Packet Capture,', 'packet_capture') as self:
 
                 with description('pcap,'):
                     with it('returns pcap'):
-                        cap = self.api.create_packet_capture(capture_model(self.api.api_client, 'dataplane-server'))
+                        cap = self.api.create_packet_capture(capture_model(self.api.api_client, 'server-v4'))
                         expect(cap).to(be_valid_packet_capture)
                         self.capture = cap
 
                         self.result = self.api.start_packet_capture(self.capture.id)
                         expect(self.result).to(be_valid_packet_capture_result)
                         do_ping(self.intf_api, self.temp_ping,
-                                'dataplane-client', 'dataplane-server',
+                                'client-v4', 'server-v4',
                                 socket.AF_INET, 4)
                         self.api.stop_packet_capture(self.capture.id)
                         result = self.api.get_packet_capture_result(id=self.result.id)
@@ -408,7 +408,7 @@ with description('Packet Capture,', 'packet_capture') as self:
             with description('duration,'):
                 with it('stops automatically'):
                     capture_duration_sec = 2
-                    cap = capture_model(self.api.api_client, 'dataplane-server')
+                    cap = capture_model(self.api.api_client, 'server-v4')
                     cap.config.duration = capture_duration_sec * 1000
                     cap = self.api.create_packet_capture(cap)
                     expect(cap).to(be_valid_packet_capture)
@@ -419,7 +419,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(self.result).to(be_valid_packet_capture_result)
                     expect(self.result.state == 'started')
                     do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET, 4)
                     now = datetime.datetime.now()
                     while (now - start_time).total_seconds() < (capture_duration_sec + 2):
@@ -447,7 +447,7 @@ with description('Packet Capture,', 'packet_capture') as self:
             with description('packet_count,'):
                 with it('stops automatically'):
                     packet_count = 3
-                    cap = capture_model(self.api.api_client, 'dataplane-server')
+                    cap = capture_model(self.api.api_client, 'server-v4')
                     cap.config.packet_count = packet_count
                     cap = self.api.create_packet_capture(cap)
                     expect(cap).to(be_valid_packet_capture)
@@ -458,7 +458,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(self.result).to(be_valid_packet_capture_result)
                     expect(self.result.state == 'started')
                     do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET, 5)
                     now = datetime.datetime.now()
                     while (now - start_time).total_seconds() < 5:
@@ -477,7 +477,7 @@ with description('Packet Capture,', 'packet_capture') as self:
             with description('filter,'):
                 with it('filters w/ icmp and length == 1000'):
                     packet_len = 1000
-                    cap = capture_model(self.api.api_client, 'dataplane-server')
+                    cap = capture_model(self.api.api_client, 'server-v4')
                     cap.config.filter = 'icmp and length == 1000'
                     cap = self.api.create_packet_capture(cap)
                     expect(cap).to(be_valid_packet_capture)
@@ -488,11 +488,11 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(self.result.state == 'started')
                     # Send normal size packets
                     do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET, 2)
                     # Send large packets
                     do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET, 2, packet_len - ETH_HDR_SIZE - IPV4_HDR_SIZE - ICMP_HDR_SIZE)
                     self.api.stop_packet_capture(self.capture.id)
                     result = self.api.get_packet_capture_result(id=self.result.id)
@@ -514,7 +514,7 @@ with description('Packet Capture,', 'packet_capture') as self:
             with description('partial pcap read,'):
                 with it('succeeds'):
                     packet_count = 8
-                    cap = capture_model(self.api.api_client, 'dataplane-server')
+                    cap = capture_model(self.api.api_client, 'server-v4')
                     # Set filter to only all ICMP to make it easier to know what the packets are
                     cap.config.filter = 'icmp'
                     cap = self.api.create_packet_capture(cap)
@@ -526,7 +526,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(self.result.state == 'started')
 
                     do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET, packet_count)
                     self.api.stop_packet_capture(self.capture.id)
                     result = self.api.get_packet_capture_result(id=self.result.id)
@@ -573,7 +573,7 @@ with description('Packet Capture,', 'packet_capture') as self:
             with description('start trigger,'):
                 with it('triggers start w/ icmp and length == 1000'):
                     packet_len = 1000
-                    cap = capture_model(self.api.api_client, 'dataplane-server')
+                    cap = capture_model(self.api.api_client, 'server-v4')
                     cap.config.start_trigger = 'icmp and length == 1000'
                     cap = self.api.create_packet_capture(cap)
                     expect(cap).to(be_valid_packet_capture)
@@ -584,11 +584,11 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(self.result.state == 'started')
                     # Send normal size packets
                     do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET, 2)
                     # Send large packets
                     do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET, 2, packet_len - ETH_HDR_SIZE - IPV4_HDR_SIZE - ICMP_HDR_SIZE)
                     self.api.stop_packet_capture(self.capture.id)
                     result = self.api.get_packet_capture_result(id=self.result.id)
@@ -610,7 +610,7 @@ with description('Packet Capture,', 'packet_capture') as self:
             with description('stop trigger,'):
                 with it('triggers stop w/ icmp and length == 1000'):
                     packet_len = 1000
-                    cap = capture_model(self.api.api_client, 'dataplane-server')
+                    cap = capture_model(self.api.api_client, 'server-v4')
                     cap.config.stop_trigger = 'icmp and length == 1000'
                     cap = self.api.create_packet_capture(cap)
                     expect(cap).to(be_valid_packet_capture)
@@ -621,11 +621,11 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(self.result.state == 'started')
                     # Send normal size packets
                     do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET, 2)
                     # Send large packets
                     do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET, 2, packet_len - ETH_HDR_SIZE - IPV4_HDR_SIZE - ICMP_HDR_SIZE)
                     now = datetime.datetime.now()
                     start_time = now
@@ -656,7 +656,7 @@ with description('Packet Capture,', 'packet_capture') as self:
 
             with description('interface tx capture,'):
                 with it('succeeds'):
-                    cap = capture_model(self.api.api_client, 'dataplane-server', 1*1024*1024)
+                    cap = capture_model(self.api.api_client, 'server-v4', 1*1024*1024)
                     cap.direction = 'tx'
                     cap = self.api.create_packet_capture(cap)
                     expect(cap).to(be_valid_packet_capture)
@@ -666,7 +666,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(self.result).to(be_valid_packet_capture_result)
                     expect(self.result.state == 'started')
                     do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET, 2)
                     self.api.stop_packet_capture(self.capture.id)
                     result = self.api.get_packet_capture_result(id=self.result.id)
@@ -689,7 +689,7 @@ with description('Packet Capture,', 'packet_capture') as self:
 
             with description('interface rx_and_tx capture,'):
                 with it('succeeds'):
-                    cap = capture_model(self.api.api_client, 'dataplane-server', 1*1024*1024)
+                    cap = capture_model(self.api.api_client, 'server-v4', 1*1024*1024)
                     cap.direction = 'rx_and_tx'
                     cap = self.api.create_packet_capture(cap)
                     expect(cap).to(be_valid_packet_capture)
@@ -699,7 +699,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(self.result).to(be_valid_packet_capture_result)
                     expect(self.result.state == 'started')
                     do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET, 2)
                     self.api.stop_packet_capture(self.capture.id)
                     result = self.api.get_packet_capture_result(id=self.result.id)
@@ -721,7 +721,7 @@ with description('Packet Capture,', 'packet_capture') as self:
 
             with description('port rx_and_tx capture,'):
                 with it('succeeds'):
-                    # dataplane-server is on port0
+                    # server-v4 is on port0
                     cap = capture_model(self.api.api_client, 'port0', 1*1024*1024)
                     cap.direction = 'rx_and_tx'
                     cap = self.api.create_packet_capture(cap)
@@ -732,7 +732,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(self.result).to(be_valid_packet_capture_result)
                     expect(self.result.state == 'started')
                     do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET, 2)
                     self.api.stop_packet_capture(self.capture.id)
                     result = self.api.get_packet_capture_result(id=self.result.id)
@@ -754,11 +754,11 @@ with description('Packet Capture,', 'packet_capture') as self:
 
             with description('rx + rx capture,'):
                 with it('succeeds'):
-                    server_cap = capture_model(self.api.api_client, 'dataplane-server', 1*1024*1024)
+                    server_cap = capture_model(self.api.api_client, 'server-v4', 1*1024*1024)
                     server_cap = self.api.create_packet_capture(server_cap)
                     expect(server_cap).to(be_valid_packet_capture)
 
-                    client_cap = capture_model(self.api.api_client, 'dataplane-client', 1*1024*1024)
+                    client_cap = capture_model(self.api.api_client, 'client-v4', 1*1024*1024)
                     client_cap = self.api.create_packet_capture(client_cap)
                     expect(client_cap).to(be_valid_packet_capture)
 
@@ -771,7 +771,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     expect(client_result.state == 'started')
 
                     do_ping(self.intf_api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET, 2)
 
                     self.api.stop_packet_capture(server_cap.id)

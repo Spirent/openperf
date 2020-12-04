@@ -19,6 +19,7 @@ from common.helper import check_modules_exists
 ###
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                              os.environ.get('MAMBA_CONFIG', 'config.yaml')))
+PACKET_PING = os.path.join(os.path.dirname(__file__), '../../scripts/packet_ping.py')
 PING = subprocess.check_output('which ping'.split()).decode().rstrip()
 NC = subprocess.check_output('which nc'.split()).decode().rstrip()
 
@@ -97,6 +98,25 @@ def ping_command(ping_binary, address, version=socket.AF_INET):
     return ' '.join(args).split()
 
 
+def packet_ping_command(api_client, src_interface, dst_interface, socket_type):
+    """Generate a packet_ping.py shell command for Popen"""
+    args = [sys.executable, PACKET_PING]
+
+    # One ping only
+    args.append('-c 1')
+
+    # Do we need the MAC?
+    if socket_type == socket.SOCK_RAW:
+        args.append('-M {}'.format(get_interface_mac(api_client, dst_interface)))
+
+    args.append(src_interface)
+
+    # Find the target IP address
+    args.append(get_interface_address(api_client, dst_interface, socket.AF_INET))
+
+    return (' '.join(args).split())
+
+
 def is_server_interface(interface_id):
     return interface_id.find('server') >= 0
 
@@ -113,6 +133,15 @@ def get_interface_address(api_client, interface_id, domain):
                 return protocol.ipv6.static.address
     else:
         raise AttributeError('Unsupported domain')
+
+
+def get_interface_mac(api_client, interface_id):
+    intf = api_client.get_interface(interface_id)
+    for protocol in intf.config.protocols:
+        if protocol.eth:
+            return protocol.eth.mac_address
+
+    raise AttributeError('No MAC address found')
 
 
 def wait_for_keyword(output_stream, keyword):
@@ -302,6 +331,19 @@ def do_ping(api_client, ping_binary, src_id, dst_id, domain):
         expect(p.returncode).to(equal(0))
 
 
+def do_packet_ping(api_client, src_id, dst_id, socket_type):
+    """Perform a packet ping from src to dst using the specified binary"""
+    shim = Service(CONFIG.shim())
+
+    with open(os.devnull, 'w') as null:
+        p = subprocess.Popen(packet_ping_command(api_client, src_id, dst_id, socket_type),
+                             stdout=null, stderr=null,
+                             env={'LD_PRELOAD': shim.config.path,
+                                  'OP_BINDTODEVICE': src_id})
+        p.wait()
+        expect(p.returncode).to(equal(0))
+
+
 with description('Dataplane,', 'dataplane') as self:
 
     with before.all:
@@ -324,13 +366,13 @@ with description('Dataplane,', 'dataplane') as self:
             with description('client interface,'):
                 with it('succeeds'):
                     do_ping(self.api, self.temp_ping,
-                            'dataplane-client', 'dataplane-server',
+                            'client-v4', 'server-v4',
                             socket.AF_INET)
 
             with description('server interface,'):
                 with it('succeeds'):
                     do_ping(self.api, self.temp_ping,
-                            'dataplane-server', 'dataplane-client',
+                            'server-v4', 'client-v4',
                             socket.AF_INET)
 
             with after.all:
@@ -341,23 +383,23 @@ with description('Dataplane,', 'dataplane') as self:
                 with description('client to server,'):
                     with it('succeeds'):
                         server_rx_start = get_interface_counter(self.api,
-                                                                'dataplane-server',
+                                                                'server-v4',
                                                                 'rx_bytes')
                         client_tx_start = get_interface_counter(self.api,
-                                                                'dataplane-client',
+                                                                'client-v4',
                                                                 'tx_bytes')
 
                         read, written = do_bulk_data_transfer(self.api,
-                                                              'dataplane-server',
-                                                              'dataplane-client',
+                                                              'server-v4',
+                                                              'client-v4',
                                                               socket.AF_INET,
                                                               socket.IPPROTO_TCP)
 
                         server_rx_stop = get_interface_counter(self.api,
-                                                               'dataplane-server',
+                                                               'server-v4',
                                                                'rx_bytes')
                         client_tx_stop = get_interface_counter(self.api,
-                                                               'dataplane-client',
+                                                               'client-v4',
                                                                'tx_bytes')
 
                         expect(read).to(equal(BULK_TRANSMIT_SIZE))
@@ -371,23 +413,23 @@ with description('Dataplane,', 'dataplane') as self:
                 with description('server to client,'):
                     with it('succeeds'):
                         server_tx_start = get_interface_counter(self.api,
-                                                                'dataplane-server',
+                                                                'server-v4',
                                                                 'tx_bytes')
                         client_rx_start = get_interface_counter(self.api,
-                                                                'dataplane-client',
+                                                                'client-v4',
                                                                 'rx_bytes')
 
                         read, written = do_bulk_data_transfer(self.api,
-                                                              'dataplane-client',
-                                                              'dataplane-server',
+                                                              'client-v4',
+                                                              'server-v4',
                                                               socket.AF_INET,
                                                               socket.IPPROTO_TCP)
 
                         server_tx_stop = get_interface_counter(self.api,
-                                                               'dataplane-server',
+                                                               'server-v4',
                                                                'tx_bytes')
                         client_rx_stop = get_interface_counter(self.api,
-                                                               'dataplane-client',
+                                                               'client-v4',
                                                                'rx_bytes')
 
                         expect(read).to(equal(BULK_TRANSMIT_SIZE))
@@ -403,23 +445,23 @@ with description('Dataplane,', 'dataplane') as self:
                 with description('client to server,'):
                     with it('succeeds,'):
                         server_rx_start = get_interface_counter(self.api,
-                                                                'dataplane-server',
+                                                                'server-v4',
                                                                 'rx_bytes')
                         client_tx_start = get_interface_counter(self.api,
-                                                                'dataplane-client',
+                                                                'client-v4',
                                                                 'tx_bytes')
 
                         read, written = do_bulk_data_transfer(self.api,
-                                                              'dataplane-server',
-                                                              'dataplane-client',
+                                                              'server-v4',
+                                                              'client-v4',
                                                               socket.AF_INET,
                                                               socket.IPPROTO_UDP)
 
                         server_rx_stop = get_interface_counter(self.api,
-                                                               'dataplane-server',
+                                                               'server-v4',
                                                                'rx_bytes')
                         client_tx_stop = get_interface_counter(self.api,
-                                                               'dataplane-client',
+                                                               'client-v4',
                                                                'tx_bytes')
 
                         # Note: `nc` uses up to 16k for buffering input data.
@@ -440,23 +482,23 @@ with description('Dataplane,', 'dataplane') as self:
                 with description('server to client,'):
                     with it('succeeds'):
                         server_tx_start = get_interface_counter(self.api,
-                                                                'dataplane-server',
+                                                                'server-v4',
                                                                 'tx_bytes')
                         client_rx_start = get_interface_counter(self.api,
-                                                                'dataplane-client',
+                                                                'client-v4',
                                                                 'rx_bytes')
 
                         read, written = do_bulk_data_transfer(self.api,
-                                                              'dataplane-client',
-                                                              'dataplane-server',
+                                                              'client-v4',
+                                                              'server-v4',
                                                               socket.AF_INET,
                                                               socket.IPPROTO_UDP)
 
                         server_tx_stop = get_interface_counter(self.api,
-                                                               'dataplane-server',
+                                                               'server-v4',
                                                                'tx_bytes')
                         client_rx_stop = get_interface_counter(self.api,
-                                                               'dataplane-client',
+                                                               'client-v4',
                                                                'rx_bytes')
 
                         expect(read).to(be_above_or_equal(expected_transmit(socket.IPPROTO_UDP)))
@@ -484,13 +526,13 @@ with description('Dataplane,', 'dataplane') as self:
             with description('client interface,'):
                 with it('succeeds'):
                     do_ping(self.api, self.temp_ping,
-                            'dataplane-client-v6', 'dataplane-server-v6',
+                            'client-v6', 'server-v6',
                             socket.AF_INET6)
 
             with description('server interface,'):
                 with it('succeeds'):
                     do_ping(self.api, self.temp_ping,
-                            'dataplane-server-v6', 'dataplane-client-v6',
+                            'server-v6', 'client-v6',
                             socket.AF_INET6)
 
             with after.all:
@@ -501,23 +543,23 @@ with description('Dataplane,', 'dataplane') as self:
                 with description('client to server,'):
                     with it('succeeds'):
                         server_rx_start = get_interface_counter(self.api,
-                                                                'dataplane-server-v6',
+                                                                'server-v6',
                                                                 'rx_bytes')
                         client_tx_start = get_interface_counter(self.api,
-                                                                'dataplane-client-v6',
+                                                                'client-v6',
                                                                 'tx_bytes')
 
                         read, written = do_bulk_data_transfer(self.api,
-                                                              'dataplane-server-v6',
-                                                              'dataplane-client-v6',
+                                                              'server-v6',
+                                                              'client-v6',
                                                               socket.AF_INET6,
                                                               socket.IPPROTO_TCP)
 
                         server_rx_stop = get_interface_counter(self.api,
-                                                               'dataplane-server-v6',
+                                                               'server-v6',
                                                                'rx_bytes')
                         client_tx_stop = get_interface_counter(self.api,
-                                                               'dataplane-client-v6',
+                                                               'client-v6',
                                                                'tx_bytes')
 
                         expect(read).to(equal(BULK_TRANSMIT_SIZE))
@@ -531,23 +573,23 @@ with description('Dataplane,', 'dataplane') as self:
                 with description('server to client,'):
                     with it('succeeds'):
                         server_tx_start = get_interface_counter(self.api,
-                                                                'dataplane-server-v6',
+                                                                'server-v6',
                                                                 'tx_bytes')
                         client_rx_start = get_interface_counter(self.api,
-                                                                'dataplane-client-v6',
+                                                                'client-v6',
                                                                 'rx_bytes')
 
                         read, written = do_bulk_data_transfer(self.api,
-                                                              'dataplane-client-v6',
-                                                              'dataplane-server-v6',
+                                                              'client-v6',
+                                                              'server-v6',
                                                               socket.AF_INET6,
                                                               socket.IPPROTO_TCP)
 
                         server_tx_stop = get_interface_counter(self.api,
-                                                               'dataplane-server-v6',
+                                                               'server-v6',
                                                                'tx_bytes')
                         client_rx_stop = get_interface_counter(self.api,
-                                                               'dataplane-client-v6',
+                                                               'client-v6',
                                                                'rx_bytes')
 
                         expect(read).to(equal(BULK_TRANSMIT_SIZE))
@@ -563,23 +605,23 @@ with description('Dataplane,', 'dataplane') as self:
                 with description('client to server,'):
                     with it('succeeds,'):
                         server_rx_start = get_interface_counter(self.api,
-                                                                'dataplane-server-v6',
+                                                                'server-v6',
                                                                 'rx_bytes')
                         client_tx_start = get_interface_counter(self.api,
-                                                                'dataplane-client-v6',
+                                                                'client-v6',
                                                                 'tx_bytes')
 
                         read, written = do_bulk_data_transfer(self.api,
-                                                              'dataplane-server-v6',
-                                                              'dataplane-client-v6',
+                                                              'server-v6',
+                                                              'client-v6',
                                                               socket.AF_INET6,
                                                               socket.IPPROTO_UDP)
 
                         server_rx_stop = get_interface_counter(self.api,
-                                                               'dataplane-server-v6',
+                                                               'server-v6',
                                                                'rx_bytes')
                         client_tx_stop = get_interface_counter(self.api,
-                                                               'dataplane-client-v6',
+                                                               'client-v6',
                                                                'tx_bytes')
 
                         # Note: `nc` uses up to 16k for buffering input data.
@@ -600,23 +642,23 @@ with description('Dataplane,', 'dataplane') as self:
                 with description('server to client,'):
                     with it('succeeds'):
                         server_tx_start = get_interface_counter(self.api,
-                                                                'dataplane-server-v6',
+                                                                'server-v6',
                                                                 'tx_bytes')
                         client_rx_start = get_interface_counter(self.api,
-                                                                'dataplane-client-v6',
+                                                                'client-v6',
                                                                 'rx_bytes')
 
                         read, written = do_bulk_data_transfer(self.api,
-                                                              'dataplane-client-v6',
-                                                              'dataplane-server-v6',
+                                                              'client-v6',
+                                                              'server-v6',
                                                               socket.AF_INET6,
                                                               socket.IPPROTO_UDP)
 
                         server_tx_stop = get_interface_counter(self.api,
-                                                               'dataplane-server-v6',
+                                                               'server-v6',
                                                                'tx_bytes')
                         client_rx_stop = get_interface_counter(self.api,
-                                                               'dataplane-client-v6',
+                                                               'client-v6',
                                                                'rx_bytes')
 
                         expect(read).to(be_above_or_equal(expected_transmit(socket.IPPROTO_UDP)))
@@ -626,6 +668,24 @@ with description('Dataplane,', 'dataplane') as self:
                             .to(be_above_or_equal(read))
                         expect(server_tx_stop - server_tx_start) \
                             .to(be_above_or_equal(written))
+
+    with description('packet,', 'dataplane:packet'):
+        with description('ping,'):
+            with description('raw,'):
+                with description('client interface,'):
+                    with it('succeeds'):
+                        do_packet_ping(self.api, 'client-v4', 'server-v4', socket.SOCK_RAW)
+                with description('server interface,'):
+                    with it('succeeds'):
+                        do_packet_ping(self.api, 'server-v4', 'client-v4', socket.SOCK_RAW)
+
+            with description('dgram,'):
+                with description('client interface,'):
+                    with it('succeeds'):
+                        do_packet_ping(self.api, 'client-v4', 'server-v4', socket.SOCK_DGRAM)
+                with description('server interface,'):
+                    with it('succeeds'):
+                        do_packet_ping(self.api, 'server-v4', 'client-v4', socket.SOCK_DGRAM)
 
     with after.all:
         try:
