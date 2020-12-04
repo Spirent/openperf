@@ -75,7 +75,10 @@ serialized_msg serialize(api_reply&& msg)
                      return openperf::message::push(serialized, item.id)
                             || openperf::message::push(serialized,
                                                        item.is_running)
-                            || openperf::message::push(serialized, item.config)
+                            || openperf::message::push(
+                                serialized,
+                                std::make_unique<decltype(item.config)>(
+                                    std::move(item.config)))
                             || openperf::message::push(
                                 serialized, item.init_percent_complete);
                  },
@@ -201,7 +204,8 @@ tl::expected<api_reply, int> deserialize_reply(serialized_msg&& msg)
         reply::generator::item item{};
         item.id = openperf::message::pop_string(msg);
         item.is_running = openperf::message::pop<bool>(msg);
-        item.config = openperf::message::pop<decltype(item.config)>(msg);
+        item.config = std::move(*std::unique_ptr<decltype(item.config)>(
+            openperf::message::pop<decltype(item.config)*>(msg)));
         item.init_percent_complete = openperf::message::pop<int32_t>(msg);
         return item;
     }

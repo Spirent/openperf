@@ -31,6 +31,7 @@ public:
     {
         size_t buffer_size = 0;
         operation_config read, write;
+        std::weak_ptr<buffer> buffer;
     };
 
     using index_vector = std::vector<uint64_t>;
@@ -44,6 +45,7 @@ private:
     std::thread m_scrub_thread;
     std::atomic_bool m_scrub_aborted;
 
+    size_t m_buffer_size = 0;
     std::shared_ptr<buffer> m_buffer;
 
     struct operation_data
