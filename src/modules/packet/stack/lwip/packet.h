@@ -32,6 +32,10 @@ err_t              packet_sendto(struct packet_pcb* pcb, struct pbuf* p, const s
 void               packet_recv(struct packet_pcb* pcb, packet_recv_fn recv, void* packet_arg);
 err_t              packet_getsockname(const struct packet_pcb* pcb, struct sockaddr_ll* sll);
 packet_type_t      packet_getsocktype(const struct packet_pcb* pcb);
+void               packet_set_promiscuous(struct packet_pcb* pcb, uint8_t ifindex, int enable);
+void               packet_set_multicast(struct packet_pcb* pcb, uint8_t ifindex, int enable);
+err_t              packet_add_membership(struct packet_pcb* pcb, uint8_t ifindex, const uint8_t addr[8]);
+void               packet_drop_membership(struct packet_pcb* pcb, uint8_t ifindex, const uint8_t addr[8]);
 unsigned           packet_stat_total(const struct packet_pcb* pcb);
 unsigned           packet_stat_drops(const struct packet_pcb* pcb);
 
