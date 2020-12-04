@@ -175,14 +175,47 @@ packet_socket::do_setsockopt(packet_pcb* pcb,
         return (do_sock_setsockopt(reinterpret_cast<ip_pcb*>(pcb), setsockopt));
     case SOL_PACKET:
         switch (setsockopt.optname) {
-        case PACKET_ADD_MEMBERSHIP:
-        case PACKET_DROP_MEMBERSHIP:
-            /*
-             * Our packet sockets are promiscuous by default, so implementing
-             * these options aren't strictly necessary. Just silently ignore
-             * them for now.
-             */
+        case PACKET_ADD_MEMBERSHIP: {
+            auto mreq = packet_mreq{};
+            auto result = copy_in(mreq, setsockopt.id.pid, setsockopt.optval);
+            if (!result) return (tl::make_unexpected(result.error()));
+            switch (mreq.mr_type) {
+            case PACKET_MR_PROMISC:
+                packet_set_promiscuous(pcb, mreq.mr_ifindex, 1);
+                break;
+            case PACKET_MR_ALLMULTI:
+                packet_set_multicast(pcb, mreq.mr_ifindex, 1);
+                break;
+            case PACKET_MR_MULTICAST:
+                if (auto error = packet_add_membership(
+                        pcb, mreq.mr_ifindex, mreq.mr_address)) {
+                    return (tl::make_unexpected(err_to_errno(error)));
+                }
+                break;
+            default:
+                return (tl::make_unexpected(EINVAL));
+            }
             return {};
+        }
+        case PACKET_DROP_MEMBERSHIP: {
+            auto mreq = packet_mreq{};
+            auto result = copy_in(mreq, setsockopt.id.pid, setsockopt.optval);
+            if (!result) return (tl::make_unexpected(result.error()));
+            switch (mreq.mr_type) {
+            case PACKET_MR_PROMISC:
+                packet_set_promiscuous(pcb, mreq.mr_ifindex, 0);
+                break;
+            case PACKET_MR_ALLMULTI:
+                packet_set_multicast(pcb, mreq.mr_ifindex, 0);
+                break;
+            case PACKET_MR_MULTICAST:
+                packet_drop_membership(pcb, mreq.mr_ifindex, mreq.mr_address);
+                break;
+            default:
+                return (tl::make_unexpected(EINVAL));
+            }
+            return {};
+        }
         default:
             return (tl::make_unexpected(ENOPROTOOPT));
         }
