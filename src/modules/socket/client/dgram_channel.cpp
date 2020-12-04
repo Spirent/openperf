@@ -186,8 +186,6 @@ dgram_channel::~dgram_channel()
 {
     close(client_fds.client_fd);
     close(client_fds.server_fd);
-
-    assert(!readable());
 }
 
 int dgram_channel::error() const
