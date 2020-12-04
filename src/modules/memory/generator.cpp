@@ -256,7 +256,13 @@ void generator::config(const generator::config_t& cfg)
             + " bytes are available");
     }
 
-    m_buffer->resize(cfg.buffer_size);
+    m_buffer_size = cfg.buffer_size;
+    if (auto buffer = cfg.buffer.lock()) {
+        assert(m_buffer_size <= buffer->size());
+        m_buffer = buffer;
+    } else {
+        m_buffer->resize(m_buffer_size);
+    }
 
     m_scrub_aborted.store(true);
     if (m_scrub_thread.joinable()) m_scrub_thread.join();
@@ -278,7 +284,7 @@ void generator::config(const generator::config_t& cfg)
 generator::config_t generator::config() const
 {
     return {
-        .buffer_size = m_buffer->size(),
+        .buffer_size = m_buffer_size,
         .read = m_read.config,
         .write = m_write.config,
     };
@@ -312,7 +318,7 @@ void generator::init_index(operation_data& op)
     // Resize index vector, because it will be passed to task configuration
     // and should has the valid size.
     op.indexes.resize(
-        op.config.block_size ? m_buffer->size() / op.config.block_size : 0);
+        op.config.block_size ? m_buffer_size / op.config.block_size : 0);
 
     op.future = std::async(std::launch::async,
                            generate_index_vector,
