@@ -61,7 +61,7 @@ $(PKG_FILE_PATH): $(INSTALLER_MK) $(CONFIG_FILE) $(CHANGELOG_FILE) $(TEMPLATES_D
 # Define used to copy a file to its appropriate location in the build directory in order to
 # stage the package build. Template parameters are replaced should they exist in the copied file.
 # $1: The path to the file to be copied from.
-# $2: The to copy the file to. If any parent directories are missing, they will be created. The
+# $2: The path to copy the file to. If any parent directories are missing, they will be created. The
 #    file is copied to preserve file permissions and its timestamp. Any supported template parameters
 #    found in the file will be replaced.
 define copy_template
