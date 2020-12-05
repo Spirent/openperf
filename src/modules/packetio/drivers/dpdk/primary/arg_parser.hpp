@@ -5,6 +5,7 @@
 
 extern const char op_packetio_dpdk_no_lro[];
 extern const char op_packetio_dpdk_no_rx_irqs[];
+extern const char op_packetio_dpdk_no_link_irqs[];
 extern const char op_packetio_dpdk_test_mode[];
 extern const char op_packetio_dpdk_test_portpairs[];
 
