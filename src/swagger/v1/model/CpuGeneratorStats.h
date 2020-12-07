@@ -60,6 +60,11 @@ public:
     int64_t getUtilization() const;
     void setUtilization(int64_t value);
         /// <summary>
+    /// The amount of target CPU time
+    /// </summary>
+    int64_t getTarget() const;
+    void setTarget(int64_t value);
+        /// <summary>
     /// The amount of system time used, e.g. kernel or system calls
     /// </summary>
     int64_t getSystem() const;
@@ -90,6 +95,8 @@ protected:
     int64_t m_Available;
 
     int64_t m_Utilization;
+
+    int64_t m_Target;
 
     int64_t m_System;
 
