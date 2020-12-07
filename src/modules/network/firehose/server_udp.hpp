@@ -4,7 +4,6 @@
 #include <atomic>
 #include <thread>
 #include <vector>
-#include <zmq.h>
 
 #include "server.hpp"
 
@@ -13,15 +12,6 @@ namespace openperf::network::internal::firehose {
 class server_udp final : public server
 {
 private:
-    struct zmq_ctx_deleter
-    {
-        void operator()(void* ctx) const
-        {
-            zmq_ctx_shutdown(ctx);
-            zmq_ctx_term(ctx);
-        }
-    };
-
     std::atomic_bool m_stopped;
     std::thread m_worker_thread;
 
