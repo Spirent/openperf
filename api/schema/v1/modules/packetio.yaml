@@ -365,6 +365,39 @@ definitions:
               client:
                 type: string
                 description: Client identifier
+              status:
+                type: object
+                description: DHCP status information
+                properties:
+                  address:
+                    type: string
+                    description: IP address
+                  prefix_length:
+                    type: integer
+                    description: Prefix length
+                    format: int32
+                  gateway:
+                    type: string
+                    description: Default gateway
+                  state:
+                    type: string
+                    description: |
+                      Current DHCP client state. Most states are described in
+                      RFC 2131. The "checking" state is non-standard and comes
+                      from RFC 5227. The "checking" state means the client is
+                      performing Address Conflict Detection (ACD).
+                    enum:
+                      - none
+                      - rebooting
+                      - init_reboot
+                      - init
+                      - selecting
+                      - requesting
+                      - checking
+                      - bound
+                      - renewing
+                      - rebinding
+                readOnly: true
         required:
           - method
       ipv6:
