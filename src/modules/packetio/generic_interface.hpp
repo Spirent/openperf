@@ -28,6 +28,22 @@ struct stats_data
     int64_t tx_errors;
 };
 
+/*
+ * DHCP client states as specified in RFC 2131
+ */
+enum class dhcp_client_state {
+    none = 0,
+    rebooting,
+    init_reboot,
+    init,
+    selecting,
+    requesting,
+    checking,
+    bound,
+    renewing,
+    rebinding,
+};
+
 struct eth_protocol_config
 {
     libpacket::type::mac_address address;
@@ -49,10 +65,9 @@ struct ipv4_static_protocol_config
     uint8_t prefix_length;
 };
 
-typedef std::variant<ipv4_auto_protocol_config,
-                     ipv4_dhcp_protocol_config,
-                     ipv4_static_protocol_config>
-    ipv4_protocol_config;
+using ipv4_protocol_config = std::variant<ipv4_auto_protocol_config,
+                                          ipv4_dhcp_protocol_config,
+                                          ipv4_static_protocol_config>;
 
 struct ipv6_common_protocol_config
 {
@@ -74,16 +89,14 @@ struct ipv6_static_protocol_config : public ipv6_common_protocol_config
     uint8_t prefix_length;
 };
 
-typedef std::variant<ipv6_auto_protocol_config,
-                     ipv6_dhcp6_protocol_config,
-                     ipv6_static_protocol_config>
-    ipv6_protocol_config;
+using ipv6_protocol_config = std::variant<ipv6_auto_protocol_config,
+                                          ipv6_dhcp6_protocol_config,
+                                          ipv6_static_protocol_config>;
 
-typedef std::variant<std::monostate,
-                     eth_protocol_config,
-                     ipv4_protocol_config,
-                     ipv6_protocol_config>
-    protocol_config;
+using protocol_config = std::variant<std::monostate,
+                                     eth_protocol_config,
+                                     ipv4_protocol_config,
+                                     ipv6_protocol_config>;
 
 struct config_data
 {
@@ -106,11 +119,23 @@ public:
 
     std::string port_id() const { return m_self->port_id(); }
 
+    dhcp_client_state dhcp_state() const { return m_self->dhcp_state(); }
+
     std::string mac_address() const { return m_self->mac_address(); }
 
     std::optional<std::string> ipv4_address() const
     {
         return m_self->ipv4_address();
+    }
+
+    std::optional<std::string> ipv4_gateway() const
+    {
+        return m_self->ipv4_gateway();
+    }
+
+    std::optional<uint8_t> ipv4_prefix_length() const
+    {
+        return m_self->ipv4_prefix_length();
     }
 
     std::optional<std::string> ipv6_address() const
@@ -147,7 +172,10 @@ private:
         virtual std::string id() const = 0;
         virtual std::string port_id() const = 0;
         virtual std::string mac_address() const = 0;
+        virtual dhcp_client_state dhcp_state() const = 0;
         virtual std::optional<std::string> ipv4_address() const = 0;
+        virtual std::optional<std::string> ipv4_gateway() const = 0;
+        virtual std::optional<uint8_t> ipv4_prefix_length() const = 0;
         virtual std::optional<std::string> ipv6_address() const = 0;
         virtual std::optional<std::string> ipv6_linklocal_address() const = 0;
         virtual config_data config() const = 0;
@@ -172,9 +200,24 @@ private:
             return m_interface.mac_address();
         }
 
+        dhcp_client_state dhcp_state() const override
+        {
+            return m_interface.dhcp_state();
+        }
+
         std::optional<std::string> ipv4_address() const override
         {
             return m_interface.ipv4_address();
+        }
+
+        std::optional<std::string> ipv4_gateway() const override
+        {
+            return m_interface.ipv4_gateway();
+        }
+
+        std::optional<uint8_t> ipv4_prefix_length() const override
+        {
+            return m_interface.ipv4_prefix_length();
         }
 
         std::optional<std::string> ipv6_address() const override
