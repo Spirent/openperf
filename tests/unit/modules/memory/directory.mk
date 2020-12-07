@@ -5,5 +5,6 @@
 TEST_DEPENDS += memory_test
 
 TEST_SOURCES += \
+	modules/memory/test_memory_buffer.cpp \
 	modules/memory/test_memory_stat.cpp \
 	modules/memory/test_memory_task.cpp
