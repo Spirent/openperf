@@ -531,6 +531,10 @@ definitions:
                   - half
             required:
               - auto_negotiation
+          mac_address:
+            type: string
+            description: Device MAC address
+            readOnly: true
         required:
           - link
 
