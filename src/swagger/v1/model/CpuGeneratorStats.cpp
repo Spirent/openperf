@@ -21,6 +21,7 @@ CpuGeneratorStats::CpuGeneratorStats()
 {
     m_Available = 0L;
     m_Utilization = 0L;
+    m_Target = 0L;
     m_System = 0L;
     m_User = 0L;
     m_Steal = 0L;
@@ -44,6 +45,7 @@ nlohmann::json CpuGeneratorStats::toJson() const
 
     val["available"] = m_Available;
     val["utilization"] = m_Utilization;
+    val["target"] = m_Target;
     val["system"] = m_System;
     val["user"] = m_User;
     if(m_StealIsSet)
@@ -68,6 +70,7 @@ void CpuGeneratorStats::fromJson(nlohmann::json& val)
 {
     setAvailable(val.at("available"));
     setUtilization(val.at("utilization"));
+    setTarget(val.at("target"));
     setSystem(val.at("system"));
     setUser(val.at("user"));
     if(val.find("steal") != val.end())
@@ -114,6 +117,15 @@ int64_t CpuGeneratorStats::getUtilization() const
 void CpuGeneratorStats::setUtilization(int64_t value)
 {
     m_Utilization = value;
+    
+}
+int64_t CpuGeneratorStats::getTarget() const
+{
+    return m_Target;
+}
+void CpuGeneratorStats::setTarget(int64_t value)
+{
+    m_Target = value;
     
 }
 int64_t CpuGeneratorStats::getSystem() const

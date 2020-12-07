@@ -33,6 +33,7 @@ class CpuGeneratorCoreStats(object):
     swagger_types = {
         'available': 'int',
         'utilization': 'int',
+        'target': 'int',
         'system': 'int',
         'user': 'int',
         'steal': 'int',
@@ -43,6 +44,7 @@ class CpuGeneratorCoreStats(object):
     attribute_map = {
         'available': 'available',
         'utilization': 'utilization',
+        'target': 'target',
         'system': 'system',
         'user': 'user',
         'steal': 'steal',
@@ -50,11 +52,12 @@ class CpuGeneratorCoreStats(object):
         'targets': 'targets'
     }
 
-    def __init__(self, available=None, utilization=None, system=None, user=None, steal=None, error=None, targets=None):  # noqa: E501
+    def __init__(self, available=None, utilization=None, target=None, system=None, user=None, steal=None, error=None, targets=None):  # noqa: E501
         """CpuGeneratorCoreStats - a model defined in Swagger"""  # noqa: E501
 
         self._available = None
         self._utilization = None
+        self._target = None
         self._system = None
         self._user = None
         self._steal = None
@@ -64,6 +67,7 @@ class CpuGeneratorCoreStats(object):
 
         self.available = available
         self.utilization = utilization
+        self.target = target
         self.system = system
         self.user = user
         if steal is not None:
@@ -114,6 +118,28 @@ class CpuGeneratorCoreStats(object):
         :type: int
         """
         self._utilization = utilization
+
+    @property
+    def target(self):
+        """Gets the target of this CpuGeneratorCoreStats.  # noqa: E501
+
+        The amount of target CPU time  # noqa: E501
+
+        :return: The target of this CpuGeneratorCoreStats.  # noqa: E501
+        :rtype: int
+        """
+        return self._target
+
+    @target.setter
+    def target(self, target):
+        """Sets the target of this CpuGeneratorCoreStats.
+
+        The amount of target CPU time  # noqa: E501
+
+        :param target: The target of this CpuGeneratorCoreStats.  # noqa: E501
+        :type: int
+        """
+        self._target = target
 
     @property
     def system(self):
