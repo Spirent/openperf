@@ -34,23 +34,26 @@ class PortConfigDpdk(object):
         'device': 'str',
         'driver': 'str',
         'interface': 'str',
-        'link': 'PortConfigDpdkLink'
+        'link': 'PortConfigDpdkLink',
+        'mac_address': 'str'
     }
 
     attribute_map = {
         'device': 'device',
         'driver': 'driver',
         'interface': 'interface',
-        'link': 'link'
+        'link': 'link',
+        'mac_address': 'mac_address'
     }
 
-    def __init__(self, device=None, driver=None, interface=None, link=None):  # noqa: E501
+    def __init__(self, device=None, driver=None, interface=None, link=None, mac_address=None):  # noqa: E501
         """PortConfigDpdk - a model defined in Swagger"""  # noqa: E501
 
         self._device = None
         self._driver = None
         self._interface = None
         self._link = None
+        self._mac_address = None
         self.discriminator = None
 
         if device is not None:
@@ -60,6 +63,8 @@ class PortConfigDpdk(object):
         if interface is not None:
             self.interface = interface
         self.link = link
+        if mac_address is not None:
+            self.mac_address = mac_address
 
     @property
     def device(self):
@@ -146,6 +151,28 @@ class PortConfigDpdk(object):
         :type: PortConfigDpdkLink
         """
         self._link = link
+
+    @property
+    def mac_address(self):
+        """Gets the mac_address of this PortConfigDpdk.  # noqa: E501
+
+        Device MAC address  # noqa: E501
+
+        :return: The mac_address of this PortConfigDpdk.  # noqa: E501
+        :rtype: str
+        """
+        return self._mac_address
+
+    @mac_address.setter
+    def mac_address(self, mac_address):
+        """Sets the mac_address of this PortConfigDpdk.
+
+        Device MAC address  # noqa: E501
+
+        :param mac_address: The mac_address of this PortConfigDpdk.  # noqa: E501
+        :type: str
+        """
+        self._mac_address = mac_address
 
     def to_dict(self):
         """Returns the model properties as a dict"""
