@@ -199,6 +199,7 @@ to_swagger(const model::generator_result& result)
     auto cpu_stats = std::make_shared<swagger::CpuGeneratorStats>();
     cpu_stats->setUtilization(stats.utilization.count());
     cpu_stats->setAvailable(stats.available.count());
+    cpu_stats->setTarget(stats.target.count());
     cpu_stats->setSystem(stats.system.count());
     cpu_stats->setUser(stats.user.count());
     cpu_stats->setSteal(stats.steal.count());
@@ -212,11 +213,12 @@ to_swagger(const model::generator_result& result)
         [](const auto& c_stats) {
             auto stats = std::make_shared<swagger::CpuGeneratorCoreStats>();
             stats->setAvailable(c_stats.available.count());
-            stats->setError(c_stats.error.count());
-            stats->setSteal(c_stats.steal.count());
+            stats->setUtilization(c_stats.utilization.count());
+            stats->setTarget(c_stats.target.count());
             stats->setSystem(c_stats.system.count());
             stats->setUser(c_stats.user.count());
-            stats->setUtilization(c_stats.utilization.count());
+            stats->setSteal(c_stats.steal.count());
+            stats->setError(c_stats.error.count());
 
             auto& targets = c_stats.targets;
             std::transform(

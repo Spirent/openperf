@@ -95,9 +95,9 @@ task_cpu_stat_ptr task_cpu::spin()
     stat.steal = time_diff.steal;
     stat.core = m_config.core;
 
-    stat.error = std::chrono::nanoseconds(
-                     (uint64_t)(stat.available.count() * m_utilization))
-                 - stat.utilization;
+    stat.target = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        stat.available * m_utilization);
+    stat.error = stat.target - stat.utilization;
     stat.load = stat.utilization * 1.0 / stat.available;
 
     m_last_run = time_of_run;
