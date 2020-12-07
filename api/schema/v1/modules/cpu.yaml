@@ -440,6 +440,10 @@ definitions:
         type: integer
         description: The amount of CPU time used
         format: int64
+      target:
+        type: integer
+        description: The amount of target CPU time
+        format: int64
       system:
         type: integer
         description: The amount of system time used, e.g. kernel or system calls
@@ -464,6 +468,7 @@ definitions:
     required:
       - available
       - utilization
+      - target
       - system
       - user
       - error
@@ -481,6 +486,10 @@ definitions:
       utilization:
         type: integer
         description: The amount of CPU time used
+        format: int64
+      target:
+        type: integer
+        description: The amount of target CPU time
         format: int64
       system:
         type: integer
@@ -506,6 +515,7 @@ definitions:
     required:
       - available
       - utilization
+      - target
       - system
       - user
       - error
