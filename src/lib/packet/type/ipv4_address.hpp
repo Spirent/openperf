@@ -301,4 +301,16 @@ bool is_multicast(const ipv4_address&);
 
 } // namespace libpacket::type
 
+namespace std {
+
+template <> struct hash<libpacket::type::ipv4_address>
+{
+    size_t operator()(const libpacket::type::ipv4_address& ip) const
+    {
+        return (std::hash<uint32_t>{}(ip.load<uint32_t>()));
+    }
+};
+
+} // namespace std
+
 #endif /* _LIB_PACKET_TYPE_IPV4_ADDRESS_HPP_ */
