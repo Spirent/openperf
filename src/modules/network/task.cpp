@@ -179,19 +179,21 @@ network_task::new_connection(const network_sockaddr& server,
              config.target.protocol == IPPROTO_TCP ? SOCK_STREAM : SOCK_DGRAM,
              config.target.protocol))
         == -1) {
-        return tl::make_unexpected(-errno);
+        return tl::make_unexpected(errno);
     }
 
     /* Update to non-blocking socket */
     int flags = m_driver->fcntl(sock, F_GETFL);
     if (flags == -1) {
+        auto err = errno;
         m_driver->close(sock);
-        return tl::make_unexpected(-errno);
+        return tl::make_unexpected(err);
     }
 
     if (m_driver->fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
+        auto err = errno;
         m_driver->close(sock);
-        return tl::make_unexpected(-errno);
+        return tl::make_unexpected(err);
     }
 
 #if defined(SO_NOSIGPIPE)
@@ -199,8 +201,9 @@ network_task::new_connection(const network_sockaddr& server,
     if (m_driver->setsockopt(
             sock, SOL_SOCKET, SO_NOSIGPIPE, &enable, sizeof(enable))
         != 0) {
+        auto err = errno;
         m_driver->close(sock);
-        return tl::make_unexpected(-errno);
+        return tl::make_unexpected(err);
     }
 #endif
 
@@ -208,8 +211,9 @@ network_task::new_connection(const network_sockaddr& server,
     if (m_driver->connect(sock, sa, network_sockaddr_size(server)) == -1
         && errno != EINPROGRESS) {
         /* not what we were expecting */
+        auto err = errno;
         m_driver->close(sock);
-        return tl::make_unexpected(-errno);
+        return tl::make_unexpected(err);
     }
 
 #if !defined(SO_NOSIGPIPE)
@@ -228,8 +232,9 @@ network_task::new_connection(const network_sockaddr& server,
         && (m_driver->setsockopt(
                 sock, IPPROTO_TCP, TCP_NODELAY, &enable, sizeof(enable))
             != 0)) {
+        auto err = errno;
         m_driver->close(sock);
-        return tl::make_unexpected(-errno);
+        return tl::make_unexpected(err);
     }
 
     if (config.target.protocol == IPPROTO_UDP) {
@@ -243,8 +248,9 @@ network_task::new_connection(const network_sockaddr& server,
                                  &read_timeout,
                                  sizeof(read_timeout))
             != 0) {
+            auto err = errno;
             m_driver->close(sock);
-            return tl::make_unexpected(-errno);
+            return tl::make_unexpected(err);
         }
     }
 
