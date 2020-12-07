@@ -49,12 +49,17 @@ using learning_state = std::variant<std::monostate,
 class learning_state_machine
 {
 public:
-    explicit learning_state_machine(core::event_loop& loop)
+    explicit learning_state_machine(core::event_loop& loop, netif* intf)
         : m_loop(loop)
         , m_loop_timeout_id(0)
         , m_polls_remaining(0)
-        , m_intf(nullptr)
-    {}
+        , m_intf(intf)
+    {
+        if (m_intf == nullptr) {
+            throw std::invalid_argument(
+                "Must pass non-null interface pointer to learning.");
+        }
+    }
 
     /**
      * @brief Start MAC learning process.
@@ -65,8 +70,7 @@ public:
      * @return false learning did not start
      */
     bool
-    start_learning(netif* interface,
-                   const std::vector<libpacket::type::ipv4_address>& to_learn,
+    start_learning(const std::vector<libpacket::type::ipv4_address>& to_learn,
                    resolve_complete_callback callback);
 
     /**

@@ -32,7 +32,7 @@ struct start_learning_params
 
 static void send_learning_requests(void* arg)
 {
-    auto slp = reinterpret_cast<start_learning_params*>(arg);
+    auto* slp = reinterpret_cast<start_learning_params*>(arg);
     assert(slp);
 
     // start_learning_params contains a unique list of IP addresses to learn.
@@ -52,9 +52,8 @@ static void send_learning_requests(void* arg)
                 return;
             }
 
-            ip4_addr_t target;
-
-            memcpy(&target.addr, addr_pair.first.data(), addr_pair.first.width);
+            ip4_addr_t target{
+                .addr = htonl(addr_pair.first.template load<uint32_t>())};
 
             OP_LOG(OP_LOG_TRACE,
                    "Sending ARP request for IP: %s\n",
@@ -79,7 +78,6 @@ static void send_learning_requests(void* arg)
 
 // Return true if learning started, false otherwise.
 bool learning_state_machine::start_learning(
-    netif* interface,
     const std::vector<libpacket::type::ipv4_address>& to_learn,
     resolve_complete_callback callback)
 {
@@ -89,7 +87,6 @@ bool learning_state_machine::start_learning(
     // Are we being asked to learn nothing?
     if (to_learn.empty()) { return (false); }
 
-    m_intf = interface;
     m_results.clear();
 
     // Populate results with IP addresses.
@@ -167,7 +164,7 @@ static int handle_poll_timeout(const struct op_event_data* data, void* arg)
                "Got unexpected event loop timeout id! Got: %d. Expected: %d",
                data->timeout_id,
                lsm->timeout_id());
-        assert(data->timeout_id != lsm->timeout_id());
+        throw std::runtime_error("Error while performing MAC learning.");
     }
 
     return (lsm->check_learning());
@@ -201,7 +198,7 @@ struct check_learning_params
 
 static void check_arp_cache(void* arg)
 {
-    auto clp = reinterpret_cast<check_learning_params*>(arg);
+    auto* clp = reinterpret_cast<check_learning_params*>(arg);
     assert(clp);
 
     ip4_addr_t* entryAddrPtr = nullptr;
@@ -276,7 +273,7 @@ int learning_state_machine::check_learning()
     if (all_addresses_resolved(m_results)) {
         m_current_state = state_done{};
         OP_LOG(OP_LOG_TRACE,
-               "Successfully resolved all %d ARP requests.",
+               "Successfully resolved all %lu ARP requests.",
                m_results.size());
 
         // Deliver results via callback.
