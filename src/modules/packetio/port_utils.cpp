@@ -187,6 +187,7 @@ make_swagger_port_config_dpdk(const generic_port& port)
     if (config.interface) {
         config_dpdk->setInterface(config.interface.value());
     }
+    config_dpdk->setMacAddress(libpacket::type::to_string(config.mac_address));
 
     /* Set DPDK link information */
     auto link = std::make_shared<PortConfig_dpdk_link>();
