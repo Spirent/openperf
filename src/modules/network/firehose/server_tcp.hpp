@@ -25,7 +25,7 @@ private:
     std::atomic_bool m_stopped;
     std::thread m_accept_thread;
     std::vector<std::unique_ptr<std::thread>> m_worker_threads;
-    void* m_context;
+    std::unique_ptr<void, zmq_ctx_deleter> m_context;
 
     int tcp_write(connection_t&, std::vector<uint8_t> send_buffer);
     tl::expected<int, std::string> new_server(int domain, in_port_t port);

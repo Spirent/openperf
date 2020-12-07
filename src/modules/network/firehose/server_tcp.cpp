@@ -102,7 +102,7 @@ server_tcp::server_tcp(in_port_t port, const drivers::driver_ptr& driver)
 {
     // Set ZMQ threads to 0 for context
     // Note: Value 0 valid only for inproc:// transport
-    if (zmq_ctx_set(m_context, ZMQ_IO_THREADS, 0)) {
+    if (zmq_ctx_set(m_context.get(), ZMQ_IO_THREADS, 0)) {
         OP_LOG(OP_LOG_ERROR,
                "Controller ZMQ set IO threads to 0: %s",
                zmq_strerror(errno));
@@ -128,7 +128,7 @@ server_tcp::server_tcp(in_port_t port, const drivers::driver_ptr& driver)
 server_tcp::~server_tcp()
 {
     m_stopped.store(true, std::memory_order_relaxed);
-    zmq_ctx_shutdown(m_context);
+    zmq_ctx_shutdown(m_context.get());
     if (m_fd.load() >= 0) {
         m_driver->shutdown(m_fd.load(), SHUT_RDWR);
         m_driver->close(m_fd);
@@ -153,7 +153,8 @@ void server_tcp::run_accept_thread()
         auto client = (sockaddr*)&client_storage;
         socklen_t client_length = sizeof(client_storage);
 
-        void* sync = op_socket_get_server(m_context, ZMQ_PUSH, endpoint.data());
+        void* sync =
+            op_socket_get_server(m_context.get(), ZMQ_PUSH, endpoint.data());
 
         int connect_fd;
         while ((connect_fd = accept(m_fd.load(), client, &client_length))
@@ -189,6 +190,7 @@ void server_tcp::run_accept_thread()
             memcpy(&conn.client, client, get_sa_len(client));
             zmq_send(sync, &conn, sizeof(conn), ZMQ_DONTWAIT);
         }
+        op_socket_close(sync);
     });
 }
 
@@ -233,7 +235,8 @@ void server_tcp::run_worker_thread()
         std::vector<uint8_t> send_buffer(send_buffer_size);
         utils::op_prbs23_fill(send_buffer.data(), send_buffer.size());
         std::vector<uint8_t> recv_buffer(recv_buffer_size);
-        void* sync = op_socket_get_client(m_context, ZMQ_PULL, endpoint.data());
+        void* sync =
+            op_socket_get_client(m_context.get(), ZMQ_PULL, endpoint.data());
 
         while (!m_stopped.load(std::memory_order_relaxed)) {
             // Receive all accepted connections
@@ -395,6 +398,7 @@ void server_tcp::run_worker_thread()
                                              }),
                               connections.end());
         }
+        op_socket_close(sync);
     }));
 }
 
