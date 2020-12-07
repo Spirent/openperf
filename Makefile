@@ -32,7 +32,7 @@ test_unit: deps
 	@cd tests/unit && $(MAKE)
 
 .PHONY: clean
-clean: image_clean
+clean: image_clean codegen_clean
 	@cd targets/openperf && $(MAKE) clean
 	@cd targets/libopenperf-shim && $(MAKE) clean
 	@cd tests/aat && $(MAKE) clean
@@ -86,6 +86,10 @@ packet_protocol_codegen: libpacket_codegen
 libpacket_codegen:
 	@cd src/lib/packet && $(MAKE)
 
+.PHONY: codegen_clean
+codegen_clean:
+	@cd src/modules/packet/protocol && $(MAKE) clean
+	@cd src/lib/packet && $(MAKE) clean
 
 ###
 # Targets for code formatting and analysis
