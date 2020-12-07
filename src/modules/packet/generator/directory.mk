@@ -9,6 +9,7 @@ PG_SOURCES += \
 	api_transmogrify.cpp \
 	handler.cpp \
 	init.cpp \
+	learning.cpp \
 	server.cpp \
 	source.cpp \
 	source_transmogrify.cpp \
