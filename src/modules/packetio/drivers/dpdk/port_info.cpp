@@ -39,6 +39,13 @@ std::optional<std::string> interface_name(uint16_t port_id)
     return (std::nullopt);
 }
 
+libpacket::type::mac_address mac_address(uint16_t port_id)
+{
+    auto mac_addr = rte_ether_addr{};
+    rte_eth_macaddr_get(port_id, &mac_addr);
+    return (libpacket::type::mac_address{mac_addr.addr_bytes});
+}
+
 uint32_t max_rx_pktlen(uint16_t port_id)
 {
     /*

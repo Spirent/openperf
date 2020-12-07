@@ -61,7 +61,8 @@ public:
         auto config =
             port::dpdk_config{.driver = port_info::driver_name(m_idx),
                               .device = port_info::device_name(m_idx),
-                              .interface = port_info::interface_name(m_idx)};
+                              .interface = port_info::interface_name(m_idx),
+                              .mac_address = port_info::mac_address(m_idx)};
 
         auto link = rte_eth_link{};
         rte_eth_link_get_nowait(m_idx, &link);

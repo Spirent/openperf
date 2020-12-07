@@ -9,6 +9,8 @@
 #include "json.hpp"
 #include "tl/expected.hpp"
 
+#include "lib/packet/type/mac_address.hpp"
+
 namespace swagger::v1::model {
 class Port;
 } // namespace swagger::v1::model
@@ -56,6 +58,7 @@ struct dpdk_config
     std::string driver;
     std::string device;
     std::optional<std::string> interface;
+    libpacket::type::mac_address mac_address;
     bool auto_negotiation;
     link_speed speed;
     link_duplex duplex;
