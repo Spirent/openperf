@@ -19,6 +19,7 @@ std::optional<double> get_field(const cpu_stat& stat, std::string_view name)
 
     if (name == "available") return stat.available.count();
     if (name == "utilization") return stat.utilization.count();
+    if (name == "target") return stat.target.count();
     if (name == "system") return stat.system.count();
     if (name == "user") return stat.user.count();
     if (name == "steal") return stat.steal.count();
@@ -39,6 +40,8 @@ std::optional<double> get_field(const cpu_stat& stat, std::string_view name)
                 return stat.cores[core_number].available.count();
             if (field_name == "utilization")
                 return stat.cores[core_number].utilization.count();
+            if (field_name == "target")
+                return stat.cores[core_number].target.count();
             if (field_name == "system")
                 return stat.cores[core_number].system.count();
             if (field_name == "user")
@@ -171,9 +174,10 @@ generator::generator(const model::generator& generator_model)
             m_stat.user = process_stat.user;
             m_stat.steal = process_stat.steal;
 
-            m_stat.error = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                m_stat.available * utilization / (100.0 * m_core_count)
-                - m_stat.utilization);
+            m_stat.target =
+                std::chrono::duration_cast<std::chrono::nanoseconds>(
+                    m_stat.available * utilization / (100.0 * m_core_count));
+            m_stat.error = m_stat.target - m_stat.utilization;
         } else {
             if (m_stat.steal == 0ns) {
                 m_stat.steal = internal::cpu_steal_time() - m_start_stat.steal;

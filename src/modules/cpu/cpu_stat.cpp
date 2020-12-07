@@ -14,6 +14,7 @@ task_cpu_stat& task_cpu_stat::operator+=(const task_cpu_stat& other)
 
     available += other.available;
     utilization += other.utilization;
+    target += other.target;
     system += other.system;
     user += other.user;
     steal += other.steal;
@@ -37,6 +38,7 @@ void task_cpu_stat::clear()
 {
     available = 0ns;
     utilization = 0ns;
+    target = 0ns;
     system = 0ns;
     user = 0ns;
     steal = 0ns;
@@ -55,6 +57,7 @@ cpu_stat& cpu_stat::operator+=(const task_cpu_stat& task)
 
     available += task.available;
     utilization += task.utilization;
+    target += task.target;
     system += task.system;
     user += task.user;
     steal += task.steal;
@@ -75,6 +78,7 @@ void cpu_stat::clear()
 {
     available = 0ns;
     utilization = 0ns;
+    target = 0ns;
     system = 0ns;
     user = 0ns;
     steal = 0ns;

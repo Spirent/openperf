@@ -13,6 +13,7 @@ struct common_stat
 {
     std::chrono::nanoseconds available = 0ns;
     std::chrono::nanoseconds utilization = 0ns;
+    std::chrono::nanoseconds target = 0ns;
     std::chrono::nanoseconds system = 0ns;
     std::chrono::nanoseconds user = 0ns;
     std::chrono::nanoseconds steal = 0ns;
