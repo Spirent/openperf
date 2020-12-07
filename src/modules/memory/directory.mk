@@ -33,6 +33,7 @@ $(MEMORY_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 MEMORY_TEST_DEPENDS += framework timesync_test
 
 MEMORY_TEST_SOURCES += \
+	buffer.cpp \
 	generator.cpp \
 	info.cpp \
 	memory_stat.cpp \
