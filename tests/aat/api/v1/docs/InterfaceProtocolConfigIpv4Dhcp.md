@@ -5,6 +5,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **hostname** | **str** | Hostname to be requested | [optional] 
 **client** | **str** | Client identifier | [optional] 
+**status** | [**InterfaceProtocolConfigIpv4DhcpStatus**](InterfaceProtocolConfigIpv4DhcpStatus.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

@@ -23,6 +23,7 @@ InterfaceProtocolConfig_ipv4_dhcp::InterfaceProtocolConfig_ipv4_dhcp()
     m_HostnameIsSet = false;
     m_Client = "";
     m_ClientIsSet = false;
+    m_StatusIsSet = false;
     
 }
 
@@ -47,6 +48,10 @@ nlohmann::json InterfaceProtocolConfig_ipv4_dhcp::toJson() const
     {
         val["client"] = ModelBase::toJson(m_Client);
     }
+    if(m_StatusIsSet)
+    {
+        val["status"] = ModelBase::toJson(m_Status);
+    }
     
 
     return val;
@@ -62,6 +67,16 @@ void InterfaceProtocolConfig_ipv4_dhcp::fromJson(nlohmann::json& val)
     if(val.find("client") != val.end())
     {
         setClient(val.at("client"));
+        
+    }
+    if(val.find("status") != val.end())
+    {
+        if(!val["status"].is_null())
+        {
+            std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp_status> newItem(new InterfaceProtocolConfig_ipv4_dhcp_status());
+            newItem->fromJson(val["status"]);
+            setStatus( newItem );
+        }
         
     }
     
@@ -101,6 +116,23 @@ bool InterfaceProtocolConfig_ipv4_dhcp::clientIsSet() const
 void InterfaceProtocolConfig_ipv4_dhcp::unsetClient()
 {
     m_ClientIsSet = false;
+}
+std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp_status> InterfaceProtocolConfig_ipv4_dhcp::getStatus() const
+{
+    return m_Status;
+}
+void InterfaceProtocolConfig_ipv4_dhcp::setStatus(std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp_status> value)
+{
+    m_Status = value;
+    m_StatusIsSet = true;
+}
+bool InterfaceProtocolConfig_ipv4_dhcp::statusIsSet() const
+{
+    return m_StatusIsSet;
+}
+void InterfaceProtocolConfig_ipv4_dhcp::unsetStatus()
+{
+    m_StatusIsSet = false;
 }
 
 }
