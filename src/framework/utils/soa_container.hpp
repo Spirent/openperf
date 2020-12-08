@@ -145,7 +145,7 @@ private:
 template <typename Container> class soa_container_iterator
 {
     static constexpr size_t invalid_idx = std::numeric_limits<size_t>::max();
-    Container* m_container = nullptr;
+    std::reference_wrapper<Container> m_container;
     size_t m_idx = invalid_idx;
 
 public:
@@ -154,15 +154,15 @@ public:
     using value_type = typename adapter::value_type;
     using pointer = void;
     using reference = value_type&;
-    using iterator_category = std::bidirectional_iterator_tag;
+    using iterator_category = std::forward_iterator_tag;
 
-    soa_container_iterator(Container* container, size_t idx = 0)
+    soa_container_iterator(Container& container, size_t idx = 0)
         : m_container(container)
         , m_idx(idx)
     {}
 
-    soa_container_iterator(const Container* container, size_t idx = 0)
-        : m_container(const_cast<Container*>(container))
+    soa_container_iterator(const Container& container, size_t idx = 0)
+        : m_container(const_cast<Container&>(container))
         , m_idx(idx)
     {}
 
@@ -175,19 +175,13 @@ public:
     {
         m_container = other.m_container;
         m_idx = other.m_idx;
-    }
-
-    soa_container_iterator& operator=(std::nullptr_t const&)
-    {
-        m_container = nullptr;
-        m_idx = invalid_idx;
+        return (*this);
     }
 
     friend bool operator==(soa_container_iterator const& left,
                            soa_container_iterator const& right)
     {
-        return (left.m_container == right.m_container
-                && left.m_idx == right.m_idx);
+        return (left.m_idx == right.m_idx);
     }
 
     friend bool operator!=(soa_container_iterator const& left,
@@ -196,27 +190,20 @@ public:
         return (!(left == right));
     }
 
-    template <typename T>
-    typename std::enable_if_t<std::is_integral_v<T>> operator+=(T incr)
+    soa_container_iterator& operator++()
     {
-        m_idx += incr;
+        m_idx++;
+        return (*this);
     }
 
-    template <typename T>
-    typename std::enable_if_t<std::is_integral_v<T>> operator-=(T decr)
+    soa_container_iterator& operator++(int)
     {
-        m_idx -= decr;
+        auto to_return = *this;
+        m_idx++;
+        return (to_return);
     }
 
-    void operator++() { operator+=(1); }
-    void operator--() { operator-=(1); }
-
-    operator bool() const
-    {
-        return (m_container && m_idx >= m_container->size());
-    }
-
-    value_type operator*() { return ((*m_container)[m_idx]); }
+    value_type operator*() { return (m_container.get()[m_idx]); }
 };
 
 template <template <typename...> typename Container, typename Item>
@@ -260,13 +247,11 @@ struct soa_container
         return (adapter::template get<Idx>(m_adapter));
     }
 
-    iterator begin() { return (iterator(this)); }
-    const_iterator begin() const { return iterator((this)); }
-    const_iterator cbegin() const { return (begin()); }
+    iterator begin() { return (iterator(*this)); }
+    const_iterator begin() const { return iterator((*this)); }
 
-    iterator end() { return (iterator(this, size())); }
-    const_iterator end() const { return (iterator(this, size())); }
-    const_iterator cend() const { return (end()); }
+    iterator end() { return (iterator(*this, size())); }
+    const_iterator end() const { return (iterator(*this, size())); }
 
     friend bool operator==(const soa_container& left,
                            const soa_container& right)
