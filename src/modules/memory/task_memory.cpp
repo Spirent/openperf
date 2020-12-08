@@ -58,27 +58,26 @@ auto calc_ops_and_sleep(const task_memory_stat& total,
 
 // Constructors & Destructor
 task_memory::task_memory(task_memory&& t) noexcept
-    : m_config(t.m_config)
-    , m_buffer(t.m_buffer)
-    , m_scratch(t.m_scratch)
+    : m_config(std::move(t.m_config))
+    , m_buffer(std::move(t.m_buffer))
+    , m_scratch(std::move(t.m_scratch))
     , m_stat(t.m_stat)
     , m_op_index(t.m_op_index)
     , m_avg_rate(t.m_avg_rate)
     , m_rate(t.m_rate)
     , m_pid(t.m_pid)
 {
-    t.m_scratch = {nullptr, 0};
     t.reset();
 }
 
 task_memory::task_memory(const task_memory_config& conf)
-    : m_scratch{.ptr = nullptr, .size = 0}
-    , m_pid(0.01, 0.0005, 0.0)
+    : m_pid(0.01, 0.0005, 0.0)
 {
+    if (auto size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE); size > 0)
+        m_scratch = buffer{static_cast<size_t>(size)};
+
     config(conf);
 }
-
-task_memory::~task_memory() { scratch_free(); }
 
 void task_memory::config(const task_memory_config& msg)
 {
@@ -87,16 +86,16 @@ void task_memory::config(const task_memory_config& msg)
     m_op_index = utils::random_uniform(msg.indexes->size());
     m_config.pattern = msg.pattern;
 
-    m_buffer = reinterpret_cast<uint8_t*>(msg.buffer.ptr);
+    m_buffer = msg.buffer.lock();
 
-    if ((m_config.block_size = msg.block_size) > m_scratch.size) {
+    if ((m_config.block_size = msg.block_size) > m_scratch.size()) {
         OP_LOG(OP_LOG_DEBUG,
                "Reallocating scratch area (%zu --> %zu)\n",
-               m_scratch.size,
+               m_scratch.size(),
                msg.block_size);
-        scratch_allocate(msg.block_size);
-        assert(m_scratch.ptr);
-        op_prbs23_fill(m_scratch.ptr, m_scratch.size);
+
+        m_scratch.resize(msg.block_size);
+        op_prbs23_fill(m_scratch.data(), m_scratch.size());
     }
 
     m_rate = msg.op_per_sec * std::min(msg.block_size, 1UL);
@@ -175,33 +174,6 @@ memory_stat task_memory::spin()
     m_rate = static_cast<size_t>(
         m_config.op_per_sec * std::min(m_config.block_size, 1UL) + adjust);
     return make_stat(stat);
-}
-
-void task_memory::scratch_allocate(size_t size)
-{
-    if (size == m_scratch.size) return;
-
-    static uint16_t cache_line_size = 0;
-    if (!cache_line_size) cache_line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
-
-    scratch_free();
-    if (size > 0) {
-        if (posix_memalign(&m_scratch.ptr, cache_line_size, size) != 0) {
-            OP_LOG(OP_LOG_ERROR, "Could not allocate scratch area!\n");
-            m_scratch.ptr = nullptr;
-        } else {
-            m_scratch.size = size;
-        }
-    }
-}
-
-void task_memory::scratch_free()
-{
-    if (m_scratch.ptr != nullptr) {
-        free(m_scratch.ptr);
-        m_scratch.ptr = nullptr;
-        m_scratch.size = 0;
-    }
 }
 
 } // namespace openperf::memory::internal

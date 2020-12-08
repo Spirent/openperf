@@ -8,6 +8,7 @@
 #include "framework/generator/pid_control.hpp"
 #include "modules/timesync/chrono.hpp"
 
+#include "buffer.hpp"
 #include "io_pattern.hpp"
 #include "memory_stat.hpp"
 
@@ -18,11 +19,7 @@ struct task_memory_config
     size_t block_size = 0;
     size_t op_per_sec = 0;
     io_pattern pattern = io_pattern::NONE;
-    struct
-    {
-        void* ptr = nullptr;
-        size_t size = 0;
-    } buffer;
+    std::weak_ptr<buffer> buffer;
     std::vector<uint64_t>* indexes = nullptr;
 };
 
@@ -33,13 +30,8 @@ class task_memory : public openperf::framework::generator::task<memory_stat>
 
 protected:
     task_memory_config m_config;
-    uint8_t* m_buffer = nullptr;
-
-    struct
-    {
-        void* ptr;
-        size_t size;
-    } m_scratch;
+    std::shared_ptr<buffer> m_buffer;
+    buffer m_scratch;
 
     task_memory_stat m_stat;
     size_t m_op_index;
@@ -53,7 +45,6 @@ public:
     task_memory(task_memory&&) noexcept;
     task_memory(const task_memory&) = delete;
     explicit task_memory(const task_memory_config&);
-    ~task_memory() override;
 
     void reset() override;
 
@@ -64,10 +55,6 @@ protected:
     void config(const task_memory_config&);
     virtual void operation(uint64_t nb_ops) = 0;
     virtual memory_stat make_stat(const task_memory_stat&) = 0;
-
-private:
-    void scratch_allocate(size_t size);
-    void scratch_free();
 };
 
 } // namespace openperf::memory::internal

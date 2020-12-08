@@ -125,13 +125,12 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
         try {
             auto id = m_generator_stack->create(data.id, data.config);
             const auto& gnr = m_generator_stack->generator(id);
-            reply::generator::item item_data{
+            list.push_back(reply::generator::item{
                 .id = id,
                 .is_running = false,
                 .config = gnr.config(),
                 .init_percent_complete = gnr.init_percent_complete(),
-            };
-            list.push_back(item_data);
+            });
         } catch (const std::invalid_argument&) {
             remove_created_items();
             return reply::error{.type = reply::error::EXISTS};
