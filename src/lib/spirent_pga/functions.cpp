@@ -5,8 +5,9 @@
 namespace pga {
 
 constexpr uint16_t nb_items = 32;
-constexpr uint16_t nb_ipv4_headers = nb_items;
+constexpr uint16_t nb_headers = nb_items;
 constexpr uint16_t ipv4_header_length = 20; /* octets */
+constexpr uint16_t ipv6_header_length = 40; /* also octets */
 
 constexpr uint16_t nb_signatures = nb_items;
 constexpr uint16_t signature_length = 20;    /* octets */
@@ -18,21 +19,21 @@ constexpr uint16_t fill_buffer_length = 128; /* quadlets */
  * doesn't require any memory allocations.
  ***/
 
-template <typename Tag>
-void initialize_checksum_ipv4_headers(
-    function_wrapper<checksum_ipv4_headers_fn, Tag>& wrapper)
+template <int HeaderLength, typename Tag>
+void initialize_checksum_headers(
+    function_wrapper<checksum_headers_fn, Tag>& wrapper)
 {
-    std::array<uint8_t[ipv4_header_length], nb_ipv4_headers> ipv4_headers;
-    std::array<uint8_t*, nb_ipv4_headers> ipv4_header_ptrs;
-    std::array<uint32_t, nb_ipv4_headers> checksums;
+    std::array<uint8_t[HeaderLength], nb_headers> headers;
+    std::array<uint8_t*, nb_headers> header_ptrs;
+    std::array<uint32_t, nb_headers> checksums;
 
-    std::transform(std::begin(ipv4_headers),
-                   std::end(ipv4_headers),
-                   std::begin(ipv4_header_ptrs),
+    std::transform(std::begin(headers),
+                   std::end(headers),
+                   std::begin(header_ptrs),
                    [](auto& buffer) { return (std::addressof(buffer[0])); });
 
-    wrapper.init((const uint8_t**)ipv4_header_ptrs.data(),
-                 nb_ipv4_headers,
+    wrapper.init(reinterpret_cast<uint8_t**>(header_ptrs.data()),
+                 nb_headers,
                  checksums.data());
 }
 
@@ -174,8 +175,11 @@ void initialize_unpack_and_sum_indexicals(
 
 functions::functions()
 {
-    initialize_checksum_ipv4_headers(checksum_ipv4_headers_impl);
-    initialize_checksum_ipv4_headers(checksum_ipv4_pseudoheaders_impl);
+    initialize_checksum_headers<ipv4_header_length>(checksum_ipv4_headers_impl);
+    initialize_checksum_headers<ipv4_header_length>(
+        checksum_ipv4_pseudoheaders_impl);
+    initialize_checksum_headers<ipv6_header_length>(
+        checksum_ipv6_pseudoheaders_impl);
     initialize_checksum_data(checksum_data_aligned_impl);
     initialize_decode_signatures(decode_signatures_impl);
     initialize_encode_signatures(encode_signatures_impl);

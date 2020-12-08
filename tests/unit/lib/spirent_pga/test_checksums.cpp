@@ -133,6 +133,78 @@ TEST_CASE("checksum functions", "[spirent-pga]")
             }
         }
 
+        SECTION("IPv6 header")
+        {
+            constexpr uint16_t ipv6_header_length = 40;
+            constexpr uint16_t nb_headers = 32;
+            /*
+             * XXX: Using array here to work around issue with the Xcode.app
+             * toolchain whining about destroying uint8_t[] values in vectors.
+             */
+            std::array<uint8_t[ipv6_header_length], nb_headers> ipv6_headers;
+            std::vector<const uint8_t*> ipv6_header_ptrs(nb_headers);
+
+            /* Fill in headers with (pseudo) random data */
+            uint32_t seed = 0xffffffff;
+            std::for_each(std::begin(ipv6_headers),
+                          std::end(ipv6_headers),
+                          [&](auto& buffer) {
+                              uint8_t* ptr = std::addressof(buffer[0]);
+                              uint16_t length = ipv6_header_length;
+                              seed = pga_fill_prbs(&ptr, &length, 1, seed);
+                          });
+
+            /* Generate vector of pointers for checksum functions */
+            std::transform(
+                std::begin(ipv6_headers),
+                std::end(ipv6_headers),
+                std::begin(ipv6_header_ptrs),
+                [](auto& buffer) { return (std::addressof(buffer[0])); });
+
+            SECTION("pseudoheader checksum")
+            {
+                auto scalar_fn = pga::test::get_function(
+                    functions.checksum_ipv6_pseudoheaders_impl,
+                    pga::instruction_set::type::SCALAR);
+                REQUIRE(scalar_fn != nullptr);
+
+                std::vector<uint32_t> ref_checksums(nb_headers);
+
+                scalar_fn(
+                    ipv6_header_ptrs.data(), nb_headers, ref_checksums.data());
+
+                unsigned vector_tests = 0;
+
+                for (auto instruction_set :
+                     pga::test::vector_instruction_sets()) {
+                    auto vector_fn = pga::test::get_function(
+                        functions.checksum_ipv6_pseudoheaders_impl,
+                        instruction_set);
+
+                    if (!(vector_fn
+                          && pga::instruction_set::available(
+                              instruction_set))) {
+                        continue;
+                    }
+
+                    INFO("instruction set = "
+                         << pga::instruction_set::to_string(instruction_set));
+
+                    vector_tests++;
+
+                    std::vector<uint32_t> checksums(nb_headers);
+                    vector_fn(
+                        ipv6_header_ptrs.data(), nb_headers, checksums.data());
+
+                    REQUIRE(std::equal(std::begin(ref_checksums),
+                                       std::end(ref_checksums),
+                                       std::begin(checksums)));
+                }
+
+                REQUIRE(vector_tests > 0);
+            }
+        }
+
         SECTION("bulk checksums")
         {
             /* Create a buffer filled with (pseudo)random data */

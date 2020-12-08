@@ -73,7 +73,7 @@ uint16_t sum(const uint8_t data[], uint16_t length)
     return (fold32(fold64(sum)));
 }
 
-void ipv4_headers(const uint8_t* ipv4_headers[],
+void ipv4_headers(const uint8_t* const ipv4_headers[],
                   uint16_t count,
                   uint32_t checksums[])
 {
@@ -81,7 +81,7 @@ void ipv4_headers(const uint8_t* ipv4_headers[],
     functions.checksum_ipv4_headers_impl(ipv4_headers, count, checksums);
 }
 
-static void ipv4_pseudoheaders(const uint8_t* ipv4_headers[],
+static void ipv4_pseudoheaders(const uint8_t* const ipv4_headers[],
                                uint16_t count,
                                uint32_t checksums[])
 {
@@ -89,11 +89,12 @@ static void ipv4_pseudoheaders(const uint8_t* ipv4_headers[],
     functions.checksum_ipv4_pseudoheaders_impl(ipv4_headers, count, checksums);
 }
 
-void ipv4_tcpudp(const uint8_t* ipv4_headers[],
+static constexpr auto csum_loop_count = 32;
+
+void ipv4_tcpudp(const uint8_t* const ipv4_headers[],
                  uint16_t count,
                  uint32_t checksums[])
 {
-    static constexpr int csum_loop_count = 32;
     std::array<uint32_t, csum_loop_count> tmp;
 
     uint16_t offset = 0;
@@ -113,12 +114,52 @@ void ipv4_tcpudp(const uint8_t* ipv4_headers[],
             ipv4_headers + offset,
             checksums + offset,
             [](uint32_t& csum, const uint8_t* ptr) -> uint32_t {
-                auto ipv4 = reinterpret_cast<const headers::ipv4*>(ptr);
+                auto* ipv4 = reinterpret_cast<const headers::ipv4*>(ptr);
                 uint16_t length = ntohs(ipv4->length) - sizeof(headers::ipv4);
                 uint32_t total =
                     csum + sum(ptr + sizeof(headers::ipv4), length);
                 return (fold32(std::numeric_limits<uint32_t>::max() ^ total));
             });
+
+        offset += loop_count;
+    }
+}
+
+static void ipv6_pseudoheaders(const uint8_t* const ipv6_headers[],
+                               uint16_t count,
+                               uint32_t checksums[])
+{
+    auto& functions = functions::instance();
+    functions.checksum_ipv6_pseudoheaders_impl(ipv6_headers, count, checksums);
+}
+
+void ipv6_tcpudp(const uint8_t* const ipv6_headers[],
+                 const uint8_t* const payload_headers[],
+                 uint16_t count,
+                 uint32_t checksums[])
+{
+    std::array<uint32_t, csum_loop_count> tmp;
+
+    uint16_t offset = 0;
+    while (offset < count) {
+        auto loop_count = std::min(csum_loop_count, count - offset);
+
+        /* Calculate the pseudoheaders */
+        ipv6_pseudoheaders(ipv6_headers + offset, loop_count, tmp.data());
+
+        /*
+         * Now add the L4 payload checksum to the pseudoheader checksum and
+         * store that in the output vector
+         */
+        for (auto idx = 0; idx < loop_count; idx++) {
+            auto& csum = tmp[idx];
+            auto* ipv6 = reinterpret_cast<const headers::ipv6*>(
+                ipv6_headers[idx + offset]);
+            auto* payload = payload_headers[idx + offset];
+            auto total = csum + sum(payload, ntohs(ipv6->payload_length));
+            checksums[idx + offset] =
+                fold32(std::numeric_limits<uint32_t>::max() ^ total);
+        }
 
         offset += loop_count;
     }
