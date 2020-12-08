@@ -9,7 +9,6 @@
 #include <cinttypes>
 #include <string_view>
 #include <unistd.h>
-#include <sys/mman.h>
 
 namespace openperf::memory::internal {
 
@@ -76,12 +75,12 @@ std::optional<double> get_field(const memory_stat& stat, std::string_view name)
 
 // Constructors & Destructor
 generator::generator()
-    : m_buffer{.ptr = nullptr, .size = 0}
-    , m_serial_number(++serial_counter)
+    : m_serial_number(++serial_counter)
     , m_stat_ptr(&m_stat)
     , m_dynamic(get_field)
     , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
 {
+    m_buffer = std::make_shared<buffer>();
     m_controller.start<memory_stat>([this](const memory_stat& stat) {
         auto elapsed_time = m_run_time;
         elapsed_time += std::chrono::system_clock::now() - m_run_time_milestone;
@@ -136,7 +135,6 @@ generator::~generator()
 
     stop();
     m_controller.clear();
-    free_buffer();
 }
 
 // Methods : public
@@ -258,7 +256,7 @@ void generator::config(const generator::config_t& cfg)
             + " bytes are available");
     }
 
-    resize_buffer(cfg.buffer_size);
+    m_buffer->resize(cfg.buffer_size);
 
     m_scrub_aborted.store(true);
     if (m_scrub_thread.joinable()) m_scrub_thread.join();
@@ -280,67 +278,13 @@ void generator::config(const generator::config_t& cfg)
 generator::config_t generator::config() const
 {
     return {
-        .buffer_size = m_buffer.size,
+        .buffer_size = m_buffer->size(),
         .read = m_read.config,
         .write = m_write.config,
     };
 }
 
 // Methods : private
-void generator::free_buffer()
-{
-    if (m_buffer.ptr == nullptr) return;
-    if (m_buffer.ptr == MAP_FAILED) return;
-
-    if (munmap(m_buffer.ptr, m_buffer.size) == -1) {
-        OP_LOG(OP_LOG_ERROR,
-               "Failed to unallocate %zu"
-               " bytes of memory: %s\n",
-               m_buffer.size,
-               strerror(errno));
-    }
-
-    m_buffer.ptr = MAP_FAILED;
-    m_buffer.size = 0;
-}
-
-void generator::resize_buffer(size_t size)
-{
-    if (size == m_buffer.size) return;
-
-    /*
-     * We use mmap/munmap here instead of the standard allocation functions
-     * because we expect this buffer to be relatively large, and OSv
-     * currently can only allocate non-contiguous chunks of memory with
-     * mmap. The buffer contents don't currently matter, so there is no
-     * reason to initialize new buffers or shuffle contents between old and
-     * new ones.
-     */
-    free_buffer();
-    if (size > 0) {
-        OP_LOG(OP_LOG_INFO,
-               "Reallocating buffer (%zu => %zu)\n",
-               m_buffer.size,
-               size);
-
-        m_buffer.ptr = mmap(nullptr,
-                            size,
-                            PROT_READ | PROT_WRITE,
-                            MAP_ANONYMOUS | MAP_PRIVATE,
-                            -1,
-                            0);
-
-        if (m_buffer.ptr == MAP_FAILED) {
-            OP_LOG(OP_LOG_ERROR,
-                   "Failed to allocate %" PRIu64 " byte memory buffer\n",
-                   size);
-            return;
-        }
-
-        m_buffer.size = size;
-    }
-}
-
 void generator::scrub_worker()
 {
     size_t current = 0;
@@ -348,13 +292,15 @@ void generator::scrub_worker()
         ((m_buffer.size / 100 - 1) / getpagesize() + 1) * getpagesize();
     auto seed = utils::random_uniform<uint32_t>();
 
-    while (!m_scrub_aborted.load() && current < m_buffer.size) {
-        auto buf_len =
-            std::min(static_cast<size_t>(block_size), m_buffer.size - current);
-        utils::op_prbs23_fill(
-            &seed, reinterpret_cast<uint8_t*>(m_buffer.ptr) + current, buf_len);
+    while (!m_scrub_aborted.load() && current < m_buffer->size()) {
+        auto buf_len = std::min(static_cast<size_t>(block_size),
+                                m_buffer->size() - current);
+        utils::op_prbs23_fill(&seed,
+                              reinterpret_cast<uint8_t*>(m_buffer->data())
+                                  + current,
+                              buf_len);
         current += buf_len;
-        m_init_percent_complete.store(current * 100 / m_buffer.size);
+        m_init_percent_complete.store(current * 100 / m_buffer->size());
     }
 }
 
@@ -365,7 +311,7 @@ void generator::init_index(operation_data& op)
     // Resize index vector, because it will be passed to task configuration
     // and should has the valid size.
     op.indexes.resize(
-        op.config.block_size ? m_buffer.size / op.config.block_size : 0);
+        op.config.block_size ? m_buffer->size() / op.config.block_size : 0);
 
     op.future = std::async(std::launch::async,
                            generate_index_vector,
