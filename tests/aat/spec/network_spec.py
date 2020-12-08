@@ -263,9 +263,6 @@ with description('Network Generator Module', 'network') as self:
                     expect(g7r).to(be_valid_network_generator)
                     self._g7r = g7r
 
-                with after.all:
-                            self._api.delete_network_generator(self._g7r.id)
-
                 with context('GET'):
                     with description('by existing ID'):
                         with before.all:
