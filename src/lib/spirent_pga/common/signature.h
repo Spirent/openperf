@@ -6,9 +6,9 @@
 namespace pga::signature {
 
 uint16_t
-crc_filter(const uint8_t* payloads[], uint16_t count, int crc_matches[]);
+crc_filter(const uint8_t* const payloads[], uint16_t count, int crc_matches[]);
 
-uint16_t decode(const uint8_t* payloads[],
+uint16_t decode(const uint8_t* const payloads[],
                 uint16_t count,
                 uint32_t stream_ids[],
                 uint32_t sequence_numbers[],

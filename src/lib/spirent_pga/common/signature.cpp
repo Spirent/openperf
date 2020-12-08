@@ -35,7 +35,7 @@ static uint16_t calculate_crc16(const uint8_t data[], uint16_t length)
 static constexpr auto prefetch_offset = 8;
 
 uint16_t
-crc_filter(const uint8_t* payloads[], uint16_t count, int crc_matches[])
+crc_filter(const uint8_t* const payloads[], uint16_t count, int crc_matches[])
 {
     /*
      * Unless the user has already done something with the payload, it is
@@ -61,7 +61,7 @@ crc_filter(const uint8_t* payloads[], uint16_t count, int crc_matches[])
     return (std::accumulate(crc_matches, crc_matches + count, 0));
 }
 
-uint16_t decode(const uint8_t* payloads[],
+uint16_t decode(const uint8_t* const payloads[],
                 uint16_t count,
                 uint32_t stream_ids[],
                 uint32_t sequence_numbers[],

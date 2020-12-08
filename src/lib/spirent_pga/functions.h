@@ -5,9 +5,9 @@
 
 #include "function_wrapper.h"
 
-using checksum_ipv4_headers_fn = void (*)(const uint8_t*[],
-                                          uint16_t,
-                                          uint32_t[]);
+using checksum_headers_fn = void (*)(const uint8_t* const[],
+                                     uint16_t,
+                                     uint32_t[]);
 
 /*
  * Since the IPv4 header and pseudoheader checksum functions have the same
@@ -17,18 +17,27 @@ struct ipv4_header
 {};
 struct ipv4_pseudoheader
 {};
+struct ipv6_pseudoheader
+{};
 
 ISPC_FUNCTION_WRAPPER_TAGGED_INIT(ipv4_header,
                                   void,
                                   checksum_ipv4_headers,
-                                  const uint8_t*[],
+                                  const uint8_t* const[],
                                   uint16_t,
                                   uint32_t[]);
 
 ISPC_FUNCTION_WRAPPER_TAGGED_INIT(ipv4_pseudoheader,
                                   void,
                                   checksum_ipv4_pseudoheaders,
-                                  const uint8_t*[],
+                                  const uint8_t* const[],
+                                  uint16_t,
+                                  uint32_t[]);
+
+ISPC_FUNCTION_WRAPPER_TAGGED_INIT(ipv6_pseudoheader,
+                                  void,
+                                  checksum_ipv6_pseudoheaders,
+                                  const uint8_t* const[],
                                   uint16_t,
                                   uint32_t[]);
 
@@ -129,10 +138,13 @@ struct functions : singleton<functions>
 {
     functions();
 
-    function_wrapper<checksum_ipv4_headers_fn, ipv4_header>
+    function_wrapper<checksum_headers_fn, ipv4_header>
         checksum_ipv4_headers_impl = {"IPv4 header checksumming", nullptr};
-    function_wrapper<checksum_ipv4_headers_fn, ipv4_pseudoheader>
+    function_wrapper<checksum_headers_fn, ipv4_pseudoheader>
         checksum_ipv4_pseudoheaders_impl = {"IPv4 pseudoheader checksumming",
+                                            nullptr};
+    function_wrapper<checksum_headers_fn, ipv6_pseudoheader>
+        checksum_ipv6_pseudoheaders_impl = {"IPv6 pseudoheader checksumming",
                                             nullptr};
     function_wrapper<checksum_data_aligned_fn> checksum_data_aligned_impl = {
         "data checksumming", nullptr};

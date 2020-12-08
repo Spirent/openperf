@@ -1,6 +1,12 @@
 #include "aos_soa_5.h"
+#include "inet.h"
 
 inline static unsigned int32 fold(unsigned int32 x)
+{
+    return ((x >> 16) + (x & 0xffff));
+}
+
+inline static uniform unsigned int32 fold(uniform unsigned int32 x)
 {
     return ((x >> 16) + (x & 0xffff));
 }
@@ -94,6 +100,42 @@ export void checksum_ipv4_pseudoheaders(const unsigned int8* const uniform ipv4_
 
         packed_store_active(&checksums[base], sum);
         base += programCount;
+    }
+}
+
+struct ipv6_header {
+    unsigned int32 version_class_flow;
+    unsigned int16 payload_length;
+    unsigned int8 protocol;
+    unsigned int8 hop_limit;
+    unsigned int8 src_address[16];
+    unsigned int8 dst_address[16];
+};
+
+export void checksum_ipv6_pseudoheaders(const unsigned int8* const uniform ipv6_header_ptr[],
+                                        uniform unsigned int16 count,
+                                        unsigned int32 uniform checksums[])
+{
+    /*
+     * Transposing the IPv6 header into lanes is expensive, so this function
+     * only sums the address data in parallel.
+     */
+    for (uniform int i = 0; i < count; i++) {
+        const ipv6_header* uniform hdr =  (const ipv6_header* uniform)ipv6_header_ptr[i];
+
+        uniform unsigned int32 sum = fold(hdr->payload_length) + fold(ntohl(hdr->protocol));
+
+        /* Treat the IPv6 header as an array of 32 bit data */
+        const unsigned int32* uniform data = (const unsigned int32* uniform)(&hdr->src_address);
+
+        /* Sum the IPv6 src/dst values */
+        unsigned int32 tmp = 0;
+        foreach (j = 0 ... 8) {
+            tmp += fold(data[j]);
+        }
+
+        /* Add, reduce, and fold the checksum into place */
+        checksums[i] = fold(reduce_add(fold(tmp)) + fold(sum));
     }
 }
 
