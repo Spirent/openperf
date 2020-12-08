@@ -36,6 +36,20 @@ union ipv4_pseudo
     uint32_t data[3];
 } __attribute__((packed));
 
+union ipv6
+{
+    struct
+    {
+        uint32_t version_class_flow;
+        uint16_t payload_length;
+        uint8_t protocol;
+        uint8_t hop_limit;
+        uint8_t src_address[16];
+        uint8_t dst_address[16];
+    };
+    uint32_t data[10];
+} __attribute__((packed));
+
 } // namespace pga::headers
 
 #endif /* _LIB_SPIRENT_PGA_COMMON_HEADERS_H_ */

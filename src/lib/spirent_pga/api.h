@@ -139,7 +139,7 @@ int pga_signature_flag(enum pga_signature_prbs prbs,
  * @return
  *   the number of payloads with CRC matches
  */
-uint16_t pga_signatures_crc_filter(const uint8_t* payloads[],
+uint16_t pga_signatures_crc_filter(const uint8_t* const payloads[],
                                    uint16_t count,
                                    int crc_matches[]);
 
@@ -165,7 +165,7 @@ uint16_t pga_signatures_crc_filter(const uint8_t* payloads[],
  * @return
  *   The number of decode signatures.
  */
-uint16_t pga_signatures_decode(const uint8_t* payloads[],
+uint16_t pga_signatures_decode(const uint8_t* const payloads[],
                                uint16_t count,
                                uint32_t stream_ids[],
                                uint32_t sequence_numbers[],
@@ -291,7 +291,7 @@ uint32_t pga_fill_prbs(uint8_t* payloads[],
  *   - true: bit errors detected; see bit_errors array for details
  *   - false: no bit errors detected
  */
-bool pga_verify_prbs(const uint8_t* payloads[],
+bool pga_verify_prbs(const uint8_t* const payloads[],
                      uint16_t lengths[],
                      uint16_t count,
                      uint32_t bit_errors[]);
@@ -307,12 +307,13 @@ bool pga_verify_prbs(const uint8_t* payloads[],
  *   output array of checksums; checksum[i] contains the checksum of the i'th
  *   header
  */
-void pga_checksum_ipv4_headers(const uint8_t* ipv4_headers[],
+void pga_checksum_ipv4_headers(const uint8_t* const ipv4_headers[],
                                uint16_t count,
                                uint32_t checksums[]);
 
 /**
- * Generate TCP/UDP checksums.
+ * Generate TCP/UDP checksums for IPv4 packets.
+ * Note: the layer 4 header checksum should be 0.
  *
  * @param[in] ipv4_headers
  *   array of pointers to IPv4 headers.  The layer 4 data to checksum should
@@ -323,7 +324,28 @@ void pga_checksum_ipv4_headers(const uint8_t* ipv4_headers[],
  *   output array of checksums; checksum[i] contains the checksum for the i'th
  *   header/payload
  */
-void pga_checksum_ipv4_tcpudp(const uint8_t* ipv4_headers[],
+void pga_checksum_ipv4_tcpudp(const uint8_t* const ipv4_headers[],
+                              uint16_t count,
+                              uint32_t checksums[]);
+
+/**
+ * Generate TCP/UDP checksums for IPv6 packets.
+ * We take the payload as input here to avoid having to potentially iterate
+ * over extension headers.
+ * Note: the layer 4 header checksum should be 0.
+ *
+ * @param[in] ipv6_headers
+ *   array of pointers to IPv6 headers.
+ * @param[in] payloads
+ *   array of pointers to payload data.
+ * @param[in] counts
+ *   the number of headers/payloads to checksum
+ * @param[out] checksums
+ *   output array of checksums; checksum[i] contains the checksum for the i'th
+ *   header/payload
+ */
+void pga_checksum_ipv6_tcpudp(const uint8_t* const ipv6_headers[],
+                              const uint8_t* const payloads[],
                               uint16_t count,
                               uint32_t checksums[]);
 
