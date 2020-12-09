@@ -72,6 +72,7 @@ public:
     int listen(int s, int backlog);
     int socket(int domain, int type, int protocol);
     int fcntl(int fd, int cmd, ...);
+    int ioctl(int fd, unsigned long req, ...);
 
     /* Receive functions */
     ssize_t read(int s, void* mem, size_t len);

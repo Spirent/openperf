@@ -1,5 +1,7 @@
 #include "arpa/inet.h"
 #include "lwip/netif.h"
+#include "lwip/dhcp.h"
+#include "lwip/prot/dhcp.h"
 #include "lwipopts.h"
 
 #include "packet/stack/lwip/netif_utils.hpp"
@@ -25,6 +27,36 @@ std::string netif_wrapper::mac_address() const
         libpacket::type::mac_address(m_netif->hwaddr)));
 }
 
+packetio::interface::dhcp_client_state netif_wrapper::dhcp_state() const
+{
+    using dhcp_client_state = packetio::interface::dhcp_client_state;
+
+    const auto* dhcp = netif_dhcp_data(m_netif);
+    switch (dhcp ? dhcp->state : DHCP_STATE_OFF) {
+    case DHCP_STATE_REQUESTING:
+        return (dhcp_client_state::requesting);
+    case DHCP_STATE_INIT:
+        return (dhcp_client_state::init);
+    case DHCP_STATE_REBOOTING:
+        return (dhcp_client_state::rebooting);
+    case DHCP_STATE_REBINDING:
+        return (dhcp_client_state::rebinding);
+    case DHCP_STATE_BACKING_OFF:
+    case DHCP_STATE_SELECTING:
+        return (dhcp_client_state::selecting);
+    case DHCP_STATE_CHECKING:  /* stack verifies availability before using */
+        return (dhcp_client_state::checking);
+    case DHCP_STATE_BOUND:
+        return (dhcp_client_state::bound);
+    case DHCP_STATE_PERMANENT:  /* defined but not implemented by LwIP */
+    case DHCP_STATE_RELEASING:  /* defined but not implemented by LwIP */
+    case DHCP_STATE_INFORMING:
+    case DHCP_STATE_OFF:
+    default:
+        return (dhcp_client_state::none);
+    }
+}
+
 static libpacket::type::ipv4_address to_ipv4_address(const ip4_addr_t& addr)
 {
     return (libpacket::type::ipv4_address(ntohl(addr.addr)));
@@ -35,6 +67,24 @@ std::optional<std::string> netif_wrapper::ipv4_address() const
     auto addr = ip_2_ip4(&m_netif->ip_addr);
     if (addr->addr) {
         return (libpacket::type::to_string(to_ipv4_address(*addr)));
+    }
+    return {};
+}
+
+std::optional<std::string> netif_wrapper::ipv4_gateway() const
+{
+    auto gw = ip_2_ip4(&m_netif->gw);
+    if (gw->addr) {
+        return (libpacket::type::to_string(to_ipv4_address(*gw)));
+    }
+    return {};
+}
+
+std::optional<uint8_t> netif_wrapper::ipv4_prefix_length() const
+{
+    auto netmask = ip_2_ip4(&m_netif->netmask);
+    if (netmask->addr) {
+        return (static_cast<uint8_t>(__builtin_popcount((*netmask).addr)));
     }
     return {};
 }

@@ -27,37 +27,23 @@ namespace openperf::packetio::dpdk {
 
 static inline void log_port(uint16_t idx, std::string_view id)
 {
-    auto mac_addr = rte_ether_addr{};
-    rte_eth_macaddr_get(idx, &mac_addr);
-
     if (auto if_name = port_info::interface_name(idx)) {
         OP_LOG(OP_LOG_INFO,
-               "Port index %u is using id = %.*s (MAC = "
-               "%02x:%02x:%02x:%02x:%02x:%02x, driver = %s attached to %s)",
+               "Port index %u is using id = %.*s (MAC = %s, "
+               "driver = %s attached to %s)",
                idx,
                static_cast<int>(id.length()),
                id.data(),
-               mac_addr.addr_bytes[0],
-               mac_addr.addr_bytes[1],
-               mac_addr.addr_bytes[2],
-               mac_addr.addr_bytes[3],
-               mac_addr.addr_bytes[4],
-               mac_addr.addr_bytes[5],
+               libpacket::type::to_string(port_info::mac_address(idx)).c_str(),
                port_info::driver_name(idx).c_str(),
                if_name.value().c_str());
     } else {
         OP_LOG(OP_LOG_INFO,
-               "Port index %u is using id = %.*s (MAC = "
-               "%02x:%02x:%02x:%02x:%02x:%02x, driver = %s)",
+               "Port index %u is using id = %.*s (MAC = %s, driver = %s)",
                idx,
                static_cast<int>(id.length()),
                id.data(),
-               mac_addr.addr_bytes[0],
-               mac_addr.addr_bytes[1],
-               mac_addr.addr_bytes[2],
-               mac_addr.addr_bytes[3],
-               mac_addr.addr_bytes[4],
-               mac_addr.addr_bytes[5],
+               libpacket::type::to_string(port_info::mac_address(idx)).c_str(),
                port_info::driver_name(idx).c_str());
     }
 }
@@ -338,8 +324,8 @@ driver<ProcessType>::driver(driver&& other) noexcept
 {}
 
 template <typename ProcessType>
-driver<ProcessType>& driver<ProcessType>::driver::
-operator=(driver&& other) noexcept
+driver<ProcessType>&
+driver<ProcessType>::driver::operator=(driver&& other) noexcept
 {
     if (this != &other) {
         m_process = std::move(other.m_process);

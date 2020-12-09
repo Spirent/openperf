@@ -57,7 +57,7 @@ class cpp_scope():
 
     def __enter__(self):
         if self.text:
-            if self.text[-1] is not '{':
+            if self.text[-1] != '{':
                 line = (self.text + '\n{\n')
             else:
                 line = (self.text + '\n')

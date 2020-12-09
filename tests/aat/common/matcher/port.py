@@ -17,6 +17,7 @@ class _be_valid_port(Matcher):
             expect(p.config.dpdk.link).not_to(be_none)
             expect(p.config.dpdk.link.speed).to(be_above_or_equal(0))
             expect(['full', 'half', 'unknown']).to(contain(p.config.dpdk.link.duplex))
+            expect(p.config.dpdk.mac_address).not_to(be_none)
         elif p.kind == 'host':
             pass
         elif p.kind == 'bond':
@@ -31,5 +32,6 @@ class _be_valid_port(Matcher):
         expect(['full', 'half', 'unknown']).to(contain(p.status.duplex))
         expect(p.stats).not_to(be_none)
         return True, ['is valid port']
+
 
 be_valid_port = _be_valid_port()

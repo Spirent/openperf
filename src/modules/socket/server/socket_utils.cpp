@@ -11,11 +11,25 @@
 
 namespace openperf::socket::server {
 
-tl::expected<generic_socket, int>
+/*
+ * We use a weak attribute here so that OS specific socket
+ * families, e.g. AF_PACKET, can be supported without requiring
+ * OS specific code here.
+ */
+__attribute__((weak)) tl::expected<generic_socket, int>
 make_socket(openperf::socket::server::allocator& allocator,
             int domain,
             int type,
             int protocol)
+{
+    return (make_socket_common(allocator, domain, type, protocol));
+}
+
+tl::expected<generic_socket, int>
+make_socket_common(openperf::socket::server::allocator& allocator,
+                   int domain,
+                   int type,
+                   int protocol)
 {
     if (domain != AF_INET && domain != AF_INET6) {
         return (tl::make_unexpected(EAFNOSUPPORT));

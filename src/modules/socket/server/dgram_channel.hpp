@@ -71,9 +71,18 @@ public:
     bool send_empty() const;
     bool send(const pbuf* p);
     bool send(const pbuf* p, const dgram_ip_addr* addr, in_port_t);
+    bool send(const pbuf* p, const dgram_sockaddr_ll* sll);
 
     bool recv_available() const;
-    std::pair<pbuf*, std::optional<dgram_channel_addr>> recv();
+
+    struct ip_socket_address
+    {
+        dgram_ip_addr addr;
+        in_port_t port;
+    };
+
+    std::pair<pbuf*, std::optional<ip_socket_address>> recv_ip();
+    std::pair<pbuf*, std::optional<dgram_sockaddr_ll>> recv_ll();
 
     void dump() const;
 };

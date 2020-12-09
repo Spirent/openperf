@@ -111,14 +111,14 @@ enum pga_signature_status pga_status_flag(int flags)
                                : pga_signature_status::invalid);
 }
 
-uint16_t pga_signatures_crc_filter(const uint8_t* payloads[],
+uint16_t pga_signatures_crc_filter(const uint8_t* const payloads[],
                                    uint16_t count,
                                    int crc_matches[])
 {
     return (pga::signature::crc_filter(payloads, count, crc_matches));
 }
 
-uint16_t pga_signatures_decode(const uint8_t* payloads[],
+uint16_t pga_signatures_decode(const uint8_t* const payloads[],
                                uint16_t count,
                                uint32_t stream_ids[],
                                uint32_t sequence_numbers[],
@@ -182,7 +182,7 @@ uint32_t pga_fill_prbs(uint8_t* payloads[],
     return (seed);
 }
 
-bool pga_verify_prbs(const uint8_t* payloads[],
+bool pga_verify_prbs(const uint8_t* const payloads[],
                      uint16_t lengths[],
                      uint16_t count,
                      uint32_t bit_errors[])
@@ -195,18 +195,26 @@ bool pga_verify_prbs(const uint8_t* payloads[],
         bit_errors, bit_errors + count, [](auto& value) { return (value); }));
 }
 
-void pga_checksum_ipv4_headers(const uint8_t* ipv4_headers[],
+void pga_checksum_ipv4_headers(const uint8_t* const ipv4_headers[],
                                uint16_t count,
                                uint32_t checksums[])
 {
     pga::checksum::ipv4_headers(ipv4_headers, count, checksums);
 }
 
-void pga_checksum_ipv4_tcpudp(const uint8_t* ipv4_headers[],
+void pga_checksum_ipv4_tcpudp(const uint8_t* const ipv4_headers[],
                               uint16_t count,
                               uint32_t checksums[])
 {
     pga::checksum::ipv4_tcpudp(ipv4_headers, count, checksums);
+}
+
+void pga_checksum_ipv6_tcpudp(const uint8_t* const ipv6_headers[],
+                              const uint8_t* const payloads[],
+                              uint16_t count,
+                              uint32_t checksums[])
+{
+    pga::checksum::ipv6_tcpudp(ipv6_headers, payloads, count, checksums);
 }
 
 void pga_unpack_and_sum_indexicals(const uint32_t indexicals[],

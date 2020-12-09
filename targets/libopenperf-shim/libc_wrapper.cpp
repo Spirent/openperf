@@ -41,6 +41,7 @@ void wrapper::init()
     listen = load_symbol<decltype(listen)>(RTLD_NEXT, "listen");
     socket = load_symbol<decltype(socket)>(RTLD_NEXT, "socket");
     fcntl = load_symbol<decltype(fcntl)>(RTLD_NEXT, "fcntl");
+    ioctl = load_symbol<decltype(ioctl)>(RTLD_NEXT, "ioctl");
 
     read = load_symbol<decltype(read)>(RTLD_NEXT, "read");
     readv = load_symbol<decltype(readv)>(RTLD_NEXT, "readv");

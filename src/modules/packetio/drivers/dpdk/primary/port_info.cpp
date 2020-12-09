@@ -37,6 +37,10 @@ uint16_t tx_queue_default(uint16_t port_id)
 
 bool lsc_interrupt(uint16_t port_id)
 {
+    auto result =
+        openperf::config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
+            op_packetio_dpdk_no_link_irqs);
+    if (result.value_or(false)) return false;
     return (*(get_info_field(port_id, &rte_eth_dev_info::dev_flags))
             & RTE_ETH_DEV_INTR_LSC);
 }

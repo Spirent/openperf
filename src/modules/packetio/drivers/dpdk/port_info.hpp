@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 
+#include "lib/packet/type/mac_address.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
 
 namespace openperf::packetio::dpdk::port_info {
@@ -14,6 +15,7 @@ unsigned socket_id(uint16_t port_id);
 std::string driver_name(uint16_t port_id);
 std::string device_name(uint16_t port_id);
 std::optional<std::string> interface_name(uint16_t port_id);
+libpacket::type::mac_address mac_address(uint16_t port_id);
 
 uint32_t speeds(uint16_t port_id);
 uint32_t max_speed(uint16_t port_id);

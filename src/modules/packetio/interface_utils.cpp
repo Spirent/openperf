@@ -458,12 +458,53 @@ make_swagger_protocol_config(const eth_protocol_config& eth)
     return (config);
 }
 
+template <typename Key, typename Value, typename... Pairs>
+constexpr auto associative_array(Pairs&&... pairs)
+    -> std::array<std::pair<Key, Value>, sizeof...(pairs)>
+{
+    return {{std::forward<Pairs>(pairs)...}};
+}
+
+static std::string to_string(enum dhcp_client_state state)
+{
+    static const auto state_pairs =
+        associative_array<dhcp_client_state, std::string>(
+            std::pair(dhcp_client_state::none, "none"),
+            std::pair(dhcp_client_state::rebooting, "rebooting"),
+            std::pair(dhcp_client_state::init_reboot, "init_reboot"),
+            std::pair(dhcp_client_state::init, "init"),
+            std::pair(dhcp_client_state::selecting, "selecting"),
+            std::pair(dhcp_client_state::requesting, "requesting"),
+            std::pair(dhcp_client_state::checking, "checking"),
+            std::pair(dhcp_client_state::bound, "bound"),
+            std::pair(dhcp_client_state::renewing, "renewing"),
+            std::pair(dhcp_client_state::rebinding, "rebinding"));
+
+    auto cursor = std::begin(state_pairs), end = std::end(state_pairs);
+    while (cursor != end) {
+        if (cursor->first == state) { return (cursor->second); }
+        cursor++;
+    }
+
+    return ("unknown");
+}
+
 static std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp>
-make_swagger_protocol_config(const ipv4_dhcp_protocol_config& dhcp_ipv4)
+make_swagger_protocol_config(const ipv4_dhcp_protocol_config& dhcp_ipv4,
+                             const generic_interface& intf)
 {
     auto config = std::make_shared<InterfaceProtocolConfig_ipv4_dhcp>();
     if (dhcp_ipv4.hostname) { config->setHostname(*dhcp_ipv4.hostname); }
     if (dhcp_ipv4.client) { config->setClient(*dhcp_ipv4.client); }
+
+    auto status = std::make_shared<InterfaceProtocolConfig_ipv4_dhcp_status>();
+    status->setState(to_string(intf.dhcp_state()));
+    if (auto addr = intf.ipv4_address()) { status->setAddress(addr.value()); }
+    if (auto gw = intf.ipv4_gateway()) { status->setGateway(gw.value()); }
+    if (auto prefix = intf.ipv4_prefix_length()) {
+        status->setPrefixLength(prefix.value());
+    }
+    config->setStatus(status);
 
     return (config);
 }
@@ -483,14 +524,15 @@ make_swagger_protocol_config(const ipv4_static_protocol_config& static_ipv4)
 }
 
 static std::shared_ptr<InterfaceProtocolConfig_ipv4>
-make_swagger_protocol_config(const ipv4_protocol_config& ipv4)
+make_swagger_protocol_config(const ipv4_protocol_config& ipv4,
+                             const generic_interface& intf)
 {
     auto config = std::make_shared<InterfaceProtocolConfig_ipv4>();
 
     auto visitor = utils::overloaded_visitor(
         [&](const ipv4_auto_protocol_config&) { config->setMethod("auto"); },
         [&](const ipv4_dhcp_protocol_config& dhcp_ipv4) {
-            config->setDhcp(make_swagger_protocol_config(dhcp_ipv4));
+            config->setDhcp(make_swagger_protocol_config(dhcp_ipv4, intf));
             config->setMethod("dhcp");
         },
         [&](const ipv4_static_protocol_config& static_ipv4) {
@@ -563,7 +605,8 @@ make_swagger_protocol_config(const ipv6_protocol_config& ipv6)
 }
 
 static std::shared_ptr<InterfaceProtocolConfig>
-make_swagger_protocol_config(const protocol_config& protocol)
+make_swagger_protocol_config(const protocol_config& protocol,
+                             const generic_interface& intf)
 {
     auto config = std::make_shared<InterfaceProtocolConfig>();
 
@@ -572,7 +615,7 @@ make_swagger_protocol_config(const protocol_config& protocol)
             config->setEth(make_swagger_protocol_config(eth));
         },
         [&](const ipv4_protocol_config& ipv4) {
-            config->setIpv4(make_swagger_protocol_config(ipv4));
+            config->setIpv4(make_swagger_protocol_config(ipv4, intf));
         },
         [&](const ipv6_protocol_config& ipv6) {
             config->setIpv6(make_swagger_protocol_config(ipv6));
@@ -587,12 +630,12 @@ make_swagger_protocol_config(const protocol_config& protocol)
 }
 
 static std::shared_ptr<Interface_config>
-make_swagger_interface_config(const config_data& in_config)
+make_swagger_interface_config(const generic_interface& intf)
 {
     auto config = std::make_shared<Interface_config>();
-    for (auto& protocol : in_config.protocols) {
+    for (auto& protocol : intf.config().protocols) {
         config->getProtocols().emplace_back(
-            make_swagger_protocol_config(protocol));
+            make_swagger_protocol_config(protocol, intf));
     }
     return (config);
 }
@@ -620,7 +663,7 @@ make_swagger_interface(const generic_interface& in_intf)
 
     out_intf->setId(in_intf.id());
     out_intf->setPortId(in_intf.port_id());
-    out_intf->setConfig(make_swagger_interface_config(in_intf.config()));
+    out_intf->setConfig(make_swagger_interface_config(in_intf));
     out_intf->setStats(make_swagger_interface_stats(in_intf));
 
     return (out_intf);

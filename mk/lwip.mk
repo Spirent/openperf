@@ -37,14 +37,15 @@ LWIP_CORE_SOURCES := \
 	netif/ethernet.c
 
 LWIP_CORE4_SOURCES := \
+	core/ipv4/acd.c \
 	core/ipv4/autoip.c \
 	core/ipv4/dhcp.c \
 	core/ipv4/etharp.c \
 	core/ipv4/icmp.c \
 	core/ipv4/igmp.c \
-	core/ipv4/ip4_frag.c \
 	core/ipv4/ip4.c \
-	core/ipv4/ip4_addr.c
+	core/ipv4/ip4_addr.c \
+	core/ipv4/ip4_frag.c
 
 LWIP_CORE6_SOURCES := \
 	core/ipv6/dhcp6.c \

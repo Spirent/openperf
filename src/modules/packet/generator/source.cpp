@@ -146,7 +146,7 @@ bool source::uses_feature(packetio::packet::source_feature_flags flags) const
     using source_feature_flags = packetio::packet::source_feature_flags;
 
     auto needed = openperf::utils::bit_flags<source_feature_flags>{
-        source_feature_flags::none};
+        source_feature_flags::packet_checksums};
 
     if (m_sequence.has_signature_config()) {
         needed |= source_feature_flags::spirent_signature_encode;

@@ -20,13 +20,11 @@ all: definition_clean source_clean definition source
 .PHONY: definition
 definition: $(SWAGGER_DEF)
 
-$(SWAGGER_DEF): $(PKT_DEFS) | $(ENV_DIR)/
+$(SWAGGER_DEF): $(PKT_DEFS) $(ENV_DIR)/
 	$(ENV_DIR)/bin/python3 $(SWAGGER_GEN) --indir $(PKT_DEF_DIR) --outfile $@
 
 .PHONY: source
 source: $(SRC_DIR) $(HEADERS) $(PROTOCOL_HDR)
-
-$(info $(HEADERS))
 
 $(SRC_DIR):
 	@mkdir -p $(SRC_DIR)
@@ -34,7 +32,7 @@ $(SRC_DIR):
 $(PROTOCOL_HDR): $(HEADERS)
 	$(PROTOCOL_GEN) --dir $(SRC_DIR) --prefix "packet/protocol"
 
-$(SRC_DIR)/%.hpp: $(PKT_DEF_DIR)/%.yaml | $(ENV_DIR)
+$(SRC_DIR)/%.hpp: $(PKT_DEF_DIR)/%.yaml
 	$(ENV_DIR)/bin/python3 $(CODE_GEN) --infile $< --outdir $(SRC_DIR)
 
 $(ENV_DIR)/: $(REQUIREMENTS)

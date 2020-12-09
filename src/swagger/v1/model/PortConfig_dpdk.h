@@ -75,7 +75,14 @@ public:
     /// </summary>
     std::shared_ptr<PortConfig_dpdk_link> getLink() const;
     void setLink(std::shared_ptr<PortConfig_dpdk_link> value);
-    
+        /// <summary>
+    /// Device MAC address
+    /// </summary>
+    std::string getMacAddress() const;
+    void setMacAddress(std::string value);
+    bool macAddressIsSet() const;
+    void unsetMac_address();
+
 protected:
     std::string m_Device;
     bool m_DeviceIsSet;
@@ -85,6 +92,8 @@ protected:
     bool m_InterfaceIsSet;
     std::shared_ptr<PortConfig_dpdk_link> m_Link;
 
+    std::string m_Mac_address;
+    bool m_Mac_addressIsSet;
 };
 
 }

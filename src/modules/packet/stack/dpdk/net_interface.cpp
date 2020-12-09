@@ -19,6 +19,9 @@
 #if LWIP_IPV6
 #include "packet/stack/lwip/ipv6_netifapi.h"
 #endif
+#if LWIP_PACKET
+#include "packet/stack/lwip/packet.h"
+#endif
 #include "utils/overloaded_visitor.hpp"
 
 namespace openperf::packet::stack::dpdk {
@@ -126,7 +129,14 @@ static err_t net_interface_tx(netif* netif, pbuf* p)
            netif->num);
 
     auto error = ifp->handle_tx(p);
-    if (error != ERR_OK) { MIB2_STATS_NETIF_INC(netif, ifoutdiscards); }
+    if (error != ERR_OK) {
+        MIB2_STATS_NETIF_INC(netif, ifoutdiscards);
+#ifdef LWIP_PACKET
+    } else {
+        packet_input(p, netif);
+#endif
+    }
+
     return (error);
 }
 
@@ -176,6 +186,12 @@ static err_t net_interface_rx(pbuf* p, netif* netif)
            netif->name[1],
            netif->num);
 
+#ifdef LWIP_PACKET
+    /* Distpatch to packet sockets */
+    packet_input(p, netif);
+#endif
+
+    /* Then hand the packet off to the stack proper */
     return (ethernet_input(p, netif));
 }
 

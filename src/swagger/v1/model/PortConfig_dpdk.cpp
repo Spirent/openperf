@@ -25,6 +25,8 @@ PortConfig_dpdk::PortConfig_dpdk()
     m_DriverIsSet = false;
     m_Interface = "";
     m_InterfaceIsSet = false;
+    m_Mac_address = "";
+    m_Mac_addressIsSet = false;
     
 }
 
@@ -54,6 +56,10 @@ nlohmann::json PortConfig_dpdk::toJson() const
         val["interface"] = ModelBase::toJson(m_Interface);
     }
     val["link"] = ModelBase::toJson(m_Link);
+    if(m_Mac_addressIsSet)
+    {
+        val["mac_address"] = ModelBase::toJson(m_Mac_address);
+    }
     
 
     return val;
@@ -74,6 +80,11 @@ void PortConfig_dpdk::fromJson(nlohmann::json& val)
     if(val.find("interface") != val.end())
     {
         setInterface(val.at("interface"));
+        
+    }
+    if(val.find("mac_address") != val.end())
+    {
+        setMacAddress(val.at("mac_address"));
         
     }
     
@@ -139,6 +150,23 @@ void PortConfig_dpdk::setLink(std::shared_ptr<PortConfig_dpdk_link> value)
 {
     m_Link = value;
     
+}
+std::string PortConfig_dpdk::getMacAddress() const
+{
+    return m_Mac_address;
+}
+void PortConfig_dpdk::setMacAddress(std::string value)
+{
+    m_Mac_address = value;
+    m_Mac_addressIsSet = true;
+}
+bool PortConfig_dpdk::macAddressIsSet() const
+{
+    return m_Mac_addressIsSet;
+}
+void PortConfig_dpdk::unsetMac_address()
+{
+    m_Mac_addressIsSet = false;
 }
 
 }

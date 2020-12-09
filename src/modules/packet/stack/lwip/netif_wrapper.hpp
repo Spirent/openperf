@@ -24,7 +24,10 @@ public:
     std::string id() const;
     std::string port_id() const;
     std::string mac_address() const;
+    packetio::interface::dhcp_client_state dhcp_state() const;
     std::optional<std::string> ipv4_address() const;
+    std::optional<std::string> ipv4_gateway() const;
+    std::optional<uint8_t> ipv4_prefix_length() const;
     std::optional<std::string> ipv6_address() const;
     std::optional<std::string> ipv6_linklocal_address() const;
     packetio::interface::config_data config() const;

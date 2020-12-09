@@ -22,6 +22,7 @@
 #include "ModelBase.h"
 
 #include <string>
+#include "InterfaceProtocolConfig_ipv4_dhcp_status.h"
 
 namespace swagger {
 namespace v1 {
@@ -62,12 +63,21 @@ public:
     void setClient(std::string value);
     bool clientIsSet() const;
     void unsetClient();
+    /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp_status> getStatus() const;
+    void setStatus(std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp_status> value);
+    bool statusIsSet() const;
+    void unsetStatus();
 
 protected:
     std::string m_Hostname;
     bool m_HostnameIsSet;
     std::string m_Client;
     bool m_ClientIsSet;
+    std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp_status> m_Status;
+    bool m_StatusIsSet;
 };
 
 }

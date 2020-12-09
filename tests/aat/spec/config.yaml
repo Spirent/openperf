@@ -23,7 +23,7 @@ services:
     # FIXME: Remove --force-unlink. This is a hacky, temporary workaround for reliability.
     command: '../../build/openperf-linux-x86_64-testing/bin/openperf -c spec/test_dataplane.yaml >> openperf.log 2>&1'
     base_url: http://127.0.0.1:9000
-    init_url: http://127.0.0.1:9000/interfaces/dataplane-server
+    init_url: http://127.0.0.1:9000/interfaces/client-v6
     init_timeout: 15s
 
   # PacketIO argument test configs

@@ -32,7 +32,7 @@
 #define LWIP_DHCP 1
 #define LWIP_AUTOIP 1
 #define LWIP_DHCP_AUTOIP_COOP 1
-#define DHCP_DOES_ARP_CHECK 1 /* let's be a good net-citizen */
+#define LWIP_DHCP_DOES_ACD_CHECK 1 /* let's be a good net-citizen */
 #define LWIP_IPV6_AUTOCONFIG 1
 #define LWIP_IPV6_DHCP6 1
 #define LWIP_IPV6_SEND_ROUTER_SOLICIT 1
@@ -108,7 +108,7 @@
  * Enable the next three options plus whatever content you want.
  */
 //#define LWIP_DEBUG 1
-//#define LWIP_DBG_MIN_LEVEL LWIP_DBG_LEVEL_WARNING
+//#define LWIP_DBG_MIN_LEVEL LWIP_DBG_LEVEL_ALL
 //#define LWIP_DBG_TYPES_ON LWIP_DBG_ON
 
 //#define ETHARP_DEBUG     LWIP_DBG_ON
@@ -143,5 +143,9 @@
 //#define AUTOIP_DEBUG     LWIP_DBG_ON
 //#define DNS_DEBUG        LWIP_DBG_ON
 //#define IP6_DEBUG        LWIP_DBG_ON
+
+/* Local implementation options */
+#define LWIP_PACKET 1
+//#define PACKET_DEBUG     LWIP_DBG_ON
 
 #endif /* _OP_PACKETIO_STACK_LWIPOPTS_H_ */

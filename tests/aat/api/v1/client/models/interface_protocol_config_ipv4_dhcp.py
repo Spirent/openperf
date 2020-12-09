@@ -32,25 +32,30 @@ class InterfaceProtocolConfigIpv4Dhcp(object):
     """
     swagger_types = {
         'hostname': 'str',
-        'client': 'str'
+        'client': 'str',
+        'status': 'InterfaceProtocolConfigIpv4DhcpStatus'
     }
 
     attribute_map = {
         'hostname': 'hostname',
-        'client': 'client'
+        'client': 'client',
+        'status': 'status'
     }
 
-    def __init__(self, hostname=None, client=None):  # noqa: E501
+    def __init__(self, hostname=None, client=None, status=None):  # noqa: E501
         """InterfaceProtocolConfigIpv4Dhcp - a model defined in Swagger"""  # noqa: E501
 
         self._hostname = None
         self._client = None
+        self._status = None
         self.discriminator = None
 
         if hostname is not None:
             self.hostname = hostname
         if client is not None:
             self.client = client
+        if status is not None:
+            self.status = status
 
     @property
     def hostname(self):
@@ -95,6 +100,26 @@ class InterfaceProtocolConfigIpv4Dhcp(object):
         :type: str
         """
         self._client = client
+
+    @property
+    def status(self):
+        """Gets the status of this InterfaceProtocolConfigIpv4Dhcp.  # noqa: E501
+
+
+        :return: The status of this InterfaceProtocolConfigIpv4Dhcp.  # noqa: E501
+        :rtype: InterfaceProtocolConfigIpv4DhcpStatus
+        """
+        return self._status
+
+    @status.setter
+    def status(self, status):
+        """Sets the status of this InterfaceProtocolConfigIpv4Dhcp.
+
+
+        :param status: The status of this InterfaceProtocolConfigIpv4Dhcp.  # noqa: E501
+        :type: InterfaceProtocolConfigIpv4DhcpStatus
+        """
+        self._status = status
 
     def to_dict(self):
         """Returns the model properties as a dict"""
