@@ -520,8 +520,13 @@ core::uuid get_analyzer_result_id()
     return (id);
 }
 
-static constexpr auto signature_stream_id_sentinel =
-    std::numeric_limits<uint32_t>::max();
+/*
+ * TestCenter doesn't like 0 for the stream id, so use that value to indicate
+ * no stream id is available. We should never use a stream id value of 0 either,
+ * because our flow id's are always incremented by 1. Consult the `to_stream_id`
+ * function in packet/generator/traffic/sequence.cpp.
+ */
+static constexpr auto signature_stream_id_sentinel = 0;
 
 core::uuid rx_flow_id(const core::uuid& result_id,
                       uint16_t shard_idx,
