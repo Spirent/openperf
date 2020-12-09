@@ -427,6 +427,7 @@ bool sequence::has_signature_payload_fill() const
 
 inline uint32_t to_stream_id(uint16_t stream_id, uint16_t flow_id)
 {
+    assert(flow_id != std::numeric_limits<decltype(flow_id)>::max());
     return (stream_id << 16 | flow_id + 1);
 }
 
