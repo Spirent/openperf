@@ -11,6 +11,7 @@
 #include "packetio/generic_event_loop.hpp"
 #include "packetio/generic_workers.hpp"
 #include "packetio/workers/dpdk/callback.hpp"
+#include "packetio/drivers/dpdk/port/checksum_calculator.hpp"
 #include "packetio/drivers/dpdk/port/filter.hpp"
 #include "packetio/drivers/dpdk/port/net_ring_fixup.hpp"
 #include "packetio/drivers/dpdk/port/packet_type_decoder.hpp"
@@ -113,7 +114,8 @@ public:
                                 port::prbs_error_detector>;
     using source_feature_controller =
         source_feature_controller<port::signature_encoder,
-                                  port::signature_payload_filler>;
+                                  port::signature_payload_filler,
+                                  port::checksum_calculator>;
 
 private:
     void* m_context;                              /* 0MQ context */

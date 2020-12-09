@@ -175,8 +175,8 @@ public:
 using filter_variant = std::variant<flow_filter, mac_filter>;
 
 enum class filter_type {
-    flow = utils::variant_index<filter_variant, flow_filter>(),
-    mac = utils::variant_index<filter_variant, mac_filter>(),
+    flow = openperf::utils::variant_index<filter_variant, flow_filter>(),
+    mac = openperf::utils::variant_index<filter_variant, mac_filter>(),
 };
 
 class filter
