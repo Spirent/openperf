@@ -1146,4 +1146,15 @@ bool need_source_feature(const worker::tib& tib,
     }));
 }
 
+template <>
+bool need_source_feature(const worker::tib& tib,
+                         size_t port_idx,
+                         const port::checksum_calculator&)
+{
+    return (source_find_if(tib, port_idx, [](const dpdk::tx_source& source) {
+        return (source.uses_feature(
+            packet::source_feature_flags::packet_checksums));
+    }));
+}
+
 } // namespace openperf::packetio::dpdk
