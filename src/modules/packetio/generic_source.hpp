@@ -18,7 +18,8 @@ using packets_per_hour = openperf::units::rate<uint64_t, std::ratio<1, 3600>>;
 enum class source_feature_flags {
     none = 0,
     spirent_signature_encode = (1 << 0),
-    spirent_payload_fill = (1 << 1)
+    spirent_payload_fill = (1 << 1),
+    packet_checksums = (1 << 2),
 };
 
 class generic_source
