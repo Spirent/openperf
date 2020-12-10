@@ -55,13 +55,13 @@ public:
         /// <summary>
     /// The weight of this centroid
     /// </summary>
-    int32_t getWeight() const;
-    void setWeight(int32_t value);
+    int64_t getWeight() const;
+    void setWeight(int64_t value);
     
 protected:
     double m_Mean;
 
-    int32_t m_Weight;
+    int64_t m_Weight;
 
 };
 

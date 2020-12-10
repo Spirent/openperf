@@ -16,7 +16,7 @@ template <typename T> class spool
 {
 public:
     using extractor = std::optional<double> (*)(const T&, std::string_view);
-    using tdigest = ::digestible::tdigest<double, uint32_t>;
+    using tdigest = ::digestible::tdigest<double, uint64_t>;
 
 private:
     // Internal Types
@@ -50,7 +50,7 @@ public:
     void add(const T& stat);
 
 private:
-    uint32_t weight(const argument_t&, const T&) const;
+    uint64_t weight(const argument_t&, const T&) const;
     double delta(const argument_t&, const T&) const;
     void argument_check(const argument_t&) const;
 };
@@ -206,14 +206,14 @@ template <typename T> results spool<T>::result() const
 
 // Methods : private
 template <typename T>
-uint32_t spool<T>::weight(const argument_t& arg, const T& stat) const
+uint64_t spool<T>::weight(const argument_t& arg, const T& stat) const
 {
-    int weight = 1;
+    uint64_t weight = 1;
     switch (arg.function) {
     case argument_t::DXDY: {
         auto y = m_extractor(stat, arg.y).value();
         auto last_y = m_extractor(m_last_stat, arg.y).value();
-        weight = static_cast<uint32_t>(y - last_y);
+        weight = static_cast<uint64_t>(y - last_y);
         break;
     }
     default:

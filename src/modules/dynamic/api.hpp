@@ -31,7 +31,7 @@ struct argument_t
 
 struct results
 {
-    using centroid = std::pair<double, uint32_t>;
+    using centroid = std::pair<double, uint64_t>;
 
     struct threshold
     {

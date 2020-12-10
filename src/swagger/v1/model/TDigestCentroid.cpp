@@ -20,7 +20,7 @@ namespace model {
 TDigestCentroid::TDigestCentroid()
 {
     m_Mean = 0.0;
-    m_Weight = 0;
+    m_Weight = 0L;
     
 }
 
@@ -61,11 +61,11 @@ void TDigestCentroid::setMean(double value)
     m_Mean = value;
     
 }
-int32_t TDigestCentroid::getWeight() const
+int64_t TDigestCentroid::getWeight() const
 {
     return m_Weight;
 }
-void TDigestCentroid::setWeight(int32_t value)
+void TDigestCentroid::setWeight(int64_t value)
 {
     m_Weight = value;
     
