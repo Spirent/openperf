@@ -3,12 +3,12 @@
 #include <climits>
 #include <dirent.h>
 #include <sys/stat.h>
-#include <filesystem>
 
 #include "core/op_log.h"
 #include "core/op_modules.h"
 #include "core/op_options.h"
 #include "config/op_config_file.hpp"
+#include "utils/filesystem.hpp"
 
 namespace openperf::core {
 
