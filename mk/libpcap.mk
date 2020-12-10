@@ -37,8 +37,10 @@ $(LIBPCAP_OBJ_DIR)/Makefile: $(LIBPCAP_SRC_DIR)/configure
 	@mkdir -p $(LIBPCAP_OBJ_DIR)
 	cd $(LIBPCAP_OBJ_DIR) && $(LIBPCAP_SRC_DIR)/configure $(OP_CONFIG_OPTS) \
 		$(LIBPCAP_CONFIG_OPTS) --prefix="$(LIBPCAP_BLD_DIR)" \
-		CC="$(CC)" CFLAGS="$(OP_COPTS) $(OP_EXTRA_CFLAGS)" \
-		CXX="$(CXX)" CXXFLAGS="$(OP_CXXOPTS) $(OP_EXTRA_CXXFLAGS)"
+		CC="$(CC)" CFLAGS="$(OP_COPTS) $(OP_CROSSFLAGS) $(OP_EXTRA_CFLAGS)" \
+		CXX="$(CXX)" CXXFLAGS="$(OP_CXXOPTS) $(OP_CROSSFLAGS) $(OP_EXTRA_CXXFLAGS)" \
+		CPPFLAGS="$(OP_EXTRA_CPPFLAGS)" \
+		LDFLAGS="$(OP_LDOPTS) $(OP_CROSSFLAGS) $(OP_EXTRA_LDFLAGS)"
 
 # DPDK and libpcap both have a bpf_validate() function
 # Since this function appears to be included for compatibility reasons

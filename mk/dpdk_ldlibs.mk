@@ -6,7 +6,6 @@
 # in <DPDK_ROOT>/mk/rte.app.mk.
 # Please update this file when updating DPDK code.
 #
-
 DPDK_FLAGS_REQ_VARS := \
 	DPDK_DEFCONFIG \
 	DPDK_LIB_DIR \
