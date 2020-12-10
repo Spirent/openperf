@@ -1206,7 +1206,7 @@ class CpuGeneratorApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
-        :param DynamicResults dynamic_results: Dynamic results configuration
+        :param DynamicResultsConfig dynamic_results: Dynamic results configuration
         :return: CpuGeneratorResult
                  If the method is called asynchronously,
                  returns the request thread.
@@ -1229,7 +1229,7 @@ class CpuGeneratorApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
-        :param DynamicResults dynamic_results: Dynamic results configuration
+        :param DynamicResultsConfig dynamic_results: Dynamic results configuration
         :return: CpuGeneratorResult
                  If the method is called asynchronously,
                  returns the request thread.
