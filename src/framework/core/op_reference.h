@@ -5,9 +5,11 @@
  * @file
  */
 
+#ifndef __cplusplus
 #include <stdatomic.h>
-
-#ifdef __cplusplus
+#else
+#include <atomic>
+#define atomic_int std::atomic<int>
 extern "C" {
 #endif
 
