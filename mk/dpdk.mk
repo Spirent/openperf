@@ -14,10 +14,20 @@ DPDK_BLD_DIR := $(OP_BUILD_ROOT)/dpdk
 DPDK_INC_DIR := $(DPDK_BLD_DIR)/include
 DPDK_LIB_DIR := $(DPDK_BLD_DIR)/lib
 
-ifeq ($(MODE),debug)
-	DPDK_DEFTARGET :=	openperf-debug-$(ARCH)-default-$(PLATFORM)-clang
+ifeq ($(ARCH), $(HOST_ARCH))
+	DPDK_CC := clang
 else
-	DPDK_DEFTARGET :=	openperf-$(ARCH)-default-$(PLATFORM)-clang
+  # Usually only have gcc when dealing with cross-compile toolchains
+  DPDK_CC := gcc
+  ifneq (,$(OP_DPDK_CROSS))
+		DPDK_OPTS := CROSS="$(OP_DPDK_CROSS)"
+	endif
+endif
+
+ifeq ($(MODE),debug)
+	DPDK_DEFTARGET :=	openperf-debug-$(ARCH)-default-$(PLATFORM)-$(DPDK_CC)
+else
+	DPDK_DEFTARGET :=	openperf-$(ARCH)-default-$(PLATFORM)-$(DPDK_CC)
 endif
 
 DPDK_DEFCONFIG := $(OP_ROOT)/conf/dpdk/defconfig_$(DPDK_DEFTARGET)
@@ -60,7 +70,7 @@ $(DPDK_BLD_DIR)/.config: $(DPDK_DEFCONFIG)
 	cd $(DPDK_SRC_DIR) && $(MAKE) config T=$(DPDK_DEFTARGET) O=$(DPDK_BLD_DIR)
 
 $(DPDK_TARGET): $(DPDK_BLD_DIR)/.config
-	cd $(DPDK_BLD_DIR) && $(MAKE) EXTRA_CFLAGS="$(strip $(OP_CSTD) $(OP_COPTS) $(OP_EXTRA_CFLAGS))"
+	cd $(DPDK_BLD_DIR) && $(MAKE) $(DPDK_OPTS) EXTRA_CFLAGS="$(strip $(OP_CSTD) $(OP_COPTS) $(OP_EXTRA_CFLAGS))"
 
 .PHONY: dpdk
 dpdk: $(DPDK_TARGET)
