@@ -28,8 +28,8 @@ struct connection_msg_t
     };
 };
 
-tl::expected<int, std::string> server_tcp::new_server(int domain,
-                                                      in_port_t port)
+tl::expected<int, std::string> server_tcp::new_server(
+    int domain, in_port_t port, std::optional<std::string> interface)
 {
     struct sockaddr_storage client_storage;
     auto server_ptr = (struct sockaddr*)&client_storage;
@@ -57,16 +57,37 @@ tl::expected<int, std::string> server_tcp::new_server(int domain,
     }
 
     int sock = 0, enable = true;
-    if ((sock = m_driver->socket(domain, SOCK_STREAM, 0)) == -1) {
+    if ((sock = m_driver->socket(domain, SOCK_STREAM, IPPROTO_TCP)) == -1) {
         OP_LOG(OP_LOG_WARNING,
-               "Unable to open %s UDP server socket: %s\n",
+               "Unable to open %s TCP server socket: %s\n",
                domain_str.c_str(),
                strerror(errno));
         return tl::make_unexpected<std::string>(strerror(errno));
     }
 
+    if (interface) {
+        if (m_driver->setsockopt(sock,
+                                 SOL_SOCKET,
+                                 SO_BINDTODEVICE,
+                                 interface.value().c_str(),
+                                 interface.value().size())
+            < 0) {
+            auto err = errno;
+            m_driver->close(sock);
+            return tl::make_unexpected<std::string>(strerror(err));
+        }
+    }
+
     if (m_driver->setsockopt(
             sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable))
+        != 0) {
+        auto err = errno;
+        m_driver->close(sock);
+        return tl::make_unexpected<std::string>(strerror(err));
+    }
+
+    if (m_driver->setsockopt(
+            sock, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(enable))
         != 0) {
         auto err = errno;
         m_driver->close(sock);
@@ -96,7 +117,10 @@ tl::expected<int, std::string> server_tcp::new_server(int domain,
     return sock;
 }
 
-server_tcp::server_tcp(in_port_t port, const drivers::driver_ptr& driver)
+server_tcp::server_tcp(in_port_t port,
+                       std::optional<std::string> interface,
+                       std::optional<int> domain,
+                       const drivers::driver_ptr& driver)
     : m_stopped(false)
     , m_context(zmq_ctx_new())
 {
@@ -109,15 +133,25 @@ server_tcp::server_tcp(in_port_t port, const drivers::driver_ptr& driver)
     }
 
     m_driver = driver;
-
-    /* IPv6 any supports IPv4 and IPv6 */
     tl::expected<int, std::string> res;
-    if ((res = new_server(AF_INET6, port)); res) {
-        OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4/IPv6.\n");
-    } else if ((res = new_server(AF_INET, port)); res) {
-        OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4.\n");
+    if (domain) {
+        if ((res = new_server(domain.value(), port, interface)); res) {
+            OP_LOG(OP_LOG_INFO,
+                   "Network TCP load server %s.\n",
+                   (domain.value() == AF_INET6) ? "IPv6" : "IPv4");
+        } else {
+            throw std::runtime_error("Cannot create TCP server: "
+                                     + res.error());
+        }
     } else {
-        throw std::runtime_error("Cannot create TCP server: " + res.error());
+        if ((res = new_server(AF_INET6, port, interface)); res) {
+            OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4/IPv6.\n");
+        } else if ((res = new_server(AF_INET, port, interface)); res) {
+            OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4.\n");
+        } else {
+            throw std::runtime_error("Cannot create TCP server: "
+                                     + res.error());
+        }
     }
     m_fd = res.value();
 
@@ -337,6 +371,7 @@ void server_tcp::run_worker_thread()
                                     ntohs(network_sockaddr_port(conn.client)));
                                 conn.state = STATE_ERROR;
                                 bytes_left = 0;
+                                break;
                             }
                             conn.state = (req.value().action == action_t::GET)
                                              ? STATE_WRITING

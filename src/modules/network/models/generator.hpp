@@ -23,6 +23,7 @@ struct generator_target
     std::string host;
     uint64_t port;
     protocol_t protocol;
+    std::optional<std::string> interface;
 };
 
 class generator

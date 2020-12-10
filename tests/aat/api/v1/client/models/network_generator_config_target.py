@@ -33,26 +33,31 @@ class NetworkGeneratorConfigTarget(object):
     swagger_types = {
         'host': 'str',
         'port': 'int',
-        'protocol': 'str'
+        'protocol': 'str',
+        'interface': 'str'
     }
 
     attribute_map = {
         'host': 'host',
         'port': 'port',
-        'protocol': 'protocol'
+        'protocol': 'protocol',
+        'interface': 'interface'
     }
 
-    def __init__(self, host='127.0.0.1', port=None, protocol=None):  # noqa: E501
+    def __init__(self, host='127.0.0.1', port=None, protocol=None, interface=None):  # noqa: E501
         """NetworkGeneratorConfigTarget - a model defined in Swagger"""  # noqa: E501
 
         self._host = None
         self._port = None
         self._protocol = None
+        self._interface = None
         self.discriminator = None
 
         self.host = host
         self.port = port
         self.protocol = protocol
+        if interface is not None:
+            self.interface = interface
 
     @property
     def host(self):
@@ -119,6 +124,28 @@ class NetworkGeneratorConfigTarget(object):
         :type: str
         """
         self._protocol = protocol
+
+    @property
+    def interface(self):
+        """Gets the interface of this NetworkGeneratorConfigTarget.  # noqa: E501
+
+        Bind client socket to a particular device, specified as interface name (required for dpdk driver)  # noqa: E501
+
+        :return: The interface of this NetworkGeneratorConfigTarget.  # noqa: E501
+        :rtype: str
+        """
+        return self._interface
+
+    @interface.setter
+    def interface(self, interface):
+        """Sets the interface of this NetworkGeneratorConfigTarget.
+
+        Bind client socket to a particular device, specified as interface name (required for dpdk driver)  # noqa: E501
+
+        :param interface: The interface of this NetworkGeneratorConfigTarget.  # noqa: E501
+        :type: str
+        """
+        self._interface = interface
 
     def to_dict(self):
         """Returns the model properties as a dict"""

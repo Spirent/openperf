@@ -16,6 +16,8 @@ public:
     ~dpdk() = default;
 
     void init() override;
+    bool bind_to_device_required() override;
+    bool address_family_required() override;
 
     /* General socket functions */
     int accept(int s,

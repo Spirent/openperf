@@ -65,6 +65,20 @@ public:
     std::string getProtocol() const;
     void setProtocol(std::string value);
         /// <summary>
+    /// Bind server socket to a particular device, specified as interface name (required for dpdk driver)
+    /// </summary>
+    std::string getInterface() const;
+    void setInterface(std::string value);
+    bool interfaceIsSet() const;
+    void unsetInterface();
+    /// <summary>
+    /// Specifies the addressing scheme that an instance of the Socket class can use. (required for dpdk driver) * inet - IPv4 support * inet6 - IPv6 support 
+    /// </summary>
+    std::string getAddressFamily() const;
+    void setAddressFamily(std::string value);
+    bool addressFamilyIsSet() const;
+    void unsetAddress_family();
+    /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<NetworkServerStats> getStats() const;
@@ -77,6 +91,10 @@ protected:
 
     std::string m_Protocol;
 
+    std::string m_Interface;
+    bool m_InterfaceIsSet;
+    std::string m_Address_family;
+    bool m_Address_familyIsSet;
     std::shared_ptr<NetworkServerStats> m_Stats;
 
 };

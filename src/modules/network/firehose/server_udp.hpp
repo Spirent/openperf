@@ -16,11 +16,15 @@ private:
     std::thread m_worker_thread;
 
     int udp_write(connection_t&);
-    tl::expected<int, std::string> new_server(int domain, in_port_t port);
+    tl::expected<int, std::string> new_server(
+        int domain, in_port_t port, std::optional<std::string> interface);
     void run_worker_thread();
 
 public:
-    server_udp(in_port_t port, const drivers::driver_ptr& driver);
+    server_udp(in_port_t port,
+               std::optional<std::string> interface,
+               std::optional<int> domain,
+               const drivers::driver_ptr& driver);
     server_udp(const server_udp&) = delete;
     ~server_udp() override;
 };

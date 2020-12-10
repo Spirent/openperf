@@ -63,7 +63,14 @@ public:
     /// </summary>
     std::string getProtocol() const;
     void setProtocol(std::string value);
-    
+        /// <summary>
+    /// Bind client socket to a particular device, specified as interface name (required for dpdk driver)
+    /// </summary>
+    std::string getInterface() const;
+    void setInterface(std::string value);
+    bool interfaceIsSet() const;
+    void unsetInterface();
+
 protected:
     std::string m_Host;
 
@@ -71,6 +78,8 @@ protected:
 
     std::string m_Protocol;
 
+    std::string m_Interface;
+    bool m_InterfaceIsSet;
 };
 
 }

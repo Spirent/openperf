@@ -13,6 +13,10 @@ void dpdk::init()
     if (!init_flag.load()) client::instance().init(&init_flag);
 };
 
+bool dpdk::bind_to_device_required() { return true; };
+
+bool dpdk::address_family_required() { return true; };
+
 int dpdk::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
 {
     init();

@@ -418,6 +418,18 @@ definitions:
         enum:
           - tcp
           - udp
+      interface:
+        type: string
+        description: Bind server socket to a particular device, specified as interface name (required for dpdk driver)
+      address_family:
+        type: string
+        enum:
+          - inet
+          - inet6
+        description: |
+          Specifies the addressing scheme that an instance of the Socket class can use. (required for dpdk driver)
+          * inet - IPv4 support
+          * inet6 - IPv6 support
       stats:
         $ref: "#/definitions/NetworkServerStats"
     required:
@@ -501,6 +513,9 @@ definitions:
             enum:
               - tcp
               - udp
+          interface:
+            type: string
+            description: Bind client socket to a particular device, specified as interface name (required for dpdk driver)
         required:
           - host
           - port

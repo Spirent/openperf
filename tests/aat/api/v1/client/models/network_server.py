@@ -34,6 +34,8 @@ class NetworkServer(object):
         'id': 'str',
         'port': 'int',
         'protocol': 'str',
+        'interface': 'str',
+        'address_family': 'str',
         'stats': 'NetworkServerStats'
     }
 
@@ -41,21 +43,29 @@ class NetworkServer(object):
         'id': 'id',
         'port': 'port',
         'protocol': 'protocol',
+        'interface': 'interface',
+        'address_family': 'address_family',
         'stats': 'stats'
     }
 
-    def __init__(self, id=None, port=None, protocol=None, stats=None):  # noqa: E501
+    def __init__(self, id=None, port=None, protocol=None, interface=None, address_family=None, stats=None):  # noqa: E501
         """NetworkServer - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._port = None
         self._protocol = None
+        self._interface = None
+        self._address_family = None
         self._stats = None
         self.discriminator = None
 
         self.id = id
         self.port = port
         self.protocol = protocol
+        if interface is not None:
+            self.interface = interface
+        if address_family is not None:
+            self.address_family = address_family
         self.stats = stats
 
     @property
@@ -123,6 +133,50 @@ class NetworkServer(object):
         :type: str
         """
         self._protocol = protocol
+
+    @property
+    def interface(self):
+        """Gets the interface of this NetworkServer.  # noqa: E501
+
+        Bind server socket to a particular device, specified as interface name (required for dpdk driver)  # noqa: E501
+
+        :return: The interface of this NetworkServer.  # noqa: E501
+        :rtype: str
+        """
+        return self._interface
+
+    @interface.setter
+    def interface(self, interface):
+        """Sets the interface of this NetworkServer.
+
+        Bind server socket to a particular device, specified as interface name (required for dpdk driver)  # noqa: E501
+
+        :param interface: The interface of this NetworkServer.  # noqa: E501
+        :type: str
+        """
+        self._interface = interface
+
+    @property
+    def address_family(self):
+        """Gets the address_family of this NetworkServer.  # noqa: E501
+
+        Specifies the addressing scheme that an instance of the Socket class can use. (required for dpdk driver) * inet - IPv4 support * inet6 - IPv6 support   # noqa: E501
+
+        :return: The address_family of this NetworkServer.  # noqa: E501
+        :rtype: str
+        """
+        return self._address_family
+
+    @address_family.setter
+    def address_family(self, address_family):
+        """Sets the address_family of this NetworkServer.
+
+        Specifies the addressing scheme that an instance of the Socket class can use. (required for dpdk driver) * inet - IPv4 support * inet6 - IPv6 support   # noqa: E501
+
+        :param address_family: The address_family of this NetworkServer.  # noqa: E501
+        :type: str
+        """
+        self._address_family = address_family
 
     @property
     def stats(self):

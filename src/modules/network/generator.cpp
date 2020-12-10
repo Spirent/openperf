@@ -156,6 +156,10 @@ void generator::config(const model::generator_config& config)
                                  + " is unsupported");
     }
 
+    if (!m_target.interface && nd->bind_to_device_required())
+        throw std::runtime_error(
+            "Bind to the interface is required for this driver");
+
     if (config.reads_per_sec > 0) {
         auto task = task::network_task(
             task::config_t{
@@ -169,6 +173,7 @@ void generator::config(const model::generator_config& config)
                         .host = m_target.host,
                         .port = m_target.port,
                         .protocol = to_task_protocol(m_target.protocol),
+                        .interface = m_target.interface,
                     }},
             nd);
         m_controller.add(std::move(task),
@@ -187,6 +192,7 @@ void generator::config(const model::generator_config& config)
                         .host = m_target.host,
                         .port = m_target.port,
                         .protocol = to_task_protocol(m_target.protocol),
+                        .interface = m_target.interface,
                     }},
             nd);
         m_controller.add(std::move(task),

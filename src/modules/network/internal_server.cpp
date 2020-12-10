@@ -35,12 +35,33 @@ server::server(const model::server& server_model)
                                  + " is unsupported");
     }
 
+    if (!m_interface && nd->bind_to_device_required())
+        throw std::runtime_error(
+            "Bind to the interface is required for this driver");
+
+    if (!m_address_family && nd->address_family_required())
+        throw std::runtime_error("Address family is required for this driver");
+
+    std::optional<int> domain;
+    if (m_address_family) {
+        switch (m_address_family.value()) {
+        case model::address_family_t::INET6:
+            domain = AF_INET6;
+            break;
+        case model::address_family_t::INET:
+            domain = AF_INET;
+            break;
+        }
+    }
+
     switch (protocol()) {
     case protocol_t::TCP:
-        server_ptr = std::make_unique<firehose::server_tcp>(port(), nd);
+        server_ptr = std::make_unique<firehose::server_tcp>(
+            port(), m_interface, domain, nd);
         break;
     case protocol_t::UDP:
-        server_ptr = std::make_unique<firehose::server_udp>(port(), nd);
+        server_ptr = std::make_unique<firehose::server_udp>(
+            port(), m_interface, domain, nd);
         break;
     }
 }

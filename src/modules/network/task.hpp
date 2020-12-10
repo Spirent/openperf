@@ -24,6 +24,7 @@ struct target_t
     std::string host;
     uint64_t port;
     int protocol;
+    std::optional<std::string> interface;
 };
 
 struct config_t

@@ -22,6 +22,8 @@ NetworkGeneratorConfig_target::NetworkGeneratorConfig_target()
     m_Host = "";
     m_Port = 0;
     m_Protocol = "";
+    m_Interface = "";
+    m_InterfaceIsSet = false;
     
 }
 
@@ -41,6 +43,10 @@ nlohmann::json NetworkGeneratorConfig_target::toJson() const
     val["host"] = ModelBase::toJson(m_Host);
     val["port"] = m_Port;
     val["protocol"] = ModelBase::toJson(m_Protocol);
+    if(m_InterfaceIsSet)
+    {
+        val["interface"] = ModelBase::toJson(m_Interface);
+    }
     
 
     return val;
@@ -51,6 +57,11 @@ void NetworkGeneratorConfig_target::fromJson(nlohmann::json& val)
     setHost(val.at("host"));
     setPort(val.at("port"));
     setProtocol(val.at("protocol"));
+    if(val.find("interface") != val.end())
+    {
+        setInterface(val.at("interface"));
+        
+    }
     
 }
 
@@ -81,6 +92,23 @@ void NetworkGeneratorConfig_target::setProtocol(std::string value)
 {
     m_Protocol = value;
     
+}
+std::string NetworkGeneratorConfig_target::getInterface() const
+{
+    return m_Interface;
+}
+void NetworkGeneratorConfig_target::setInterface(std::string value)
+{
+    m_Interface = value;
+    m_InterfaceIsSet = true;
+}
+bool NetworkGeneratorConfig_target::interfaceIsSet() const
+{
+    return m_InterfaceIsSet;
+}
+void NetworkGeneratorConfig_target::unsetInterface()
+{
+    m_InterfaceIsSet = false;
 }
 
 }
