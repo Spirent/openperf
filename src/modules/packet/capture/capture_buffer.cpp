@@ -1,6 +1,5 @@
 #include <cinttypes>
 #include <cstdio>
-#include <filesystem>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -8,6 +7,7 @@
 #include "packet/capture/capture_buffer.hpp"
 #include "packet/capture/pcap_defs.hpp"
 #include "packetio/packet_buffer.hpp"
+#include "utils/filesystem.hpp"
 
 // When OP_CAPTURE_USE_MLOCK is defined,  mlock() will be used on the capture
 // buffer memory to avoid paging.  If OP_CAPTURE_USE_MLOCK is not defined,

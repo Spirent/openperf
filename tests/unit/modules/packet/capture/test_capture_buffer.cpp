@@ -1,5 +1,4 @@
 #include <chrono>
-#include <filesystem>
 #include <random>
 #include <arpa/inet.h>
 
@@ -7,6 +6,7 @@
 
 #include "packet/capture/capture_buffer.hpp"
 #include "packetio/mock_packet_buffer.hpp"
+#include "utils/filesystem.hpp"
 
 using namespace openperf::packet::capture;
 using namespace openperf::packetio::packet;
