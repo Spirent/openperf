@@ -23,12 +23,6 @@ CPU_LDLIBS :=
 include $(CPU_SRC_DIR)/directory.mk
 
 CPU_OBJECTS := $(call op_generate_objects,$(CPU_SOURCES),$(CPU_OBJ_DIR))
-CPU_ISPC_TARGETS := \
-		avx1-i32x8 \
-		avx2-i32x8 \
-		avx512skx-i32x16 \
-		sse2-i32x4 \
-		sse4-i32x4
 
 ###
 # ISPC generates multiple object files when using multiple targets.
@@ -42,9 +36,8 @@ CPU_ISPC_OBJECTS := $(patsubst %, $(CPU_OBJ_DIR)/%, \
 
 # Adjust objects based on the number of ISPC target architectures
 CPU_DEFINES :=
-CPU_ISPC_TARGET_OBJECTS :=
 
-ifeq (,$(word 2,$(CPU_ISPC_TARGETS)))  # i.e. there is no 2nd target
+ifeq (,$(word 2,$(OP_ISPC_TARGETS)))  # i.e. there is no 2nd target
 	CPU_DEFINES += ISPC_TARGET_AUTOMATIC
 	CPU_ISPC_TARGET_OBJECTS += $(CPU_ISPC_OBJECTS)
 else
@@ -68,6 +61,13 @@ else
 		CPU_DEFINES += ISPC_TARGET_AVX512SKX
 		CPU_ISPC_TARGET_OBJECTS += $(addsuffix _avx512skx.o,$(basename $(CPU_ISPC_OBJECTS)))
 	endif
+	ifneq (,$(filter neon-%,$(OP_ISPC_TARGETS)))
+		PGA_DEFINES += ISPC_TARGET_NEON
+		PGA_ISPC_TARGET_OBJECTS += $(addsuffix _neon.o,$(basename $(PGA_ISPC_OBJECTS)))
+	endif
+
+# The ISPC target objects depend on the source "objects"
+$(CPU_ISPC_TARGET_OBJECTS): $(CPU_ISPC_OBJECTS)
 endif
 
 CPU_FLAGS := $(addprefix -D,$(CPU_DEFINES))
@@ -109,9 +109,13 @@ $(CPU_OBJ_DIR)/%.o: $(CPU_SRC_DIR)/%.ispc
 	@mkdir -p $(dir $@)
 	$(strip $(OP_ISPC) -o $@ $(CPU_ISPC_FLAGS) \
 		-M -MF $(@:.o=.d) \
-		--target=$(subst $(CPU_SPACE),$(CPU_COMMA),$(CPU_ISPC_TARGETS)) \
+		--target=$(subst $(CPU_SPACE),$(CPU_COMMA),$(OP_ISPC_TARGETS)) \
 		--header-outfile=$(patsubst %,$(CPU_OBJ_DIR)/%,$(notdir $<.h)) $<)
 	@sed -i -e s,\(null\),$@, $(@:.o=.d)
+
+clean_cpu: clean_cpu_ispc
+clean_cpu_ispc:
+	@rm -f $(CPU_ISPC_OBJECTS) $(CPU_ISPC_TARGET_OBJECTS)
 
 $(CPU_TARGET): $(CPU_OBJECTS) $(CPU_ISPC_TARGET_OBJECTS) $(CPU_ISPC_OBJECTS)
 	$(call op_link_library,$@,$(CPU_OBJECTS) $(CPU_ISPC_TARGET_OBJECTS))

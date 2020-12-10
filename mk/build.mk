@@ -11,7 +11,16 @@ $(error unsupported build platform $(PLATFORM))
 endif
 include $(OP_ROOT)/mk/platform/$(PLATFORM).mk
 
-ARCH ?= $(shell uname -m)
+HOST_ARCH ?= $(shell uname -m)
+ARCH ?= $(HOST_ARCH)
+
+ifneq ($(HOST_ARCH), $(ARCH))
+	ifeq (,$(wildcard $(OP_ROOT)/mk/arch/$(HOST_ARCH).mk))
+		$(error unsupported host architecture $(HOST_ARCH))
+	endif
+	include $(OP_ROOT)/mk/arch/$(HOST_ARCH).mk
+endif
+
 ifeq (,$(wildcard $(OP_ROOT)/mk/arch/$(ARCH).mk))
 $(error unsupported build architecture $(ARCH))
 endif

@@ -48,7 +48,7 @@ op_build_rule_src_path =\
 define op_c_build_rule_template
 $$($(3))/%.o: $(call op_build_rule_src_path,$(2),%$(1)) | $$($(4))
 	@mkdir -p $$(dir $$@)
-	$$(strip $$(OP_CC) -o $$@ -c $$(OP_CPPFLAGS) $$(OP_CFLAGS) $$(OP_COPTS) $$(OP_DEFINES) $$($(5)) $$<)
+	$$(strip $$(OP_CC) -o $$@ -c $$(OP_CPPFLAGS) $$(OP_CFLAGS) $$(OP_COPTS) $$(OP_CROSSFLAGS) $$(OP_DEFINES) $$($(5)) $$<)
 
 endef
 
@@ -61,7 +61,7 @@ endef
 define op_cxx_build_rule_template
 $$($(3))/%.o: $(call op_build_rule_src_path,$(2),%$(1)) | $$($(4))
 	@mkdir -p $$(dir $$@)
-	$$(strip $$(OP_CXX) -o $$@ -c $$(OP_CPPFLAGS) $$(OP_CXXFLAGS) $$(OP_COPTS) $$(OP_DEFINES) $$($(5)) $$<)
+	$$(strip $$(OP_CXX) -o $$@ -c $$(OP_CPPFLAGS) $$(OP_CXXFLAGS) $$(OP_COPTS) $$(OP_CROSSFLAGS) $$(OP_DEFINES) $$($(5)) $$<)
 
 endef
 
@@ -128,11 +128,11 @@ op_generate_clean_rules = \
 # $(3): extra link options (optional)
 define op_link_binary
 	@mkdir -p $(dir $(1))
-	$(strip $(OP_CXX) -o $(1) $(OP_LDOPTS) $(OP_LDFLAGS) $(2) $(OP_LDLIBS) $(3))
+	$(strip $(OP_CXX) -o $(1) $(OP_LDOPTS) $(OP_CROSSFLAGS) $(OP_LDFLAGS) $(2) $(OP_LDLIBS) $(3))
 endef
 
 define op_link_shared_library
-	$(strip $(OP_CXX) -shared -o $@ $(OP_LDOPTS) $(OP_LDFLAGS) $(3) $(2) $(OP_LDLIBS))
+	$(strip $(OP_CXX) -shared -o $@ $(OP_LDOPTS) $(OP_CROSSFLAGS) $(OP_LDFLAGS) $(3) $(2) $(OP_LDLIBS))
 endef
 
 define op_link_plugin

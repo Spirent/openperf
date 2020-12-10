@@ -35,7 +35,9 @@ SLJIT_TARGET := $(SLJIT_LIB_DIR)/libsljit.a
 # Build rules
 ###
 $(eval $(call op_generate_build_rules,$(SLJIT_SOURCES),SLJIT_SRC_DIR,SLJIT_OBJ_DIR,,SLJIT_FLAGS))
-$(eval $(call op_generate_clean_rules,sljit,SLJIT_TARGET, SLJIT_OBJECTS))
+$(eval $(call op_generate_clean_rules,sljit,SLJIT_TARGET,SLJIT_OBJECTS))
+
+$(SLJIT_OBJECTS): OP_CFLAGS += -Wno-sign-compare
 
 $(SLJIT_TARGET): $(SLJIT_OBJECTS)
 	$(call op_link_library,$@,$(SLJIT_OBJECTS))

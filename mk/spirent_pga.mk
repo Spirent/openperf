@@ -73,10 +73,20 @@ else
 		PGA_DEFINES += ISPC_TARGET_AVX512SKX
 		PGA_ISPC_TARGET_OBJECTS += $(addsuffix _avx512skx.o,$(basename $(PGA_ISPC_OBJECTS)))
 	endif
+	ifneq (,$(filter neon-%,$(OP_ISPC_TARGETS)))
+		PGA_DEFINES += ISPC_TARGET_NEON
+		PGA_ISPC_TARGET_OBJECTS += $(addsuffix _neon.o,$(basename $(PGA_ISPC_OBJECTS)))
+	endif
+
+# The ISPC target objects depend on their source "objects"
+$(PGA_ISPC_TARGET_OBJECTS): $(PGA_ISPC_OBJECTS)
 endif
 
 # Turn defines into proper compiler flags
-PGA_FLAGS := -mpclmul $(addprefix -D,$(PGA_DEFINES))
+PGA_FLAGS := $(addprefix -D,$(PGA_DEFINES))
+ifeq ($(ARCH), x86_64)
+	PGA_FLAGS += -mpclmul
+endif
 
 PGA_LIBRARY := openperf_spirent-pga
 PGA_TARGET := $(PGA_LIB_DIR)/lib$(PGA_LIBRARY).a
@@ -93,9 +103,6 @@ OP_LDLIBS += -l$(PGA_LIBRARY)
 ###
 $(eval $(call op_generate_build_rules,$(PGA_SOURCES),PGA_SRC_DIR,PGA_OBJ_DIR,,PGA_FLAGS))
 $(eval $(call op_generate_clean_rules,spirent_pga,PGA_TARGET,PGA_OBJECTS))
-
-# The ISPC target objects depend on their source "objects"
-$(PGA_ISPC_TARGET_OBJECTS): $(PGA_ISPC_OBJECTS)
 
 # In addition to the standard rules above, we need a couple of ISPC rules
 # Note: that the sed command on the bottom is because ispc doesn't write
