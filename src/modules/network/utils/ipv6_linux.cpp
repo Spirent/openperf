@@ -136,13 +136,13 @@ int ipv6_get_neighbor_ifindex_from_cache(const in6_addr* addr)
                 goto done;
             }
             size_t ndm_len = RTM_PAYLOAD(msg_ptr);
-            auto ndm = reinterpret_cast<ndmsg*>(NLMSG_DATA(msg_ptr));
+            auto* ndm = reinterpret_cast<ndmsg*>(NLMSG_DATA(msg_ptr));
             rtattr* rta;
             int found_addr = 0;
             for (rta = RTM_RTA(ndm); RTA_OK(rta, ndm_len);
                  rta = RTA_NEXT(rta, ndm_len)) {
                 if (rta->rta_type == NDA_DST) {
-                    auto dst_addr = reinterpret_cast<in6_addr*>(RTA_DATA(rta));
+                    auto* dst_addr = reinterpret_cast<in6_addr*>(RTA_DATA(rta));
                     if (memcmp(addr, dst_addr, sizeof(*addr)) == 0) {
                         found_addr = 1;
                     }

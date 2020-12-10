@@ -352,7 +352,7 @@ reply_msg server::handle_request(const request::server::bulk::erase& request)
 
 static int _handle_rpc_request(const op_event_data* data, void* arg)
 {
-    auto s = reinterpret_cast<server*>(arg);
+    auto* s = reinterpret_cast<server*>(arg);
 
     auto reply_errors = 0;
     while (auto request = openperf::message::recv(data->socket, ZMQ_DONTWAIT)

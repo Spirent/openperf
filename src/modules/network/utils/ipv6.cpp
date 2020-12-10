@@ -65,13 +65,13 @@ static int ipv6_send_icmp_echo_req(int sock,
         cmsg->cmsg_len = CMSG_LEN(sizeof(in6_pktinfo));
         cmsg->cmsg_type = IPV6_PKTINFO;
 
-        auto pi = reinterpret_cast<in6_pktinfo*>(CMSG_DATA(cmsg));
+        auto* pi = reinterpret_cast<in6_pktinfo*>(CMSG_DATA(cmsg));
         pi->ipi6_ifindex = ifindex;
         pi->ipi6_addr = *src_addr;
         msg.msg_controllen += CMSG_SPACE(sizeof(in6_pktinfo));
     }
 
-    auto icmp6 = reinterpret_cast<icmp6_hdr*>(req);
+    auto* icmp6 = reinterpret_cast<icmp6_hdr*>(req);
     icmp6->icmp6_type = ICMP6_ECHO_REQUEST;
     icmp6->icmp6_code = 0;
     icmp6->icmp6_cksum = 0;
@@ -99,7 +99,7 @@ static int ipv6_get_recv_msg_ifindex(msghdr* msg)
          cmsg = CMSG_NXTHDR(msg, cmsg)) {
         if (cmsg->cmsg_level == IPPROTO_IPV6
             && cmsg->cmsg_type == IPV6_PKTINFO) {
-            auto pktinfo = reinterpret_cast<in6_pktinfo*>(CMSG_DATA(cmsg));
+            auto* pktinfo = reinterpret_cast<in6_pktinfo*>(CMSG_DATA(cmsg));
             return pktinfo->ipi6_ifindex;
         }
     }
@@ -227,7 +227,7 @@ int ipv6_get_neighbor_ifindex_from_ping_socket(const in6_addr* addr)
                 msg.msg_namelen = sizeof(src_addr);
 
                 while ((resp_len = recvmsg(sock, &msg, MSG_DONTWAIT)) > 0) {
-                    auto icmp6 = reinterpret_cast<icmp6_hdr*>(resp);
+                    auto* icmp6 = reinterpret_cast<icmp6_hdr*>(resp);
                     if (icmp6->icmp6_type != ICMP6_ECHO_REPLY) continue;
                     if (src_addr.sin6_family == AF_INET6
                         && memcmp(addr, &src_addr.sin6_addr, sizeof(*addr))

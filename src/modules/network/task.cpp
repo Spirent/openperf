@@ -84,8 +84,8 @@ static int
 populate_sockaddr(network_sockaddr& s, const std::string& host, in_port_t port)
 {
     sockaddr_storage client_storage;
-    auto sa4 = reinterpret_cast<sockaddr_in*>(&client_storage);
-    auto sa6 = reinterpret_cast<sockaddr_in6*>(&client_storage);
+    auto* sa4 = reinterpret_cast<sockaddr_in*>(&client_storage);
+    auto* sa6 = reinterpret_cast<sockaddr_in6*>(&client_storage);
 
     if (inet_pton(AF_INET, host.c_str(), &sa4->sin_addr) == 1) {
         sa4->sin_family = AF_INET;
@@ -220,7 +220,7 @@ network_task::new_connection(const network_sockaddr& server,
     }
 #endif
 
-    auto sa = std::visit([](auto&& sa) { return (sockaddr*)&sa; }, server);
+    auto* sa = std::visit([](auto&& sa) { return (sockaddr*)&sa; }, server);
     if (m_driver->connect(sock, sa, network_sockaddr_size(server)) == -1
         && errno != EINPROGRESS) {
         /* not what we were expecting */
