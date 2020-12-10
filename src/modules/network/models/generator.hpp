@@ -21,7 +21,7 @@ struct generator_config
 struct generator_target
 {
     std::string host;
-    uint64_t port;
+    in_port_t port;
     protocol_t protocol;
     std::optional<std::string> interface;
 };

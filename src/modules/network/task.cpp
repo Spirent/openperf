@@ -81,16 +81,16 @@ void network_task::reset()
 }
 
 static int
-populate_sockaddr(network_sockaddr& s, const std::string& host, uint16_t port)
+populate_sockaddr(network_sockaddr& s, const std::string& host, in_port_t port)
 {
     sockaddr_storage client_storage;
-    auto sa4 = (sockaddr_in*)&client_storage;
-    auto sa6 = (sockaddr_in6*)&client_storage;
+    auto sa4 = reinterpret_cast<sockaddr_in*>(&client_storage);
+    auto sa6 = reinterpret_cast<sockaddr_in6*>(&client_storage);
 
     if (inet_pton(AF_INET, host.c_str(), &sa4->sin_addr) == 1) {
         sa4->sin_family = AF_INET;
         sa4->sin_port = htons(port);
-        network_sockaddr_assign((sockaddr*)sa4, s);
+        network_sockaddr_assign(reinterpret_cast<sockaddr*>(sa4), s);
     } else if (inet_pton(AF_INET6, host.c_str(), &sa6->sin6_addr) == 1) {
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = htons(port);
@@ -105,7 +105,7 @@ populate_sockaddr(network_sockaddr& s, const std::string& host, uint16_t port)
                        host.c_str());
             }
         }
-        network_sockaddr_assign((sockaddr*)sa6, s);
+        network_sockaddr_assign(reinterpret_cast<sockaddr*>(sa6), s);
     } else {
         /* host is not a valid IPv4 or IPv6 address; fail */
         return (-EINVAL);

@@ -21,27 +21,29 @@ inline socklen_t get_sa_len(const struct sockaddr* sa)
     }
 }
 
-inline in_port_t get_sa_port(const struct sockaddr* sa)
+inline in_port_t get_sa_port(const struct sockaddr* csa)
 {
+    auto* sa = const_cast<sockaddr*>(csa);
     switch (sa->sa_family) {
     case AF_INET:
-        return (((struct sockaddr_in*)sa)->sin_port);
+        return ((reinterpret_cast<sockaddr_in*>(sa))->sin_port);
     case AF_INET6:
-        return (((struct sockaddr_in6*)sa)->sin6_port);
+        return ((reinterpret_cast<sockaddr_in6*>(sa))->sin6_port);
     default:
         return (0);
     }
 }
 
-inline void* get_sa_addr(const struct sockaddr* sa)
+inline void* get_sa_addr(const struct sockaddr* csa)
 {
+    auto sa = const_cast<sockaddr*>(csa);
     switch (sa->sa_family) {
     case AF_INET:
-        return (&((struct sockaddr_in*)sa)->sin_addr);
+        return &reinterpret_cast<sockaddr_in*>(sa)->sin_addr;
     case AF_INET6:
-        return (&((struct sockaddr_in6*)sa)->sin6_addr);
+        return &reinterpret_cast<sockaddr_in6*>(sa)->sin6_addr;
     default:
-        return (nullptr);
+        return nullptr;
     }
 }
 
@@ -81,13 +83,17 @@ inline in_port_t network_sockaddr_port(const network_sockaddr& s)
                       s);
 }
 
-inline void* network_sockaddr_addr(const network_sockaddr& s)
+inline void* network_sockaddr_addr(const network_sockaddr& cs)
 {
-    return std::visit(
-        utils::overloaded_visitor(
-            [&](const sockaddr_in& sa) { return (void*)&sa.sin_addr; },
-            [&](const sockaddr_in6& sa) { return (void*)&sa.sin6_addr; }),
-        s);
+    auto& s = const_cast<network_sockaddr&>(cs);
+    return std::visit(utils::overloaded_visitor(
+                          [&](sockaddr_in& sa) {
+                              return reinterpret_cast<void*>(&sa.sin_addr);
+                          },
+                          [&](sockaddr_in6& sa) {
+                              return reinterpret_cast<void*>(&sa.sin6_addr);
+                          }),
+                      s);
 }
 
 } // namespace openperf::network::internal

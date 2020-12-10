@@ -32,12 +32,12 @@ tl::expected<int, std::string> server_tcp::new_server(
     int domain, in_port_t port, std::optional<std::string> interface)
 {
     struct sockaddr_storage client_storage;
-    auto server_ptr = (struct sockaddr*)&client_storage;
+    auto server_ptr = reinterpret_cast<sockaddr*>(&client_storage);
     std::string domain_str;
 
     switch (domain) {
     case AF_INET: {
-        auto server4 = (struct sockaddr_in*)server_ptr;
+        auto server4 = reinterpret_cast<sockaddr_in*>(server_ptr);
         server4->sin_family = AF_INET;
         server4->sin_port = htons(port);
         server4->sin_addr.s_addr = htonl(INADDR_ANY);
@@ -45,7 +45,7 @@ tl::expected<int, std::string> server_tcp::new_server(
         break;
     }
     case AF_INET6: {
-        auto server6 = (struct sockaddr_in6*)server_ptr;
+        auto server6 = reinterpret_cast<sockaddr_in6*>(server_ptr);
         server6->sin6_family = AF_INET6;
         server6->sin6_port = htons(port);
         server6->sin6_addr = in6addr_any;
@@ -184,7 +184,7 @@ void server_tcp::run_accept_thread()
 
         // Run the loop of the thread
         sockaddr_storage client_storage;
-        auto client = (sockaddr*)&client_storage;
+        auto client = reinterpret_cast<sockaddr*>(&client_storage);
         socklen_t client_length = sizeof(client_storage);
 
         void* sync =
