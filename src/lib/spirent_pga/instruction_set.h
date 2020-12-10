@@ -46,6 +46,12 @@ constexpr bool avx512skx_enabled = true;
 constexpr bool avx512skx_enabled = false;
 #endif
 
+#ifdef ISPC_TARGET_NEON
+constexpr bool neon_enabled = true;
+#else
+constexpr bool neon_enabled = false;
+#endif
+
 enum class type {
     NONE = 0,
     SCALAR,
@@ -55,6 +61,7 @@ enum class type {
     AVX,
     AVX2,
     AVX512SKX,
+    NEON,
     MAX
 };
 
@@ -74,7 +81,8 @@ constexpr std::string_view to_string(type t)
         std::pair(type::SSE4, "SSE4"),
         std::pair(type::AVX, "AVX"),
         std::pair(type::AVX2, "AVX2"),
-        std::pair(type::AVX512SKX, "AVX512"));
+        std::pair(type::AVX512SKX, "AVX512"),
+        std::pair(type::NEON, "NEON"));
 
     auto cursor = std::begin(type_names), end = std::end(type_names);
     while (cursor != end) {
@@ -94,7 +102,8 @@ constexpr bool enabled(type t)
         std::pair(type::SSE4, sse4_enabled),
         std::pair(type::AVX, avx_enabled),
         std::pair(type::AVX2, avx2_enabled),
-        std::pair(type::AVX512SKX, avx512skx_enabled));
+        std::pair(type::AVX512SKX, avx512skx_enabled),
+        std::pair(type::NEON, neon_enabled));
 
     auto cursor = std::begin(sets_enabled), end = std::end(sets_enabled);
     while (cursor != end) {
