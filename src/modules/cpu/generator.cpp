@@ -1,7 +1,6 @@
 #include <future>
 
 #include "generator.hpp"
-#include "cpu.hpp"
 #include "task_cpu.hpp"
 #include "task_cpu_system.hpp"
 
@@ -166,16 +165,19 @@ generator::generator(const model::generator& generator_model)
 
         if (std::holds_alternative<double>(m_config)) {
             auto utilization = std::get<double>(m_config);
-            auto process_stat = internal::cpu_process_time();
+            auto process_stat = internal::cpu_process_time() - m_start_stat;
             m_stat.utilization = process_stat.utilization;
             m_stat.system = process_stat.system;
             m_stat.user = process_stat.user;
-            m_stat.steal = internal::cpu_steal_time();
+            m_stat.steal = process_stat.steal;
+
             m_stat.error = std::chrono::duration_cast<std::chrono::nanoseconds>(
                 m_stat.available * utilization / (100.0 * m_core_count)
                 - m_stat.utilization);
         } else {
-            if (m_stat.steal == 0ns) m_stat.steal = internal::cpu_steal_time();
+            if (m_stat.steal == 0ns) {
+                m_stat.steal = internal::cpu_steal_time() - m_start_stat.steal;
+            }
         }
 
         m_dynamic.add(m_stat);
@@ -275,6 +277,7 @@ void generator::reset()
 
     m_result_id = core::to_string(core::uuid::random());
     m_start_time = chronometer::now();
+    m_start_stat = internal::cpu_process_time();
 
     if (m_running) m_controller.resume();
 }
