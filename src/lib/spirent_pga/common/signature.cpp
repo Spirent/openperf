@@ -16,22 +16,6 @@ struct spirent_signature
     uint16_t cheater;
 } __attribute__((packed));
 
-static uint16_t calculate_crc16(const uint8_t data[], uint16_t length)
-{
-    static constexpr DECLARE_ALIGNED(
-        struct crc_pclmulqdq_ctx spirent_crc16_clmul, 16) = {
-        0x45630000, /**< remainder X^128 / P(X) */
-        0xd5f60000, /**< remainder X^192 / P(X) */
-        0xaa510000, /**< remainder  X^64 / P(X) */
-        0x11303471, /**< quotient   X^64 / P(X) */
-        0x10210000, /**< polynomial */
-        0ULL        /**< reserved */
-    };
-
-    return (~(crc32_calc_pclmulqdq(data, length, 0xffff, &spirent_crc16_clmul)
-              >> 16));
-}
-
 static constexpr auto prefetch_offset = 8;
 
 uint16_t

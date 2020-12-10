@@ -13,6 +13,8 @@ TEST_SOURCES += \
 
 ifeq ($(ARCH),x86_64)
 	TEST_SOURCES += lib/spirent_pga/api_test_x86.cpp
+else ifeq ($(ARCH),aarch64)
+	TEST_SOURCES += lib/spirent_pga/api_test_aarch64.cpp
 endif
 
 # We need to use the same build defines as the library in order to
