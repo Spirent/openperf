@@ -200,6 +200,7 @@ definitions:
         description: The average value of this centroid
       weight:
         type: integer
+        format: int64
         description: The weight of this centroid
     required:
       - mean
