@@ -5,8 +5,6 @@
 
 namespace openperf::network::internal {
 
-bool ipv6_addr_is_link_local(const in6_addr* addr);
-
 int ipv6_get_neighbor_ifindex(const in6_addr* addr);
 
 } // namespace openperf::network::internal

@@ -16,6 +16,7 @@
 #include "utils/network_sockaddr.hpp"
 #include "utils/ipv6.hpp"
 #include "drivers/kernel.hpp"
+#include "packet/type/ipv6_address.hpp"
 
 namespace openperf::network::internal::task {
 
@@ -94,7 +95,8 @@ populate_sockaddr(network_sockaddr& s, const std::string& host, in_port_t port)
     } else if (inet_pton(AF_INET6, host.c_str(), &sa6->sin6_addr) == 1) {
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = htons(port);
-        if (ipv6_addr_is_link_local(&sa6->sin6_addr)) {
+        using namespace libpacket::type;
+        if (is_linklocal(ipv6_address(host))) {
             /* Need to set sin6_scope_id for link local IPv6 */
             int ifindex;
             if ((ifindex = ipv6_get_neighbor_ifindex(&sa6->sin6_addr)) >= 0) {
