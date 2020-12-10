@@ -45,6 +45,26 @@ std::string to_string(model::protocol_t protocol)
     }
 }
 
+constexpr std::optional<model::address_family_t>
+address_family_from_string(std::string_view str)
+{
+    if (str == "inet") return model::address_family_t::INET;
+    if (str == "inet6") return model::address_family_t::INET6;
+    return std::nullopt;
+}
+
+std::string to_string(model::address_family_t address_family)
+{
+    switch (address_family) {
+    case model::address_family_t::INET:
+        return "inet";
+    case model::address_family_t::INET6:
+        return "inet6";
+    default:
+        return "unknown";
+    }
+}
+
 tl::expected<bool, std::vector<std::string>>
 is_valid(const swagger::NetworkGeneratorConfig& config)
 {
@@ -91,7 +111,9 @@ is_valid(const swagger::NetworkServer& server)
         errors.emplace_back("Port value is not valid.");
     if (!protocol_from_string(server.getProtocol()))
         errors.emplace_back("Protocol value is not valid.");
-
+    if (server.addressFamilyIsSet()
+        && !address_family_from_string(server.getAddressFamily()))
+        errors.emplace_back("Address Family value is not valid.");
     if (!errors.empty()) return tl::make_unexpected(std::move(errors));
     return true;
 }
@@ -112,6 +134,8 @@ model::generator from_swagger(const swagger::NetworkGenerator& generator)
     auto protocol =
         protocol_from_string(generator.getConfig()->getTarget()->getProtocol());
     if (protocol) target.protocol = protocol.value();
+    if (generator.getConfig()->getTarget()->interfaceIsSet())
+        target.interface = generator.getConfig()->getTarget()->getInterface();
 
     model::generator gen_model;
     gen_model.id(generator.getId());
@@ -152,6 +176,14 @@ model::server from_swagger(const swagger::NetworkServer& server)
     server_model.port(server.getPort());
     server_model.protocol(protocol_from_string(server.getProtocol())
                               .value_or(model::protocol_t::TCP));
+    if (server.interfaceIsSet()) {
+        server_model.interface(server.getInterface());
+    }
+    if (server.addressFamilyIsSet()) {
+        server_model.address_family(
+            address_family_from_string(server.getAddressFamily())
+                .value_or(model::address_family_t::INET6));
+    }
     return server_model;
 }
 
@@ -195,6 +227,8 @@ to_swagger(const model::generator& model)
     network_target->setHost(model.target().host);
     network_target->setPort(model.target().port);
     network_target->setProtocol(to_string(model.target().protocol));
+    if (model.target().interface)
+        network_target->setInterface(model.target().interface.value());
     network_config->setTarget(network_target);
 
     auto gen = std::make_shared<swagger::NetworkGenerator>();
@@ -285,6 +319,9 @@ std::shared_ptr<swagger::NetworkServer> to_swagger(const model::server& model)
     server->setId(model.id());
     server->setPort(model.port());
     server->setProtocol(to_string(model.protocol()));
+    if (model.interface()) server->setInterface(model.interface().value());
+    if (model.address_family())
+        server->setAddressFamily(to_string(model.address_family().value()));
     server->setStats(stats);
     return server;
 }

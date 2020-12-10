@@ -182,6 +182,19 @@ network_task::new_connection(const network_sockaddr& server,
         return tl::make_unexpected(errno);
     }
 
+    if (config.target.interface) {
+        if (m_driver->setsockopt(sock,
+                                 SOL_SOCKET,
+                                 SO_BINDTODEVICE,
+                                 config.target.interface.value().c_str(),
+                                 config.target.interface.value().size())
+            < 0) {
+            auto err = errno;
+            m_driver->close(sock);
+            return tl::make_unexpected(err);
+        }
+    }
+
     /* Update to non-blocking socket */
     int flags = m_driver->fcntl(sock, F_GETFL);
     if (flags == -1) {
@@ -242,16 +255,8 @@ network_task::new_connection(const network_sockaddr& server,
             .tv_sec = 1,
             .tv_usec = 0,
         };
-        if (m_driver->setsockopt(sock,
-                                 SOL_SOCKET,
-                                 SO_RCVTIMEO,
-                                 &read_timeout,
-                                 sizeof(read_timeout))
-            != 0) {
-            auto err = errno;
-            m_driver->close(sock);
-            return tl::make_unexpected(err);
-        }
+        m_driver->setsockopt(
+            sock, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout));
     }
 
     return connection_t{

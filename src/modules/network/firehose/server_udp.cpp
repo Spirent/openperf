@@ -10,8 +10,8 @@
 #include "../utils/network_sockaddr.hpp"
 namespace openperf::network::internal::firehose {
 
-tl::expected<int, std::string> server_udp::new_server(int domain,
-                                                      in_port_t port)
+tl::expected<int, std::string> server_udp::new_server(
+    int domain, in_port_t port, std::optional<std::string> interface)
 {
     struct sockaddr_storage client_storage;
     auto server_ptr = (struct sockaddr*)&client_storage;
@@ -45,6 +45,19 @@ tl::expected<int, std::string> server_udp::new_server(int domain,
                domain_str.c_str(),
                strerror(errno));
         return tl::make_unexpected<std::string>(strerror(errno));
+    }
+
+    if (interface) {
+        if (m_driver->setsockopt(sock,
+                                 SOL_SOCKET,
+                                 SO_BINDTODEVICE,
+                                 interface.value().c_str(),
+                                 interface.value().size())
+            < 0) {
+            auto err = errno;
+            m_driver->close(sock);
+            return tl::make_unexpected<std::string>(strerror(err));
+        }
     }
 
     if (m_driver->setsockopt(
@@ -82,19 +95,32 @@ tl::expected<int, std::string> server_udp::new_server(int domain,
     return sock;
 }
 
-server_udp::server_udp(in_port_t port, const drivers::driver_ptr& driver)
+server_udp::server_udp(in_port_t port,
+                       std::optional<std::string> interface,
+                       std::optional<int> domain,
+                       const drivers::driver_ptr& driver)
     : m_stopped(false)
 {
     m_driver = driver;
-
-    /* IPv6 any supports IPv4 and IPv6 */
     tl::expected<int, std::string> res;
-    if ((res = new_server(AF_INET6, port)); res) {
-        OP_LOG(OP_LOG_INFO, "Network UDP load server IPv4/IPv6.\n");
-    } else if ((res = new_server(AF_INET, port)); res) {
-        OP_LOG(OP_LOG_INFO, "Network UDP load server IPv4.\n");
+    if (domain) {
+        if ((res = new_server(domain.value(), port, interface)); res) {
+            OP_LOG(OP_LOG_INFO,
+                   "Network UDP load server %s.\n",
+                   (domain.value() == AF_INET6) ? "IPv6" : "IPv4");
+        } else {
+            throw std::runtime_error("Cannot create UDP server: "
+                                     + res.error());
+        }
     } else {
-        throw std::runtime_error("Cannot create UDP server: " + res.error());
+        if ((res = new_server(AF_INET6, port, interface)); res) {
+            OP_LOG(OP_LOG_INFO, "Network UDP load server IPv4/IPv6.\n");
+        } else if ((res = new_server(AF_INET, port, interface)); res) {
+            OP_LOG(OP_LOG_INFO, "Network UDP load server IPv4.\n");
+        } else {
+            throw std::runtime_error("Cannot create UDP server: "
+                                     + res.error());
+        }
     }
     m_fd = res.value();
 
