@@ -8,6 +8,7 @@
 
 #include "models/generator.hpp"
 #include "models/generator_result.hpp"
+#include "cpu.hpp"
 
 namespace openperf::cpu::generator {
 
@@ -23,6 +24,7 @@ private:
     cpu_stat m_stat;
     std::atomic<cpu_stat*> m_stat_ptr;
     chronometer::time_point m_start_time;
+    internal::utilization_time m_start_stat;
 
     dynamic::spool<cpu_stat> m_dynamic;
     controller m_controller;
