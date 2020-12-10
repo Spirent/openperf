@@ -36,7 +36,7 @@ inline in_port_t get_sa_port(const struct sockaddr* csa)
 
 inline void* get_sa_addr(const struct sockaddr* csa)
 {
-    auto sa = const_cast<sockaddr*>(csa);
+    auto* sa = const_cast<sockaddr*>(csa);
     switch (sa->sa_family) {
     case AF_INET:
         return &reinterpret_cast<sockaddr_in*>(sa)->sin_addr;
