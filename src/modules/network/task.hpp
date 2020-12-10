@@ -22,7 +22,7 @@ enum class operation_t : uint8_t { READ = 0, WRITE };
 struct target_t
 {
     std::string host;
-    uint64_t port;
+    in_port_t port;
     int protocol;
     std::optional<std::string> interface;
 };

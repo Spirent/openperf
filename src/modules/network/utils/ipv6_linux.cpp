@@ -58,14 +58,15 @@ int ipv6_get_neighbor_ifindex_from_cache(const in6_addr* addr)
         return -1;
     }
 
-    if (bind(sock, (sockaddr*)&la, sizeof(la)) < 0) {
+    if (bind(sock, reinterpret_cast<sockaddr*>(&la), sizeof(la)) < 0) {
         OP_LOG(OP_LOG_ERROR,
                "Failed to bind netlink socket.  %s\n",
                strerror(errno));
         goto done;
     }
 
-    if ((resp_buf = (uint8_t*)calloc(1, resp_buf_size)) == nullptr) {
+    if ((resp_buf = reinterpret_cast<uint8_t*>(calloc(1, resp_buf_size)))
+        == nullptr) {
         OP_LOG(OP_LOG_ERROR, "Failed allocating resp bufer.\n");
         goto done;
     }
@@ -120,11 +121,13 @@ int ipv6_get_neighbor_ifindex_from_cache(const in6_addr* addr)
         if (len < 0) break;
         if ((size_t)len < sizeof(*msg_ptr)) continue;
 
-        for (msg_ptr = (nlmsghdr*)resp_buf; NLMSG_OK(msg_ptr, (size_t)len);
+        for (msg_ptr = reinterpret_cast<nlmsghdr*>(resp_buf);
+             NLMSG_OK(msg_ptr, (size_t)len);
              msg_ptr = NLMSG_NEXT(msg_ptr, len)) {
             if (msg_ptr->nlmsg_type == NLMSG_DONE) { goto done; }
             if (msg_ptr->nlmsg_type == NLMSG_ERROR) {
-                auto nlmsgerr = (struct nlmsgerr*)NLMSG_DATA(msg_ptr);
+                auto nlmsgerr =
+                    reinterpret_cast<struct nlmsgerr*>(NLMSG_DATA(msg_ptr));
                 if (msg_ptr->nlmsg_len < NLMSG_LENGTH(sizeof(nlmsgerr))) {
                     OP_LOG(OP_LOG_ERROR, "NLMSG_ERROR too short\n");
                 } else {
@@ -133,13 +136,13 @@ int ipv6_get_neighbor_ifindex_from_cache(const in6_addr* addr)
                 goto done;
             }
             size_t ndm_len = RTM_PAYLOAD(msg_ptr);
-            auto ndm = (ndmsg*)NLMSG_DATA(msg_ptr);
+            auto ndm = reinterpret_cast<ndmsg*>(NLMSG_DATA(msg_ptr));
             rtattr* rta;
             int found_addr = 0;
             for (rta = RTM_RTA(ndm); RTA_OK(rta, ndm_len);
                  rta = RTA_NEXT(rta, ndm_len)) {
                 if (rta->rta_type == NDA_DST) {
-                    auto dst_addr = (in6_addr*)RTA_DATA(rta);
+                    auto dst_addr = reinterpret_cast<in6_addr*>(RTA_DATA(rta));
                     if (memcmp(addr, dst_addr, sizeof(*addr)) == 0) {
                         found_addr = 1;
                     }
@@ -232,15 +235,15 @@ pinger* start_pinger(const char* ifname, const in6_addr* addr)
         return nullptr;
     }
 
-    char* const ping_args[] = {(char*)ping_cmd.c_str(),
-                               (char*)"-I",
-                               (char*)ifname,
-                               (char*)"-c",
-                               (char*)"1",
+    char* const ping_args[] = {const_cast<char*>(ping_cmd.c_str()),
+                               const_cast<char*>("-I"),
+                               const_cast<char*>(ifname),
+                               const_cast<char*>("-c"),
+                               const_cast<char*>("1"),
                                addr_str,
                                nullptr};
 
-    pinger = (struct pinger*)calloc(1, sizeof(*pinger));
+    pinger = reinterpret_cast<struct pinger*>(calloc(1, sizeof(*pinger)));
     if (!pinger) {
         OP_LOG(OP_LOG_ERROR, "Failed to allocate memory for pinger\n");
         return nullptr;

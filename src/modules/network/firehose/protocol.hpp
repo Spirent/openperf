@@ -30,7 +30,7 @@ inline tl::expected<request_t, int> parse_request(uint8_t*& data,
                                                   size_t& length)
 {
     if (length < net_request_size) { return tl::make_unexpected(-1); }
-    auto net_request = (net_request_t*)data;
+    auto net_request = reinterpret_cast<net_request_t*>(data);
     /* Verify protocol string header */
     if (strncmp(net_request->protocol, protocol, protocol_len) != 0) {
         return tl::make_unexpected(-1);
