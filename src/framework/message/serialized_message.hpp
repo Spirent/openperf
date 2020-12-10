@@ -53,7 +53,7 @@ inline void pop_front(serialized_message& msg)
 }
 
 template <typename T>
-std::enable_if_t<std::is_trivially_copyable<T>::value, int>
+std::enable_if_t<std::is_copy_assignable<T>::value, int>
 push(serialized_message& msg, const T& value)
 {
     auto& part = msg.parts.emplace_back();
@@ -177,7 +177,7 @@ inline std::string pop_string(serialized_message& msg)
 }
 
 template <typename T>
-std::enable_if_t<std::is_trivially_copyable<T>::value, std::vector<T>>
+std::enable_if_t<std::is_copy_assignable_v<T>, std::vector<T>>
 pop_vector(serialized_message& msg)
 {
     if (msg.parts.empty()) { return {}; }

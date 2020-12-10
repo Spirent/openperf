@@ -10,6 +10,12 @@
 
 #include "rte_config.h"
 
+/* XXX: Fixup defines when using gcc/DPDK builds with llvm */
+#if defined(__clang__) && !defined(RTE_TOOLCHAIN_CLANG)
+#undef RTE_TOOLCHAIN_GCC
+#define RTE_TOOLCHAIN_CLANG
+#endif
+
 #include "rte_common.h"
 #include "rte_byteorder.h"
 #include "rte_log.h"
@@ -28,6 +34,7 @@
 #include "rte_mempool.h"
 #include "rte_malloc.h"
 #include "rte_mbuf.h"
+#include "rte_mbuf_pool_ops.h"
 #include "rte_interrupts.h"
 #include "rte_pci.h"
 #include "rte_ether.h"

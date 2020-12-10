@@ -1,6 +1,8 @@
 #ifndef _OP_TIMESYNC_SOCKET_HPP_
 #define _OP_TIMESYNC_SOCKET_HPP_
 
+#include <cstddef>
+
 #include "tl/expected.hpp"
 
 #include "timesync/chrono.hpp"

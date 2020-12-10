@@ -2,7 +2,6 @@
 #include <array>
 #include <cassert>
 #include <cstdio>
-#include <charconv>
 #include <fstream>
 #include <memory>
 #include <numeric>
@@ -31,13 +30,10 @@ static int read_ptrace_scope(FILE* output)
         return (0);
     }
 
-    std::array<char, 1> input;
+    auto input = std::string(1, '\0');
     f.read(input.data(), input.size());
 
-    int value = 0;
-    auto [p, ec] = std::from_chars(std::begin(input), std::end(input), value);
-
-    return (ec == std::errc() ? value : 0);
+    return (std::stoi(input));
 }
 
 static std::string to_string(cap_value_t cap_values[], size_t nb_cap_values)
