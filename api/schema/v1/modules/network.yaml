@@ -412,6 +412,8 @@ definitions:
         type: integer
         description: UDP/TCP port on which to listen for client connections
         default: 3357
+        minimum: 0
+        maximum: 65535
       protocol:
         type: string
         description: Protocol which is used to establish client connections
@@ -507,6 +509,8 @@ definitions:
             type: integer
             description: Port on which client is trying to establish connection
             default: 3357
+            minimum: 0
+            maximum: 65535
           protocol:
             type: string
             description: Protocol to establish connection between client and host
