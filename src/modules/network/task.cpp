@@ -81,8 +81,8 @@ void network_task::reset()
     m_operation_timestamp = {};
 }
 
-static int
-populate_sockaddr(network_sockaddr& s, const std::string& host, in_port_t port)
+static tl::expected<network_sockaddr, int>
+populate_sockaddr(const std::string& host, in_port_t port)
 {
     sockaddr_storage client_storage;
     auto* sa4 = reinterpret_cast<sockaddr_in*>(&client_storage);
@@ -91,7 +91,7 @@ populate_sockaddr(network_sockaddr& s, const std::string& host, in_port_t port)
     if (inet_pton(AF_INET, host.c_str(), &sa4->sin_addr) == 1) {
         sa4->sin_family = AF_INET;
         sa4->sin_port = htons(port);
-        network_sockaddr_assign(reinterpret_cast<sockaddr*>(sa4), s);
+        return network_sockaddr_assign(reinterpret_cast<sockaddr*>(sa4));
     } else if (inet_pton(AF_INET6, host.c_str(), &sa6->sin6_addr) == 1) {
         sa6->sin6_family = AF_INET6;
         sa6->sin6_port = htons(port);
@@ -107,13 +107,11 @@ populate_sockaddr(network_sockaddr& s, const std::string& host, in_port_t port)
                        host.c_str());
             }
         }
-        network_sockaddr_assign(reinterpret_cast<sockaddr*>(sa6), s);
-    } else {
-        /* host is not a valid IPv4 or IPv6 address; fail */
-        return (-EINVAL);
+        return network_sockaddr_assign(reinterpret_cast<sockaddr*>(sa6));
     }
 
-    return (0);
+    /* host is not a valid IPv4 or IPv6 address; fail */
+    return tl::make_unexpected(EINVAL);
 }
 
 void update_stat_latency(stat_t& stat, duration dur)
@@ -441,10 +439,17 @@ stat_t network_task::worker_spin(uint64_t nb_ops)
     /* Make sure we have the right number of connections */
     size_t connections_required = m_config.connections - m_connections.size();
     for (size_t c = 0; c < connections_required; c++) {
-        network_sockaddr server;
-        populate_sockaddr(server, m_config.target.host, m_config.target.port);
+        auto server =
+            populate_sockaddr(m_config.target.host, m_config.target.port);
+        if (!server) {
+            OP_LOG(OP_LOG_ERROR,
+                   "Could not open new connection: %s\n",
+                   strerror(abs(server.error())));
+            stat.conn_stat.errors++;
+            break;
+        }
         stat.conn_stat.attempted++;
-        auto conn = new_connection(server, m_config);
+        auto conn = new_connection(server.value(), m_config);
         if (!conn) {
             OP_LOG(OP_LOG_ERROR,
                    "Could not open new connection: %s\n",
