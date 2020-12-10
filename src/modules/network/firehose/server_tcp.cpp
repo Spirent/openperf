@@ -284,7 +284,9 @@ void server_tcp::run_worker_thread()
                     .fd = conn_buffer.fd,
                     .state = STATE_WAITING,
                 };
-                network_sockaddr_assign(&conn_buffer.client, conn.client);
+                auto r = network_sockaddr_assign(&conn_buffer.client);
+                if (!r) { continue; }
+                conn.client = r.value();
                 connections.push_back(std::move(conn));
                 m_stat.connections++;
             }

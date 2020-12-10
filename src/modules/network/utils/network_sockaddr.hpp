@@ -47,18 +47,22 @@ inline void* get_sa_addr(const struct sockaddr* csa)
     }
 }
 
-inline void network_sockaddr_assign(const sockaddr* sa, network_sockaddr& ns)
+inline tl::expected<network_sockaddr, int>
+network_sockaddr_assign(const sockaddr* sa)
 {
     switch (sa->sa_family) {
-    case AF_INET:
-        ns = sockaddr_in{};
-        memcpy(&std::get<sockaddr_in>(ns), sa, get_sa_len(sa));
-        break;
-    case AF_INET6:
-        ns = sockaddr_in6{};
-        memcpy(&std::get<sockaddr_in6>(ns), sa, get_sa_len(sa));
-        break;
+    case AF_INET: {
+        sockaddr_in ns;
+        memcpy(&ns, sa, get_sa_len(sa));
+        return ns;
     }
+    case AF_INET6: {
+        sockaddr_in6 ns;
+        memcpy(&ns, sa, get_sa_len(sa));
+        return ns;
+    }
+    }
+    return tl::make_unexpected(EINVAL);
 }
 
 inline socklen_t network_sockaddr_size(const network_sockaddr& s)
