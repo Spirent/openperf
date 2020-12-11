@@ -1,0 +1,43 @@
+# Example configuration file.
+# The setup for your machine is machine dependent. For a description of the options available
+# in the configuration, see the following documentation:
+# https://github.com/Spirent/openperf/blob/master/doc/dev-guide/configuration.md
+#
+
+# Define core settings
+core:
+  log:
+    level: debug
+
+# Module configuration
+modules:
+  api:
+    # Define the REST API port
+    port: 9000
+
+  # General plugin configuration and configurations specific to each module
+  plugins:
+    # Location to find openperf plugins
+    path: "/usr/lib/openperf/plugins"
+
+    # Module specific configuration
+#    packetio:
+#      # Define the DPDK ports available to module
+#      dpdk:
+#        # Options passed to the DPDK library
+#        options:
+#          - "-m256m"
+#          - "--no-huge"
+#        port-ids:
+#          port0: port0
+#          port1: port1
+
+# Define the resources in terms of the ports
+# resources:
+#   /interfaces/dataplane-server:
+#     port_id: port0
+#     ...
+#
+#   /interfaces/dataplane-client:
+#     port_id: port1
+#     ...

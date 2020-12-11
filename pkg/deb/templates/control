@@ -1,0 +1,19 @@
+Source: openperf
+Section: utils
+Priority: optional
+Maintainer: Spirent Builder <support@spirent.com>
+Build-Depends: debhelper (>=11~)
+Standards-Version: 4.1.4
+Homepage: https://github.com/Spirent/openperf
+
+Package: openperf
+Architecture: {{ARCHITECTURE}}
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}, python3 (>= 3.5)
+Description: Spirent Network and Load Generator
+ Provides an infrastructure and application test and analysis framework.
+ Discrete modules provide functionality with the assistance of a common
+ core. Each module also defines a REST API via a Swagger specification
+ to allow users to access and control its functionality.
+ .
+ https://github.com/Spirent/openperf

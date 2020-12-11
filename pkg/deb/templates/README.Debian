@@ -1,0 +1,10 @@
+Spirent Network and Load Generator
+
+provides an infrastructure and application test and analysis framework.
+Discrete modules provide functionality with the assistance of a common
+core. Each module also defines a REST API via a Swagger specification
+to allow users to access and control its functionality.
+
+https://github.com/Spirent/openperf
+
+ -- Spirent Builder <support@spirent.com>  {{TIMESTAMP}}
