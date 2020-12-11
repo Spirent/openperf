@@ -12,31 +12,34 @@ def get_network_dynamic_results_fields():
             fields.append('write.' + name)
     return fields
 
-def config_model(protocol):
+def config_model(protocol = 'tcp', host = '127.0.0.1', interface = 'lo'):
     config = client.models.NetworkGeneratorConfig()
     config.connections = 1
-    config.ops_per_connection = 1
+    config.ops_per_connection = 10
     config.reads_per_sec = 128
-    config.read_size = 8
+    config.read_size = 256
     config.writes_per_sec = 128
-    config.write_size = 8
+    config.write_size = 256
     config.target = client.models.NetworkGeneratorConfigTarget()
-    config.target.host = "127.0.0.1"
+    config.target.host = host
     config.target.port = 3357
     config.target.protocol = protocol
+    config.target.interface = interface
     return config
 
 
-def network_generator_model(api_client, protocol = 'tcp', id = ''):
+def network_generator_model(api_client, id = '', protocol = 'tcp', host = '127.0.0.1', interface = 'lo'):
     gen = client.models.NetworkGenerator()
     gen.running = False
-    gen.config = config_model(protocol)
+    gen.config = config_model(protocol=protocol, host=host, interface=interface)
     gen.id = id
     return gen
 
-def network_server_model(api_client, protocol = 'tcp', id = ''):
+def network_server_model(api_client, id = '', protocol = 'tcp', interface = 'lo', address_family = 'inet'):
     gen = client.models.NetworkServer()
     gen.port = 3357
     gen.protocol = protocol
+    gen.interface = interface
+    gen.address_family = address_family
     gen.id = id
     return gen

@@ -651,31 +651,136 @@ with description('Network Generator Module', 'network') as self:
                         with it('bad request (400)'):
                             expr = lambda: self._api.delete_network_generator_result('bad_id')
                             expect(expr).to(raise_api_exception(400))
-            with after.each:
+            with description('Verify statistics'):
+                with shared_context('check_statistics'):
+                    with before.all:
+                        server_model = network_server_model(self._api.api_client, protocol=self._protocol, address_family=self._address_family)
+                        server = self._api.create_network_server(server_model)
+                        expect(server).to(be_valid_network_server)
+
+                        generator_model = network_generator_model(self._api.api_client, protocol=self._protocol)
+                        g7r = self._api.create_network_generator(generator_model)
+                        expect(g7r).to(be_valid_network_generator)
+
+                        result = self._api.start_network_generator(g7r.id)
+                        expect(result).to(be_valid_network_generator_result)
+                        time.sleep(1)
+
+                        self._server = self._api.get_network_server(server.id)
+                        self._result = self._api.get_network_generator_result(result.id)
+
+                    with it('valid read result'):
+                        expect(self._result).to(be_valid_network_generator_result)
+                        expect(self._result.read.ops_target).not_to(equal(0))
+                        expect(self._result.read.ops_actual).not_to(equal(0))
+                        expect(self._result.read.bytes_target).not_to(equal(0))
+                        expect(self._result.read.bytes_actual).not_to(equal(0))
+                        expect(self._result.read.latency_total).not_to(equal(0))
+
+                    with it('valid write result'):
+                        expect(self._result).to(be_valid_network_generator_result)
+                        expect(self._result.write.ops_target).not_to(equal(0))
+                        expect(self._result.write.ops_actual).not_to(equal(0))
+                        expect(self._result.write.bytes_target).not_to(equal(0))
+                        expect(self._result.write.bytes_actual).not_to(equal(0))
+                        expect(self._result.write.latency_total).not_to(equal(0))
+
+                    with it('valid server statistics'):
+                        expect(self._server).to(be_valid_network_server)
+                        expect(self._server.stats.bytes_received).not_to(equal(0))
+                        expect(self._server.stats.bytes_sent).not_to(equal(0))
+                        expect(self._server.stats.connections).not_to(equal(0))
+
+                with before.each:
+                    try:
+                        for s in self._api.list_network_servers():
+                            self._api.delete_network_server(s.id)
+                    except AttributeError:
+                        pass
+                    try:
+                        for gen in self._api.list_network_generators():
+                            if gen.running:
+                                self._api.stop_network_generator(gen.id)
+                            self._api.delete_network_generator(gen.id)
+                    except AttributeError:
+                        pass
+                    try:
+                        for res in self._api.list_network_generator_results():
+                            self._api.delete_network_generator_result(res.id)
+                    except AttributeError:
+                        pass
+
+                with description('TCP'):
+                    with description('IPv4'):
+                        with before.all:
+                            self._protocol = 'tcp'
+                            self._address_family = 'inet'
+                            self._host = self._ip4_host
+
+                        with included_context('check_statistics'):
+                            pass
+
+                    with description('IPv6'):
+                        with before.all:
+                            self._protocol = 'tcp'
+                            self._address_family = 'inet6'
+                            self._host = self._ip6_host
+
+                        with included_context('check_statistics'):
+                            pass
+
+                with description('UDP'):
+                    with description('IPv4'):
+                        with before.all:
+                            self._protocol = 'udp'
+                            self._address_family = 'inet'
+                            self._host = self._ip4_host
+
+                        with included_context('check_statistics'):
+                            pass
+
+                    with description('IPv6'):
+                        with before.all:
+                            self._protocol = 'udp'
+                            self._address_family = 'inet6'
+                            self._host = self._ip6_host
+
+                        with included_context('check_statistics'):
+                            pass
+
+            with after.all:
                 try:
-                    for gen in self.api.list_network_generators():
-                        if gen.running:
-                            self.api.stop_network_generator(gen.id)
-                        self.api.delete_network_generator(gen.id)
+                    for s in self._api.list_network_servers():
+                        self._api.delete_network_server(s.id)
                 except AttributeError:
                     pass
-
                 try:
-                    for file in self.api.list_network_generator_results():
-                        self.api.delete_network_generator_result(file.id)
+                    for gen in self._api.list_network_generators():
+                        if gen.running:
+                            self._api.stop_network_generator(gen.id)
+                        self._api.delete_network_generator(gen.id)
+                except AttributeError:
+                    pass
+                try:
+                    for res in self._api.list_network_generator_results():
+                        self._api.delete_network_generator_result(res.id)
                 except AttributeError:
                     pass
 
     with description('Driver kernel'):
         with before.all:
             self._service = Service(CONFIG.service())
+            self._ip4_host = '127.0.0.1'
+            self._ip6_host = '::1'
 
         with included_context('network_module'):
             pass
 
     with description('Driver dpdk'):
         with before.all:
+            self.skip()
             self._service = Service(CONFIG.service('network-dpdk'))
+            self._host = '198.18.1.10'
 
         with included_context('network_module'):
             pass
