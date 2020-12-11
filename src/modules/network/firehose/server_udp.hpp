@@ -17,12 +17,12 @@ private:
 
     int udp_write(connection_t&);
     tl::expected<int, std::string>
-    new_server(int domain, in_port_t port, std::string interface);
+    new_server(int domain, in_port_t port, const std::string& interface);
     void run_worker_thread();
 
 public:
     server_udp(in_port_t port,
-               std::string interface,
+               const std::string& interface,
                std::optional<int> domain,
                const drivers::driver_ptr& driver);
     server_udp(const server_udp&) = delete;

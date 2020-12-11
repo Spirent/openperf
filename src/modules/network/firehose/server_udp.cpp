@@ -11,7 +11,7 @@
 namespace openperf::network::internal::firehose {
 
 tl::expected<int, std::string>
-server_udp::new_server(int domain, in_port_t port, std::string interface)
+server_udp::new_server(int domain, in_port_t port, const std::string& interface)
 {
     struct sockaddr_storage client_storage;
     auto* server_ptr = reinterpret_cast<sockaddr*>(&client_storage);
@@ -94,7 +94,7 @@ server_udp::new_server(int domain, in_port_t port, std::string interface)
 }
 
 server_udp::server_udp(in_port_t port,
-                       std::string interface,
+                       const std::string& interface,
                        std::optional<int> domain,
                        const drivers::driver_ptr& driver)
     : m_stopped(false)
