@@ -62,8 +62,7 @@ class NetworkServer(object):
         self.id = id
         self.port = port
         self.protocol = protocol
-        if interface is not None:
-            self.interface = interface
+        self.interface = interface
         if address_family is not None:
             self.address_family = address_family
         self.stats = stats
@@ -138,7 +137,7 @@ class NetworkServer(object):
     def interface(self):
         """Gets the interface of this NetworkServer.  # noqa: E501
 
-        Bind server socket to a particular device, specified as interface name (required for dpdk driver)  # noqa: E501
+        Bind server socket to a particular device, specified as interface name  # noqa: E501
 
         :return: The interface of this NetworkServer.  # noqa: E501
         :rtype: str
@@ -149,7 +148,7 @@ class NetworkServer(object):
     def interface(self, interface):
         """Sets the interface of this NetworkServer.
 
-        Bind server socket to a particular device, specified as interface name (required for dpdk driver)  # noqa: E501
+        Bind server socket to a particular device, specified as interface name  # noqa: E501
 
         :param interface: The interface of this NetworkServer.  # noqa: E501
         :type: str

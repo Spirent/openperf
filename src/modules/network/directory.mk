@@ -26,14 +26,6 @@ NETWORK_SOURCES += \
 	firehose/server_tcp.cpp \
 	firehose/server_udp.cpp
 
-NETWORK_SOURCES += \
-	utils/ipv6.cpp
-
-ifeq ($(PLATFORM), linux)
-NETWORK_SOURCES += \
-	utils/ipv6_linux.cpp
-endif
-
 NETWORK_VERSIONED_FILES := init.cpp
 NETWORK_UNVERSIONED_OBJECTS := \
 	$(call op_generate_objects,$(filter-out $(NETWORK_VERSIONED_FILES),$(NETWORK_SOURCES)),$(NETWORK_OBJ_DIR))

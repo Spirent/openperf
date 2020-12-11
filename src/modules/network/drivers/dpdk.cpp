@@ -1,6 +1,7 @@
 #include "dpdk.hpp"
 #include <fcntl.h>
 #include "socket/client/api_client.hpp"
+#include "lwip/netif.h"
 
 namespace openperf::network::internal::drivers {
 
@@ -162,5 +163,9 @@ ssize_t dpdk::writev(int s, const struct iovec* iov, int iovcnt)
     init();
     return client::instance().writev(s, iov, iovcnt);
 };
+unsigned int dpdk::if_nametoindex(const char* ifname)
+{
+    return netif_name_to_index(ifname);
+}
 
 } // namespace openperf::network::internal::drivers

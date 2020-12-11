@@ -28,8 +28,8 @@ struct connection_msg_t
     };
 };
 
-tl::expected<int, std::string> server_tcp::new_server(
-    int domain, in_port_t port, std::optional<std::string> interface)
+tl::expected<int, std::string>
+server_tcp::new_server(int domain, in_port_t port, std::string interface)
 {
     struct sockaddr_storage client_storage;
     auto* server_ptr = reinterpret_cast<sockaddr*>(&client_storage);
@@ -65,17 +65,15 @@ tl::expected<int, std::string> server_tcp::new_server(
         return tl::make_unexpected<std::string>(strerror(errno));
     }
 
-    if (interface) {
-        if (m_driver->setsockopt(sock,
-                                 SOL_SOCKET,
-                                 SO_BINDTODEVICE,
-                                 interface.value().c_str(),
-                                 interface.value().size())
-            < 0) {
-            auto err = errno;
-            m_driver->close(sock);
-            return tl::make_unexpected<std::string>(strerror(err));
-        }
+    if (m_driver->setsockopt(sock,
+                             SOL_SOCKET,
+                             SO_BINDTODEVICE,
+                             interface.c_str(),
+                             interface.size())
+        < 0) {
+        auto err = errno;
+        m_driver->close(sock);
+        return tl::make_unexpected<std::string>(strerror(err));
     }
 
     if (m_driver->setsockopt(
@@ -118,7 +116,7 @@ tl::expected<int, std::string> server_tcp::new_server(
 }
 
 server_tcp::server_tcp(in_port_t port,
-                       std::optional<std::string> interface,
+                       std::string interface,
                        std::optional<int> domain,
                        const drivers::driver_ptr& driver)
     : m_stopped(false)
