@@ -19,7 +19,6 @@
 
 namespace openperf::network::internal::task {
 
-using ref_clock = timesync::chrono::monotime;
 using namespace std::chrono_literals;
 constexpr duration TASK_SPIN_THRESHOLD = 100ms;
 const size_t max_buffer_size = 64 * 1024;
