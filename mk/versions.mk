@@ -26,7 +26,7 @@ ifeq ($(BUILD_NUMBER),)
 		BUILD_NUMBER = $(CIRCLE_BUILD_NUM)
 	else
 		BUILD_NUMBER = $(shell git rev-parse --short HEAD)
-  endif
+	endif
 endif
 
 #Generate current timestamp per organizational requirements (ISO 8601).

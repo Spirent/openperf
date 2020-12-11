@@ -1,0 +1,7 @@
+# Purposely embedding libpcap
+openperf: embedded-library usr/bin/openperf: libpcap
+
+# Miscellaneous
+openperf: new-package-should-close-itp-bug
+openperf: sharedobject-in-library-directory-missing-soname usr/lib/libopenperf-shim.so
+openperf: binary-without-manpage usr/bin/openperf
