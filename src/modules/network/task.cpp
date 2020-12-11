@@ -14,7 +14,6 @@
 #include "framework/utils/overloaded_visitor.hpp"
 #include "firehose/protocol.hpp"
 #include "utils/network_sockaddr.hpp"
-#include "utils/ipv6.hpp"
 #include "drivers/kernel.hpp"
 #include "packet/type/ipv6_address.hpp"
 
@@ -82,7 +81,10 @@ void network_task::reset()
 }
 
 static tl::expected<network_sockaddr, int>
-populate_sockaddr(const std::string& host, in_port_t port)
+populate_sockaddr(const drivers::driver_ptr& driver,
+                  const std::string& host,
+                  in_port_t port,
+                  const std::string& interface)
 {
     sockaddr_storage client_storage;
     auto* sa4 = reinterpret_cast<sockaddr_in*>(&client_storage);
@@ -99,7 +101,8 @@ populate_sockaddr(const std::string& host, in_port_t port)
         if (is_linklocal(ipv6_address(host))) {
             /* Need to set sin6_scope_id for link local IPv6 */
             int ifindex;
-            if ((ifindex = ipv6_get_neighbor_ifindex(&sa6->sin6_addr)) >= 0) {
+            if ((ifindex = driver->if_nametoindex(interface.c_str()));
+                ifindex > 0) {
                 sa6->sin6_scope_id = ifindex;
             } else {
                 OP_LOG(OP_LOG_WARNING,
@@ -182,17 +185,15 @@ network_task::new_connection(const network_sockaddr& server,
         return tl::make_unexpected(errno);
     }
 
-    if (config.target.interface) {
-        if (m_driver->setsockopt(sock,
-                                 SOL_SOCKET,
-                                 SO_BINDTODEVICE,
-                                 config.target.interface.value().c_str(),
-                                 config.target.interface.value().size())
-            < 0) {
-            auto err = errno;
-            m_driver->close(sock);
-            return tl::make_unexpected(err);
-        }
+    if (m_driver->setsockopt(sock,
+                             SOL_SOCKET,
+                             SO_BINDTODEVICE,
+                             config.target.interface.c_str(),
+                             config.target.interface.size())
+        < 0) {
+        auto err = errno;
+        m_driver->close(sock);
+        return tl::make_unexpected(err);
     }
 
     /* Update to non-blocking socket */
@@ -439,8 +440,10 @@ stat_t network_task::worker_spin(uint64_t nb_ops)
     /* Make sure we have the right number of connections */
     size_t connections_required = m_config.connections - m_connections.size();
     for (size_t c = 0; c < connections_required; c++) {
-        auto server =
-            populate_sockaddr(m_config.target.host, m_config.target.port);
+        auto server = populate_sockaddr(m_driver,
+                                        m_config.target.host,
+                                        m_config.target.port,
+                                        m_config.target.interface);
         if (!server) {
             OP_LOG(OP_LOG_ERROR,
                    "Could not open new connection: %s\n",

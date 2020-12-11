@@ -45,7 +45,7 @@ public:
     virtual stat_t stat() const { return m_stat; }
     virtual void stat(stat_t p) { m_stat = p; }
 
-    virtual std::optional<std::string> interface() const { return m_interface; }
+    virtual std::string interface() const { return m_interface; }
     virtual void interface(std::string_view interface)
     {
         m_interface = interface;
@@ -64,7 +64,7 @@ protected:
     std::string m_id;
     in_port_t m_port;
     protocol_t m_protocol;
-    std::optional<std::string> m_interface;
+    std::string m_interface;
     std::optional<address_family_t> m_address_family;
     stat_t m_stat;
 };

@@ -72,14 +72,12 @@ void from_json(const nlohmann::json& j, NetworkGeneratorResult& result)
 void from_json(const nlohmann::json& j, NetworkServer& server)
 {
     if (j.find("id") != j.end()) { server.setId(j.at("id")); }
-    if (j.find("interface") != j.end()) {
-        server.setInterface(j.at("interface"));
-    }
+    server.setInterface(j.at("interface"));
+    server.setPort(j.at("port"));
+    server.setProtocol(j.at("protocol"));
     if (j.find("address_family") != j.end()) {
         server.setAddressFamily(j.at("address_family"));
     }
-    server.setPort(j.at("port"));
-    server.setProtocol(j.at("protocol"));
 }
 
 void from_json(const nlohmann::json& j,

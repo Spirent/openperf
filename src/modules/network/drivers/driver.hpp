@@ -74,6 +74,8 @@ public:
                            socklen_t tolen) = 0;
     virtual ssize_t write(int s, const void* dataptr, size_t len) = 0;
     virtual ssize_t writev(int s, const struct iovec* iov, int iovcnt) = 0;
+
+    virtual unsigned int if_nametoindex(const char* ifname) = 0;
 };
 using driver_ptr = std::shared_ptr<driver>;
 

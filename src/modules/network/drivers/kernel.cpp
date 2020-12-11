@@ -4,6 +4,7 @@
 #include <cstdarg>
 #include <sys/uio.h>
 #include <netinet/in.h>
+#include <net/if.h>
 #include <utility>
 
 namespace openperf::network::internal::drivers {
@@ -122,5 +123,10 @@ ssize_t kernel::writev(int s, const struct iovec* iov, int iovcnt)
 {
     return ::writev(s, iov, iovcnt);
 };
+
+unsigned int kernel::if_nametoindex(const char* ifname)
+{
+    return ::if_nametoindex(ifname);
+}
 
 } // namespace openperf::network::internal::drivers

@@ -67,6 +67,8 @@ public:
                    socklen_t tolen) override;
     ssize_t write(int s, const void* dataptr, size_t len) override;
     ssize_t writev(int s, const struct iovec* iov, int iovcnt) override;
+
+    unsigned int if_nametoindex(const char* ifname) override;
 };
 } // namespace openperf::network::internal::drivers
 
