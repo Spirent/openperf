@@ -28,14 +28,14 @@ private:
     std::unique_ptr<void, zmq_ctx_deleter> m_context;
 
     int tcp_write(connection_t&, std::vector<uint8_t> send_buffer);
-    tl::expected<int, std::string> new_server(
-        int domain, in_port_t port, std::string interface);
+    tl::expected<int, std::string>
+    new_server(int domain, in_port_t port, const std::string& interface);
     void run_accept_thread();
     void run_worker_thread();
 
 public:
     server_tcp(in_port_t port,
-               std::string interface,
+               const std::string& interface,
                std::optional<int> domain,
                const drivers::driver_ptr& driver);
     server_tcp(const server_tcp&) = delete;
