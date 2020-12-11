@@ -24,6 +24,25 @@ from common.matcher import (has_location,
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                 os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
+def clear_network_instances(api):
+    try:
+        for s in api.list_network_servers():
+            api.delete_network_server(s.id)
+    except AttributeError:
+        pass
+    try:
+        for gen in api.list_network_generators():
+            if gen.running:
+                api.stop_network_generator(gen.id)
+            api.delete_network_generator(gen.id)
+    except AttributeError:
+        pass
+    try:
+        for res in api.list_network_generator_results():
+            api.delete_network_generator_result(res.id)
+    except AttributeError:
+        pass
+
 with description('Network Generator Module', 'network') as self:
     with shared_context('network_module'):
         with before.all:
@@ -654,6 +673,8 @@ with description('Network Generator Module', 'network') as self:
             with description('Verify statistics'):
                 with shared_context('check_statistics'):
                     with before.all:
+                        clear_network_instances(self._api)
+
                         server_model = network_server_model(self._api.api_client, protocol=self._protocol, address_family=self._address_family)
                         server = self._api.create_network_server(server_model)
                         expect(server).to(be_valid_network_server)
@@ -662,53 +683,38 @@ with description('Network Generator Module', 'network') as self:
                         g7r = self._api.create_network_generator(generator_model)
                         expect(g7r).to(be_valid_network_generator)
 
-                        result = self._api.start_network_generator(g7r.id)
-                        expect(result).to(be_valid_network_generator_result)
-                        time.sleep(1)
+                        self._result = self._api.start_network_generator(g7r.id)
+                        expect(self._result).to(be_valid_network_generator_result)
 
                         self._server = self._api.get_network_server(server.id)
-                        self._result = self._api.get_network_generator_result(result.id)
 
-                    with it('valid read result'):
-                        expect(self._result).to(be_valid_network_generator_result)
-                        expect(self._result.read.ops_target).not_to(equal(0))
-                        expect(self._result.read.ops_actual).not_to(equal(0))
-                        expect(self._result.read.bytes_target).not_to(equal(0))
-                        expect(self._result.read.bytes_actual).not_to(equal(0))
-                        expect(self._result.read.latency_total).not_to(equal(0))
+                    with it('valid result'):
+                        for i in range(50):
+                            result = self._api.get_network_generator_result(self._result.id)
+                            expect(result).to(be_valid_network_generator_result)
+                            try:
+                                expect(result).to(be_valid_network_generator_result)
+                                expect(result.read.ops_target).not_to(equal(0))
+                                expect(result.read.ops_actual).not_to(equal(0))
+                                expect(result.read.bytes_target).not_to(equal(0))
+                                expect(result.read.bytes_actual).not_to(equal(0))
+                                expect(result.read.latency_total).not_to(equal(0))
 
-                    with it('valid write result'):
-                        expect(self._result).to(be_valid_network_generator_result)
-                        expect(self._result.write.ops_target).not_to(equal(0))
-                        expect(self._result.write.ops_actual).not_to(equal(0))
-                        expect(self._result.write.bytes_target).not_to(equal(0))
-                        expect(self._result.write.bytes_actual).not_to(equal(0))
-                        expect(self._result.write.latency_total).not_to(equal(0))
+                                expect(result).to(be_valid_network_generator_result)
+                                expect(result.write.ops_target).not_to(equal(0))
+                                expect(result.write.ops_actual).not_to(equal(0))
+                                expect(result.write.bytes_target).not_to(equal(0))
+                                expect(result.write.bytes_actual).not_to(equal(0))
+                                expect(result.write.latency_total).not_to(equal(0))
 
-                    with it('valid server statistics'):
-                        expect(self._server).to(be_valid_network_server)
-                        expect(self._server.stats.bytes_received).not_to(equal(0))
-                        expect(self._server.stats.bytes_sent).not_to(equal(0))
-                        expect(self._server.stats.connections).not_to(equal(0))
-
-                with before.each:
-                    try:
-                        for s in self._api.list_network_servers():
-                            self._api.delete_network_server(s.id)
-                    except AttributeError:
-                        pass
-                    try:
-                        for gen in self._api.list_network_generators():
-                            if gen.running:
-                                self._api.stop_network_generator(gen.id)
-                            self._api.delete_network_generator(gen.id)
-                    except AttributeError:
-                        pass
-                    try:
-                        for res in self._api.list_network_generator_results():
-                            self._api.delete_network_generator_result(res.id)
-                    except AttributeError:
-                        pass
+                                expect(server).to(be_valid_network_server)
+                                expect(server.stats.bytes_received).not_to(equal(0))
+                                expect(server.stats.bytes_sent).not_to(equal(0))
+                                expect(server.stats.connections).not_to(equal(0))
+                            except:
+                                time.sleep(.1)
+                                continue
+                            raise AssertionError("Failed with empty statistics")
 
                 with description('TCP'):
                     with description('IPv4'):
@@ -749,23 +755,7 @@ with description('Network Generator Module', 'network') as self:
                             pass
 
             with after.all:
-                try:
-                    for s in self._api.list_network_servers():
-                        self._api.delete_network_server(s.id)
-                except AttributeError:
-                    pass
-                try:
-                    for gen in self._api.list_network_generators():
-                        if gen.running:
-                            self._api.stop_network_generator(gen.id)
-                        self._api.delete_network_generator(gen.id)
-                except AttributeError:
-                    pass
-                try:
-                    for res in self._api.list_network_generator_results():
-                        self._api.delete_network_generator_result(res.id)
-                except AttributeError:
-                    pass
+                clear_network_instances(self._api)
 
     with description('Driver kernel'):
         with before.all:
@@ -776,9 +766,8 @@ with description('Network Generator Module', 'network') as self:
         with included_context('network_module'):
             pass
 
-    with description('Driver dpdk'):
+    with _description('Driver dpdk'):
         with before.all:
-            self.skip()
             self._service = Service(CONFIG.service('network-dpdk'))
             self._host = '198.18.1.10'
 
