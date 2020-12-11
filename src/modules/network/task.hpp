@@ -14,7 +14,7 @@
 namespace openperf::network::internal::task {
 
 using realtime = timesync::chrono::realtime;
-using time_point = realtime::time_point;
+using ref_clock = timesync::chrono::monotime;
 using duration = std::chrono::nanoseconds;
 
 enum class operation_t : uint8_t { READ = 0, WRITE };
@@ -51,7 +51,7 @@ struct connection_t
     connection_state_t state;
     std::vector<uint8_t> buffer;
     size_t bytes_left;
-    time_point operation_start_time;
+    ref_clock::time_point operation_start_time;
     uint_fast64_t ops_left;
 };
 
@@ -80,7 +80,7 @@ struct stat_t
 
     operation_t operation;
     conn_stat_t conn_stat;
-    time_point updated = realtime::now();
+    realtime::time_point updated = realtime::now();
     uint_fast64_t ops_target = 0;
     uint_fast64_t ops_actual = 0;
     uint_fast64_t bytes_target = 0;
@@ -118,7 +118,7 @@ private:
     config_t m_config;
     stat_t m_stat;
     drivers::driver_ptr m_driver;
-    realtime::time_point m_operation_timestamp;
+    ref_clock::time_point m_operation_timestamp;
     std::vector<connection_t> m_connections;
     std::vector<uint8_t> m_write_buffer;
 };
