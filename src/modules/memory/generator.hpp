@@ -1,8 +1,8 @@
 #ifndef _OP_MEMORY_GENERATOR_HPP_
 #define _OP_MEMORY_GENERATOR_HPP_
 
-#include <future>
 #include <atomic>
+#include <future>
 
 #include "buffer.hpp"
 #include "memory_stat.hpp"
@@ -34,7 +34,6 @@ public:
         std::weak_ptr<buffer> buffer;
     };
 
-    using index_vector = std::vector<uint64_t>;
     using time_point = std::chrono::system_clock::time_point;
     using controller = openperf::framework::generator::controller;
 
@@ -48,12 +47,7 @@ private:
     size_t m_buffer_size = 0;
     std::shared_ptr<buffer> m_buffer;
 
-    struct operation_data
-    {
-        operation_config config;
-        index_vector indexes;
-        std::future<index_vector> future;
-    } m_read, m_write;
+    operation_config m_read, m_write;
 
     uint16_t m_serial_number;
     std::chrono::nanoseconds m_run_time;
@@ -101,11 +95,9 @@ public:
 private:
     void scrub_worker();
 
-    void init_index(operation_data& op);
-
-    template <typename TaskType>
-    void configure_tasks(operation_data&,
-                         const operation_config&,
+    template <typename TaskType, typename Function>
+    void configure_tasks(const operation_config&,
+                         Function&& vector_generator,
                          const std::string& thread_suffix);
 };
 
@@ -114,22 +106,27 @@ private:
 //
 
 // Methods : private
-template <typename TaskType>
-void generator::configure_tasks(operation_data& op,
-                                const operation_config& conf,
+template <typename TaskType, typename Function>
+void generator::configure_tasks(const operation_config& op_config,
+                                Function&& vector_generator,
                                 const std::string& thread_suffix)
 {
-    op.config = conf;
+    size_t index_vector_size =
+        op_config.block_size ? m_buffer_size / op_config.block_size : 0;
 
-    init_index(op);
+    auto index_initializer =
+        std::shared_future<index_vector>(std::async(std::launch::async,
+                                                    vector_generator,
+                                                    index_vector_size,
+                                                    op_config.pattern));
 
-    for (size_t i = 0; i < op.config.threads; i++) {
+    for (size_t i = 0; i < op_config.threads; i++) {
         auto task = TaskType(task_memory_config{
-            .block_size = op.config.block_size,
-            .op_per_sec = op.config.op_per_sec / op.config.threads,
-            .pattern = op.config.pattern,
+            .block_size = op_config.block_size,
+            .op_per_sec = op_config.op_per_sec / op_config.threads,
+            .pattern = op_config.pattern,
             .buffer = m_buffer,
-            .indexes = &op.indexes,
+            .indexes = index_initializer,
         });
 
         m_controller.add(std::move(task),

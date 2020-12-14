@@ -15,9 +15,9 @@ namespace openperf::memory::internal {
 static uint16_t serial_counter = 0;
 
 // Functions
-generator::index_vector generate_index_vector(size_t size, io_pattern pattern)
+index_vector generate_index_vector(size_t size, io_pattern pattern)
 {
-    generator::index_vector indexes(size);
+    index_vector indexes(size);
     std::iota(indexes.begin(), indexes.end(), 0);
 
     switch (pattern) {
@@ -93,26 +93,22 @@ generator::generator()
 
         // Calculate really target values from start time of the generator
         using double_time = std::chrono::duration<double>;
-        if (m_read.config.threads) {
+        if (m_read.threads) {
             auto& rstat = m_stat.read;
             rstat.operations_target = static_cast<uint64_t>(
                 (std::chrono::duration_cast<double_time>(elapsed_time)
-                 * std::min(m_read.config.block_size, 1UL)
-                 * m_read.config.op_per_sec)
+                 * std::min(m_read.block_size, 1UL) * m_read.op_per_sec)
                     .count());
-            rstat.bytes_target =
-                rstat.operations_target * m_read.config.block_size;
+            rstat.bytes_target = rstat.operations_target * m_read.block_size;
         }
 
-        if (m_write.config.threads) {
+        if (m_write.threads) {
             auto& wstat = m_stat.write;
             wstat.operations_target = static_cast<uint64_t>(
                 (std::chrono::duration_cast<double_time>(elapsed_time)
-                 * std::min(m_write.config.block_size, 1UL)
-                 * m_write.config.op_per_sec)
+                 * std::min(m_write.block_size, 1UL) * m_write.op_per_sec)
                     .count());
-            wstat.bytes_target =
-                wstat.operations_target * m_write.config.block_size;
+            wstat.bytes_target = wstat.operations_target * m_write.block_size;
         }
 
         m_dynamic.add(m_stat);
@@ -130,8 +126,6 @@ generator::~generator()
 {
     m_scrub_aborted.store(true);
     if (m_scrub_thread.joinable()) m_scrub_thread.join();
-    if (m_read.future.valid()) m_read.future.wait();
-    if (m_write.future.valid()) m_write.future.wait();
 
     stop();
     m_controller.clear();
@@ -141,22 +135,6 @@ generator::~generator()
 void generator::start()
 {
     if (!m_stopped) return;
-
-    if (m_read.future.valid()) {
-        auto res = m_read.future.get();
-        assert(res.size() == m_read.indexes.size());
-        utils::memcpy(m_read.indexes.data(),
-                      res.data(),
-                      sizeof(index_vector::value_type) * res.size());
-    }
-
-    if (m_write.future.valid()) {
-        auto res = m_write.future.get();
-        assert(res.size() == m_write.indexes.size());
-        utils::memcpy(m_write.indexes.data(),
-                      res.data(),
-                      sizeof(index_vector::value_type) * res.size());
-    };
 
     reset();
     m_controller.resume();
@@ -283,8 +261,11 @@ void generator::config(const generator::config_t& cfg)
         m_scrub_aborted.store(false);
     });
 
-    configure_tasks<task_memory_read>(m_read, cfg.read, "_r");
-    configure_tasks<task_memory_write>(m_write, cfg.write, "_w");
+    m_read = cfg.read;
+    m_write = cfg.write;
+
+    configure_tasks<task_memory_read>(m_read, generate_index_vector, "_r");
+    configure_tasks<task_memory_write>(m_write, generate_index_vector, "_w");
 
     if (!was_paused) resume();
 }
@@ -293,8 +274,8 @@ generator::config_t generator::config() const
 {
     return {
         .buffer_size = m_buffer_size,
-        .read = m_read.config,
-        .write = m_write.config,
+        .read = m_read,
+        .write = m_write,
     };
 }
 
@@ -317,21 +298,6 @@ void generator::scrub_worker()
         current += buf_len;
         m_init_percent_complete.store(current * 100 / m_buffer->size());
     }
-}
-
-void generator::init_index(operation_data& op)
-{
-    if (op.future.valid()) op.future.wait();
-
-    // Resize index vector, because it will be passed to task configuration
-    // and should has the valid size.
-    op.indexes.resize(
-        op.config.block_size ? m_buffer_size / op.config.block_size : 0);
-
-    op.future = std::async(std::launch::async,
-                           generate_index_vector,
-                           op.indexes.size(),
-                           op.config.pattern);
 }
 
 } // namespace openperf::memory::internal

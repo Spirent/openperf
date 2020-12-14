@@ -7,15 +7,18 @@ namespace openperf::memory::internal {
 
 void task_memory_write::operation(uint64_t nb_ops)
 {
-    assert(m_op_index < m_config.indexes->size());
-
+    auto indexes = m_config.indexes.get();
     auto* buffer_pointer = reinterpret_cast<uint8_t*>(m_buffer->data());
+
+    assert(m_op_index < indexes.size());
+    assert(buffer_pointer != nullptr);
+
     for (size_t i = 0; i < nb_ops; ++i) {
-        auto idx = m_config.indexes->at(m_op_index++);
+        auto idx = indexes.at(m_op_index++);
         std::memcpy(buffer_pointer + (idx * m_config.block_size),
                     m_scratch.data(),
                     m_config.block_size);
-        if (m_op_index == m_config.indexes->size()) { m_op_index = 0; }
+        if (m_op_index == indexes.size()) { m_op_index = 0; }
     }
 }
 
