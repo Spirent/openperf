@@ -8,8 +8,14 @@
 
 namespace openperf::network::model {
 
-enum protocol_t : uint8_t { TCP, UDP };
-enum address_family_t : uint8_t { INET, INET6 };
+enum protocol_t : uint8_t {
+    TCP = IPPROTO_TCP,
+    UDP = IPPROTO_UDP,
+};
+enum address_family_t : uint8_t {
+    INET = AF_INET,
+    INET6 = AF_INET6,
+};
 
 class server
 {

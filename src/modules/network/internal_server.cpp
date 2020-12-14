@@ -44,16 +44,7 @@ server::server(const model::server& server_model)
         throw std::runtime_error("Address family is required for this driver");
 
     std::optional<int> domain;
-    if (m_address_family) {
-        switch (m_address_family.value()) {
-        case model::address_family_t::INET6:
-            domain = AF_INET6;
-            break;
-        case model::address_family_t::INET:
-            domain = AF_INET;
-            break;
-        }
-    }
+    if (m_address_family) { domain = m_address_family.value(); }
 
     switch (protocol()) {
     case protocol_t::TCP:

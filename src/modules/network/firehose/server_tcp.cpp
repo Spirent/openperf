@@ -426,6 +426,7 @@ void server_tcp::run_worker_thread()
                                                      || conn.state
                                                             == STATE_ERROR) {
                                                      m_stat.closed++;
+                                                     m_driver->close(conn.fd);
                                                      return true;
                                                  }
                                                  return false;
