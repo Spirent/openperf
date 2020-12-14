@@ -83,7 +83,7 @@ static tl::expected<network_sockaddr, int>
 populate_sockaddr(const drivers::driver_ptr& driver,
                   const std::string& host,
                   in_port_t port,
-                  std::optional<std::string> interface)
+                  const std::optional<std::string>& interface)
 {
     sockaddr_storage client_storage;
     auto* sa4 = reinterpret_cast<sockaddr_in*>(&client_storage);
