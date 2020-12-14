@@ -81,9 +81,10 @@ task_memory::task_memory(const task_memory_config& conf)
 
 void task_memory::config(const task_memory_config& msg)
 {
+    assert(msg.indexes.valid());
     assert(msg.pattern != io_pattern::NONE);
 
-    m_op_index = utils::random_uniform(msg.indexes->size());
+    m_op_index = utils::random_uniform(msg.indexes.get().size());
     m_config.pattern = msg.pattern;
 
     m_buffer = msg.buffer.lock();
@@ -117,8 +118,10 @@ void task_memory::reset()
 
 memory_stat task_memory::spin()
 {
+    auto indexes = m_config.indexes.get();
+
     /* If we have a rate to generate, then we need indexes */
-    assert(m_rate == 0 || m_config.indexes->size() > 0);
+    assert(m_rate == 0 || indexes.size() > 0);
 
     m_pid.start();
 

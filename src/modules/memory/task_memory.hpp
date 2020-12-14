@@ -1,8 +1,9 @@
 #ifndef _OP_MEMORY_TASK_MEMORY_HPP_
 #define _OP_MEMORY_TASK_MEMORY_HPP_
 
-#include <vector>
 #include <chrono>
+#include <future>
+#include <vector>
 
 #include "framework/generator/task.hpp"
 #include "framework/generator/pid_control.hpp"
@@ -14,13 +15,15 @@
 
 namespace openperf::memory::internal {
 
+using index_vector = std::vector<uint64_t>;
+
 struct task_memory_config
 {
     size_t block_size = 0;
     size_t op_per_sec = 0;
     io_pattern pattern = io_pattern::NONE;
     std::weak_ptr<buffer> buffer;
-    std::vector<uint64_t>* indexes = nullptr;
+    std::shared_future<index_vector> indexes;
 };
 
 class task_memory : public openperf::framework::generator::task<memory_stat>

@@ -6,7 +6,7 @@
 #include "modules/memory/generator.hpp"
 
 namespace openperf::memory::internal {
-generator::index_vector generate_index_vector(size_t size, io_pattern pattern);
+index_vector generate_index_vector(size_t size, io_pattern pattern);
 } // namespace openperf::memory::internal
 
 TEST_CASE("Memory Generator Task", "[memory]")
