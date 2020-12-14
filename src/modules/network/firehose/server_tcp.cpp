@@ -33,7 +33,6 @@ tl::expected<int, std::string> server_tcp::new_server(
 {
     struct sockaddr_storage client_storage;
     auto* server_ptr = reinterpret_cast<sockaddr*>(&client_storage);
-    std::string domain_str;
 
     switch (domain) {
     case AF_INET: {
@@ -41,7 +40,6 @@ tl::expected<int, std::string> server_tcp::new_server(
         server4->sin_family = AF_INET;
         server4->sin_port = htons(port);
         server4->sin_addr.s_addr = htonl(INADDR_ANY);
-        domain_str = "IPv4";
         break;
     }
     case AF_INET6: {
@@ -49,7 +47,6 @@ tl::expected<int, std::string> server_tcp::new_server(
         server6->sin6_family = AF_INET6;
         server6->sin6_port = htons(port);
         server6->sin6_addr = in6addr_any;
-        domain_str = "IPv6";
         break;
     }
     default:
@@ -58,9 +55,9 @@ tl::expected<int, std::string> server_tcp::new_server(
 
     int sock = 0, enable = true;
     if ((sock = m_driver->socket(domain, SOCK_STREAM, IPPROTO_TCP)) == -1) {
-        OP_LOG(OP_LOG_WARNING,
+        OP_LOG(OP_LOG_ERROR,
                "Unable to open %s TCP server socket: %s\n",
-               domain_str.c_str(),
+               (domain == AF_INET6) ? "IPv6" : "IPv4",
                strerror(errno));
         return tl::make_unexpected<std::string>(strerror(errno));
     }
@@ -136,7 +133,7 @@ server_tcp::server_tcp(in_port_t port,
     tl::expected<int, std::string> res;
     if (domain) {
         if ((res = new_server(domain.value(), port, interface)); res) {
-            OP_LOG(OP_LOG_INFO,
+            OP_LOG(OP_LOG_DEBUG,
                    "Network TCP load server %s.\n",
                    (domain.value() == AF_INET6) ? "IPv6" : "IPv4");
         } else {
@@ -145,9 +142,9 @@ server_tcp::server_tcp(in_port_t port,
         }
     } else {
         if ((res = new_server(AF_INET6, port, interface)); res) {
-            OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4/IPv6.\n");
+            OP_LOG(OP_LOG_DEBUG, "Network TCP load server IPv4/IPv6.\n");
         } else if ((res = new_server(AF_INET, port, interface)); res) {
-            OP_LOG(OP_LOG_INFO, "Network TCP load server IPv4.\n");
+            OP_LOG(OP_LOG_DEBUG, "Network TCP load server IPv4.\n");
         } else {
             throw std::runtime_error("Cannot create TCP server: "
                                      + res.error());
