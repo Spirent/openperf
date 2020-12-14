@@ -688,20 +688,23 @@ with description('Network Generator Module', 'network') as self:
                         self._result = self._api.start_network_generator(g7r.id)
                         expect(self._result).to(be_valid_network_generator_result)
 
-                        for i in range(50):
-                            result = self._api.get_network_generator_result(self._result.id)
-                            expect(result).to(be_valid_network_generator_result)
-                            try:
+                        def empty_results():
+                            for i in range(50):
+                                result = self._api.get_network_generator_result(self._result.id)
                                 expect(result).to(be_valid_network_generator_result)
-                                expect(result.read.ops_target).not_to(equal(0))
-                                expect(result.read.ops_actual).not_to(equal(0))
-                                expect(result.read.bytes_target).not_to(equal(0))
-                                expect(result.read.bytes_actual).not_to(equal(0))
-                                expect(result.read.latency_total).not_to(equal(0))
-                                break
-                            except:
-                                time.sleep(.1)
-                                continue
+                                try:
+                                    expect(result).to(be_valid_network_generator_result)
+                                    expect(result.read.ops_target).not_to(equal(0))
+                                    expect(result.read.ops_actual).not_to(equal(0))
+                                    expect(result.read.bytes_target).not_to(equal(0))
+                                    expect(result.read.bytes_actual).not_to(equal(0))
+                                    expect(result.read.latency_total).not_to(equal(0))
+                                    return False
+                                except:
+                                    time.sleep(.1)
+                            return True
+
+                        if empty_results():
                             raise AssertionError("Failed with empty statistics")
 
                         self._api.stop_network_generator(g7r.id)
@@ -721,20 +724,23 @@ with description('Network Generator Module', 'network') as self:
                         self._result = self._api.start_network_generator(g7r.id)
                         expect(self._result).to(be_valid_network_generator_result)
 
-                        for i in range(50):
-                            result = self._api.get_network_generator_result(self._result.id)
-                            expect(result).to(be_valid_network_generator_result)
-                            try:
+                        def empty_results():
+                            for i in range(50):
+                                result = self._api.get_network_generator_result(self._result.id)
                                 expect(result).to(be_valid_network_generator_result)
-                                expect(result.write.ops_target).not_to(equal(0))
-                                expect(result.write.ops_actual).not_to(equal(0))
-                                expect(result.write.bytes_target).not_to(equal(0))
-                                expect(result.write.bytes_actual).not_to(equal(0))
-                                expect(result.write.latency_total).not_to(equal(0))
-                                break
-                            except:
-                                time.sleep(.1)
-                                continue
+                                try:
+                                    expect(result).to(be_valid_network_generator_result)
+                                    expect(result.write.ops_target).not_to(equal(0))
+                                    expect(result.write.ops_actual).not_to(equal(0))
+                                    expect(result.write.bytes_target).not_to(equal(0))
+                                    expect(result.write.bytes_actual).not_to(equal(0))
+                                    expect(result.write.latency_total).not_to(equal(0))
+                                    return False
+                                except:
+                                    time.sleep(.1)
+                            return True
+
+                        if empty_results():
                             raise AssertionError("Failed with empty statistics")
 
                         self._api.stop_network_generator(g7r.id)
