@@ -36,6 +36,10 @@ server::server(const model::server& server_model)
                                  + " is unsupported");
     }
 
+    if (!m_interface && nd->bind_to_device_required())
+        throw std::runtime_error(
+            "Bind to the interface is required for this driver");
+
     if (!m_address_family && nd->address_family_required())
         throw std::runtime_error("Address family is required for this driver");
 
