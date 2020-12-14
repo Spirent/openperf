@@ -134,7 +134,8 @@ model::generator from_swagger(const swagger::NetworkGenerator& generator)
     auto protocol =
         protocol_from_string(generator.getConfig()->getTarget()->getProtocol());
     if (protocol) target.protocol = protocol.value();
-    target.interface = generator.getConfig()->getTarget()->getInterface();
+    if (generator.getConfig()->getTarget()->interfaceIsSet())
+        target.interface = generator.getConfig()->getTarget()->getInterface();
 
     model::generator gen_model;
     gen_model.id(generator.getId());
@@ -175,7 +176,9 @@ model::server from_swagger(const swagger::NetworkServer& server)
     server_model.port(server.getPort());
     server_model.protocol(protocol_from_string(server.getProtocol())
                               .value_or(model::protocol_t::TCP));
-    server_model.interface(server.getInterface());
+    if (server.interfaceIsSet()) {
+        server_model.interface(server.getInterface());
+    }
     if (server.addressFamilyIsSet()) {
         server_model.address_family(
             address_family_from_string(server.getAddressFamily())
@@ -224,7 +227,8 @@ to_swagger(const model::generator& model)
     network_target->setHost(model.target().host);
     network_target->setPort(model.target().port);
     network_target->setProtocol(to_string(model.target().protocol));
-    network_target->setInterface(model.target().interface);
+    if (model.target().interface)
+        network_target->setInterface(model.target().interface.value());
     network_config->setTarget(network_target);
 
     auto gen = std::make_shared<swagger::NetworkGenerator>();
@@ -315,7 +319,7 @@ std::shared_ptr<swagger::NetworkServer> to_swagger(const model::server& model)
     server->setId(model.id());
     server->setPort(model.port());
     server->setProtocol(to_string(model.protocol()));
-    server->setInterface(model.interface());
+    if (model.interface()) server->setInterface(model.interface().value());
     if (model.address_family())
         server->setAddressFamily(to_string(model.address_family().value()));
     server->setStats(stats);

@@ -56,7 +56,8 @@ class NetworkGeneratorConfigTarget(object):
         self.host = host
         self.port = port
         self.protocol = protocol
-        self.interface = interface
+        if interface is not None:
+            self.interface = interface
 
     @property
     def host(self):
@@ -128,7 +129,7 @@ class NetworkGeneratorConfigTarget(object):
     def interface(self):
         """Gets the interface of this NetworkGeneratorConfigTarget.  # noqa: E501
 
-        Bind client socket to a particular device, specified as interface name  # noqa: E501
+        Bind client socket to a particular device, specified as interface name (required for dpdk driver)  # noqa: E501
 
         :return: The interface of this NetworkGeneratorConfigTarget.  # noqa: E501
         :rtype: str
@@ -139,7 +140,7 @@ class NetworkGeneratorConfigTarget(object):
     def interface(self, interface):
         """Sets the interface of this NetworkGeneratorConfigTarget.
 
-        Bind client socket to a particular device, specified as interface name  # noqa: E501
+        Bind client socket to a particular device, specified as interface name (required for dpdk driver)  # noqa: E501
 
         :param interface: The interface of this NetworkGeneratorConfigTarget.  # noqa: E501
         :type: str

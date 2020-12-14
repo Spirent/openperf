@@ -422,7 +422,7 @@ definitions:
           - udp
       interface:
         type: string
-        description: Bind server socket to a particular device, specified as interface name
+        description: Bind server socket to a particular device, specified as interface name (required for dpdk driver)
       address_family:
         type: string
         enum:
@@ -438,7 +438,6 @@ definitions:
       - id
       - port
       - protocol
-      - interface
       - stats
 
   NetworkServerStats:
@@ -520,12 +519,11 @@ definitions:
               - udp
           interface:
             type: string
-            description: Bind client socket to a particular device, specified as interface name
+            description: Bind client socket to a particular device, specified as interface name (required for dpdk driver)
         required:
           - host
           - port
           - protocol
-          - interface
       connections:
         type: integer
         format: int64
