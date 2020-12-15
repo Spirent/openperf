@@ -1,5 +1,6 @@
 #include "packet/generator/learning.hpp"
 
+#include "utils/overloaded_visitor.hpp"
 #include "lwip/priv/tcpip_priv.h"
 #include "lwip/etharp.h"
 #include "arpa/inet.h"
@@ -78,7 +79,7 @@ static void send_learning_requests(void* arg)
 
 // Return true if learning started, false otherwise.
 bool learning_state_machine::start_learning(
-    const std::vector<libpacket::type::ipv4_address>& to_learn,
+    const std::unordered_set<libpacket::type::ipv4_address>& to_learn,
     resolve_complete_callback callback)
 {
     // If we're already learning, don't start again.
@@ -101,10 +102,13 @@ bool learning_state_machine::start_learning(
     return (start_learning_impl());
 }
 
-bool learning_state_machine::retry_failed()
+bool learning_state_machine::retry_learning()
 {
+    // If we're already learning, don't start again.
+    if (in_progress()) { return (false); }
+
     // Are we being asked to retry when no items failed?
-    if (all_addresses_resolved(m_results)) { return (false); }
+    if (all_addresses_resolved(m_results)) { return (true); }
 
     return (start_learning_impl());
 }
@@ -118,12 +122,14 @@ bool learning_state_machine::start_learning_impl()
     if (m_results.empty()) { return (false); }
 
     // Do we have a valid interface to learn on?
-    if (m_intf == nullptr) { return (false); }
+    auto* intf =
+        const_cast<netif*>(std::any_cast<const netif*>(m_interface.data()));
+
+    if (intf == nullptr) { return (false); }
 
     m_current_state = state_start{};
 
-    start_learning_params slp = {.intf = this->m_intf,
-                                 .to_learn = this->m_results};
+    start_learning_params slp = {.intf = intf, .to_learn = this->m_results};
     auto barrier = slp.barrier.get_future();
 
     // tcpip_callback executes the given function in the stack thread passing it
@@ -160,7 +166,8 @@ static int handle_poll_timeout(const struct op_event_data* data, void* arg)
     assert(lsm);
 
     if (data->timeout_id != lsm->timeout_id()) {
-        throw std::runtime_error("Error with event loop while performing MAC learning.");
+        throw std::runtime_error(
+            "Error with event loop while performing MAC learning.");
     }
 
     return (lsm->check_learning());
@@ -174,7 +181,7 @@ bool learning_state_machine::start_status_polling()
     auto callbacks = op_event_callbacks{.on_timeout = handle_poll_timeout};
     auto timeout = duration_ns.count();
     uint32_t timeout_id = 0;
-    auto result = m_loop.add(timeout, &callbacks, this, &timeout_id);
+    auto result = m_loop.get().add(timeout, &callbacks, this, &timeout_id);
 
     if (result < 0) { return (false); }
 
@@ -238,6 +245,7 @@ int learning_state_machine::check_learning()
     if (!in_progress()) { return (-1); }
 
     if ((m_polls_remaining--) <= 0) {
+        m_current_state = state_timeout{};
         OP_LOG(OP_LOG_WARNING,
                "Not all addresses resolved during ARP process.");
         return (-1);
@@ -286,7 +294,11 @@ void learning_state_machine::stop_learning()
     if (!in_progress()) { return; }
 
     // Delete the polling timer.
-    m_loop.del(m_loop_timeout_id);
+    auto result = m_loop.get().del(m_loop_timeout_id);
+    if (result != 0) {
+        throw std::runtime_error("Error while unregistering from event loop in "
+                                 "packet generator module.");
+    }
 
     // Figure out which state we're going to end in.
     if (all_addresses_resolved(m_results)) {
@@ -295,6 +307,23 @@ void learning_state_machine::stop_learning()
     }
 
     m_current_state = state_timeout{};
+}
+
+static std::string to_string(const learning_state& state)
+{
+    return (std::visit(
+        utils::overloaded_visitor(
+            [](const std::monostate&) { return (std::string("unresolved")); },
+            [](const state_start&) { return (std::string("resolving")); },
+            [](const state_learning&) { return (std::string("resolving")); },
+            [](const state_done&) { return (std::string("resolved")); },
+            [](const state_timeout&) { return (std::string("timed_out")); }),
+        state));
+}
+
+std::string learning_state_machine::state() const
+{
+    return (to_string(m_current_state));
 }
 
 } // namespace openperf::packet::generator
