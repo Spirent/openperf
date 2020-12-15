@@ -6,6 +6,7 @@
 
 #include "swagger/v1/model/PacketGenerator.h"
 #include "swagger/v1/model/PacketGeneratorResult.h"
+#include "swagger/v1/model/PacketGeneratorLearningResults.h"
 #include "swagger/v1/model/TxFlow.h"
 
 namespace openperf::packet::generator::api {
@@ -131,6 +132,18 @@ static std::string to_string(const request_msg& request)
                            },
                            [](const request_get_tx_flow& request) {
                                return ("get tx flow " + request.id);
+                           },
+                           [](const request_get_learning_results&) {
+                               return (std::string("get learning results"));
+                           },
+                           [](const request_start_learning&) {
+                               return (std::string("start learning"));
+                           },
+                           [](const request_stop_learning&) {
+                               return (std::string("stop learning"));
+                           },
+                           [](const request_retry_learning&) {
+                               return (std::string("retry learning"));
                            }),
                        request));
 }
@@ -139,9 +152,11 @@ static std::string to_string(const reply_msg& reply)
 {
     // XXX: If we ever need to support more HTTP return codes,
     // probably makes sense to pull in the Pistache Http code to_string here.
-    // But for only 2 codes not worth the added dependency.
+    // But for only 3 codes not worth the added dependency.
     if (auto error = std::get_if<reply_error>(&reply)) {
         switch (error->info.type) {
+        case error_type::BAD_REQUEST:
+            return ("failed: Bad Request");
         case error_type::CONFLICT:
             return ("failed: Conflict");
         case error_type::NOT_FOUND:
@@ -239,9 +254,8 @@ add_source(packetio::internal::api::client& client, server::source_item& to_add)
 {
     if (to_add.second == server::source_state::active) { return {}; }
 
-    if (auto success = client.add_source(
-            to_add.first.template get<source>().target(), to_add.first);
-        !success) {
+    auto target_port = to_add.first.template get<source>().target_port();
+    if (auto success = client.add_source(target_port, to_add.first); !success) {
         OP_LOG(OP_LOG_ERROR,
                "Failed to add generator %s to packetio workers!\n",
                to_add.first.id().c_str());
@@ -259,9 +273,8 @@ static void remove_source(packetio::internal::api::client& client,
 {
     if (to_del.second != server::source_state::active) { return; }
 
-    if (auto success = client.del_source(
-            to_del.first.template get<source>().target(), to_del.first);
-        !success) {
+    auto target_port = to_del.first.template get<source>().target_port();
+    if (auto success = client.del_source(target_port, to_del.first); !success) {
         OP_LOG(OP_LOG_ERROR,
                "Failed to remove generator %s from packetio workers!\n",
                to_del.first.id().c_str());
@@ -279,8 +292,9 @@ swap_source(packetio::internal::api::client& client,
     assert(to_del.second == server::source_state::active);
     assert(to_add.second == server::source_state::idle);
 
+    auto target_port = to_del.first.template get<source>().target_port();
     if (auto success =
-            client.swap_source(to_del.first.template get<source>().target(),
+            client.swap_source(target_port,
                                to_del.first,
                                to_add.first,
                                std::forward<decltype(action)>(action));
@@ -323,11 +337,13 @@ reply_msg server::handle_request(const request_create_generator& request)
         return (to_error(error_type::POSIX, EINVAL));
     }
 
-    auto& item =
-        m_sources.emplace_back(source(std::move(config)), source_state::idle);
+    auto& item = m_sources.emplace_back(
+        source(std::move(config), m_client, m_loop), source_state::idle);
 
     /* Grab a reference before we invalidate the iterator */
-    const auto& impl = item.first.template get<source>();
+    auto& impl = item.first.template get<source>();
+
+    impl.maybe_start_learning();
 
     /* Success; sort sources and return */
     std::sort(std::begin(m_sources),
@@ -414,6 +430,24 @@ template <typename Map> static core::uuid get_unique_result_id(const Map& map)
     return (id);
 }
 
+static bool generator_can_start(const learning_resolved_state& state)
+{
+    switch (state) {
+    case learning_resolved_state::unsupported:
+        [[fallthrough]];
+    case learning_resolved_state::resolved:
+        return (true);
+    case learning_resolved_state::unresolved:
+        [[fallthrough]];
+    case learning_resolved_state::resolving:
+        [[fallthrough]];
+    case learning_resolved_state::timed_out:
+        return (false);
+    default:
+        throw std::invalid_argument("unknown state value");
+    }
+}
+
 reply_msg server::handle_request(const request_start_generator& request)
 {
     auto found = binary_find(std::begin(m_sources),
@@ -428,6 +462,10 @@ reply_msg server::handle_request(const request_start_generator& request)
     if (found->first.active()) { return (to_error(error_type::POSIX, EINVAL)); }
 
     auto& impl = found->first.template get<source>();
+
+    if (!generator_can_start(impl.maybe_learning_resolved())) {
+        return (to_error(error_type::CONFLICT));
+    }
 
     auto item = m_results.emplace(get_unique_result_id(m_results),
                                   std::make_unique<source_result>(impl));
@@ -774,6 +812,93 @@ reply_msg server::handle_request(const request_get_tx_flow& request)
     auto reply = reply_tx_flows{};
     reply.flows.emplace_back(to_swagger(*id, it->first, *result, flow_idx));
     return (reply);
+}
+
+reply_msg server::handle_request(const request_get_learning_results& request)
+{
+    auto result = binary_find(std::begin(m_sources),
+                              std::end(m_sources),
+                              request.id,
+                              source_id_comparator{});
+
+    if (result == std::end(m_sources)) {
+        return (to_error(error_type::NOT_FOUND));
+    }
+
+    auto maybe_learning =
+        result->first.template get<source>().maybe_get_learning();
+    if (!maybe_learning.has_value()) {
+        return (to_error(error_type::BAD_REQUEST));
+    }
+
+    auto reply = reply_learning_results{};
+    reply.results.emplace_back(to_swagger((*maybe_learning).get()));
+    return (reply);
+}
+
+reply_msg server::handle_request(const request_retry_learning& request)
+{
+    auto result = binary_find(std::begin(m_sources),
+                              std::end(m_sources),
+                              request.id,
+                              source_id_comparator{});
+
+    if (result == std::end(m_sources)) {
+        return (to_error(error_type::NOT_FOUND));
+    }
+
+    auto& src = result->first.template get<source>();
+
+    auto maybe_learning_retried = src.maybe_retry_learning();
+    if (maybe_learning_retried == learning_operation_result::fail) {
+        return (to_error(error_type::BAD_REQUEST));
+    }
+
+    return (reply_ok{});
+}
+
+reply_msg server::handle_request(const request_start_learning& request)
+{
+    auto result = binary_find(std::begin(m_sources),
+                              std::end(m_sources),
+                              request.id,
+                              source_id_comparator{});
+
+    if (result == std::end(m_sources)) {
+        return (to_error(error_type::NOT_FOUND));
+    }
+
+    auto& src = result->first.template get<source>();
+
+    auto maybe_learning_retried = src.maybe_start_learning();
+
+    if (maybe_learning_retried == learning_operation_result::fail) {
+        return (to_error(error_type::BAD_REQUEST));
+    }
+
+    return (reply_ok{});
+}
+reply_msg server::handle_request(const request_stop_learning& request)
+{
+    auto result = binary_find(std::begin(m_sources),
+                              std::end(m_sources),
+                              request.id,
+                              source_id_comparator{});
+
+    if (result == std::end(m_sources)) {
+        return (to_error(error_type::NOT_FOUND));
+    }
+
+    auto& src = result->first.template get<source>();
+
+    if (!src.supports_learning()) {
+        return (to_error(error_type::BAD_REQUEST));
+    }
+
+    // Stopping learning either succeeds or throws an exception.
+    src.maybe_stop_learning();
+
+    return (reply_ok{});
 }
 
 } // namespace openperf::packet::generator::api
