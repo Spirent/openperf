@@ -173,19 +173,22 @@ server_tcp::~server_tcp()
 
 void server_tcp::run_accept_thread()
 {
-    if (m_accept_thread.joinable()) return;
+    if (m_accept_thread.joinable()) {
+        OP_LOG(OP_LOG_WARNING,
+               "Failed to run network accept thread: just one connections "
+               "accept thread per generator is supported. Ignored");
+        return;
+    }
 
-    m_accept_thread = std::thread([&] {
+    void* sync =
+        op_socket_get_server(m_context.get(), ZMQ_PUSH, endpoint.data());
+    m_accept_thread = std::thread([this, sync] {
         // Set the thread name
         op_thread_setname("op_net_srv_acc");
-
         // Run the loop of the thread
         sockaddr_storage client_storage;
         auto* client = reinterpret_cast<sockaddr*>(&client_storage);
         socklen_t client_length = sizeof(client_storage);
-
-        void* sync =
-            op_socket_get_server(m_context.get(), ZMQ_PUSH, endpoint.data());
 
         int connect_fd;
         while ((connect_fd = accept(m_fd.load(), client, &client_length))
@@ -257,7 +260,9 @@ int server_tcp::tcp_write(connection_t& conn, std::vector<uint8_t> send_buffer)
 
 void server_tcp::run_worker_thread()
 {
-    m_worker_threads.push_back(std::make_unique<std::thread>([&] {
+    void* sync =
+        op_socket_get_client(m_context.get(), ZMQ_PULL, endpoint.data());
+    m_worker_threads.push_back(std::make_unique<std::thread>([this, sync] {
         // Set the thread name
         op_thread_setname("op_net_srv_w");
 
@@ -266,8 +271,6 @@ void server_tcp::run_worker_thread()
         std::vector<uint8_t> send_buffer(send_buffer_size);
         utils::op_prbs23_fill(send_buffer.data(), send_buffer.size());
         std::vector<uint8_t> recv_buffer(recv_buffer_size);
-        void* sync =
-            op_socket_get_client(m_context.get(), ZMQ_PULL, endpoint.data());
 
         while (!m_stopped.load(std::memory_order_relaxed)) {
             // Receive all accepted connections
