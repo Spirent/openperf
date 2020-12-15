@@ -29,6 +29,13 @@ public:
     using iterator = view_iterator<sequence>;
     using const_iterator = const iterator;
 
+    static constexpr size_t flow_index = 0;
+    static constexpr size_t pointer_to_header = 1;
+    static constexpr size_t header_length = 2;
+    static constexpr size_t protocol_flags = 3;
+    static constexpr size_t signature = 4;
+    static constexpr size_t packet_length = 5;
+
     /* Named constructors to simplify instantiation. */
     static sequence round_robin_sequence(definition_container&& definitions);
     static sequence sequential_sequence(definition_container&& definitions);

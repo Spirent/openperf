@@ -1,12 +1,12 @@
 #ifndef _OP_PACKET_GENERATOR_LEARNING_HPP_
 #define _OP_PACKET_GENERATOR_LEARNING_HPP_
 
-#include <vector>
-#include <map>
+#include <unordered_set>
+#include <unordered_map>
 #include <variant>
 #include <functional>
 
-#include "lwip/netif.h"
+#include "packetio/generic_interface.hpp"
 
 #include "lib/packet/type/ipv4_address.hpp"
 #include "lib/packet/type/mac_address.hpp"
@@ -42,6 +42,16 @@ using learning_state = std::variant<std::monostate,
                                     state_done,
                                     state_timeout>;
 
+enum class learning_resolved_state {
+    unsupported = 0, // This is used at higher levels.
+    unresolved,
+    resolving,
+    resolved,
+    timed_out
+};
+
+std::string to_string(const learning_resolved_state& state);
+
 /**
  * @brief Finite State Machine class that handles MAC learning.
  *
@@ -49,16 +59,19 @@ using learning_state = std::variant<std::monostate,
 class learning_state_machine
 {
 public:
-    explicit learning_state_machine(core::event_loop& loop, netif* intf)
+    explicit learning_state_machine(
+        core::event_loop& loop, packetio::interface::generic_interface& intf)
         : m_loop(loop)
         , m_loop_timeout_id(0)
         , m_polls_remaining(0)
-        , m_intf(intf)
+        , m_interface(intf)
+    {}
+
+    ~learning_state_machine()
     {
-        if (m_intf == nullptr) {
-            throw std::invalid_argument(
-                "Must pass non-null interface pointer to learning.");
-        }
+        // We might be in the process of learning when deleted.
+        // Don't leave a stale timer handle in the shared event loop.
+        stop_learning();
     }
 
     /**
@@ -69,9 +82,9 @@ public:
      * @return true if learning started successfully
      * @return false learning did not start
      */
-    bool
-    start_learning(const std::vector<libpacket::type::ipv4_address>& to_learn,
-                   resolve_complete_callback callback);
+    bool start_learning(
+        const std::unordered_set<libpacket::type::ipv4_address>& to_learn,
+        resolve_complete_callback callback);
 
     /**
      * @brief Retry failed MAC learning items.
@@ -79,7 +92,7 @@ public:
      * @return true if learning started successfully
      * @return false learning did not start
      */
-    bool retry_failed();
+    bool retry_learning();
 
     /**
      * @brief Update resolved addresses from lwip stack MAC learning cache.
@@ -129,6 +142,8 @@ public:
                 || std::holds_alternative<state_learning>(m_current_state));
     }
 
+    learning_resolved_state state() const;
+
     /**
      * @brief Get instance's event loop timeout ID.
      *
@@ -158,11 +173,11 @@ private:
      */
     bool start_status_polling();
 
-    core::event_loop& m_loop;
+    std::reference_wrapper<core::event_loop> m_loop;
     uint32_t m_loop_timeout_id;
     int m_polls_remaining;
 
-    netif* m_intf;
+    packetio::interface::generic_interface m_interface;
     learning_result_map m_results;
     learning_state m_current_state;
 

@@ -41,6 +41,11 @@ public:
     reply_msg handle_request(const request_list_tx_flows&);
     reply_msg handle_request(const request_get_tx_flow&);
 
+    reply_msg handle_request(const request_get_learning_results&);
+    reply_msg handle_request(const request_retry_learning&);
+    reply_msg handle_request(const request_start_learning&);
+    reply_msg handle_request(const request_stop_learning&);
+
     /*
      * Source's know their own id's, so we don't need to store
      * them in a map.  Just use a (sorted) vector so we don't

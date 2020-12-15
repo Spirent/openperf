@@ -3,11 +3,15 @@
 
 #include "packet/generator/api.hpp"
 #include "packet/generator/source.hpp"
+#include "packet/generator/learning.hpp"
 #include "packet/statistics/api_transmogrify.hpp"
 
 #include "swagger/v1/model/PacketGenerator.h"
 #include "swagger/v1/model/PacketGeneratorResult.h"
+#include "swagger/v1/model/PacketGeneratorLearningResults.h"
 #include "swagger/v1/model/TxFlow.h"
+
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf::packet::generator::api {
 
@@ -115,6 +119,8 @@ generator_ptr to_swagger(const source& src)
     dst->setActive(src.active());
     dst->setConfig(src.config());
     dst->getConfig()->setFlowCount(src.sequence().flow_count());
+
+    dst->setLearning(to_string(src.maybe_learning_resolved()));
 
     return (dst);
 }
@@ -224,6 +230,38 @@ tx_flow_ptr to_swagger(const core::uuid& id,
             result.parent().sequence().get_signature_stream_id(flow_idx)) {
         dst->setStreamId(*stream_id);
     }
+
+    return (dst);
+}
+
+learning_results_ptr to_swagger(const learning_state_machine& lsm)
+{
+    auto dst =
+        std::make_unique<swagger::v1::model::PacketGeneratorLearningResults>();
+
+    dst->setResolvedState(to_string(lsm.state()));
+
+    auto& ipv4_results = dst->getIpv4();
+
+    auto& learning_results = lsm.results();
+
+    // XXX: this could be std::generate. But when IPv6 support gets added that
+    // will be a separate target vector, and generate only outputs to a single
+    // data structure.
+    std::for_each(
+        learning_results.begin(), learning_results.end(), [&](auto& res) {
+            auto swagger_result = std::make_shared<
+                swagger::v1::model::PacketGeneratorLearningResultIpv4>();
+            swagger_result->setIpAddress(to_string(res.first));
+            std::visit(utils::overloaded_visitor(
+                           [](const unresolved&) { /* no op*/ },
+                           [&](const libpacket::type::mac_address& mac) {
+                               swagger_result->setMacAddress(to_string(mac));
+                           }),
+                       res.second);
+
+            ipv4_results.push_back(swagger_result);
+        });
 
     return (dst);
 }

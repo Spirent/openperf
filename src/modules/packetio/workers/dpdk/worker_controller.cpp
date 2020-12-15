@@ -791,8 +791,10 @@ tl::expected<void, int>
 worker_controller::add_source(std::string_view dst_id,
                               packet::generic_source source)
 {
-    /* Only support port sources for now */
-    // TODO: Lookup interface if no port found
+    // All sources are ultimately bound to ports.
+    // Upper layer must handle mapping from an interface target
+    // to the underlying port.
+
     auto port_idx = m_driver.port_index(dst_id);
     if (!port_idx) { return (tl::make_unexpected(EINVAL)); }
 
@@ -828,8 +830,10 @@ worker_controller::add_source(std::string_view dst_id,
 void worker_controller::del_source(std::string_view dst_id,
                                    const packet::generic_source& source)
 {
-    /* Only support port sources for now */
-    // TODO: Lookup interface if no port found
+    // All sources are ultimately bound to ports.
+    // Upper layer must handle mapping from an interface target
+    // to the underlying port.
+
     auto port_idx = m_driver.port_index(dst_id);
     if (!port_idx) return;
 
@@ -864,7 +868,10 @@ tl::expected<void, int> worker_controller::swap_source(
     packet::generic_source incoming,
     std::optional<workers::source_swap_function>&& swap_action)
 {
-    /* Only support port sources for now */
+    // All sources are ultimately bound to ports.
+    // Upper layer must handle mapping from an interface target
+    // to the underlying port.
+
     const auto port_idx = m_driver.port_index(dst_id);
     if (!port_idx) { return (tl::make_unexpected(EINVAL)); }
 
