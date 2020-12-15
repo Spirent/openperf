@@ -191,7 +191,8 @@ void server_tcp::run_accept_thread()
         socklen_t client_length = sizeof(client_storage);
 
         int connect_fd;
-        while ((connect_fd = accept(m_fd.load(), client, &client_length))
+        while ((connect_fd = m_driver->accept(
+                    m_fd.load(), client, &client_length, SOCK_NONBLOCK))
                != -1) {
             int enable = 1;
             if (m_driver->setsockopt(connect_fd,
@@ -202,22 +203,6 @@ void server_tcp::run_accept_thread()
                 != 0) {
                 m_driver->close(connect_fd);
                 continue;
-            }
-            // Change the socket into non-blocking state
-            int flags;
-            if ((flags = m_driver->fcntl(connect_fd, F_GETFL, 0)); flags >= 0) {
-                flags |= O_NONBLOCK;
-                if (m_driver->fcntl(connect_fd, F_SETFL, O_NONBLOCK)) {
-                    OP_LOG(OP_LOG_WARNING,
-                           "Cannot set non blocking socket (%d): %s\n",
-                           connect_fd,
-                           strerror(errno));
-                }
-            } else {
-                OP_LOG(OP_LOG_WARNING,
-                       "Cannot get file descriptor flags (%d): %s\n",
-                       connect_fd,
-                       strerror(errno));
             }
 
             auto conn = connection_msg_t{.fd = connect_fd};
