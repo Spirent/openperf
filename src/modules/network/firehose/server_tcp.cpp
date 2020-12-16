@@ -9,6 +9,7 @@
 #include "core/op_thread.h"
 #include "core/op_socket.h"
 #include "utils/random.hpp"
+#include "framework/utils/memcpy.hpp"
 
 #include "protocol.hpp"
 
@@ -277,18 +278,16 @@ void server_tcp::run_worker_thread()
             }
 
             for (auto& conn : connections) {
-                uint8_t* recv_cursor = recv_buffer.data();
+                uint8_t* recv_cursor;
 
                 ssize_t recv_or_err = 0;
                 do {
-                    if (conn.state == STATE_WRITING) {
-                        tcp_write(conn, send_buffer);
-                        break;
-                    }
-
+                    recv_cursor = recv_buffer.data();
                     if (conn.request.size()) {
                         /* handle leftovers from last go round */
-                        recv_buffer = conn.request;
+                        utils::memcpy(recv_buffer.data(),
+                                      conn.request.data(),
+                                      conn.request.size());
                         recv_cursor += conn.request.size();
                     }
 
@@ -400,6 +399,10 @@ void server_tcp::run_worker_thread()
                             break;
                         }
                         }
+                    }
+                    if (conn.state == STATE_WRITING) {
+                        tcp_write(conn, send_buffer);
+                        break;
                     }
                 } while (recv_or_err == recv_buffer_size);
             }
