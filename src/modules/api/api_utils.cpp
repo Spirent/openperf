@@ -10,7 +10,6 @@
 
 namespace openperf::api::utils {
 
-static constexpr std::string_view api_server_host = "localhost";
 static constexpr std::string_view api_check_resource = "/version";
 static constexpr unsigned int poll_interval = 10; // in ms
 static constexpr unsigned int max_poll_count = 6;
@@ -21,8 +20,10 @@ static tl::expected<void, std::string> check_api_port()
     struct addrinfo hints = {.ai_family = AF_UNSPEC,
                              .ai_socktype = SOCK_STREAM};
     auto ai = Pistache::AddrInfo();
+    auto host_addr = openperf::api::api_get_service_transport_address();
+
     int res =
-        ai.invoke(api_server_host.data(),
+        ai.invoke(host_addr.c_str(),
                   std::to_string(openperf::api::api_get_service_port()).c_str(),
                   &hints);
     if (res != 0) {

@@ -8,8 +8,6 @@ namespace openperf::api::client {
 
 using namespace Pistache;
 
-static const std::string server = "localhost";
-
 static auto internal_api_request(Http::RequestBuilder& request_builder,
                                  const std::string& body,
                                  duration_t timeout)
@@ -36,8 +34,15 @@ static auto internal_api_request(Http::RequestBuilder& request_builder,
 
 static auto make_full_uri(std::string_view resource)
 {
-    return server + ":" + std::to_string(api_get_service_port())
-           + std::string(resource);
+    std::ostringstream os;
+    auto transport_addr = api_get_service_transport_address();
+    if (transport_addr.find(':') != std::string::npos) {
+        os << "[" << transport_addr << "]"; // IPv6 needs to be bracketed
+    } else {
+        os << transport_addr;
+    }
+    os << ":" << api_get_service_port() << resource;
+    return os.str();
 }
 
 std::pair<Http::Code, std::string> internal_api_get(std::string_view resource,
