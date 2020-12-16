@@ -1,6 +1,7 @@
 #ifndef _OP_SOCKET_API_CLIENT_HPP_
 #define _OP_SOCKET_API_CLIENT_HPP_
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <sys/socket.h>
@@ -8,7 +9,6 @@
 #include <unordered_map>
 
 #include "socket/api.hpp"
-#include "socket/client/io_channel_wrapper.hpp"
 #include "socket/shared_segment.hpp"
 #include "socket/unix_socket.hpp"
 #include "core/op_uuid.hpp"
@@ -33,17 +33,8 @@ protected:
 
 class client : public thread_singleton<client>
 {
-    using io_channel_wrapper = openperf::socket::client::io_channel_wrapper;
-
     core::uuid m_uuid;
     unix_socket m_sock;
-
-    struct ided_channel
-    {
-        socket_id id;
-        io_channel_wrapper channel;
-    };
-    std::unordered_map<int, ided_channel> m_channels;
 
     std::unique_ptr<memory::shared_segment> m_shm;
     std::atomic_bool* m_init_flag;
