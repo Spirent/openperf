@@ -11,8 +11,17 @@
 #include "socket/api.hpp"
 #include "socket/process_control.hpp"
 #include "socket/client/api_client.hpp"
+#include "socket/client/io_channel_wrapper.hpp"
 
 namespace openperf::socket::api {
+
+using io_channel_wrapper = openperf::socket::client::io_channel_wrapper;
+struct ided_channel
+{
+    socket_id id;
+    io_channel_wrapper channel;
+};
+static std::unordered_map<int, ided_channel> socket_channels;
 
 client::client()
     : m_uuid(core::uuid::random())
@@ -115,12 +124,12 @@ void client::init(std::atomic_bool* init_flag)
     *m_init_flag = true;
 }
 
-bool client::is_socket(int s) { return (m_channels.count(s)); }
+bool client::is_socket(int s) { return (socket_channels.count(s)); }
 
 int client::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         errno = EINVAL;
         return (-1);
     }
@@ -147,7 +156,7 @@ int client::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
     auto& accept = std::get<api::reply_accept>(*reply);
 
     /* Record socket data for future use */
-    auto newresult = m_channels.emplace(
+    auto newresult = socket_channels.emplace(
         accept.fd_pair.client_fd,
         ided_channel{
             accept.id,
@@ -168,8 +177,8 @@ int client::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
 
 int client::bind(int s, const struct sockaddr* name, socklen_t namelen)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         errno = EINVAL;
         return (-1);
     }
@@ -190,8 +199,8 @@ int client::bind(int s, const struct sockaddr* name, socklen_t namelen)
 
 int client::shutdown(int s, int how)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         errno = EINVAL;
         return (-1);
     }
@@ -211,8 +220,8 @@ int client::shutdown(int s, int how)
 
 int client::getpeername(int s, struct sockaddr* name, socklen_t* namelen)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         errno = EINVAL;
         return (-1);
     }
@@ -233,8 +242,8 @@ int client::getpeername(int s, struct sockaddr* name, socklen_t* namelen)
 
 int client::getsockname(int s, struct sockaddr* name, socklen_t* namelen)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         errno = EINVAL;
         return (-1);
     }
@@ -256,8 +265,8 @@ int client::getsockname(int s, struct sockaddr* name, socklen_t* namelen)
 int client::getsockopt(
     int s, int level, int optname, void* optval, socklen_t* optlen)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         errno = EINVAL;
         return (-1);
     }
@@ -283,8 +292,8 @@ int client::getsockopt(
 int client::setsockopt(
     int s, int level, int optname, const void* optval, socklen_t optlen)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         errno = EINVAL;
         return (-1);
     }
@@ -308,8 +317,8 @@ int client::setsockopt(
 
 int client::close(int s)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         /* XXX: should hand off to libc close */
         errno = EINVAL;
         return (-1);
@@ -324,14 +333,14 @@ int client::close(int s)
         return (-1);
     }
 
-    m_channels.erase(result);
+    socket_channels.erase(result);
     return (0);
 }
 
 int client::connect(int s, const struct sockaddr* name, socklen_t namelen)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         errno = EINVAL;
         return (-1);
     }
@@ -380,8 +389,8 @@ int client::connect(int s, const struct sockaddr* name, socklen_t namelen)
 
 int client::listen(int s, int backlog)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         errno = EINVAL;
         return (-1);
     }
@@ -414,7 +423,7 @@ int client::socket(int domain, int type, int protocol)
     auto& socket = std::get<api::reply_socket>(*reply);
 
     /* Record socket data for future use */
-    auto result = m_channels.emplace(
+    auto result = socket_channels.emplace(
         socket.fd_pair.client_fd,
         ided_channel{
             socket.id,
@@ -433,8 +442,8 @@ int client::socket(int domain, int type, int protocol)
 
 int client::fcntl(int s, int cmd, ...)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         errno = EINVAL;
         return (-1);
     }
@@ -473,8 +482,8 @@ int client::fcntl(int s, int cmd, ...)
 
 int client::ioctl(int s, unsigned long req, ...)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         errno = EINVAL;
         return (-1);
     }
@@ -543,8 +552,8 @@ ssize_t client::recvmsg(int s, struct msghdr* message, int flags)
 {
     (void)flags; /* TODO */
 
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         errno = EINVAL;
         return (-1);
     }
@@ -576,8 +585,8 @@ ssize_t client::sendmsg(int s, const struct msghdr* message, int flags)
 {
     (void)flags; /* TODO */
 
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = socket_channels.find(s);
+    if (result == socket_channels.end()) {
         errno = EINVAL;
         return (-1);
     }
