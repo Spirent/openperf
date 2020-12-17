@@ -1,10 +1,11 @@
-# InterfaceProtocolConfigIpv6Dhcp6
+# Ipv6DynamicAddressStatus
 
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**stateless** | **bool** | Stateless DHCPv6 | [default to True]
-**status** | [**Ipv6DynamicAddressStatus**](Ipv6DynamicAddressStatus.md) |  | [optional] 
+**address** | **str** | IP address | [optional] 
+**scope** | **int** | Address scope | [optional] 
+**state** | **str** | Current address sate | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

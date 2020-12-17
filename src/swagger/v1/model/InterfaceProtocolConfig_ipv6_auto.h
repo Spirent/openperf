@@ -10,13 +10,13 @@
 * Do not edit the class manually.
 */
 /*
- * InterfaceProtocolConfig_ipv6_dhcp6.h
+ * InterfaceProtocolConfig_ipv6_auto.h
  *
- * DHCPv6 configuration parameters
+ * Automatic configuration parameters
  */
 
-#ifndef InterfaceProtocolConfig_ipv6_dhcp6_H_
-#define InterfaceProtocolConfig_ipv6_dhcp6_H_
+#ifndef InterfaceProtocolConfig_ipv6_auto_H_
+#define InterfaceProtocolConfig_ipv6_auto_H_
 
 
 #include "ModelBase.h"
@@ -28,14 +28,14 @@ namespace v1 {
 namespace model {
 
 /// <summary>
-/// DHCPv6 configuration parameters
+/// Automatic configuration parameters
 /// </summary>
-class  InterfaceProtocolConfig_ipv6_dhcp6
+class  InterfaceProtocolConfig_ipv6_auto
     : public ModelBase
 {
 public:
-    InterfaceProtocolConfig_ipv6_dhcp6();
-    virtual ~InterfaceProtocolConfig_ipv6_dhcp6();
+    InterfaceProtocolConfig_ipv6_auto();
+    virtual ~InterfaceProtocolConfig_ipv6_auto();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -46,14 +46,9 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// InterfaceProtocolConfig_ipv6_dhcp6 members
+    /// InterfaceProtocolConfig_ipv6_auto members
 
     /// <summary>
-    /// Stateless DHCPv6
-    /// </summary>
-    bool isStateless() const;
-    void setStateless(bool value);
-        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<Ipv6DynamicAddressStatus> getStatus() const;
@@ -62,8 +57,6 @@ public:
     void unsetStatus();
 
 protected:
-    bool m_Stateless;
-
     std::shared_ptr<Ipv6DynamicAddressStatus> m_Status;
     bool m_StatusIsSet;
 };
@@ -72,4 +65,4 @@ protected:
 }
 }
 
-#endif /* InterfaceProtocolConfig_ipv6_dhcp6_H_ */
+#endif /* InterfaceProtocolConfig_ipv6_auto_H_ */

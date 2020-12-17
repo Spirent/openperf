@@ -11,33 +11,31 @@
 */
 
 
-#include "InterfaceProtocolConfig_ipv6_dhcp6.h"
+#include "InterfaceProtocolConfig_ipv6_auto.h"
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
-InterfaceProtocolConfig_ipv6_dhcp6::InterfaceProtocolConfig_ipv6_dhcp6()
+InterfaceProtocolConfig_ipv6_auto::InterfaceProtocolConfig_ipv6_auto()
 {
-    m_Stateless = false;
     m_StatusIsSet = false;
     
 }
 
-InterfaceProtocolConfig_ipv6_dhcp6::~InterfaceProtocolConfig_ipv6_dhcp6()
+InterfaceProtocolConfig_ipv6_auto::~InterfaceProtocolConfig_ipv6_auto()
 {
 }
 
-void InterfaceProtocolConfig_ipv6_dhcp6::validate()
+void InterfaceProtocolConfig_ipv6_auto::validate()
 {
     // TODO: implement validation
 }
 
-nlohmann::json InterfaceProtocolConfig_ipv6_dhcp6::toJson() const
+nlohmann::json InterfaceProtocolConfig_ipv6_auto::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["stateless"] = m_Stateless;
     if(m_StatusIsSet)
     {
         val["status"] = ModelBase::toJson(m_Status);
@@ -47,9 +45,8 @@ nlohmann::json InterfaceProtocolConfig_ipv6_dhcp6::toJson() const
     return val;
 }
 
-void InterfaceProtocolConfig_ipv6_dhcp6::fromJson(nlohmann::json& val)
+void InterfaceProtocolConfig_ipv6_auto::fromJson(nlohmann::json& val)
 {
-    setStateless(val.at("stateless"));
     if(val.find("status") != val.end())
     {
         if(!val["status"].is_null())
@@ -64,29 +61,20 @@ void InterfaceProtocolConfig_ipv6_dhcp6::fromJson(nlohmann::json& val)
 }
 
 
-bool InterfaceProtocolConfig_ipv6_dhcp6::isStateless() const
-{
-    return m_Stateless;
-}
-void InterfaceProtocolConfig_ipv6_dhcp6::setStateless(bool value)
-{
-    m_Stateless = value;
-    
-}
-std::shared_ptr<Ipv6DynamicAddressStatus> InterfaceProtocolConfig_ipv6_dhcp6::getStatus() const
+std::shared_ptr<Ipv6DynamicAddressStatus> InterfaceProtocolConfig_ipv6_auto::getStatus() const
 {
     return m_Status;
 }
-void InterfaceProtocolConfig_ipv6_dhcp6::setStatus(std::shared_ptr<Ipv6DynamicAddressStatus> value)
+void InterfaceProtocolConfig_ipv6_auto::setStatus(std::shared_ptr<Ipv6DynamicAddressStatus> value)
 {
     m_Status = value;
     m_StatusIsSet = true;
 }
-bool InterfaceProtocolConfig_ipv6_dhcp6::statusIsSet() const
+bool InterfaceProtocolConfig_ipv6_auto::statusIsSet() const
 {
     return m_StatusIsSet;
 }
-void InterfaceProtocolConfig_ipv6_dhcp6::unsetStatus()
+void InterfaceProtocolConfig_ipv6_auto::unsetStatus()
 {
     m_StatusIsSet = false;
 }

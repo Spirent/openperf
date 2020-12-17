@@ -34,23 +34,26 @@ class InterfaceProtocolConfigIpv6(object):
         'method': 'str',
         'link_local_address': 'str',
         'static': 'InterfaceProtocolConfigIpv6Static',
-        'dhcp6': 'InterfaceProtocolConfigIpv6Dhcp6'
+        'dhcp6': 'InterfaceProtocolConfigIpv6Dhcp6',
+        'auto': 'InterfaceProtocolConfigIpv6Auto'
     }
 
     attribute_map = {
         'method': 'method',
         'link_local_address': 'link_local_address',
         'static': 'static',
-        'dhcp6': 'dhcp6'
+        'dhcp6': 'dhcp6',
+        'auto': 'auto'
     }
 
-    def __init__(self, method=None, link_local_address=None, static=None, dhcp6=None):  # noqa: E501
+    def __init__(self, method=None, link_local_address=None, static=None, dhcp6=None, auto=None):  # noqa: E501
         """InterfaceProtocolConfigIpv6 - a model defined in Swagger"""  # noqa: E501
 
         self._method = None
         self._link_local_address = None
         self._static = None
         self._dhcp6 = None
+        self._auto = None
         self.discriminator = None
 
         self.method = method
@@ -60,6 +63,8 @@ class InterfaceProtocolConfigIpv6(object):
             self.static = static
         if dhcp6 is not None:
             self.dhcp6 = dhcp6
+        if auto is not None:
+            self.auto = auto
 
     @property
     def method(self):
@@ -144,6 +149,26 @@ class InterfaceProtocolConfigIpv6(object):
         :type: InterfaceProtocolConfigIpv6Dhcp6
         """
         self._dhcp6 = dhcp6
+
+    @property
+    def auto(self):
+        """Gets the auto of this InterfaceProtocolConfigIpv6.  # noqa: E501
+
+
+        :return: The auto of this InterfaceProtocolConfigIpv6.  # noqa: E501
+        :rtype: InterfaceProtocolConfigIpv6Auto
+        """
+        return self._auto
+
+    @auto.setter
+    def auto(self, auto):
+        """Sets the auto of this InterfaceProtocolConfigIpv6.
+
+
+        :param auto: The auto of this InterfaceProtocolConfigIpv6.  # noqa: E501
+        :type: InterfaceProtocolConfigIpv6Auto
+        """
+        self._auto = auto
 
     def to_dict(self):
         """Returns the model properties as a dict"""

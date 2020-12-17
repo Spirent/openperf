@@ -24,6 +24,7 @@ InterfaceProtocolConfig_ipv6::InterfaceProtocolConfig_ipv6()
     m_Link_local_addressIsSet = false;
     m_StaticIsSet = false;
     m_Dhcp6IsSet = false;
+    m_AutoIsSet = false;
     
 }
 
@@ -52,6 +53,10 @@ nlohmann::json InterfaceProtocolConfig_ipv6::toJson() const
     if(m_Dhcp6IsSet)
     {
         val["dhcp6"] = ModelBase::toJson(m_Dhcp6);
+    }
+    if(m_AutoIsSet)
+    {
+        val["auto"] = ModelBase::toJson(m_Auto);
     }
     
 
@@ -83,6 +88,16 @@ void InterfaceProtocolConfig_ipv6::fromJson(nlohmann::json& val)
             std::shared_ptr<InterfaceProtocolConfig_ipv6_dhcp6> newItem(new InterfaceProtocolConfig_ipv6_dhcp6());
             newItem->fromJson(val["dhcp6"]);
             setDhcp6( newItem );
+        }
+        
+    }
+    if(val.find("auto") != val.end())
+    {
+        if(!val["auto"].is_null())
+        {
+            std::shared_ptr<InterfaceProtocolConfig_ipv6_auto> newItem(new InterfaceProtocolConfig_ipv6_auto());
+            newItem->fromJson(val["auto"]);
+            setAuto( newItem );
         }
         
     }
@@ -149,6 +164,23 @@ bool InterfaceProtocolConfig_ipv6::dhcp6IsSet() const
 void InterfaceProtocolConfig_ipv6::unsetDhcp6()
 {
     m_Dhcp6IsSet = false;
+}
+std::shared_ptr<InterfaceProtocolConfig_ipv6_auto> InterfaceProtocolConfig_ipv6::getAuto() const
+{
+    return m_Auto;
+}
+void InterfaceProtocolConfig_ipv6::setAuto(std::shared_ptr<InterfaceProtocolConfig_ipv6_auto> value)
+{
+    m_Auto = value;
+    m_AutoIsSet = true;
+}
+bool InterfaceProtocolConfig_ipv6::autoIsSet() const
+{
+    return m_AutoIsSet;
+}
+void InterfaceProtocolConfig_ipv6::unsetAuto()
+{
+    m_AutoIsSet = false;
 }
 
 }
