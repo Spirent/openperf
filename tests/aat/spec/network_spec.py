@@ -675,7 +675,7 @@ with description('Network Generator Module', 'network') as self:
                     with before.each:
                         clear_network_instances(self._api)
 
-                        server_model = network_server_model(self._api.api_client, protocol=self._protocol, address_family=self._address_family)
+                        server_model = network_server_model(self._api.api_client, protocol=self._protocol)
                         self._server = self._api.create_network_server(server_model)
                         expect(self._server).to(be_valid_network_server)
 
@@ -756,7 +756,6 @@ with description('Network Generator Module', 'network') as self:
                     with description('IPv4'):
                         with before.all:
                             self._protocol = 'tcp'
-                            self._address_family = 'inet'
                             self._host = self._ip4_host
 
                         with included_context('check_statistics'):
@@ -765,7 +764,6 @@ with description('Network Generator Module', 'network') as self:
                     with description('IPv6'):
                         with before.all:
                             self._protocol = 'tcp'
-                            self._address_family = 'inet6'
                             self._host = self._ip6_host
 
                         with included_context('check_statistics'):
@@ -775,7 +773,6 @@ with description('Network Generator Module', 'network') as self:
                     with description('IPv4'):
                         with before.all:
                             self._protocol = 'udp'
-                            self._address_family = 'inet'
                             self._host = self._ip4_host
 
                         with included_context('check_statistics'):
@@ -784,7 +781,6 @@ with description('Network Generator Module', 'network') as self:
                     with description('IPv6'):
                         with before.all:
                             self._protocol = 'udp'
-                            self._address_family = 'inet6'
                             self._host = self._ip6_host
 
                         with included_context('check_statistics'):

@@ -35,11 +35,10 @@ def network_generator_model(api_client, id = '', protocol = 'tcp', host = '127.0
     gen.id = id
     return gen
 
-def network_server_model(api_client, id = '', protocol = 'tcp', interface = 'lo', address_family = 'inet'):
+def network_server_model(api_client, id = '', protocol = 'tcp', interface = 'lo'):
     gen = client.models.NetworkServer()
     gen.port = 3357
     gen.protocol = protocol
     gen.interface = interface
-    gen.address_family = address_family
     gen.id = id
     return gen

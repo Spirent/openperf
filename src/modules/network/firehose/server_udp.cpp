@@ -94,31 +94,21 @@ tl::expected<int, std::string> server_udp::new_server(
 
 server_udp::server_udp(in_port_t port,
                        const std::optional<std::string>& interface,
-                       std::optional<int> domain,
                        const drivers::driver_ptr& driver)
     : m_stopped(false)
 {
     m_driver = driver;
+
+    /* IPv6 any supports IPv4 and IPv6 */
     tl::expected<int, std::string> res;
-    if (domain) {
-        if ((res = new_server(domain.value(), port, interface)); res) {
-            OP_LOG(OP_LOG_DEBUG,
-                   "Network UDP load server %s.\n",
-                   (domain.value() == AF_INET6) ? "IPv6" : "IPv4");
-        } else {
-            throw std::runtime_error("Cannot create UDP server: "
-                                     + res.error());
-        }
+    if ((res = new_server(AF_INET6, port, interface)); res) {
+        OP_LOG(OP_LOG_DEBUG, "Network UDP load server IPv4/IPv6.\n");
+    } else if ((res = new_server(AF_INET, port, interface)); res) {
+        OP_LOG(OP_LOG_DEBUG, "Network UDP load server IPv4.\n");
     } else {
-        if ((res = new_server(AF_INET6, port, interface)); res) {
-            OP_LOG(OP_LOG_DEBUG, "Network UDP load server IPv4/IPv6.\n");
-        } else if ((res = new_server(AF_INET, port, interface)); res) {
-            OP_LOG(OP_LOG_DEBUG, "Network UDP load server IPv4.\n");
-        } else {
-            throw std::runtime_error("Cannot create UDP server: "
-                                     + res.error());
-        }
+        throw std::runtime_error("Cannot create UDP server: " + res.error());
     }
+
     m_fd = res.value();
 
     run_worker_thread();

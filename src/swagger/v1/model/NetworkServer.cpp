@@ -24,8 +24,6 @@ NetworkServer::NetworkServer()
     m_Protocol = "";
     m_Interface = "";
     m_InterfaceIsSet = false;
-    m_Address_family = "";
-    m_Address_familyIsSet = false;
     
 }
 
@@ -49,10 +47,6 @@ nlohmann::json NetworkServer::toJson() const
     {
         val["interface"] = ModelBase::toJson(m_Interface);
     }
-    if(m_Address_familyIsSet)
-    {
-        val["address_family"] = ModelBase::toJson(m_Address_family);
-    }
     val["stats"] = ModelBase::toJson(m_Stats);
     
 
@@ -67,11 +61,6 @@ void NetworkServer::fromJson(nlohmann::json& val)
     if(val.find("interface") != val.end())
     {
         setInterface(val.at("interface"));
-        
-    }
-    if(val.find("address_family") != val.end())
-    {
-        setAddressFamily(val.at("address_family"));
         
     }
     
@@ -121,23 +110,6 @@ bool NetworkServer::interfaceIsSet() const
 void NetworkServer::unsetInterface()
 {
     m_InterfaceIsSet = false;
-}
-std::string NetworkServer::getAddressFamily() const
-{
-    return m_Address_family;
-}
-void NetworkServer::setAddressFamily(std::string value)
-{
-    m_Address_family = value;
-    m_Address_familyIsSet = true;
-}
-bool NetworkServer::addressFamilyIsSet() const
-{
-    return m_Address_familyIsSet;
-}
-void NetworkServer::unsetAddress_family()
-{
-    m_Address_familyIsSet = false;
 }
 std::shared_ptr<NetworkServerStats> NetworkServer::getStats() const
 {

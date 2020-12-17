@@ -38,7 +38,6 @@ private:
 public:
     server_tcp(in_port_t port,
                const std::optional<std::string>& interface,
-               std::optional<int> domain,
                const drivers::driver_ptr& driver);
     server_tcp(const server_tcp&) = delete;
     ~server_tcp() override;

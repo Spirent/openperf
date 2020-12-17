@@ -75,9 +75,6 @@ void from_json(const nlohmann::json& j, NetworkServer& server)
     if (j.find("interface") != j.end()) {
         server.setInterface(j.at("interface"));
     }
-    if (j.find("address_family") != j.end()) {
-        server.setAddressFamily(j.at("address_family"));
-    }
     server.setPort(j.at("port"));
     server.setProtocol(j.at("protocol"));
 }

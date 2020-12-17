@@ -40,20 +40,14 @@ server::server(const model::server& server_model)
         throw std::runtime_error(
             "Bind to the interface is required for this driver");
 
-    if (!m_address_family && nd->address_family_required())
-        throw std::runtime_error("Address family is required for this driver");
-
-    std::optional<int> domain;
-    if (m_address_family) { domain = m_address_family.value(); }
-
     switch (protocol()) {
     case protocol_t::TCP:
-        server_ptr = std::make_unique<firehose::server_tcp>(
-            port(), m_interface, domain, nd);
+        server_ptr =
+            std::make_unique<firehose::server_tcp>(port(), m_interface, nd);
         break;
     case protocol_t::UDP:
-        server_ptr = std::make_unique<firehose::server_udp>(
-            port(), m_interface, domain, nd);
+        server_ptr =
+            std::make_unique<firehose::server_udp>(port(), m_interface, nd);
         break;
     }
 }

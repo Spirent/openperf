@@ -25,7 +25,6 @@ private:
 public:
     server_udp(in_port_t port,
                const std::optional<std::string>& interface,
-               std::optional<int> domain,
                const drivers::driver_ptr& driver);
     server_udp(const server_udp&) = delete;
     ~server_udp() override;

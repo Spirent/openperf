@@ -12,10 +12,6 @@ enum protocol_t : uint8_t {
     TCP = IPPROTO_TCP,
     UDP = IPPROTO_UDP,
 };
-enum address_family_t : uint8_t {
-    INET = AF_INET,
-    INET6 = AF_INET6,
-};
 
 class server
 {
@@ -35,7 +31,6 @@ public:
         , m_port(s.m_port)
         , m_protocol(s.m_protocol)
         , m_interface(s.m_interface)
-        , m_address_family(s.m_address_family)
         , m_stat(s.stat()){};
     virtual ~server() = default;
 
@@ -57,21 +52,11 @@ public:
         m_interface = interface;
     }
 
-    virtual std::optional<address_family_t> address_family() const
-    {
-        return m_address_family;
-    }
-    virtual void address_family(address_family_t address_family)
-    {
-        m_address_family = address_family;
-    }
-
 protected:
     std::string m_id;
     in_port_t m_port;
     protocol_t m_protocol;
     std::optional<std::string> m_interface;
-    std::optional<address_family_t> m_address_family;
     stat_t m_stat;
 };
 

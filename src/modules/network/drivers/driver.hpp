@@ -26,7 +26,6 @@ public:
 
     virtual void init(){};
     virtual bool bind_to_device_required() { return false; };
-    virtual bool address_family_required() { return false; };
 
     /* General socket functions */
     virtual int
