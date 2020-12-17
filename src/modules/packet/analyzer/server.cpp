@@ -387,8 +387,7 @@ reply_msg server::handle_request(const request_delete_analyzer& request)
 
         /* Delete this analyzer */
         remove_sink(m_client, *result);
-        m_sinks.erase(std::remove(result, std::next(result), *result),
-                      std::end(m_sinks));
+        m_sinks.erase(result);
     }
 
     return (reply_ok{});
