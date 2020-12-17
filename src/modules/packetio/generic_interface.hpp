@@ -44,6 +44,15 @@ enum class dhcp_client_state {
     rebinding,
 };
 
+enum class ipv6_address_state {
+    none = 0,
+    invalid,
+    tentative,
+    preferred,
+    deprecated,
+    duplicated
+};
+
 struct eth_protocol_config
 {
     libpacket::type::mac_address address;
@@ -121,6 +130,8 @@ public:
 
     dhcp_client_state dhcp_state() const { return m_self->dhcp_state(); }
 
+    ipv6_address_state ipv6_state() const { return m_self->ipv6_state(); }
+
     std::string mac_address() const { return m_self->mac_address(); }
 
     std::optional<std::string> ipv4_address() const
@@ -143,7 +154,9 @@ public:
         return m_self->ipv6_address();
     }
 
-    std::optional<std::string> ipv6_linklocal_address() const
+    std::optional<uint8_t> ipv6_scope() const { return m_self->ipv6_scope(); }
+
+    const std::optional<std::string> ipv6_linklocal_address() const
     {
         return m_self->ipv6_linklocal_address();
     }
@@ -173,10 +186,12 @@ private:
         virtual std::string port_id() const = 0;
         virtual std::string mac_address() const = 0;
         virtual dhcp_client_state dhcp_state() const = 0;
+        virtual ipv6_address_state ipv6_state() const = 0;
         virtual std::optional<std::string> ipv4_address() const = 0;
         virtual std::optional<std::string> ipv4_gateway() const = 0;
         virtual std::optional<uint8_t> ipv4_prefix_length() const = 0;
         virtual std::optional<std::string> ipv6_address() const = 0;
+        virtual std::optional<uint8_t> ipv6_scope() const = 0;
         virtual std::optional<std::string> ipv6_linklocal_address() const = 0;
         virtual config_data config() const = 0;
         virtual std::any data() const = 0;
@@ -205,6 +220,11 @@ private:
             return m_interface.dhcp_state();
         }
 
+        ipv6_address_state ipv6_state() const override
+        {
+            return m_interface.ipv6_state();
+        }
+
         std::optional<std::string> ipv4_address() const override
         {
             return m_interface.ipv4_address();
@@ -223,6 +243,11 @@ private:
         std::optional<std::string> ipv6_address() const override
         {
             return m_interface.ipv6_address();
+        }
+
+        std::optional<uint8_t> ipv6_scope() const override
+        {
+            return m_interface.ipv6_scope();
         }
 
         std::optional<std::string> ipv6_linklocal_address() const override

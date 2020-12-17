@@ -489,6 +489,26 @@ static std::string to_string(enum dhcp_client_state state)
     return ("unknown");
 }
 
+static std::string to_string(enum ipv6_address_state state)
+{
+    static const auto state_pairs =
+        associative_array<ipv6_address_state, std::string>(
+            std::pair(ipv6_address_state::none, "none"),
+            std::pair(ipv6_address_state::invalid, "invalid"),
+            std::pair(ipv6_address_state::tentative, "tentative"),
+            std::pair(ipv6_address_state::preferred, "preferred"),
+            std::pair(ipv6_address_state::deprecated, "deprecated"),
+            std::pair(ipv6_address_state::duplicated, "duplicated"));
+
+    auto cursor = std::begin(state_pairs), end = std::end(state_pairs);
+    while (cursor != end) {
+        if (cursor->first == state) { return (cursor->second); }
+        cursor++;
+    }
+
+    return ("unknown");
+}
+
 static std::shared_ptr<InterfaceProtocolConfig_ipv4_dhcp>
 make_swagger_protocol_config(const ipv4_dhcp_protocol_config& dhcp_ipv4,
                              const generic_interface& intf)
@@ -545,12 +565,36 @@ make_swagger_protocol_config(const ipv4_protocol_config& ipv4,
     return (config);
 }
 
+static std::shared_ptr<Ipv6DynamicAddressStatus>
+make_ipv6_dynamic_address_status(const generic_interface& intf)
+{
+    auto status = std::make_shared<Ipv6DynamicAddressStatus>();
+
+    status->setState(to_string(intf.ipv6_state()));
+    if (auto addr = intf.ipv6_address()) { status->setAddress(addr.value()); }
+    if (auto scope = intf.ipv6_scope()) { status->setScope(scope.value()); }
+
+    return (status);
+}
+
+static std::shared_ptr<InterfaceProtocolConfig_ipv6_auto>
+make_swagger_protocol_config(const ipv6_auto_protocol_config&,
+                             const generic_interface& intf)
+{
+    auto config = std::make_shared<InterfaceProtocolConfig_ipv6_auto>();
+    config->setStatus(make_ipv6_dynamic_address_status(intf));
+
+    return (config);
+}
+
 static std::shared_ptr<InterfaceProtocolConfig_ipv6_dhcp6>
-make_swagger_protocol_config(const ipv6_dhcp6_protocol_config& dhcp6_ipv6)
+make_swagger_protocol_config(const ipv6_dhcp6_protocol_config& dhcp6_ipv6,
+                             const generic_interface& intf)
 {
     auto config = std::make_shared<InterfaceProtocolConfig_ipv6_dhcp6>();
 
     config->setStateless(dhcp6_ipv6.stateless);
+    config->setStatus(make_ipv6_dynamic_address_status(intf));
 
     return (config);
 }
@@ -570,33 +614,26 @@ make_swagger_protocol_config(const ipv6_static_protocol_config& static_ipv6)
 }
 
 static std::shared_ptr<InterfaceProtocolConfig_ipv6>
-make_swagger_protocol_config(const ipv6_protocol_config& ipv6)
+make_swagger_protocol_config(const ipv6_protocol_config& ipv6,
+                             const generic_interface& intf)
 {
     auto config = std::make_shared<InterfaceProtocolConfig_ipv6>();
+    if (auto linklocal = intf.ipv6_linklocal_address()) {
+        config->setLinkLocalAddress(linklocal.value());
+    }
 
     auto visitor = utils::overloaded_visitor(
         [&](const ipv6_auto_protocol_config& auto_ipv6) {
+            config->setAuto(make_swagger_protocol_config(auto_ipv6, intf));
             config->setMethod("auto");
-            if (auto_ipv6.link_local_address) {
-                config->setLinkLocalAddress(
-                    to_string(*auto_ipv6.link_local_address));
-            }
         },
         [&](const ipv6_dhcp6_protocol_config& dhcp6_ipv6) {
-            config->setDhcp6(make_swagger_protocol_config(dhcp6_ipv6));
+            config->setDhcp6(make_swagger_protocol_config(dhcp6_ipv6, intf));
             config->setMethod("dhcp6");
-            if (dhcp6_ipv6.link_local_address) {
-                config->setLinkLocalAddress(
-                    to_string(*dhcp6_ipv6.link_local_address));
-            }
         },
         [&](const ipv6_static_protocol_config& static_ipv6) {
             config->setStatic(make_swagger_protocol_config(static_ipv6));
             config->setMethod("static");
-            if (static_ipv6.link_local_address) {
-                config->setLinkLocalAddress(
-                    to_string(*static_ipv6.link_local_address));
-            }
         });
 
     std::visit(visitor, ipv6);
@@ -618,7 +655,7 @@ make_swagger_protocol_config(const protocol_config& protocol,
             config->setIpv4(make_swagger_protocol_config(ipv4, intf));
         },
         [&](const ipv6_protocol_config& ipv6) {
-            config->setIpv6(make_swagger_protocol_config(ipv6));
+            config->setIpv6(make_swagger_protocol_config(ipv6, intf));
         },
         [](const std::monostate&) {
             /* Nothing to do */
