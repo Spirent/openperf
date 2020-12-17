@@ -439,8 +439,16 @@ definitions:
                 type: boolean
                 description: Stateless DHCPv6
                 default: True
+              status:
+                $ref: "#/definitions/Ipv6DynamicAddressStatus"
             required:
               - stateless
+          auto:
+            type: object
+            description: Automatic configuration parameters
+            properties:
+              status:
+                $ref: "#/definitions/Ipv6DynamicAddressStatus"
         required:
           - method
 
@@ -479,6 +487,28 @@ definitions:
       - tx_bytes
       - rx_errors
       - tx_errors
+
+  Ipv6DynamicAddressStatus:
+    type: object
+    description: IPv6 address status for dynamically assigned addresses
+    properties:
+      address:
+        type: string
+        description: IP address
+      scope:
+        type: integer
+        description: Address scope
+        format: int32
+      state:
+        type: string
+        description: Current address sate
+        enum:
+          - invalid
+          - tentative
+          - preferred
+          - deprecated
+          - duplicated
+    readOnly: true
 
   Port:
     type: object

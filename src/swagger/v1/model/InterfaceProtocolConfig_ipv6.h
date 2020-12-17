@@ -21,6 +21,7 @@
 
 #include "ModelBase.h"
 
+#include "InterfaceProtocolConfig_ipv6_auto.h"
 #include <string>
 #include "InterfaceProtocolConfig_ipv6_dhcp6.h"
 #include "InterfaceProtocolConfig_ipv6_static.h"
@@ -76,6 +77,13 @@ public:
     void setDhcp6(std::shared_ptr<InterfaceProtocolConfig_ipv6_dhcp6> value);
     bool dhcp6IsSet() const;
     void unsetDhcp6();
+    /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<InterfaceProtocolConfig_ipv6_auto> getAuto() const;
+    void setAuto(std::shared_ptr<InterfaceProtocolConfig_ipv6_auto> value);
+    bool autoIsSet() const;
+    void unsetAuto();
 
 protected:
     std::string m_Method;
@@ -86,6 +94,8 @@ protected:
     bool m_StaticIsSet;
     std::shared_ptr<InterfaceProtocolConfig_ipv6_dhcp6> m_Dhcp6;
     bool m_Dhcp6IsSet;
+    std::shared_ptr<InterfaceProtocolConfig_ipv6_auto> m_Auto;
+    bool m_AutoIsSet;
 };
 
 }
