@@ -387,8 +387,7 @@ reply_msg server::handle_request(const request_delete_generator& request)
 
         /* Delete this generator */
         remove_source(m_client, *result);
-        m_sources.erase(std::remove(result, std::next(result), *result),
-                        std::end(m_sources));
+        m_sources.erase(result);
     }
 
     return (reply_ok{});
