@@ -57,6 +57,40 @@ packetio::interface::dhcp_client_state netif_wrapper::dhcp_state() const
     }
 }
 
+static std::optional<int> get_global_ipv6_address_index(const netif* ifp)
+{
+    for (auto i = 0; i < LWIP_IPV6_NUM_ADDRESSES; ++i) {
+        if (ip6_addr_isinvalid(netif_ip6_addr_state(ifp, i))) continue;
+        auto* addr = netif_ip6_addr(ifp, i);
+        if (ip6_addr_islinklocal(addr)) continue;
+        return (i);
+    }
+
+    return {};
+}
+
+packetio::interface::ipv6_address_state netif_wrapper::ipv6_state() const
+{
+    using ipv6_address_state = packetio::interface::ipv6_address_state;
+
+    auto idx = get_global_ipv6_address_index(m_netif);
+    auto state = (idx
+                  ? netif_ip6_addr_state(m_netif, idx.value())
+                  : IP6_ADDR_INVALID);
+
+    if (ip6_addr_istentative(state)) {
+        return (ipv6_address_state::tentative);
+    } else if (ip6_addr_ispreferred(state)) {
+        return (ipv6_address_state::preferred);
+    } else if (ip6_addr_isdeprecated(state)) {
+        return (ipv6_address_state::deprecated);
+    } else if (ip6_addr_isduplicated(state)) {
+        return (ipv6_address_state::duplicated);
+    } else {
+        return (ipv6_address_state::invalid);
+    }
+}
+
 static libpacket::type::ipv4_address to_ipv4_address(const ip4_addr_t& addr)
 {
     return (libpacket::type::ipv4_address(ntohl(addr.addr)));
@@ -95,13 +129,26 @@ static libpacket::type::ipv6_address to_ipv6_address(const ip6_addr_t& addr)
         reinterpret_cast<const uint8_t*>(addr.addr)));
 }
 
+static const ip6_addr_t* get_global_ipv6_address(const netif* ifp)
+{
+    if (auto idx = get_global_ipv6_address_index(ifp)) {
+        return (netif_ip6_addr(ifp, idx.value()));
+    }
+    return (nullptr);
+}
+
 std::optional<std::string> netif_wrapper::ipv6_address() const
 {
-    for (int i = 0; i < LWIP_IPV6_NUM_ADDRESSES; ++i) {
-        if (ip6_addr_isinvalid(netif_ip6_addr_state(m_netif, i))) continue;
-        auto addr = netif_ip6_addr(m_netif, i);
-        if (ip6_addr_islinklocal(addr)) continue;
+    if (auto* addr = get_global_ipv6_address(m_netif)) {
         return (libpacket::type::to_string(to_ipv6_address(*addr)));
+    }
+    return {};
+}
+
+std::optional<uint8_t> netif_wrapper::ipv6_scope() const
+{
+    if (auto* addr = get_global_ipv6_address(m_netif)) {
+        return (addr->zone);
     }
     return {};
 }
