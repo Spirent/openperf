@@ -1,17 +1,19 @@
 #ifndef _OP_SOCKET_API_CLIENT_HPP_
 #define _OP_SOCKET_API_CLIENT_HPP_
 
-#include <atomic>
 #include <memory>
 #include <string>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unordered_map>
+#include <atomic>
 
 #include "socket/api.hpp"
 #include "socket/shared_segment.hpp"
 #include "socket/unix_socket.hpp"
 #include "core/op_uuid.hpp"
+
+#include "channels_hashtab.hpp"
 
 namespace openperf::socket::api {
 
@@ -33,8 +35,11 @@ protected:
 
 class client : public thread_singleton<client>
 {
+
     core::uuid m_uuid;
     unix_socket m_sock;
+
+    channels_hashtab& m_channels;
 
     std::unique_ptr<memory::shared_segment> m_shm;
     std::atomic_bool* m_init_flag;

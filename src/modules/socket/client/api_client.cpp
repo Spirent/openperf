@@ -11,21 +11,13 @@
 #include "socket/api.hpp"
 #include "socket/process_control.hpp"
 #include "socket/client/api_client.hpp"
-#include "socket/client/io_channel_wrapper.hpp"
 
 namespace openperf::socket::api {
-
-using io_channel_wrapper = openperf::socket::client::io_channel_wrapper;
-struct ided_channel
-{
-    socket_id id;
-    io_channel_wrapper channel;
-};
-static std::unordered_map<int, ided_channel> socket_channels;
 
 client::client()
     : m_uuid(core::uuid::random())
     , m_sock(api::client_socket(to_string(m_uuid)), api::socket_type)
+    , m_channels(channels_hashtab::instance())
 {
     auto server = sockaddr_un{.sun_family = AF_UNIX};
     if (auto envp = std::getenv("OP_PREFIX"); envp != nullptr) {
@@ -124,17 +116,17 @@ void client::init(std::atomic_bool* init_flag)
     *m_init_flag = true;
 }
 
-bool client::is_socket(int s) { return (socket_channels.count(s)); }
+bool client::is_socket(int s) { return m_channels.find(s).has_value(); }
 
 int client::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
 {
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
     auto wait = channel.wait_readable();
     if (!wait) {
         errno = wait.error();
@@ -156,15 +148,14 @@ int client::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
     auto& accept = std::get<api::reply_accept>(*reply);
 
     /* Record socket data for future use */
-    auto newresult = socket_channels.emplace(
-        accept.fd_pair.client_fd,
-        ided_channel{
-            accept.id,
-            io_channel_wrapper(to_pointer(accept.channel, m_shm->base()),
-                               accept.fd_pair.client_fd,
-                               accept.fd_pair.server_fd)});
+    auto newresult =
+        m_channels.insert(accept.fd_pair.client_fd,
+                          accept.id,
+                          to_pointer(accept.channel, m_shm->base()),
+                          accept.fd_pair.client_fd,
+                          accept.fd_pair.server_fd);
 
-    if (!newresult.second) {
+    if (!newresult) {
         errno = ENOBUFS;
         return (-1);
     }
@@ -173,17 +164,17 @@ int client::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
 
     /* Give the client their fd */
     return (accept.fd_pair.client_fd);
-}
+} // namespace openperf::socket::api
 
 int client::bind(int s, const struct sockaddr* name, socklen_t namelen)
 {
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
     api::request_msg request =
         api::request_bind{.id = id, .name = name, .namelen = namelen};
 
@@ -199,13 +190,13 @@ int client::bind(int s, const struct sockaddr* name, socklen_t namelen)
 
 int client::shutdown(int s, int how)
 {
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
     api::request_msg request = api::request_shutdown{.id = id, .how = how};
 
     auto reply = submit_request(m_sock.get(), request);
@@ -220,13 +211,13 @@ int client::shutdown(int s, int how)
 
 int client::getpeername(int s, struct sockaddr* name, socklen_t* namelen)
 {
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
     api::request_msg request =
         api::request_getpeername{.id = id, .name = name, .namelen = *namelen};
 
@@ -242,13 +233,13 @@ int client::getpeername(int s, struct sockaddr* name, socklen_t* namelen)
 
 int client::getsockname(int s, struct sockaddr* name, socklen_t* namelen)
 {
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
     api::request_msg request =
         api::request_getsockname{.id = id, .name = name, .namelen = *namelen};
 
@@ -265,13 +256,13 @@ int client::getsockname(int s, struct sockaddr* name, socklen_t* namelen)
 int client::getsockopt(
     int s, int level, int optname, void* optval, socklen_t* optlen)
 {
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
     api::request_msg request =
         api::request_getsockopt{.id = id,
                                 .level = level,
@@ -292,13 +283,13 @@ int client::getsockopt(
 int client::setsockopt(
     int s, int level, int optname, const void* optval, socklen_t optlen)
 {
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
     api::request_msg request = api::request_setsockopt{.id = id,
                                                        .level = level,
                                                        .optname = optname,
@@ -317,14 +308,14 @@ int client::setsockopt(
 
 int client::close(int s)
 {
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         /* XXX: should hand off to libc close */
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
     api::request_msg request = api::request_close{.id = id};
 
     auto reply = submit_request(m_sock.get(), request);
@@ -333,19 +324,19 @@ int client::close(int s)
         return (-1);
     }
 
-    socket_channels.erase(result);
+    m_channels.erase(s);
     return (0);
 }
 
 int client::connect(int s, const struct sockaddr* name, socklen_t namelen)
 {
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
     api::request_msg request =
         api::request_connect{.id = id, .name = name, .namelen = namelen};
 
@@ -389,13 +380,13 @@ int client::connect(int s, const struct sockaddr* name, socklen_t namelen)
 
 int client::listen(int s, int backlog)
 {
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
     api::request_msg request =
         api::request_listen{.id = id, .backlog = backlog};
 
@@ -423,15 +414,13 @@ int client::socket(int domain, int type, int protocol)
     auto& socket = std::get<api::reply_socket>(*reply);
 
     /* Record socket data for future use */
-    auto result = socket_channels.emplace(
-        socket.fd_pair.client_fd,
-        ided_channel{
-            socket.id,
-            io_channel_wrapper(to_pointer(socket.channel, m_shm->base()),
-                               socket.fd_pair.client_fd,
-                               socket.fd_pair.server_fd)});
+    auto result = m_channels.insert(socket.fd_pair.client_fd,
+                                    socket.id,
+                                    to_pointer(socket.channel, m_shm->base()),
+                                    socket.fd_pair.client_fd,
+                                    socket.fd_pair.server_fd);
 
-    if (!result.second) {
+    if (!result) {
         errno = ENOBUFS;
         return (-1);
     }
@@ -442,13 +431,13 @@ int client::socket(int domain, int type, int protocol)
 
 int client::fcntl(int s, int cmd, ...)
 {
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
 
     va_list ap;
     va_start(ap, cmd);
@@ -482,13 +471,13 @@ int client::fcntl(int s, int cmd, ...)
 
 int client::ioctl(int s, unsigned long req, ...)
 {
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
 
     va_list ap;
     va_start(ap, req);
@@ -552,13 +541,13 @@ ssize_t client::recvmsg(int s, struct msghdr* message, int flags)
 {
     (void)flags; /* TODO */
 
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
     auto recv_result =
         channel.recv(message->msg_iov,
                      message->msg_iovlen,
@@ -585,13 +574,13 @@ ssize_t client::sendmsg(int s, const struct msghdr* message, int flags)
 {
     (void)flags; /* TODO */
 
-    auto result = socket_channels.find(s);
-    if (result == socket_channels.end()) {
+    auto result = m_channels.find(s);
+    if (!result) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result.value();
     auto send_result =
         channel.send(message->msg_iov,
                      message->msg_iovlen,
