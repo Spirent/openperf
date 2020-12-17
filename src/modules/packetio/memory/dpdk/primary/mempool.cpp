@@ -141,6 +141,15 @@ struct rte_mempool* create_spsc_pktmbuf_mempool(std::string_view id,
     auto max_packet_size = align_up(packet_size, 64);
     auto elt_size = sizeof(rte_mbuf) + priv_size + max_packet_size;
 
+    auto mp = rte_pktmbuf_pool_create_by_ops(id.data(),
+                                             n,
+                                             cache_size,
+                                             0,
+                                             elt_size,
+                                             static_cast<int>(socket_id),
+                                             rte_mbuf_best_mempool_ops());
+
+#if 0
     auto mp = rte_mempool_create(id.data(),
                                  n,
                                  elt_size,
@@ -152,18 +161,19 @@ struct rte_mempool* create_spsc_pktmbuf_mempool(std::string_view id,
                                  nullptr,
                                  static_cast<int>(socket_id),
                                  MEMPOOL_F_SP_PUT | MEMPOOL_F_SC_GET);
-
+#endif
     return (mp);
 }
 
 static void log_mempool(const struct rte_mempool* mpool)
 {
     OP_LOG(OP_LOG_DEBUG,
-           "%s: %u, %u byte mbufs on NUMA socket %d\n",
+           "%s: %u, %u byte mbufs on NUMA socket %d using %s ops\n",
            mpool->name,
            mpool->size,
            rte_pktmbuf_data_room_size((struct rte_mempool*)mpool),
-           mpool->socket_id);
+           mpool->socket_id,
+           rte_mempool_ops_table.ops[mpool->ops_index].name);
 }
 
 static rte_mempool* create_mempool(unsigned numa_node,

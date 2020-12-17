@@ -33,8 +33,10 @@ callback_packet_type_decoder::callback()
 static packet_type_decoder::variant_type
 make_packet_type_decoder(uint16_t port_id)
 {
-    if (rte_eth_dev_get_supported_ptypes(port_id, decode_mask, nullptr, 0)
-        <= 0) {
+    /* The mlx5 driver lies */
+    if ((port_info::driver_name(port_id) != "net_mlx5")
+        && (rte_eth_dev_get_supported_ptypes(port_id, decode_mask, nullptr, 0)
+            <= 0)) {
         return (callback_packet_type_decoder(port_id));
     }
 

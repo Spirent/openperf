@@ -115,8 +115,7 @@ static constexpr uint64_t filter_tx_offloads(uint64_t tx_capa)
 {
     return (tx_capa
             & (DEV_TX_OFFLOAD_IPV4_CKSUM | DEV_TX_OFFLOAD_UDP_CKSUM
-               | DEV_TX_OFFLOAD_TCP_CKSUM | DEV_TX_OFFLOAD_TCP_TSO
-               | DEV_TX_OFFLOAD_MULTI_SEGS));
+               | DEV_TX_OFFLOAD_TCP_CKSUM));
 }
 
 static rte_eth_conf make_rte_eth_conf(uint16_t port_id)

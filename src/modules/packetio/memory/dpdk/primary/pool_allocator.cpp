@@ -71,24 +71,26 @@ __attribute__((const)) static uint32_t pool_size_adjust(uint32_t nb_mbufs)
 static void log_mempool(const struct rte_mempool* mpool)
 {
     OP_LOG(OP_LOG_DEBUG,
-           "%s: %u, %u byte mbufs on NUMA socket %d\n",
+           "%s: %u, %u byte mbufs on NUMA socket %d using %s ops\n",
            mpool->name,
            mpool->size,
            rte_pktmbuf_data_room_size((struct rte_mempool*)mpool),
-           mpool->socket_id);
+           mpool->socket_id,
+           rte_mempool_ops_table.ops[mpool->ops_index].name);
 }
 
 static rte_mempool* create_mempool(const char* name, size_t size, int socket_id)
 {
     size_t nb_mbufs = op_min(131072, pool_size_adjust(op_max(1024U, size)));
 
-    rte_mempool* mp = rte_pktmbuf_pool_create_by_ops(name,
-                                                     nb_mbufs,
-                                                     get_cache_size(nb_mbufs),
-                                                     mempool_private_size,
-                                                     RTE_MBUF_DEFAULT_BUF_SIZE,
-                                                     socket_id,
-                                                     "stack");
+    rte_mempool* mp =
+        rte_pktmbuf_pool_create_by_ops(name,
+                                       nb_mbufs,
+                                       get_cache_size(nb_mbufs),
+                                       mempool_private_size,
+                                       RTE_MBUF_DEFAULT_BUF_SIZE,
+                                       socket_id,
+                                       rte_mbuf_best_mempool_ops());
 
     if (!mp) {
         throw std::runtime_error(std::string("Could not allocate mempool = ")

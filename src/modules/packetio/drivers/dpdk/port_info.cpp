@@ -54,7 +54,8 @@ uint32_t max_rx_pktlen(uint16_t port_id)
      * If 9k frames are insufficient, adjust as necessary.
      */
     return (std::min(
-        9 * 1024U, get_info_field(port_id, &rte_eth_dev_info::max_rx_pktlen)));
+        static_cast<unsigned>(RTE_MBUF_DEFAULT_BUF_SIZE - RTE_PKTMBUF_HEADROOM),
+        get_info_field(port_id, &rte_eth_dev_info::max_rx_pktlen)));
 }
 
 uint32_t max_lro_pkt_size(uint16_t port_id)
@@ -130,7 +131,7 @@ uint64_t rss_offloads(uint16_t port_id)
 enum rte_eth_rx_mq_mode rx_mq_mode(uint16_t port_id)
 {
     auto driver = driver_name(port_id);
-    if (driver == driver_names::virtio) {
+    if (driver == driver_names::virtio || driver == driver_names::octeontx2) {
         return ETH_MQ_RX_NONE;
     } else {
         return ETH_MQ_RX_RSS;
