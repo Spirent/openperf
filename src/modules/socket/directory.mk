@@ -58,7 +58,7 @@ SOCKCLI_SOURCES += \
 	client/dgram_channel.cpp \
 	client/stream_channel.cpp
 
-SOCKCLI_DEPENDS += socket_common
+SOCKCLI_DEPENDS += framework_lists socket_common
 
 # See comment above.
 $(SOCKCLI_OBJ_DIR)/client/dgram_channel.o: OP_CXXFLAGS += -Wno-unused-private-field
