@@ -42,7 +42,14 @@ static void maybe_disable_promiscuous_mode(uint16_t port_id)
 
 mac_filter::mac_filter(uint16_t port_id)
     : m_port(port_id)
-{}
+{
+    auto error = rte_eth_allmulticast_enable(port_id);
+    if (error == -ENOTSUP) {
+        OP_LOG(OP_LOG_WARNING,
+               "No support for multicast reception on port %u\n",
+               port_id);
+    }
+}
 
 mac_filter::~mac_filter()
 {

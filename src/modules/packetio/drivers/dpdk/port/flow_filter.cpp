@@ -166,19 +166,31 @@ static void maybe_invoke_callback(const filter_event_del& del)
 flow_filter::flow_filter(uint16_t port_id)
     : m_port(port_id)
 {
-    auto broadcast = rte_flow_item_eth{
-        .dst.addr_bytes = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
-    };
+    auto broadcast = mac_address{0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
-    auto flow = add_ethernet_flow(
-        port_id, &broadcast, &broadcast, rule_action::add_stack_tag);
-    if (!flow) {
-        throw std::runtime_error("Could not add broadcast flow rule");
+    auto bcast_flow =
+        add_ethernet_flow(port_id, broadcast, rule_action::add_stack_tag);
+    if (!bcast_flow) {
+        throw std::runtime_error(
+            "Could not add broadcast flow rule: "
+            + std::string(rte_strerror(bcast_flow.error())));
     }
 
-    m_flows.emplace(mac_address(broadcast.dst.addr_bytes), *flow);
+    m_flows.emplace(broadcast, *bcast_flow);
 
-    /* XXX: Add IPv6 multicast rules when IPv6 support is added */
+    auto multicast = rte_flow_item_eth{
+        .dst.addr_bytes = {0x01, 0x00, 0x00, 0x00, 0x00, 0x00},
+    };
+
+    auto mcast_flow = add_ethernet_flow(
+        port_id, &multicast, &multicast, rule_action::add_stack_tag);
+    if (!mcast_flow) {
+        throw std::runtime_error(
+            "Could not add multicast flow rule: "
+            + std::string(rte_strerror(mcast_flow.error())));
+    }
+
+    m_flows.emplace(mac_address(multicast.dst.addr_bytes), *mcast_flow);
 }
 
 flow_filter::~flow_filter()
