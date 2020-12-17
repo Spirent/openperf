@@ -67,8 +67,7 @@ with description('Network Generator Module', 'network') as self:
                                 self._model, _return_http_data_only=False)
 
                         with after.all:
-                            if hasattr(self, '_result') and len(self._result) > 0:
-                                self._api.delete_network_server(self._result[0].id)
+                            clear_network_instances(self._api)
 
                         with it('created'):
                             expect(self._result[1]).to(equal(201))
@@ -128,9 +127,7 @@ with description('Network Generator Module', 'network') as self:
                             _return_http_data_only=False)
 
                     with after.all:
-                        if hasattr(self, '_servers') and len(self._servers) > 0:
-                            for server in self._servers:
-                                self._api.delete_network_server(server.id)
+                        clear_network_instances(self._api)
 
                     with it('succeeded'):
                         expect(self._result[1]).to(equal(200))
@@ -205,7 +202,7 @@ with description('Network Generator Module', 'network') as self:
                                 self._model, _return_http_data_only=False)
 
                         with after.all:
-                            self._api.delete_network_generator(self._result[0].id)
+                            clear_network_instances(self._api)
 
                         with it('created'):
                             expect(self._result[1]).to(equal(201))
@@ -261,8 +258,7 @@ with description('Network Generator Module', 'network') as self:
                             _return_http_data_only=False)
 
                     with after.all:
-                        for g7r in self._g8s:
-                            self._api.delete_network_generator(g7r.id)
+                        clear_network_instances(self._api)
 
                     with it('succeeded'):
                         expect(self._result[1]).to(equal(200))
@@ -336,7 +332,7 @@ with description('Network Generator Module', 'network') as self:
                     self._g7r = g7r
 
                 with after.all:
-                    self._api.delete_network_generator(self._g7r.id)
+                    clear_network_instances(self._api)
 
                 with context('POST'):
                     with description('by existing ID'):
@@ -421,7 +417,7 @@ with description('Network Generator Module', 'network') as self:
                     self._g7r = g7r
 
                 with after.all:
-                    self._api.delete_network_generator(self._g7r.id)
+                    clear_network_instances(self._api)
 
                 with context('POST'):
                     with description('by existing ID'):
@@ -454,8 +450,7 @@ with description('Network Generator Module', 'network') as self:
                     self._g8s = [self._api.create_network_generator(model) for a in range(3)]
 
                 with after.all:
-                    for g7r in self._g8s:
-                        self._api.delete_network_generator(g7r.id)
+                    clear_network_instances(self._api)
 
                 with description('POST'):
                     with description('by existing IDs'):
@@ -540,8 +535,7 @@ with description('Network Generator Module', 'network') as self:
                     expect(len(self._g8s)).to(equal(3))
 
                 with after.all:
-                    for g7r in self._g8s:
-                        self._api.delete_network_generator(g7r.id)
+                    clear_network_instances(self._api)
 
                 with description('POST'):
                     with description('by existing IDs'):
@@ -602,6 +596,15 @@ with description('Network Generator Module', 'network') as self:
                                 expect(result.running).to(be_true)
 
         with description('Network Generator Results'):
+            with before.all:
+                generator_model = network_generator_model(self._api.api_client)
+                g7r = self._api.create_network_generator(generator_model)
+                expect(g7r).to(be_valid_network_generator)
+
+                result = self._api.start_network_generator(g7r.id)
+                expect(result).to(be_valid_network_generator_result)
+                self._api.stop_network_generator(g7r.id)
+
             with description('/network/generator-results'):
                 with context('GET'):
                     with before.all:
