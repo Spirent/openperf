@@ -1,5 +1,3 @@
-#include <cassert>
-
 #include "swagger/v1/model/Stack.h"
 #include "packet/stack/generic_stack.hpp"
 #include "utils/overloaded_visitor.hpp"

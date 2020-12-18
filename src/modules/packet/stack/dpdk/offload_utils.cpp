@@ -1,4 +1,3 @@
-#include <cassert>
 #include "rte_ip.h"  /* ip pseudo header cksum */
 #include "rte_net.h" /* ptype info */
 
