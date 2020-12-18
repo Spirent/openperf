@@ -10,6 +10,7 @@ Package: openperf
 Architecture: {{ARCHITECTURE}}
 Multi-Arch: foreign
 Depends: ${misc:Depends}, ${shlibs:Depends}, python3 (>= 3.5)
+Recommends: {{PKG_RECOMMENDS}}
 Description: Spirent Network and Load Generator
  Provides an infrastructure and application test and analysis framework.
  Discrete modules provide functionality with the assistance of a common

@@ -19,12 +19,16 @@ BUILD_PLUGINS_DIR := $(abspath $(dir $(BUILD_BIN_DIR))/plugins)
 PLUGINS_SRC_FILES := $(shell find $(BUILD_PLUGINS_DIR) -type f -name "*.so")
 PLUGINS_TGT_DIR := $(abspath $(DESTDIR)/usr/lib/openperf/plugins)
 PLUGINS_TGT_FILES := $(subst $(BUILD_PLUGINS_DIR)/,$(PLUGINS_TGT_DIR)/,$(PLUGINS_SRC_FILES))
+BUILD_DPDK_LIB_DIR := $(abspath $(dir $(BUILD_BIN_DIR))/dpdk/lib)
+DPDK_LIB_SRC_FILES := $(shell find $(BUILD_DPDK_LIB_DIR) -type f -name "*glue.so*")
+DPDK_LIB_TGT_DIR := $(abspath $(DESTDIR)/usr/lib)
+DPDK_LIB_TGT_FILES := $(subst $(BUILD_DPDK_LIB_DIR)/,$(DPDK_LIB_TGT_DIR)/,$(DPDK_LIB_SRC_FILES))
 
 .PHONY: all install
 
 all:
 
-install: $(PLUGINS_TGT_FILES)
+install: $(DPDK_LIB_TGT_FILES) $(PLUGINS_TGT_FILES)
 	# Install the openperf binaries
 	@install -p -v -D -t $(DESTDIR)/usr/bin $(BUILD_BIN_DIR)/$(OP_BIN_NAME)
 	@install -p -v -D -t $(DESTDIR)/usr/lib $(BUILD_LIB_DIR)/$(OP_LIB_NAME)
@@ -40,6 +44,9 @@ define install_file_rule
 $(2)/$(notdir $(1)): $(1)
 	@install -p -v -D -t $(2) $(1)
 endef
+
+# Create rules to copy the DPDK libs to their destination in the package staging directory
+$(foreach _f,$(DPDK_LIB_SRC_FILES),$(eval $(call install_file_rule,$(_f),$(DPDK_LIB_TGT_DIR))))
 
 # Create rules to copy the plugins to their destination in the package staging directory
 $(foreach _f,$(PLUGINS_SRC_FILES),$(eval $(call install_file_rule,$(_f),$(PLUGINS_TGT_DIR))))

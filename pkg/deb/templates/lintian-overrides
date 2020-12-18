@@ -5,3 +5,5 @@ openperf: embedded-library usr/bin/openperf: libpcap
 openperf: new-package-should-close-itp-bug
 openperf: sharedobject-in-library-directory-missing-soname usr/lib/libopenperf-shim.so
 openperf: binary-without-manpage usr/bin/openperf
+openperf: package-name-doesnt-match-sonames librte-pmd-mlx4-glue18.02.0 librte-pmd-mlx5-glue19.08.0
+openperf: shlib-in-multi-arch-foreign-package usr/lib/librte_pmd_mlx5_glue.so.19.08.0
