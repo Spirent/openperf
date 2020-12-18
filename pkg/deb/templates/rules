@@ -2,3 +2,7 @@
 
 %:
 	dh $@
+
+# Exclude ibverbs packages because these are handled as optional/recommended dependencies
+override_dh_shlibdeps:
+	dh_shlibdeps --dpkg-shlibdeps-params="-xlibibverbs1 -xibverbs-providers"

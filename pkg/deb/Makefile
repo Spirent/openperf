@@ -27,7 +27,14 @@ SRC_TAR := $(STAGE_DIR)/$(PKG_BASE_NAME)-$(VERSION).tar.gz
 CONFIG_FILE := $(STAGE_PKG_DIR)/config.yaml
 CHANGELOG_FILE := $(STAGE_PKG_DIR)/debian/changelog
 PKG_FILE_PATH := $(OP_BUILD_ROOT)/$(PKG_NAME).deb
+PKG_RECOMMENDS :=
 VARS_MK := $(STAGE_DIR)/vars.mk
+
+# If libibverbs-dev is installed, openperf should be compiled to use it
+IBVERBS_VERSION := $(shell dpkg -s libibverbs-dev 2> /dev/null | grep Version | awk -F: '{  sub(/[ \t]+/, ""); print $$2}' | awk -F. '{print $$1}')
+ifneq ($(IBVERBS_VERSION),)
+	PKG_RECOMMENDS := libibverbs1 (>= $(IBVERBS_VERSION)), ibverbs-providers (>= $(IBVERBS_VERSION))
+endif
 
 .PHONY: all clean
 
@@ -74,6 +81,7 @@ $(2) : $(1)
 		-e 's/{{ARCHITECTURE}}/'"$(PKG_ARCH)"'/g' \
 		-e 's/{{COPYRIGHT_YEAR}}/'"$(shell date +%Y)"'/g' \
 		-e 's/{{TIMESTAMP}}/'"$(shell date +"%a, %d %b %Y %X %z")"'/g' \
+		-e 's/{{PKG_RECOMMENDS}}/'"$(PKG_RECOMMENDS)"'/g' \
     	$(2)
 endef
 
