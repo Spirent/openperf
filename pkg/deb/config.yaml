@@ -20,17 +20,17 @@ modules:
     # Location to find openperf plugins
     path: "/usr/lib/openperf/plugins"
 
-    # Module specific configuration
-#    packetio:
-#      # Define the DPDK ports available to module
-#      dpdk:
-#        # Options passed to the DPDK library
-#        options:
-#          - "-m256m"
-#          - "--no-huge"
-#        port-ids:
-#          port0: port0
-#          port1: port1
+  # Module specific configuration
+#  packetio:
+#    # Define the DPDK ports available to module
+#    dpdk:
+#      # Options passed to the DPDK library
+#      options:
+#        - "-m256m"
+#        - "--no-huge"
+#      port-ids:
+#        port0: port0
+#        port1: port1
 
 # Define the resources in terms of the ports
 # resources:
