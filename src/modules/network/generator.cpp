@@ -87,19 +87,25 @@ generator::generator(const model::generator& generator_model)
         case task::operation_t::READ:
             m_read_stat += stat;
             using double_time = std::chrono::duration<double>;
+            // +1 here is because target value has to be rounded to the upper
+            // value, otherwise it will be equal 0 on a first iteration
             m_read_stat.ops_target = static_cast<uint64_t>(
                 (std::chrono::duration_cast<double_time>(elapsed_time)
                  * std::min(m_config.read_size, 1UL) * m_config.reads_per_sec)
-                    .count());
+                    .count()
+                + 1);
             m_read_stat.bytes_target =
                 m_read_stat.ops_target * m_config.read_size;
             break;
         case task::operation_t::WRITE:
             m_write_stat += stat;
+            // +1 here is because target value has to be rounded to the upper
+            // value, otherwise it will be equal 0 on a first iteration
             m_write_stat.ops_target = static_cast<uint64_t>(
                 (std::chrono::duration_cast<double_time>(elapsed_time)
                  * std::min(m_config.write_size, 1UL) * m_config.writes_per_sec)
-                    .count());
+                    .count()
+                + 1);
             m_write_stat.bytes_target =
                 m_write_stat.ops_target * m_config.write_size;
             break;
