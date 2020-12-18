@@ -23,6 +23,26 @@ ifeq ($(CONFIG_RTE_LIBRTE_EM_PMD),y)
 	CONFIG_RTE_LIBRTE_E1000_PMD=y
 endif
 
+###
+# Check optional build library dependencies
+###
+
+# Check if a system library is present
+# Evalulates to 1 if library is present or 0 if not present
+op_check_system_lib = $(if $(filter 0, $(shell ldconfig -p | grep $(1) 2>&1 > /dev/null; echo $$?)),1,0)
+
+# Mellanox ConnectX-3 infiniband library
+HAS_MLX4 ?= $(call op_check_system_lib, libmlx4)
+ifeq ($(HAS_MLX4),1)
+    CONFIG_RTE_LIBRTE_MLX4_PMD=y
+endif
+
+# Mellanox ConnectX-4/5/6 infiniband library
+HAS_MLX5 ?= $(call op_check_system_lib, libmlx5)
+ifeq ($(HAS_MLX5),1)
+    CONFIG_RTE_LIBRTE_MLX5_PMD=y
+endif
+
 #
 # Order is important: from higher level to lower level
 #
