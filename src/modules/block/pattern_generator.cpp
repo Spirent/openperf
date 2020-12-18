@@ -1,4 +1,3 @@
-#include <cassert>
 #include <unordered_map>
 
 #include "pattern_generator.hpp"

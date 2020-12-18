@@ -1,4 +1,3 @@
-#include <cassert>
 #include "lwip/sys.h"
 
 #include "packet/stack/lwip/tcpip.hpp"

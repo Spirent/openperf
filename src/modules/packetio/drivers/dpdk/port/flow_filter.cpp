@@ -1,4 +1,3 @@
-#include <cassert>
 #include <vector>
 
 #include "tl/expected.hpp"
