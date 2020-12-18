@@ -89,6 +89,7 @@ void apply_defaults(swagger::TvlpStartConfiguration& config)
     if (config.memoryIsSet()) apply_scales(config.getMemory());
     if (config.cpuIsSet()) apply_scales(config.getCpu());
     if (config.packetIsSet()) apply_scales(config.getPacket());
+    if (config.networkIsSet()) apply_scales(config.getNetwork());
 }
 
 tvlp_configuration_t from_swagger(const swagger::TvlpConfiguration& m)
@@ -225,6 +226,20 @@ tvlp_start_t from_swagger(const swagger::TvlpStartConfiguration& start)
                 dynamic::from_swagger(*packet->getDynamicResults());
 
         config.packet = start_opts;
+    }
+
+    if (start.networkIsSet()) {
+        auto network = start.getNetwork();
+        auto start_opts = tvlp_start_t::start_t{
+            .time_scale = network->getTimeScale(),
+            .load_scale = network->getLoadScale(),
+        };
+
+        if (network->dynamicResultsIsSet())
+            start_opts.dynamic_results =
+                dynamic::from_swagger(*network->getDynamicResults());
+
+        config.network = start_opts;
     }
 
     return config;

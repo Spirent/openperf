@@ -123,9 +123,10 @@ controller_t::start(const model::tvlp_start_t& start_configuration)
 
     if (m_profile.network) {
         modules_results.network = model::json_vector();
+        auto result = m_network->start(start_configuration.start_time,
+                                       start_configuration.network);
         // Starting already running worker should never happen
-        assert(m_network->start(start_configuration.start_time,
-                                start_configuration.network));
+        assert(result);
     }
 
     m_start_time = start_configuration.start_time;
