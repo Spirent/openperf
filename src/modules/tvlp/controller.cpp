@@ -84,33 +84,37 @@ controller_t::start(const model::tvlp_start_t& start_configuration)
     if (m_profile.block) {
         modules_results.block = model::json_vector();
 
+        auto result = m_block->start(start_configuration.start_time,
+                                     start_configuration.block);
         // Starting already running worker should never happen
-        assert(m_block->start(start_configuration.start_time,
-                              start_configuration.block));
+        assert(result);
     }
 
     if (m_profile.memory) {
         modules_results.memory = model::json_vector();
 
+        auto result = m_memory->start(start_configuration.start_time,
+                                      start_configuration.memory);
         // Starting already running worker should never happen
-        assert(m_memory->start(start_configuration.start_time,
-                               start_configuration.memory));
+        assert(result);
     }
 
     if (m_profile.cpu) {
         modules_results.cpu = model::json_vector();
 
+        auto result = m_cpu->start(start_configuration.start_time,
+                                   start_configuration.cpu);
         // Starting already running worker should never happen
-        assert(m_cpu->start(start_configuration.start_time,
-                            start_configuration.cpu));
+        assert(result);
     }
 
     if (m_profile.packet) {
         modules_results.packet = model::json_vector();
 
+        auto result = m_packet->start(start_configuration.start_time,
+                                      start_configuration.packet);
         // Starting already running worker should never happen
-        assert(m_packet->start(start_configuration.start_time,
-                               start_configuration.packet));
+        assert(result);
     }
 
     m_start_time = start_configuration.start_time;
