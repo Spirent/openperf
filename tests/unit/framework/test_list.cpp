@@ -170,9 +170,28 @@ TEST_CASE("openperf list cpp wrapper functionality")
 
             SECTION("can iterate, ")
             {
+                /*
+                 * Really just checking that all three versions
+                 * compile correctly. Running correctly is just a
+                 * bonus. :)
+                 */
                 size_t count = 0;
-                for (auto item : list) {
-                    REQUIRE(*item == test_value);
+                for (const auto& item : list.snapshot()) {
+                    REQUIRE(item == test_value);
+                    count++;
+                }
+                REQUIRE(count == list.size());
+
+                count = 0;
+                for (auto item : list.snapshot()) {
+                    REQUIRE(item == test_value);
+                    count++;
+                }
+                REQUIRE(count == list.size());
+
+                count = 0;
+                for (auto&& item : list.snapshot()) {
+                    REQUIRE(item == test_value);
                     count++;
                 }
                 REQUIRE(count == list.size());
@@ -187,7 +206,7 @@ TEST_CASE("openperf list cpp wrapper functionality")
 
                 SECTION("can iterate empty list, ")
                 {
-                    for (auto item : list) {
+                    for (const auto& item : list.snapshot()) {
                         (void)item;
                         REQUIRE(false);
                     }

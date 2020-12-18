@@ -50,6 +50,20 @@ static auto tie_entry(const mempool_entry* entry)
     return (std::tie(entry->port_id, entry->queue_id, entry->pool->elt_size));
 }
 
+class mempool_entry_guard
+{
+    mempool_entry& m_entry;
+
+public:
+    mempool_entry_guard(mempool_entry& entry)
+        : m_entry(entry)
+    {
+        op_reference_retain(&m_entry.ref);
+    }
+
+    ~mempool_entry_guard() { op_reference_release(&m_entry.ref); }
+};
+
 static int mempool_entry_comparator(const void* thing1, const void* thing2)
 {
     assert(thing1);
@@ -160,29 +174,36 @@ rte_mempool* acquire(uint16_t port_id,
     maybe_mempool_list_init();
 
     /* See if we can find a matching pool in our list of pools */
+    auto snapshot = mempool_list.snapshot();
     auto cursor = std::find_if(
-        std::begin(mempool_list), std::end(mempool_list), [&](auto* entry) {
-            return (port_id == entry->port_id && queue_id == entry->queue_id
-                    && numa_node
-                           == static_cast<unsigned>(entry->pool->socket_id)
-                    && packet_length <= entry->pool->elt_size
-                    && packet_count <= entry->pool->size
-                    && cache_size <= entry->pool->cache_size);
+        std::begin(snapshot), std::end(snapshot), [&](auto& entry) {
+            auto guard = mempool_entry_guard(entry);
+
+            auto match =
+                (entry.pool != nullptr && port_id == entry.port_id
+                 && queue_id == entry.queue_id
+                 && numa_node == static_cast<unsigned>(entry.pool->socket_id)
+                 && packet_length <= entry.pool->elt_size
+                 && packet_count <= entry.pool->size
+                 && cache_size <= entry.pool->cache_size);
+
+            if (match) {
+                /* We want to keep this mempool; bump the reference count */
+                op_reference_retain(&entry.ref);
+            }
+
+            return (match);
         });
 
-    if (cursor != std::end(mempool_list)) {
-        /* Bump the reference count and return this mempool */
-        auto* entry = *cursor;
-        op_reference_retain(&entry->ref);
-
-        assert(entry->pool);
+    if (cursor != std::end(snapshot)) {
+        assert(cursor->pool);
 
         OP_LOG(OP_LOG_DEBUG,
                "Reusing packet pool %s (refcount = %u)\n",
-               entry->pool->name,
-               atomic_load_explicit(&(entry->ref.count),
+               cursor->pool->name,
+               atomic_load_explicit(&(cursor->ref.count),
                                     std::memory_order_relaxed));
-        return (entry->pool);
+        return (cursor->pool);
     }
 
     /* No matching mempool found; create one */
@@ -224,12 +245,19 @@ void release(const rte_mempool* pool)
 {
     if (!pool) { return; }
 
-    auto cursor =
-        std::find_if(std::begin(mempool_list),
-                     std::end(mempool_list),
-                     [&](auto* entry) { return (entry->pool == pool); });
+    auto snapshot = mempool_list.snapshot();
+    auto cursor = std::find_if(
+        std::begin(snapshot), std::end(snapshot), [&](auto& entry) {
+            auto guard = mempool_entry_guard(entry);
+            /*
+             * If the pool matches the one we are releasing, then
+             * the ref count can't possibly drop to 0 when we
+             * drop our guard.
+             */
+            return (entry.pool == pool);
+        });
 
-    if (cursor == std::end(mempool_list)) {
+    if (cursor == std::end(snapshot)) {
         OP_LOG(OP_LOG_WARNING,
                "Could not find %s in packet pool list; "
                "ignoring release request\n",
@@ -237,8 +265,7 @@ void release(const rte_mempool* pool)
         return;
     }
 
-    auto* entry = *cursor;
-    op_reference_release(&entry->ref);
+    op_reference_release(&(cursor->ref));
 }
 
 rte_mempool* get_default(unsigned numa_node)
