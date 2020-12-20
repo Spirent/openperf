@@ -117,7 +117,6 @@ generator::generator(const model::generator& generator_model)
         complete_stat.conn_stats(to_conn_stat_t(m_write_stat, m_read_stat));
         complete_stat.timestamp(
             std::max(m_write_stat.updated, m_read_stat.updated));
-        complete_stat.dynamic_results(m_dynamic.result());
 
         m_dynamic.add(complete_stat);
     });
