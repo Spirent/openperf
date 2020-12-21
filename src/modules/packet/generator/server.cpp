@@ -137,8 +137,22 @@ static std::string to_string(const request_msg& request)
 
 static std::string to_string(const reply_msg& reply)
 {
+    // XXX: If we ever need to support more HTTP return codes,
+    // probably makes sense to pull in the Pistache Http code to_string here.
+    // But for only 2 codes not worth the added dependency.
     if (auto error = std::get_if<reply_error>(&reply)) {
-        return ("failed: " + std::string(strerror(error->info.value)));
+        switch (error->info.type) {
+        case error_type::CONFLICT:
+            return ("failed: Conflict");
+        case error_type::NOT_FOUND:
+            return ("failed: Not Found");
+        case error_type::POSIX:
+            [[fallthrough]];
+        case error_type::ZMQ_ERROR:
+            [[fallthrough]];
+        default:
+            return ("failed: " + std::string(strerror(error->info.value)));
+        }
     }
 
     return ("succeeded");
