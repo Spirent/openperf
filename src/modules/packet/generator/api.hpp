@@ -276,7 +276,7 @@ using request_msg = std::variant<request_list_generators,
 struct reply_ok
 {};
 
-enum class error_type { NONE = 0, NOT_FOUND, POSIX, ZMQ_ERROR };
+enum class error_type { NONE = 0, CONFLICT, NOT_FOUND, POSIX, ZMQ_ERROR };
 
 struct typed_error
 {
