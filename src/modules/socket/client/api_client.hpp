@@ -39,8 +39,6 @@ class client : public thread_singleton<client>
     core::uuid m_uuid;
     unix_socket m_sock;
 
-    channels_hashtab& m_channels;
-
     std::unique_ptr<memory::shared_segment> m_shm;
     std::atomic_bool* m_init_flag;
 
