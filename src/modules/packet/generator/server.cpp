@@ -239,9 +239,8 @@ add_source(packetio::internal::api::client& client, server::source_item& to_add)
 {
     if (to_add.second == server::source_state::active) { return {}; }
 
-    if (auto success = client.add_source(
-            to_add.first.template get<source>().target(), to_add.first);
-        !success) {
+    auto target_port = to_add.first.template get<source>().target_port();
+    if (auto success = client.add_source(target_port, to_add.first); !success) {
         OP_LOG(OP_LOG_ERROR,
                "Failed to add generator %s to packetio workers!\n",
                to_add.first.id().c_str());
@@ -259,9 +258,8 @@ static void remove_source(packetio::internal::api::client& client,
 {
     if (to_del.second != server::source_state::active) { return; }
 
-    if (auto success = client.del_source(
-            to_del.first.template get<source>().target(), to_del.first);
-        !success) {
+    auto target_port = to_del.first.template get<source>().target_port();
+    if (auto success = client.del_source(target_port, to_del.first); !success) {
         OP_LOG(OP_LOG_ERROR,
                "Failed to remove generator %s from packetio workers!\n",
                to_del.first.id().c_str());
@@ -279,8 +277,9 @@ swap_source(packetio::internal::api::client& client,
     assert(to_del.second == server::source_state::active);
     assert(to_add.second == server::source_state::idle);
 
+    auto target_port = to_del.first.template get<source>().target_port();
     if (auto success =
-            client.swap_source(to_del.first.template get<source>().target(),
+            client.swap_source(target_port,
                                to_del.first,
                                to_add.first,
                                std::forward<decltype(action)>(action));
@@ -323,11 +322,13 @@ reply_msg server::handle_request(const request_create_generator& request)
         return (to_error(error_type::POSIX, EINVAL));
     }
 
-    auto& item =
-        m_sources.emplace_back(source(std::move(config)), source_state::idle);
+    auto& item = m_sources.emplace_back(
+        source(std::move(config), m_client, m_loop), source_state::idle);
 
     /* Grab a reference before we invalidate the iterator */
-    const auto& impl = item.first.template get<source>();
+    auto& impl = item.first.template get<source>();
+
+    impl.maybe_start_learning();
 
     /* Success; sort sources and return */
     std::sort(std::begin(m_sources),
@@ -428,6 +429,17 @@ reply_msg server::handle_request(const request_start_generator& request)
     if (found->first.active()) { return (to_error(error_type::POSIX, EINVAL)); }
 
     auto& impl = found->first.template get<source>();
+
+    // Return value is one of three things:
+    // <no value> - source does not support learning; nothing to see here.
+    // true - learning resolved, proceed.
+    // false - source supports learning and requires all addresses resolved
+    // before starting.
+    auto maybe_learning_resolved = impl.maybe_learning_resolved();
+    if (maybe_learning_resolved.has_value()
+        && maybe_learning_resolved.value() == false) {
+        return (to_error(error_type::CONFLICT));
+    }
 
     auto item = m_results.emplace(get_unique_result_id(m_results),
                                   std::make_unique<source_result>(impl));

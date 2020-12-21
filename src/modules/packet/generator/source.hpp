@@ -3,10 +3,16 @@
 
 #include "core/op_core.h"
 #include "packet/generator/api.hpp"
+#include "packet/generator/interface_source.hpp"
+#include "packet/generator/port_source.hpp"
 #include "packet/generator/traffic/counter.hpp"
 #include "packet/generator/traffic/sequence.hpp"
 #include "packetio/generic_source.hpp"
+#include "packetio/internal_client.hpp"
+
 #include "utils/soa_container.hpp"
+
+#include <variant>
 
 namespace openperf::packet::generator {
 
@@ -61,10 +67,15 @@ struct source_load
     api::tx_rate rate;
 };
 
+using source_helper =
+    std::variant<std::monostate, interface_source, port_source>;
+
 class source
 {
 public:
-    source(source_config&& config);
+    source(source_config&& config,
+           packetio::internal::api::client& client,
+           core::event_loop& loop);
     ~source() = default;
 
     source(source&& other) noexcept;
@@ -72,6 +83,7 @@ public:
 
     std::string id() const;
     std::string target() const;
+    std::string target_port() const;
     api::protocol_counters_config protocol_counters() const;
 
     bool active() const;
@@ -100,6 +112,14 @@ public:
                        uint16_t input_length,
                        packetio::packet::packet_buffer* output[]) const;
 
+    /*
+     * Methods to start and stop ARP/ND learning.
+     */
+    void maybe_start_learning();
+    void maybe_stop_learning();
+
+    std::optional<bool> maybe_learning_resolved() const;
+
 private:
     source_config m_config;
     traffic::sequence m_sequence;
@@ -108,6 +128,12 @@ private:
         packet::statistics::protocol_flags::none;
     std::optional<size_t> m_tx_limit;
     std::vector<traffic::stat_t> m_offsets;
+
+    /*
+     * MUST be declared AFTER traffic::sequence and source_config.
+     * (depends on them).
+     */
+    source_helper m_helper;
 
     mutable size_t m_tx_idx = 0;
     mutable std::atomic<source_result*> m_results = nullptr;

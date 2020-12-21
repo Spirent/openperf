@@ -85,7 +85,27 @@ void source_result::start(size_t nb_flows)
 
 void source_result::stop() { m_active = false; }
 
-source::source(source_config&& config)
+source_helper make_source_helper(packetio::internal::api::client& client,
+                                 std::string_view target_id,
+                                 [[maybe_unused]] core::event_loop& loop)
+{
+    auto maybe_port_index = client.get_port_index(target_id);
+
+    if (maybe_port_index.has_value()) { return (port_source{}); }
+
+    auto maybe_interface = client.interface(target_id);
+
+    if (maybe_interface.has_value()) {
+        return (interface_source{loop, maybe_interface.value()});
+    }
+
+    throw std::runtime_error(
+        "Unable to find suitable target to create a source_helper for.");
+}
+
+source::source(source_config&& config,
+               packetio::internal::api::client& client,
+               core::event_loop& loop)
     : m_config(config)
     , m_sequence(api::to_sequence(*m_config.api_config))
     , m_load(api::to_load(*m_config.api_config->getLoad(), m_sequence))
@@ -93,7 +113,13 @@ source::source(source_config&& config)
           m_config.api_config->getProtocolCounters()))
     , m_tx_limit(
           api::max_transmit_count(*m_config.api_config->getDuration(), m_load))
-{}
+    , m_helper(make_source_helper(client, config.target, loop))
+{
+    if (auto* maybe_intf_helper = std::get_if<interface_source>(&m_helper);
+        maybe_intf_helper != nullptr) {
+        maybe_intf_helper->populate_source_addresses(m_sequence);
+    }
+}
 
 source::source(source&& other) noexcept
     : m_config(std::move(other.m_config))
@@ -101,6 +127,7 @@ source::source(source&& other) noexcept
     , m_load(other.m_load)
     , m_protocols(other.m_protocols)
     , m_tx_limit(other.m_tx_limit)
+    , m_helper(other.m_helper)
     , m_tx_idx(other.m_tx_idx)
     , m_results(other.m_results.exchange(nullptr))
 {}
@@ -115,6 +142,7 @@ source& source::operator=(source&& other) noexcept
         m_tx_limit = other.m_tx_limit;
         m_tx_idx = other.m_tx_idx;
         m_results.store(other.m_results.exchange(nullptr));
+        m_helper = other.m_helper;
     }
 
     return (*this);
@@ -123,6 +151,21 @@ source& source::operator=(source&& other) noexcept
 std::string source::id() const { return (m_config.id); }
 
 std::string source::target() const { return (m_config.target); }
+
+std::string source::target_port() const
+{
+    std::string to_return;
+    std::visit(
+        utils::overloaded_visitor(
+            [](const std::monostate&) { /* no-op */ },
+            [&](const interface_source& intf_src) {
+                to_return = intf_src.target_port();
+            },
+            [&](const port_source& port_src) { to_return = m_config.target; }),
+        m_helper);
+
+    return (to_return);
+}
 
 api::protocol_counters_config source::protocol_counters() const
 {
@@ -339,6 +382,32 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
     }
 
     return (to_send);
+}
+
+void source::maybe_start_learning()
+{
+    if (auto* maybe_intf_helper = std::get_if<interface_source>(&m_helper);
+        maybe_intf_helper != nullptr) {
+        maybe_intf_helper->start_learning(m_sequence);
+    }
+}
+
+void source::maybe_stop_learning()
+{
+    if (auto* maybe_intf_helper = std::get_if<interface_source>(&m_helper);
+        maybe_intf_helper != nullptr) {
+        maybe_intf_helper->stop_learning();
+    }
+}
+
+std::optional<bool> source::maybe_learning_resolved() const
+{
+    if (auto* maybe_intf_helper = std::get_if<interface_source>(&m_helper);
+        maybe_intf_helper != nullptr) {
+        return (std::make_optional(maybe_intf_helper->learning_resolved()));
+    }
+
+    return {};
 }
 
 } // namespace openperf::packet::generator
