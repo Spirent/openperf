@@ -164,12 +164,8 @@ server_tcp::~server_tcp()
 
 void server_tcp::run_accept_thread()
 {
-    if (m_accept_thread.joinable()) {
-        OP_LOG(OP_LOG_WARNING,
-               "Failed to run network accept thread: just one connections "
-               "accept thread per generator is supported. Ignored");
-        return;
-    }
+    // Only single accept thread is supported
+    assert(!m_accept_thread.joinable());
 
     void* sync =
         op_socket_get_server(m_context.get(), ZMQ_PUSH, endpoint.data());
@@ -236,6 +232,9 @@ int server_tcp::tcp_write(connection_t& conn, std::vector<uint8_t> send_buffer)
 
 void server_tcp::run_worker_thread()
 {
+    // Accept thread has to be started first to avoid ZMQ fault
+    assert(m_accept_thread.joinable());
+
     void* sync =
         op_socket_get_client(m_context.get(), ZMQ_PULL, endpoint.data());
     m_worker_threads.push_back(std::make_unique<std::thread>([this, sync] {
