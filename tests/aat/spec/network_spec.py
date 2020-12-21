@@ -716,6 +716,8 @@ with description('Network Generator Module', 'network') as self:
                         expect(server).to(be_valid_network_server)
                         expect(server.stats.connections).not_to(equal(0))
                         expect(server.stats.bytes_sent).not_to(equal(0))
+
+                        #TODO compare server and client statistics after issue #429 fixed
                         #expect(server.stats.bytes_sent).to(equal(result.read.bytes_actual))
 
                     with it('valid write result'):
@@ -752,6 +754,8 @@ with description('Network Generator Module', 'network') as self:
                         expect(server).to(be_valid_network_server)
                         expect(server.stats.connections).not_to(equal(0))
                         expect(server.stats.bytes_received).not_to(equal(0))
+
+                        #TODO compare server and client statistics after issue #429 fixed
                         #expect(server.stats.bytes_received).to(equal(result.write.bytes_actual))
 
 
