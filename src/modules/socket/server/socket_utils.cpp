@@ -88,10 +88,13 @@ std::optional<ip_addr_t> get_address(const sockaddr_storage& sstorage)
     }
     case AF_INET6: {
         auto sa6 = reinterpret_cast<const sockaddr_in6*>(&sstorage);
+        if (IN6_IS_ADDR_UNSPECIFIED(&sa6->sin6_addr)) {
+            return (std::make_optional<ip_addr_t>(ip_addr_any_type));
+        }
+
         auto data = reinterpret_cast<const uint32_t*>(&sa6->sin6_addr);
         return (std::make_optional<ip_addr_t>(
             IPADDR6_INIT(data[0], data[1], data[2], data[3])));
-        break;
     }
     case AF_UNSPEC:
         return (std::make_optional<ip_addr_t>(IPADDR_ANY_TYPE_INIT));
