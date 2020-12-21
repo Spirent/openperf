@@ -39,11 +39,10 @@ public:
             m_tab, reinterpret_cast<void*>(fd), reinterpret_cast<void*>(value));
     }
 
-    inline std::optional<ided_channel*> find(int fd)
+    inline ided_channel* find(int fd)
     {
-        auto value = op_hashtab_find(m_tab, reinterpret_cast<void*>(fd));
-        if (value == nullptr) return std::nullopt;
-        return reinterpret_cast<ided_channel*>(value);
+        return reinterpret_cast<ided_channel*>(
+            op_hashtab_find(m_tab, reinterpret_cast<void*>(fd)));
     };
 
     inline bool erase(int fd)
