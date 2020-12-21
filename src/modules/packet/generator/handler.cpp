@@ -29,6 +29,8 @@ using namespace Pistache;
 static enum Http::Code to_code(const reply_error& error)
 {
     switch (error.info.type) {
+    case error_type::CONFLICT:
+        return (Http::Code::Conflict);
     case error_type::NOT_FOUND:
         return (Http::Code::Not_Found);
     case error_type::POSIX:
@@ -41,6 +43,8 @@ static enum Http::Code to_code(const reply_error& error)
 const char* to_string(const reply_error& error)
 {
     switch (error.info.type) {
+    case error_type::CONFLICT:
+        [[fallthrough]];
     case error_type::NOT_FOUND:
         return ("");
     case error_type::ZMQ_ERROR:
