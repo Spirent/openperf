@@ -65,6 +65,20 @@ tl::expected<int, std::string> server_udp::new_server(
         return tl::make_unexpected<std::string>(strerror(err));
     }
 
+    /* Update to non-blocking socket */
+    int flags = m_driver->fcntl(sock, F_GETFL);
+    if (flags == -1) {
+        auto err = errno;
+        m_driver->close(sock);
+        return tl::make_unexpected(strerror(err));
+    }
+
+    if (m_driver->fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
+        auto err = errno;
+        m_driver->close(sock);
+        return tl::make_unexpected(strerror(err));
+    }
+
     if (m_driver->bind(sock, server_ptr, get_sa_len(server_ptr)) == -1) {
         OP_LOG(OP_LOG_ERROR,
                "Unable to bind to socket (domain = %d, protocol = UDP): %s\n",

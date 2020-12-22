@@ -307,6 +307,9 @@ tl::expected<size_t, int> dgram_channel::recv(
     dgram_channel_descriptor* desc = nullptr;
     auto storage = dgram_channel_descriptor{};
     while ((desc = to_dgram_descriptor(peek(), storage)) == nullptr) {
+        if (socket_flags.load(std::memory_order_relaxed) & EFD_NONBLOCK)
+            return (tl::make_unexpected(EAGAIN));
+
         if (auto error = ack_wait(); error != 0) {
             return (tl::make_unexpected(error));
         }

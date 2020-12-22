@@ -174,6 +174,9 @@ stream_channel::stream_channel(int flags,
 
 stream_channel::~stream_channel()
 {
+    error(ENOTCONN);
+    unblock();
+
     close(server_fds.client_fd);
     close(server_fds.server_fd);
 
