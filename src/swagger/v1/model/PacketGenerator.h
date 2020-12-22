@@ -65,6 +65,11 @@ public:
     bool isActive() const;
     void setActive(bool value);
         /// <summary>
+    /// Current state of MAC learning. For generators targeted to interfaces this must be \&quot;resolved\&quot; else generator won&#39;t start. 
+    /// </summary>
+    std::string getLearning() const;
+    void setLearning(std::string value);
+        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<PacketGeneratorConfig> getConfig() const;
@@ -76,6 +81,8 @@ protected:
     std::string m_Target_id;
 
     bool m_Active;
+
+    std::string m_Learning;
 
     std::shared_ptr<PacketGeneratorConfig> m_Config;
 

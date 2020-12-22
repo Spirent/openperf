@@ -34,6 +34,7 @@ class PacketGenerator(object):
         'id': 'str',
         'target_id': 'str',
         'active': 'bool',
+        'learning': 'str',
         'config': 'PacketGeneratorConfig'
     }
 
@@ -41,21 +42,24 @@ class PacketGenerator(object):
         'id': 'id',
         'target_id': 'target_id',
         'active': 'active',
+        'learning': 'learning',
         'config': 'config'
     }
 
-    def __init__(self, id=None, target_id=None, active=None, config=None):  # noqa: E501
+    def __init__(self, id=None, target_id=None, active=None, learning=None, config=None):  # noqa: E501
         """PacketGenerator - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._target_id = None
         self._active = None
+        self._learning = None
         self._config = None
         self.discriminator = None
 
         self.id = id
         self.target_id = target_id
         self.active = active
+        self.learning = learning
         self.config = config
 
     @property
@@ -123,6 +127,28 @@ class PacketGenerator(object):
         :type: bool
         """
         self._active = active
+
+    @property
+    def learning(self):
+        """Gets the learning of this PacketGenerator.  # noqa: E501
+
+        Current state of MAC learning. For generators targeted to interfaces this must be \"resolved\" else generator won't start.   # noqa: E501
+
+        :return: The learning of this PacketGenerator.  # noqa: E501
+        :rtype: str
+        """
+        return self._learning
+
+    @learning.setter
+    def learning(self, learning):
+        """Sets the learning of this PacketGenerator.
+
+        Current state of MAC learning. For generators targeted to interfaces this must be \"resolved\" else generator won't start.   # noqa: E501
+
+        :param learning: The learning of this PacketGenerator.  # noqa: E501
+        :type: str
+        """
+        self._learning = learning
 
     @property
     def config(self):

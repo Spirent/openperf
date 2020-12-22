@@ -90,6 +90,72 @@ paths:
         204:
           description: No Content
 
+  /generators/{id}/learning:
+    get:
+      operationId: GetPacketGeneratorLearningResults
+      tags:
+        - Learning
+        - PacketGenerators
+      summary: Get detailed learning information
+      description: |
+        Returns learning state and resolved addresses for
+        a packet generator attached to an interface, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/PacketGeneratorLearningResults"
+
+  /generators/{id}/learning/retry:
+    post:
+      operationId: RetryPacketGeneratorLearning
+      tags:
+        - Learning
+        - PacketGenerators
+      summary: Retry MAC learning
+      description: |
+        Used to retry MAC learning on a generator bound to an interface.
+        Performs MAC learning for only unresolved addresses.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /generators/{id}/learning/start:
+    post:
+      operationId: StartPacketGeneratorLearning
+      tags:
+        - Learning
+        - PacketGenerators
+      summary: Start MAC learning
+      description: |
+        Used to start MAC learning on a generator bound to an interface.
+        Clears previously resolved MAC table.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /generators/{id}/learning/stop:
+    post:
+      operationId: StopPacketGeneratorLearning
+      tags:
+        - Learning
+        - PacketGenerators
+      summary: Stop MAC learning
+      description: |
+        Used to stop MAC learning on a generator bound to
+        an interface.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
   /generators/{id}/start:
     post:
       operationId: StartPacketGenerator
@@ -434,12 +500,24 @@ definitions:
         type: boolean
         description: |
           Indicates whether this object is currently generating packets or not.
+      learning:
+        type: string
+        description: |
+          Current state of MAC learning. For generators targeted to interfaces
+          this must be "resolved" else generator won't start.
+        enum:
+          - unsupported
+          - unresolved
+          - resolving
+          - resolved
+          - timed_out
       config:
         $ref: "#/definitions/PacketGeneratorConfig"
     required:
       - id
       - target_id
       - active
+      - learning
       - config
 
   PacketGeneratorConfig:
@@ -585,6 +663,43 @@ definitions:
       - flows
       - protocol_counters
 
+  PacketGeneratorLearningResultIpv4:
+    type: object
+    description: Defines an IPv4 address MAC address pair.
+    properties:
+      ip_address:
+        pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$
+        type: string
+        description: IPv4 address.
+      mac_address:
+        type: string
+        description: MAC address of associated IPv4 address.
+    required:
+      - ip_address
+
+  PacketGeneratorLearningResults:
+    type: object
+    description: |
+      Current results of ARP/ND operations for an
+      interface-attached generator.
+    properties:
+      resolved_state:
+        type: string
+        description: |
+          Indicates current learning state.
+        enum:
+          - resolved
+          - resolving
+          - timed_out
+          - unresolved
+      ipv4:
+        type:
+          array
+        description: List of IPv4 address and their associated MAC addresses.
+        items:
+          $ref: "#/definitions/PacketGeneratorLearningResultIpv4"
+    required:
+      - resolved_state
 
   PacketProtocolCustom:
     type: object
