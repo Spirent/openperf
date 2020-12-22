@@ -202,20 +202,6 @@ network_task::new_connection(const network_sockaddr& server,
         }
     }
 
-    /* Update to non-blocking socket */
-    int flags = m_driver->fcntl(sock, F_GETFL);
-    if (flags == -1) {
-        auto err = errno;
-        m_driver->close(sock);
-        return tl::make_unexpected(err);
-    }
-
-    if (m_driver->fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
-        auto err = errno;
-        m_driver->close(sock);
-        return tl::make_unexpected(err);
-    }
-
 #if defined(SO_NOSIGPIPE)
     int enable = 1;
     if (m_driver->setsockopt(
@@ -231,6 +217,20 @@ network_task::new_connection(const network_sockaddr& server,
     if (m_driver->connect(sock, sa, network_sockaddr_size(server)) == -1
         && errno != EINPROGRESS) {
         /* not what we were expecting */
+        auto err = errno;
+        m_driver->close(sock);
+        return tl::make_unexpected(err);
+    }
+
+    /* Update to non-blocking socket */
+    int flags = m_driver->fcntl(sock, F_GETFL);
+    if (flags == -1) {
+        auto err = errno;
+        m_driver->close(sock);
+        return tl::make_unexpected(err);
+    }
+
+    if (m_driver->fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
         auto err = errno;
         m_driver->close(sock);
         return tl::make_unexpected(err);
