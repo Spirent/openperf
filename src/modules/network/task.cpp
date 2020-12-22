@@ -9,6 +9,7 @@
 
 #include "task.hpp"
 
+#include "config/op_config_file.hpp"
 #include "framework/core/op_log.h"
 #include "framework/utils/random.hpp"
 #include "framework/utils/overloaded_visitor.hpp"
@@ -16,11 +17,13 @@
 #include "utils/network_sockaddr.hpp"
 #include "drivers/kernel.hpp"
 #include "packet/type/ipv6_address.hpp"
+#include "timesync/bintime.hpp"
 
 namespace openperf::network::internal::task {
 
 using namespace std::chrono_literals;
 constexpr duration TASK_SPIN_THRESHOLD = 100ms;
+constexpr auto default_operation_timeout_usec = 1000000;
 const size_t max_buffer_size = 64 * 1024;
 
 stat_t& stat_t::operator+=(const stat_t& stat)
@@ -33,6 +36,7 @@ stat_t& stat_t::operator+=(const stat_t& stat)
     bytes_target += stat.bytes_target;
     bytes_actual += stat.bytes_actual;
     latency += stat.latency;
+    errors += stat.errors;
 
     latency_min = [&]() -> optional_time_t {
         if (latency_min.has_value() && stat.latency_min.has_value())
@@ -254,10 +258,12 @@ network_task::new_connection(const network_sockaddr& server,
     }
 
     if (config.target.protocol == IPPROTO_UDP) {
-        static timeval read_timeout = {
-            .tv_sec = 1,
-            .tv_usec = 0,
-        };
+        static auto timeout = std::chrono::microseconds(
+            openperf::config::file::op_config_get_param<OP_OPTION_TYPE_LONG>(
+                "modules.network.operation-timeout")
+                .value_or(default_operation_timeout_usec));
+
+        static auto read_timeout = timesync::to_timeval(timeout);
         m_driver->setsockopt(
             sock, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout));
     }
@@ -363,12 +369,15 @@ void network_task::do_read(connection_t& conn, stat_t& stat)
                                 std::min(conn.buffer.size(), conn.bytes_left),
                                 0))
             == -1) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) { return; }
+            static auto timeout = std::chrono::microseconds(
+                openperf::config::file::op_config_get_param<
+                    OP_OPTION_TYPE_LONG>("modules.network.operation-timeout")
+                    .value_or(default_operation_timeout_usec));
+            if ((errno == EAGAIN || errno == EWOULDBLOCK)
+                && (ref_clock::now() - conn.operation_start_time < timeout)) {
+                return;
+            }
 
-            OP_LOG(OP_LOG_ERROR,
-                   "Error reading from %d: %s\n",
-                   conn.fd,
-                   strerror(errno));
             conn.state = STATE_ERROR;
             stat.errors++;
             return;

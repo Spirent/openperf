@@ -2,13 +2,18 @@
 #include <stdexcept>
 #include <fcntl.h>
 
+#include "config/op_config_file.hpp"
 #include "core/op_log.h"
 #include "core/op_thread.h"
+#include "timesync/bintime.hpp"
 #include "utils/random.hpp"
 #include "server_udp.hpp"
 #include "protocol.hpp"
+
 #include "../utils/network_sockaddr.hpp"
 namespace openperf::network::internal::firehose {
+
+constexpr auto default_operation_timeout_usec = 1000000;
 
 tl::expected<int, std::string> server_udp::new_server(
     int domain, in_port_t port, const std::optional<std::string>& interface)
@@ -89,10 +94,12 @@ tl::expected<int, std::string> server_udp::new_server(
         return tl::make_unexpected<std::string>(strerror(err));
     }
 
-    static timeval read_timeout = {
-        .tv_sec = 1,
-        .tv_usec = 0,
-    };
+    static auto timeout = std::chrono::microseconds(
+        openperf::config::file::op_config_get_param<OP_OPTION_TYPE_LONG>(
+            "modules.network.operation-timeout")
+            .value_or(default_operation_timeout_usec));
+
+    static auto read_timeout = timesync::to_timeval(timeout);
     if (m_driver->setsockopt(
             sock, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout))
         != 0) {
