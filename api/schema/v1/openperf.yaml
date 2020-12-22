@@ -206,6 +206,18 @@ paths:
   /packet/generators/{id}:
     $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}
 
+  /packet/generators/{id}/learning:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}~1learning
+
+  /packet/generators/{id}/learning/retry:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}~1learning~1retry
+
+  /packet/generators/{id}/learning/start:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}~1learning~1start
+
+  /packet/generators/{id}/learning/stop:
+    $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}~1learning~1stop
+
   /packet/generators/{id}/start:
     $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}~1start
 
@@ -613,6 +625,12 @@ definitions:
 
   PacketGeneratorResult:
     $ref: ./modules/packet/generator.yaml#/definitions/PacketGeneratorResult
+
+  PacketGeneratorLearningResultIpv4:
+    $ref: ./modules/packet/generator.yaml#/definitions/PacketGeneratorLearningResultIpv4
+
+  PacketGeneratorLearningResults:
+    $ref: ./modules/packet/generator.yaml#/definitions/PacketGeneratorLearningResults
 
   PacketProtocolCustom:
     $ref: ./modules/packet/generator.yaml#/definitions/PacketProtocolCustom

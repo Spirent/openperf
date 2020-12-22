@@ -22,6 +22,7 @@ PacketGenerator::PacketGenerator()
     m_Id = "";
     m_Target_id = "";
     m_Active = false;
+    m_Learning = "";
     
 }
 
@@ -41,6 +42,7 @@ nlohmann::json PacketGenerator::toJson() const
     val["id"] = ModelBase::toJson(m_Id);
     val["target_id"] = ModelBase::toJson(m_Target_id);
     val["active"] = m_Active;
+    val["learning"] = ModelBase::toJson(m_Learning);
     val["config"] = ModelBase::toJson(m_Config);
     
 
@@ -52,6 +54,7 @@ void PacketGenerator::fromJson(nlohmann::json& val)
     setId(val.at("id"));
     setTargetId(val.at("target_id"));
     setActive(val.at("active"));
+    setLearning(val.at("learning"));
     
 }
 
@@ -81,6 +84,15 @@ bool PacketGenerator::isActive() const
 void PacketGenerator::setActive(bool value)
 {
     m_Active = value;
+    
+}
+std::string PacketGenerator::getLearning() const
+{
+    return m_Learning;
+}
+void PacketGenerator::setLearning(std::string value)
+{
+    m_Learning = value;
     
 }
 std::shared_ptr<PacketGeneratorConfig> PacketGenerator::getConfig() const
