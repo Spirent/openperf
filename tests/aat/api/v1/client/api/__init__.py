@@ -6,6 +6,7 @@ from __future__ import absolute_import
 from client.api.block_generator_api import BlockGeneratorApi
 from client.api.cpu_generator_api import CpuGeneratorApi
 from client.api.interfaces_api import InterfacesApi
+from client.api.learning_api import LearningApi
 from client.api.memory_generator_api import MemoryGeneratorApi
 from client.api.modules_api import ModulesApi
 from client.api.network_generator_api import NetworkGeneratorApi

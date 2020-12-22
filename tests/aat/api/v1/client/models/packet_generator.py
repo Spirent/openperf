@@ -34,6 +34,7 @@ class PacketGenerator(object):
         'id': 'str',
         'target_id': 'str',
         'active': 'bool',
+        'learning_resolved': 'bool',
         'config': 'PacketGeneratorConfig'
     }
 
@@ -41,21 +42,25 @@ class PacketGenerator(object):
         'id': 'id',
         'target_id': 'target_id',
         'active': 'active',
+        'learning_resolved': 'learning_resolved',
         'config': 'config'
     }
 
-    def __init__(self, id=None, target_id=None, active=None, config=None):  # noqa: E501
+    def __init__(self, id=None, target_id=None, active=None, learning_resolved=None, config=None):  # noqa: E501
         """PacketGenerator - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._target_id = None
         self._active = None
+        self._learning_resolved = None
         self._config = None
         self.discriminator = None
 
         self.id = id
         self.target_id = target_id
         self.active = active
+        if learning_resolved is not None:
+            self.learning_resolved = learning_resolved
         self.config = config
 
     @property
@@ -123,6 +128,28 @@ class PacketGenerator(object):
         :type: bool
         """
         self._active = active
+
+    @property
+    def learning_resolved(self):
+        """Gets the learning_resolved of this PacketGenerator.  # noqa: E501
+
+        Indicates whether this object resolved all destination MAC address. If present and false this object cannot start.   # noqa: E501
+
+        :return: The learning_resolved of this PacketGenerator.  # noqa: E501
+        :rtype: bool
+        """
+        return self._learning_resolved
+
+    @learning_resolved.setter
+    def learning_resolved(self, learning_resolved):
+        """Sets the learning_resolved of this PacketGenerator.
+
+        Indicates whether this object resolved all destination MAC address. If present and false this object cannot start.   # noqa: E501
+
+        :param learning_resolved: The learning_resolved of this PacketGenerator.  # noqa: E501
+        :type: bool
+        """
+        self._learning_resolved = learning_resolved
 
     @property
     def config(self):

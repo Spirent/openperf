@@ -22,6 +22,8 @@ PacketGenerator::PacketGenerator()
     m_Id = "";
     m_Target_id = "";
     m_Active = false;
+    m_Learning_resolved = false;
+    m_Learning_resolvedIsSet = false;
     
 }
 
@@ -41,6 +43,10 @@ nlohmann::json PacketGenerator::toJson() const
     val["id"] = ModelBase::toJson(m_Id);
     val["target_id"] = ModelBase::toJson(m_Target_id);
     val["active"] = m_Active;
+    if(m_Learning_resolvedIsSet)
+    {
+        val["learning_resolved"] = m_Learning_resolved;
+    }
     val["config"] = ModelBase::toJson(m_Config);
     
 
@@ -52,6 +58,10 @@ void PacketGenerator::fromJson(nlohmann::json& val)
     setId(val.at("id"));
     setTargetId(val.at("target_id"));
     setActive(val.at("active"));
+    if(val.find("learning_resolved") != val.end())
+    {
+        setLearningResolved(val.at("learning_resolved"));
+    }
     
 }
 
@@ -82,6 +92,23 @@ void PacketGenerator::setActive(bool value)
 {
     m_Active = value;
     
+}
+bool PacketGenerator::isLearningResolved() const
+{
+    return m_Learning_resolved;
+}
+void PacketGenerator::setLearningResolved(bool value)
+{
+    m_Learning_resolved = value;
+    m_Learning_resolvedIsSet = true;
+}
+bool PacketGenerator::learningResolvedIsSet() const
+{
+    return m_Learning_resolvedIsSet;
+}
+void PacketGenerator::unsetLearning_resolved()
+{
+    m_Learning_resolvedIsSet = false;
 }
 std::shared_ptr<PacketGeneratorConfig> PacketGenerator::getConfig() const
 {
