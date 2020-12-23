@@ -21,6 +21,13 @@ class block_generator : public model::block_generator
     using chronometer = openperf::timesync::chrono::realtime;
     using time_point = timesync::chrono::realtime::time_point;
 
+public:
+    struct block_stat
+    {
+        task_stat_t read = {.operation = task_operation::READ};
+        task_stat_t write = {.operation = task_operation::WRITE};
+    };
+
 private:
     static constexpr auto NAME_PREFIX = "op_block";
 
@@ -32,10 +39,12 @@ private:
     std::vector<virtual_device_stack*> m_vdev_stack_list;
     std::shared_ptr<virtual_device> m_vdev;
 
-    task_stat_t m_read, m_write;
+    block_stat m_stat;
+    std::atomic<block_stat*> m_stat_ptr;
+
     chronometer::time_point m_start_time;
 
-    dynamic::spool<model::block_generator_result> m_dynamic;
+    dynamic::spool<block_stat> m_dynamic;
     framework::generator::controller m_controller;
 
 public:

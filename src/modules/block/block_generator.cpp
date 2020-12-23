@@ -24,15 +24,15 @@ auto to_statistics_t(const task_stat_t& task_stat)
         .latency_max = task_stat.latency_max};
 };
 
-std::optional<double> get_field(const model::block_generator_result& stat,
+std::optional<double> get_field(const block_generator::block_stat& stat,
                                 std::string_view name)
 {
-    auto read = stat.read_stats();
+    auto& read = stat.read;
     if (name == "read.ops_target") return read.ops_target;
     if (name == "read.ops_actual") return read.ops_actual;
     if (name == "read.bytes_target") return read.bytes_target;
     if (name == "read.bytes_actual") return read.bytes_actual;
-    if (name == "read.io_errors") return read.io_errors;
+    if (name == "read.io_errors") return read.errors;
     if (name == "read.latency_total") return read.latency.count();
 
     if (name == "read.latency_min")
@@ -40,12 +40,12 @@ std::optional<double> get_field(const model::block_generator_result& stat,
     if (name == "read.latency_max")
         return read.latency_max.value_or(0ns).count();
 
-    auto write = stat.write_stats();
+    auto& write = stat.write;
     if (name == "write.ops_target") return write.ops_target;
     if (name == "write.ops_actual") return write.ops_actual;
     if (name == "write.bytes_target") return write.bytes_target;
     if (name == "write.bytes_actual") return write.bytes_actual;
-    if (name == "write.io_errors") return write.io_errors;
+    if (name == "write.io_errors") return write.errors;
     if (name == "write.latency_total") return write.latency.count();
 
     if (name == "write.latency_min")
@@ -53,7 +53,8 @@ std::optional<double> get_field(const model::block_generator_result& stat,
     if (name == "write.latency_max")
         return write.latency_max.value_or(0ns).count();
 
-    if (name == "timestamp") return stat.timestamp().time_since_epoch().count();
+    if (name == "timestamp")
+        return std::max(write.updated, read.updated).time_since_epoch().count();
 
     return std::nullopt;
 }
@@ -64,39 +65,40 @@ block_generator::block_generator(
     : model::block_generator(generator_model)
     , m_serial_number(++serial_counter)
     , m_vdev_stack_list(vdev_stack_list)
+    , m_stat_ptr(&m_stat)
     , m_dynamic(get_field)
     , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
 {
     m_controller.start<task_stat_t>([this](const task_stat_t& stat) {
         auto elapsed_time = stat.updated - m_start_time;
 
+        auto stat_copy = m_stat;
+        m_stat_ptr = &stat_copy;
+
         using double_time = std::chrono::duration<double>;
         switch (stat.operation) {
         case task_operation::READ:
-            m_read += stat;
-            m_read.ops_target = static_cast<uint64_t>(
+            m_stat.read += stat;
+            m_stat.read.ops_target = static_cast<uint64_t>(
                 (std::chrono::duration_cast<double_time>(elapsed_time)
                  * std::min(m_config.read_size, 1U) * m_config.reads_per_sec)
                     .count());
-            m_read.bytes_target = m_read.ops_target * m_config.read_size;
+            m_stat.read.bytes_target =
+                m_stat.read.ops_target * m_config.read_size;
             break;
         case task_operation::WRITE:
-            m_write += stat;
-            m_write.ops_target = static_cast<uint64_t>(
+            m_stat.write += stat;
+            m_stat.write.ops_target = static_cast<uint64_t>(
                 (std::chrono::duration_cast<double_time>(elapsed_time)
                  * std::min(m_config.write_size, 1U) * m_config.writes_per_sec)
                     .count());
-            m_write.bytes_target = m_write.ops_target * m_config.write_size;
+            m_stat.write.bytes_target =
+                m_stat.write.ops_target * m_config.write_size;
             break;
         }
 
-        auto complete_stat = model::block_generator_result();
-        complete_stat.read_stats(to_statistics_t(m_read));
-        complete_stat.write_stats(to_statistics_t(m_write));
-        complete_stat.timestamp(std::max(m_write.updated, m_read.updated));
-        complete_stat.dynamic_results(m_dynamic.result());
-
-        m_dynamic.add(complete_stat);
+        m_dynamic.add(m_stat);
+        m_stat_ptr = &m_stat;
     });
 
     update_resource(m_resource_id);
@@ -199,17 +201,19 @@ void block_generator::running(bool is_running)
 
 block_generator::block_result_ptr block_generator::statistics() const
 {
-    auto stat = std::make_shared<model::block_generator_result>();
-    stat->id(m_statistics_id);
-    stat->generator_id(m_id);
-    stat->active(m_running);
-    stat->read_stats(to_statistics_t(m_read));
-    stat->write_stats(to_statistics_t(m_write));
-    stat->timestamp(std::max(m_write.updated, m_read.updated));
-    stat->start_timestamp(m_start_time);
-    stat->dynamic_results(m_dynamic.result());
+    auto stat = *m_stat_ptr;
 
-    return stat;
+    auto result = std::make_shared<model::block_generator_result>();
+    result->id(m_statistics_id);
+    result->generator_id(m_id);
+    result->active(m_running);
+    result->read_stats(to_statistics_t(stat.read));
+    result->write_stats(to_statistics_t(stat.write));
+    result->timestamp(std::max(stat.write.updated, stat.read.updated));
+    result->start_timestamp(m_start_time);
+    result->dynamic_results(m_dynamic.result());
+
+    return result;
 }
 
 void block_generator::reset()
@@ -219,8 +223,7 @@ void block_generator::reset()
     m_dynamic.reset();
 
     m_start_time = chronometer::now();
-    m_read = {.operation = task_operation::READ};
-    m_write = {.operation = task_operation::WRITE};
+    m_stat = {};
     m_statistics_id = core::to_string(core::uuid::random());
 
     if (m_running) m_controller.resume();
