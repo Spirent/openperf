@@ -116,6 +116,19 @@ with description('Network Generator Module', 'network') as self:
                             expr = lambda: self._api.create_network_server(model)
                             expect(expr).to(raise_api_exception(400))
 
+                    with description('duplicate port'):
+                        with after.all:
+                            clear_network_instances(self._api)
+
+                        with it('bad request (400)'):
+                            model = network_server_model(
+                                self._api.api_client, id = 'some-id-1', interface=self._ip4_server_interface)
+                            self._api.create_network_server(model)
+                            model = network_server_model(
+                                self._api.api_client, id = 'some-id-2', interface=self._ip4_server_interface)
+                            expr = lambda: self._api.create_network_server(model)
+                            expect(expr).to(raise_api_exception(400))
+
                 with context('GET'):
                     with before.all:
                         model = network_server_model(self._api.api_client, interface=self._ip4_server_interface)

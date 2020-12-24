@@ -280,6 +280,14 @@ reply_msg server::handle_request(const request::server::create& request)
     else if (!config::op_config_validate_id_string(src->id()))
         return to_error(error_type::CUSTOM_ERROR, 0, "ID is not valid");
 
+    auto list = m_server_stack.list();
+    auto r = std::find_if(list.begin(), list.end(), [&](const auto& g) {
+        return g->port() == src->port();
+    });
+    if (r != std::end(list)) {
+        return to_error(error_type::CUSTOM_ERROR, 0, "Port is busy");
+    }
+
     auto result = m_server_stack.create(*src);
     if (!result) return to_error(error_type::CUSTOM_ERROR, 0, result.error());
 
