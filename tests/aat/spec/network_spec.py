@@ -89,7 +89,7 @@ with description('Network Generator Module', 'network') as self:
 
                     with description('with empty ID'):
                         with before.all:
-                            self._model = network_server_model(self._api.api_client)
+                            self._model = network_server_model(self._api.api_client, interface=self._ip4_server_interface)
 
                         with included_context('create server'):
                             with it('random ID assigned'):
@@ -97,14 +97,14 @@ with description('Network Generator Module', 'network') as self:
 
                     with description('with udp protocol'):
                         with before.all:
-                            self._model = network_server_model(self._api.api_client, protocol='udp')
+                            self._model = network_server_model(self._api.api_client, protocol='udp', interface=self._ip4_server_interface)
 
                         with included_context('create server'):
                             pass
 
                     with description('with specified ID'):
                         with before.all:
-                            self._model = network_server_model(self._api.api_client, id='some-specified-id')
+                            self._model = network_server_model(self._api.api_client, id='some-specified-id', interface=self._ip4_server_interface)
 
                         with included_context('create server'):
                             pass
@@ -112,13 +112,13 @@ with description('Network Generator Module', 'network') as self:
                     with description('unknown protocol'):
                         with it('bad request (400)'):
                             model = network_server_model(
-                                self._api.api_client, protocol='foo')
+                                self._api.api_client, protocol='foo', interface=self._ip4_server_interface)
                             expr = lambda: self._api.create_network_server(model)
                             expect(expr).to(raise_api_exception(400))
 
                 with context('GET'):
                     with before.all:
-                        model = network_server_model(self._api.api_client)
+                        model = network_server_model(self._api.api_client, interface=self._ip4_server_interface)
                         self._servers = []
                         for a in range(3):
                             model.port = 3357+a
@@ -142,7 +142,7 @@ with description('Network Generator Module', 'network') as self:
 
             with description('/network/servers/{id}'):
                 with before.all:
-                    model = network_server_model(self._api.api_client)
+                    model = network_server_model(self._api.api_client, interface=self._ip4_server_interface)
                     server = self._api.create_network_server(model)
                     expect(server).to(be_valid_network_server)
                     self._server = server
@@ -223,7 +223,7 @@ with description('Network Generator Module', 'network') as self:
 
                     with description('with empty ID'):
                         with before.all:
-                            self._model = network_generator_model(self._api.api_client)
+                            self._model = network_generator_model(self._api.api_client, interface=self._ip4_client_interface)
 
                         with included_context('create generator'):
                             with it('random ID assigned'):
@@ -231,14 +231,14 @@ with description('Network Generator Module', 'network') as self:
 
                     with description('with udp protocol'):
                         with before.all:
-                            self._model = network_generator_model(self._api.api_client, protocol='udp')
+                            self._model = network_generator_model(self._api.api_client, protocol='udp', interface=self._ip4_client_interface)
 
                         with included_context('create generator'):
                             pass
 
                     with description('with specified ID'):
                         with before.all:
-                            self._model = network_generator_model(self._api.api_client, id='some-specified-id')
+                            self._model = network_generator_model(self._api.api_client, id='some-specified-id', interface=self._ip4_client_interface)
 
                         with included_context('create generator'):
                             pass
@@ -246,13 +246,13 @@ with description('Network Generator Module', 'network') as self:
                     with description('unknown protocol'):
                         with it('bad request (400)'):
                             model = network_generator_model(
-                                self._api.api_client, protocol='foo')
+                                self._api.api_client, protocol='foo', interface=self._ip4_client_interface)
                             expr = lambda: self._api.create_network_generator(model)
                             expect(expr).to(raise_api_exception(400))
 
                 with context('GET'):
                     with before.all:
-                        model = network_generator_model(self._api.api_client)
+                        model = network_generator_model(self._api.api_client, interface=self._ip4_client_interface)
                         self._g8s = [self._api.create_network_generator(model) for a in range(3)]
                         self._result = self._api.list_network_generators_with_http_info(
                             _return_http_data_only=False)
@@ -273,7 +273,7 @@ with description('Network Generator Module', 'network') as self:
 
             with description('/network/generators/{id}'):
                 with before.all:
-                    model = network_generator_model(self._api.api_client)
+                    model = network_generator_model(self._api.api_client, interface=self._ip4_client_interface)
                     g7r = self._api.create_network_generator(model)
                     expect(g7r).to(be_valid_network_generator)
                     self._g7r = g7r
@@ -326,7 +326,7 @@ with description('Network Generator Module', 'network') as self:
 
             with description('/network/generators/{id}/start'):
                 with before.all:
-                    model = network_generator_model(self._api.api_client)
+                    model = network_generator_model(self._api.api_client, interface=self._ip4_client_interface)
                     g7r = self._api.create_network_generator(model)
                     expect(g7r).to(be_valid_network_generator)
                     self._g7r = g7r
@@ -405,7 +405,7 @@ with description('Network Generator Module', 'network') as self:
 
             with description('/network/generators/{id}/stop'):
                 with before.all:
-                    model = network_generator_model(self._api.api_client)
+                    model = network_generator_model(self._api.api_client, interface=self._ip4_client_interface)
                     g7r = self._api.create_network_generator(model)
                     expect(g7r).to(be_valid_network_generator)
 
@@ -446,7 +446,7 @@ with description('Network Generator Module', 'network') as self:
 
             with description('/network/generators/x/bulk-start'):
                 with before.all:
-                    model = network_generator_model(self._api.api_client)
+                    model = network_generator_model(self._api.api_client, interface=self._ip4_client_interface)
                     self._g8s = [self._api.create_network_generator(model) for a in range(3)]
 
                 with after.all:
@@ -524,7 +524,7 @@ with description('Network Generator Module', 'network') as self:
             with description('/network/generators/x/bulk-stop'):
                 with before.all:
                     model = network_generator_model(
-                        self._api.api_client)
+                        self._api.api_client, interface=self._ip4_client_interface)
                     g8s = [self._api.create_network_generator(model) for a in range(3)]
 
                     for a in range(3):
@@ -597,7 +597,7 @@ with description('Network Generator Module', 'network') as self:
 
         with description('Network Generator Results'):
             with before.all:
-                generator_model = network_generator_model(self._api.api_client)
+                generator_model = network_generator_model(self._api.api_client, interface=self._ip4_client_interface)
                 g7r = self._api.create_network_generator(generator_model)
                 expect(g7r).to(be_valid_network_generator)
 
@@ -678,12 +678,15 @@ with description('Network Generator Module', 'network') as self:
                     with before.each:
                         clear_network_instances(self._api)
 
-                        server_model = network_server_model(self._api.api_client, protocol=self._protocol)
+                        server_model = network_server_model(self._api.api_client, protocol=self._protocol, interface=self._server_interface)
                         self._server = self._api.create_network_server(server_model)
                         expect(self._server).to(be_valid_network_server)
 
                     with it('valid read result'):
-                        generator_model = network_generator_model(self._api.api_client, protocol=self._protocol)
+                        generator_model = network_generator_model(self._api.api_client,
+                                                                  protocol=self._protocol,
+                                                                  interface=self._client_interface,
+                                                                  host=self._host)
                         generator_model.config.writes_per_sec = 0
                         g7r = self._api.create_network_generator(generator_model)
                         expect(g7r).to(be_valid_network_generator)
@@ -721,7 +724,10 @@ with description('Network Generator Module', 'network') as self:
                         #expect(server.stats.bytes_sent).to(equal(result.read.bytes_actual))
 
                     with it('valid write result'):
-                        generator_model = network_generator_model(self._api.api_client, protocol=self._protocol)
+                        generator_model = network_generator_model(self._api.api_client,
+                                                                  protocol=self._protocol,
+                                                                  interface=self._client_interface,
+                                                                  host=self._host)
                         generator_model.config.reads_per_sec = 0
                         g7r = self._api.create_network_generator(generator_model)
                         expect(g7r).to(be_valid_network_generator)
@@ -759,36 +765,42 @@ with description('Network Generator Module', 'network') as self:
                         #expect(server.stats.bytes_received).to(equal(result.write.bytes_actual))
 
 
-                with description('TCP'):
-                    with description('IPv4'):
+                with description('IPv4'):
+                    with before.all:
+                        self._host = self._ip4_host
+                        self._server_interface = self._ip4_server_interface
+                        self._client_interface = self._ip4_client_interface
+
+                    with description('TCP'):
                         with before.all:
                             self._protocol = 'tcp'
-                            self._host = self._ip4_host
 
                         with included_context('check_statistics'):
                             pass
 
-                    with description('IPv6'):
+                    with description('UDP'):
+                        with before.all:
+                            self._protocol = 'udp'
+
+                        with included_context('check_statistics'):
+                            pass
+
+                with description('IPv6'):
+                    with before.all:
+                        self._host = self._ip6_host
+                        self._server_interface = self._ip6_server_interface
+                        self._client_interface = self._ip6_client_interface
+
+                    with description('TCP'):
                         with before.all:
                             self._protocol = 'tcp'
-                            self._host = self._ip6_host
 
                         with included_context('check_statistics'):
                             pass
 
-                with description('UDP'):
-                    with description('IPv4'):
+                    with description('UDP'):
                         with before.all:
                             self._protocol = 'udp'
-                            self._host = self._ip4_host
-
-                        with included_context('check_statistics'):
-                            pass
-
-                    with description('IPv6'):
-                        with before.all:
-                            self._protocol = 'udp'
-                            self._host = self._ip6_host
 
                         with included_context('check_statistics'):
                             pass
@@ -796,19 +808,28 @@ with description('Network Generator Module', 'network') as self:
             with after.all:
                 clear_network_instances(self._api)
 
-    with description('Driver kernel'):
+    with description('Driver KERNEL'):
         with before.all:
             self._service = Service(CONFIG.service())
             self._ip4_host = '127.0.0.1'
+            self._ip4_server_interface = 'lo'
+            self._ip4_client_interface = 'lo'
             self._ip6_host = '::1'
+            self._ip6_server_interface = 'lo'
+            self._ip6_client_interface = 'lo'
 
         with included_context('network_module'):
             pass
 
-    with _description('Driver dpdk'):
+    with description('Driver DPDK'):
         with before.all:
-            self._service = Service(CONFIG.service('network-dpdk'))
-            self._host = '198.18.1.10'
+            self._service = Service(CONFIG.service('dataplane'))
+            self._ip4_host = '198.18.1.10'
+            self._ip4_server_interface = 'server-v4'
+            self._ip4_client_interface = 'client-v4'
+            self._ip6_host = '2001:2::1'
+            self._ip6_server_interface = 'server-v6'
+            self._ip6_client_interface = 'client-v6'
 
         with included_context('network_module'):
             pass

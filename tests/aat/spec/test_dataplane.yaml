@@ -19,6 +19,9 @@ modules:
         port0: port0
         port1: port1
 
+  network:
+    driver: dpdk
+
 resources:
   /interfaces/server-v4:
     port_id: port0

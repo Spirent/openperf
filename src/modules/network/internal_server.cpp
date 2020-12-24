@@ -28,9 +28,8 @@ server::server(const model::server& server_model)
     std::shared_ptr<drivers::driver> nd;
     if (!driver || !driver.value().compare(drivers::kernel::key)) {
         nd = drivers::driver::instance<drivers::kernel>();
-        // TODO Enable after fix
-        // } else if (!driver.value().compare(drivers::dpdk::key)) {
-        //     nd = drivers::driver::instance<drivers::dpdk>();
+    } else if (!driver.value().compare(drivers::dpdk::key)) {
+        nd = drivers::driver::instance<drivers::dpdk>();
     } else {
         throw std::runtime_error("Network driver " + driver.value()
                                  + " is unsupported");
