@@ -456,7 +456,7 @@ stat_t network_task::worker_spin(uint64_t nb_ops)
                                         m_config.target.port,
                                         m_config.target.interface);
         if (!server) {
-            OP_LOG(OP_LOG_ERROR,
+            OP_LOG(OP_LOG_TRACE,
                    "Could not open new connection: %s\n",
                    strerror(abs(server.error())));
             stat.conn_stat.errors++;
@@ -465,7 +465,7 @@ stat_t network_task::worker_spin(uint64_t nb_ops)
         stat.conn_stat.attempted++;
         auto conn = new_connection(server.value(), m_config);
         if (!conn) {
-            OP_LOG(OP_LOG_ERROR,
+            OP_LOG(OP_LOG_TRACE,
                    "Could not open new connection: %s\n",
                    strerror(abs(conn.error())));
             stat.conn_stat.errors++;
