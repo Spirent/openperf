@@ -23,6 +23,18 @@ worker::~worker()
 }
 
 // Methods : private
+void worker::send(operation_t op)
+{
+    auto msg = message::serialized_message{};
+    message::push(msg, op);
+
+    if (auto r = message::send(m_statistics_socket.get(), std::move(msg)); r) {
+        OP_LOG(OP_LOG_ERROR,
+               "Worker ZMQ statistics socket send with error: %s",
+               zmq_strerror(r));
+    }
+}
+
 operation_t worker::next_command(bool wait) noexcept
 {
     constexpr int ZMQ_WAIT = 0;

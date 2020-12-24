@@ -44,11 +44,38 @@ void controller::clear()
 {
     send(internal::operation_t::STOP);
     m_workers.clear();
+    m_feedback.limit(0);
 }
 
 // Methods : private
+std::optional<message::serialized_message> controller::receive(bool wait)
+{
+    constexpr int ZMQ_WAIT = 0;
+    auto recv = message::recv(m_statistics_socket.get(),
+                              wait ? ZMQ_WAIT : ZMQ_DONTWAIT);
+
+    if (!recv && recv.error() != EAGAIN) {
+        if (errno == ETERM) {
+            OP_LOG(OP_LOG_DEBUG,
+                   "Controller ZMQ statistics socket %s terminated",
+                   m_statistics_endpoint.c_str());
+        } else {
+            OP_LOG(OP_LOG_ERROR,
+                   "Controller ZMQ statistics socket %s receive with error: %s",
+                   m_statistics_endpoint.c_str(),
+                   zmq_strerror(recv.error()));
+        }
+
+        throw std::runtime_error(zmq_strerror(recv.error()));
+    }
+
+    return recv ? std::make_optional(std::move(recv.value())) : std::nullopt;
+}
+
 void controller::send(internal::operation_t operation)
 {
+    assert(!m_stop);
+
     // Prevent sending commands to the ZMQ socket without subscribers.
     // This resolve the bug with generators hanging on deletion.
     if (m_workers.empty()) return;
@@ -68,6 +95,8 @@ void controller::send(internal::operation_t operation)
                    zmq_strerror(errno));
         }
     }
+
+    m_feedback.wait(operation);
 }
 
 } // namespace openperf::framework::generator

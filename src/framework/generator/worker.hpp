@@ -15,10 +15,9 @@
 #include "framework/message/serialized_message.hpp"
 
 #include "task.hpp"
+#include "feedback_tracker.hpp"
 
 namespace openperf::framework::generator::internal {
-
-enum class operation_t { NOOP = 0, PAUSE, RESUME, RESET, STOP };
 
 class worker final
 {
@@ -46,8 +45,10 @@ public:
 
 private:
     template <typename T> void run(task<T>&);
+    void send(operation_t);
     template <typename T> void send(const T&);
     template <typename T> void send(std::unique_ptr<T> stat);
+
     operation_t next_command(bool wait = false) noexcept;
 };
 
@@ -86,6 +87,7 @@ void worker::start(T&& task, std::optional<uint16_t> core_id)
 template <typename T> void worker::send(const T& stat)
 {
     auto msg = message::serialized_message{};
+    message::push(msg, operation_t::STATISTICS);
     message::push(msg, stat);
 
     if (auto r = message::send(m_statistics_socket.get(), std::move(msg)); r) {
@@ -98,6 +100,7 @@ template <typename T> void worker::send(const T& stat)
 template <typename T> void worker::send(std::unique_ptr<T> stat)
 {
     auto msg = message::serialized_message{};
+    message::push(msg, operation_t::STATISTICS);
     message::push(msg, stat.release());
 
     if (auto r = message::send(m_statistics_socket.get(), std::move(msg)); r) {
@@ -130,6 +133,8 @@ template <typename T> void worker::run(task<T>& task)
         default:
             send(task.spin());
         }
+
+        send(operation);
     }
 }
 
