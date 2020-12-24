@@ -211,7 +211,6 @@ void generator::pause()
 
 void generator::reset()
 {
-    auto was_paused = m_paused;
     m_controller.pause();
     m_controller.reset();
     m_dynamic.reset();
@@ -219,7 +218,7 @@ void generator::reset()
     m_stat.read.timestamp = m_stat.m_start_timestamp;
     m_stat.write.timestamp = m_stat.m_start_timestamp;
 
-    if (!was_paused) m_controller.resume();
+    if (!m_paused && !m_stopped) { m_controller.resume(); }
 }
 
 memory_stat generator::stat() const
