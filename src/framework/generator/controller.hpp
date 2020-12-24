@@ -1,6 +1,7 @@
 #ifndef _OP_FRAMEWORK_GENERATOR_CONTROLLER_HPP_
 #define _OP_FRAMEWORK_GENERATOR_CONTROLLER_HPP_
 
+#include <cassert>
 #include <forward_list>
 #include <memory>
 #include <optional>
@@ -26,9 +27,17 @@ namespace openperf::framework::generator {
  *     PAUSE
  *     RESUME
  *     RESET
+ *     READY
  *
  *   WORKER -> CONTROLLER
+ *     INIT
  *     STATISTICS
+ *     as confirmation:
+ *       STOP
+ *       PAUSE
+ *       RESUME
+ *       RESET
+ *       READY
  */
 
 // template <typename S> class controller
@@ -50,14 +59,16 @@ private:
     std::unique_ptr<void, zmq_ctx_deleter> m_context;
     std::string m_control_endpoint;
     std::string m_statistics_endpoint;
-    std::unique_ptr<void, op_socket_deleter> m_control_socket;
-    std::unique_ptr<void, op_socket_deleter> m_statistics_socket;
+    internal::worker::socket_pointer m_control_socket;
+    internal::worker::socket_pointer m_statistics_socket;
 
     std::string m_thread_name;
     std::thread m_thread;
     std::atomic_bool m_stop;
+    internal::feedback_tracker m_feedback;
 
     std::forward_list<internal::worker> m_workers;
+    size_t m_worker_count = 0;
 
 public:
     // Constructors & Destructor
@@ -76,21 +87,12 @@ public:
              const std::string& name,
              std::optional<uint16_t> core = std::nullopt);
 
-    template <typename S, typename T>
-    std::enable_if_t<!std::is_pointer_v<S>, void> start(T&& processor);
-    template <typename S, typename T>
-    std::enable_if_t<std::is_pointer_v<S>, void> start(T&& processor);
+    template <typename S, typename T> void start(T&& processor);
 
 private:
     // Methods : private
-    void send(internal::operation_t);
-
-    template <typename S>
-    std::enable_if_t<!std::is_pointer_v<S>, std::optional<S>>
-    next_statistics(bool wait = false);
-    template <typename S>
-    std::enable_if_t<std::is_pointer_v<S>, S>
-    next_statistics(bool wait = false);
+    std::optional<message::serialized_message> receive(bool wait = true);
+    void send(internal::operation_t, bool wait = true);
 };
 
 //
@@ -98,8 +100,7 @@ private:
 //
 
 // Methods : public
-template <typename S, typename T>
-std::enable_if_t<!std::is_pointer_v<S>, void> controller::start(T&& processor)
+template <typename S, typename T> void controller::start(T&& processor)
 {
     m_stop = false;
     m_thread = std::thread([this, processor = std::move(processor)] {
@@ -112,34 +113,29 @@ std::enable_if_t<!std::is_pointer_v<S>, void> controller::start(T&& processor)
         // Run the loop of the thread
         while (!m_stop) {
             try {
-                if (auto stats = next_statistics<S>(true); stats)
-                    processor(stats.value());
-            } catch (const std::runtime_error& e) {
-                if (!m_stop) throw e;
-            }
-        }
+                auto msg = receive(true);
+                if (!msg) continue;
 
-        op_log_close();
-    });
-}
+                auto operation =
+                    message::pop<internal::operation_t>(msg.value());
 
-template <typename S, typename T>
-std::enable_if_t<std::is_pointer_v<S>, void> controller::start(T&& processor)
-{
-    m_stop = false;
-    m_thread = std::thread([this, processor = std::move(processor)] {
-        // Set the thread name
-        op_thread_setname(m_thread_name.c_str());
-
-        OP_LOG(
-            OP_LOG_DEBUG, "Control thread %s started", m_thread_name.c_str());
-
-        // Run the loop of the thread
-        while (!m_stop) {
-            try {
-                if (auto stats = next_statistics<S>(true); stats != nullptr) {
-                    processor(*stats);
-                    delete stats;
+                switch (operation) {
+                case internal::operation_t::STATISTICS: {
+                    if constexpr (std::is_pointer_v<S>) {
+                        auto stats = message::pop<S>(msg.value());
+                        processor(*stats);
+                        delete stats;
+                    } else {
+                        auto stats = message::pop<S>(msg.value());
+                        processor(stats);
+                    }
+                } break;
+                case internal::operation_t::INIT:
+                    send(internal::operation_t::READY, false);
+                    break;
+                default:
+                    m_feedback.countdown(operation);
+                    break;
                 }
             } catch (const std::runtime_error& e) {
                 if (!m_stop) throw e;
@@ -155,6 +151,8 @@ void controller::add(T&& task,
                      const std::string& name,
                      std::optional<uint16_t> core)
 {
+    assert(!m_stop);
+
     auto control =
         internal::worker::socket_pointer(op_socket_get_client_subscription(
             m_context.get(), m_control_endpoint.c_str(), ""));
@@ -164,59 +162,11 @@ void controller::add(T&& task,
     auto& worker =
         m_workers.emplace_front(std::move(control), std::move(stats), name);
     worker.start(std::forward<T>(task), core);
-}
 
-// Methods : private
-template <typename S>
-std::enable_if_t<!std::is_pointer_v<S>, std::optional<S>>
-controller::next_statistics(bool wait)
-{
-    constexpr int ZMQ_WAIT = 0;
-    auto recv = message::recv(m_statistics_socket.get(),
-                              wait ? ZMQ_WAIT : ZMQ_DONTWAIT);
-
-    if (!recv && recv.error() != EAGAIN) {
-        if (errno == ETERM) {
-            OP_LOG(OP_LOG_DEBUG,
-                   "Controller ZMQ statistics socket %s terminated",
-                   m_statistics_endpoint.c_str());
-        } else {
-            OP_LOG(OP_LOG_ERROR,
-                   "Controller ZMQ statistics socket %s receive with error: %s",
-                   m_statistics_endpoint.c_str(),
-                   zmq_strerror(recv.error()));
-        }
-
-        throw std::runtime_error(zmq_strerror(recv.error()));
-    }
-
-    return recv ? std::optional<S>(message::pop<S>(recv.value()))
-                : std::nullopt;
-}
-
-template <typename S>
-std::enable_if_t<std::is_pointer_v<S>, S> controller::next_statistics(bool wait)
-{
-    constexpr int ZMQ_WAIT = 0;
-    auto recv = message::recv(m_statistics_socket.get(),
-                              wait ? ZMQ_WAIT : ZMQ_DONTWAIT);
-
-    if (!recv && recv.error() != EAGAIN) {
-        if (errno == ETERM) {
-            OP_LOG(OP_LOG_DEBUG,
-                   "Controller ZMQ statistics socket %s terminated",
-                   m_statistics_endpoint.c_str());
-        } else {
-            OP_LOG(OP_LOG_ERROR,
-                   "Controller ZMQ statistics socket %s receive with error: %s",
-                   m_statistics_endpoint.c_str(),
-                   zmq_strerror(recv.error()));
-        }
-
-        throw std::runtime_error(zmq_strerror(recv.error()));
-    }
-
-    return recv ? message::pop<S>(recv.value()) : nullptr;
+    // Wait the one READY message as confirmation establishing connection
+    m_worker_count++;
+    m_feedback.init(internal::operation_t::READY, 1);
+    m_feedback.wait();
 }
 
 } // namespace openperf::framework::generator
