@@ -77,7 +77,7 @@ void udp_socket::handle_io()
             udp_sendto(m_pcb.get(),
                        p,
                        reinterpret_cast<const ip_addr_t*>(&dest->addr),
-                       dest->port);
+                       ntohs(dest->port));
         else
             udp_send(m_pcb.get(), p);
 

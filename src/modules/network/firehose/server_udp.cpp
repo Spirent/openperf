@@ -208,7 +208,7 @@ void server_udp::run_worker_thread()
                                                            produced,
                                                            0,
                                                            client,
-                                                           get_sa_len(client));
+                                                           client_length);
                     if (send_or_err == -1) {
                         conn.state = STATE_ERROR;
                         conn.bytes_left = 0;
