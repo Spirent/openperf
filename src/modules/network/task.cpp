@@ -213,15 +213,6 @@ network_task::new_connection(const network_sockaddr& server,
     }
 #endif
 
-    auto* sa = std::visit([](auto&& sa) { return (sockaddr*)&sa; }, server);
-    if (m_driver->connect(sock, sa, network_sockaddr_size(server)) == -1
-        && errno != EINPROGRESS) {
-        /* not what we were expecting */
-        auto err = errno;
-        m_driver->close(sock);
-        return tl::make_unexpected(err);
-    }
-
     /* Update to non-blocking socket */
     int flags = m_driver->fcntl(sock, F_GETFL);
     if (flags == -1) {
@@ -231,6 +222,15 @@ network_task::new_connection(const network_sockaddr& server,
     }
 
     if (m_driver->fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
+        auto err = errno;
+        m_driver->close(sock);
+        return tl::make_unexpected(err);
+    }
+
+    auto* sa = std::visit([](auto&& sa) { return (sockaddr*)&sa; }, server);
+    if (m_driver->connect(sock, sa, network_sockaddr_size(server)) == -1
+        && errno != EINPROGRESS) {
+        /* not what we were expecting */
         auto err = errno;
         m_driver->close(sock);
         return tl::make_unexpected(err);
