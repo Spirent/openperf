@@ -34,6 +34,7 @@ The TVLP module responds to the following configuration properties:
     * **block** - series set for block generator (optional)
     * **cpu** - series set for cpu generator (optional)
     * **memory** - series set for memory generator (optional)
+    * **network** - series set for network generator (optional)
     * **packet** - series set for packet generator (optional)
 * **state** - current TVLP profile `state`, one of: READY, COUNTDOWN, RUNNING, or ERROR (read only).
 * **error** - read only string describing error condition; only when `state` == ERROR (read only).
@@ -52,7 +53,7 @@ The TVLP module responds to the following configuration properties:
 
 * **start_time** - time of start profile in ISO8601 format.
 * **memory** - start options for the _memory_ series.
-* **block** - start options for the _block_ series.
+* **network** - start options for the _network_ series.
 * **cpu** - start options for the _cpu_ series.
 * **packet** - start options for the _packet_ series.
 
@@ -81,13 +82,19 @@ CPU Generator:
 * **system.utilization**
 * **cores[_N_].utilization**
 
+Network Generator:
+* **read_size**
+* **reads_per_sec**
+* **write_size**
+* **writes_per_sec**
+
 Packet Generator:
 * **load.burst_size**
 * **load.rate.value**
 
 ## Dynamic Results
 
-The Dynamic Results are available to use with TVLP profiles. To get more information read the dedicated documentation of a [Dynamic Results](dynamic.md). The Dynamic Results configuration can be specified for each type of generator in appropriate section at start time of a TVLP profile. Dynamic Results are available for Memory, Block and CPU generators.
+The Dynamic Results are available to use with TVLP profiles. To get more information read the dedicated documentation of a [Dynamic Results](dynamic.md). The Dynamic Results configuration can be specified for each type of generator in appropriate section at start time of a TVLP profile. Dynamic Results are available for Memory, Block, Network and CPU generators.
 
 Example:
 
@@ -139,6 +146,8 @@ TVLP creates new _Result_ with new unique ID on each Start request. While TVLP c
 
 [CPU Generator Configuration](cpu.md)
 
+[Network Generator Configuration](network.md)
+
 [Packet Generator Configuration](../dev-guide/module-packetio.md)
 
 ```bash
@@ -169,6 +178,14 @@ curl --location --request POST '<OPENPERF_HOST>:<OPENPERF_PORT>/tvlp' \
                     {
                         "config": {$CPU_GENERATOR_CONFIGURATION},
                         "length": 1000000000
+                    }
+                ]
+            },
+            "network": {
+                "series": [
+                    {
+                        "length": 1000000000,
+                        "config": {$NETWORK_GENERATOR_CONFIGURATION}
                     }
                 ]
             },
