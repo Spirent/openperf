@@ -2,6 +2,7 @@ import os
 import time
 import client.api
 import client.models
+import psutil
 
 from mamba import description, before, after, it
 from expects import *
@@ -42,6 +43,13 @@ def clear_network_instances(api):
             api.delete_network_generator_result(res.id)
     except AttributeError:
         pass
+
+def get_interface_by_address(addr):
+    for iface, v in psutil.net_if_addrs().items():
+        for item in v:
+            if item.address == addr:
+                return iface
+
 
 with description('Network Generator Module', 'network') as self:
     with shared_context('network_module'):
@@ -783,6 +791,8 @@ with description('Network Generator Module', 'network') as self:
                         self._host = self._ip4_host
                         self._server_interface = self._ip4_server_interface
                         self._client_interface = self._ip4_client_interface
+                        if self._client_interface == None or self._server_interface == None:
+                            self.skip()
 
                     with description('TCP'):
                         with before.all:
@@ -803,6 +813,8 @@ with description('Network Generator Module', 'network') as self:
                         self._host = self._ip6_host
                         self._server_interface = self._ip6_server_interface
                         self._client_interface = self._ip6_client_interface
+                        if self._client_interface == None or self._server_interface == None:
+                            self.skip()
 
                     with description('TCP'):
                         with before.all:
@@ -825,11 +837,13 @@ with description('Network Generator Module', 'network') as self:
         with before.all:
             self._service = Service(CONFIG.service())
             self._ip4_host = '127.0.0.1'
-            self._ip4_server_interface = 'lo'
-            self._ip4_client_interface = 'lo'
+            iface = get_interface_by_address(self._ip4_host)
+            self._ip4_server_interface = iface
+            self._ip4_client_interface = iface
             self._ip6_host = '::1'
-            self._ip6_server_interface = 'lo'
-            self._ip6_client_interface = 'lo'
+            iface = get_interface_by_address(self._ip6_host)
+            self._ip6_server_interface = iface
+            self._ip6_client_interface = iface
 
         with included_context('network_module'):
             pass
