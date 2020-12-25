@@ -20,6 +20,7 @@ ifeq ($(PLATFORM), linux)
 	core/op_event_loop_epoll.c \
 	core/op_exit_backtrace.c \
 	core/op_thread_linux.c \
+	core/op_cpu_linux.c \
 	core/op_cpuset_linux.c
 else ifeq ($(PLATFORM), darwin)
 	FW_SOURCES += \

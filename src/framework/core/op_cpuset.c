@@ -18,7 +18,7 @@ extern int op_cpuset_get_next(op_cpuset_t cpuset, size_t* cpu);
 op_cpuset_t op_cpuset_all(void)
 {
     op_cpuset_t cpuset = op_cpuset_create();
-    for (uint16_t core = 0; core < op_get_cpu_count(); core++) {
+    for (uint16_t core = 0; core < op_cpu_count(); core++) {
         op_cpuset_set(cpuset, core, true);
     }
 
