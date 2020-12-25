@@ -49,7 +49,7 @@ public:
     void state(const StateVariant& state) { m_state = state; }
 };
 
-std::optional<ip_addr_t> get_address(const sockaddr_storage&);
+std::optional<ip_addr_t> get_address(const sockaddr_storage&, bool v6only);
 
 std::optional<in_port_t> get_port(const sockaddr_storage&);
 
