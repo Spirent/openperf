@@ -43,6 +43,24 @@ struct service
     {
         m_service = std::thread([this]() {
             op_thread_setname("op_network");
+
+            auto mask =
+                openperf::config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
+                    "modules.network.cpu-mask");
+            if (mask) {
+                if (auto res =
+                        op_thread_set_relative_affinity_mask(mask.value());
+                    res) {
+                    op_exit(
+                        "Applying Network module affinity mask failed! %s\n",
+                        std::strerror(res));
+                }
+
+                OP_LOG(OP_LOG_DEBUG,
+                       "Network module been configured with cpu-mask: 0x%x",
+                       mask.value());
+            }
+
             struct op_event_callbacks callbacks = {.on_read =
                                                        handle_zmq_shutdown};
             m_loop->add(m_shutdown.get(), &callbacks, nullptr);
