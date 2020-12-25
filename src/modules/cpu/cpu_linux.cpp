@@ -8,7 +8,6 @@
 
 #include <sys/resource.h>
 #include <sys/time.h>
-#include <sys/utsname.h>
 
 namespace openperf::cpu::internal {
 
@@ -100,15 +99,6 @@ utilization_time cpu_process_time()
                             .system = time_system,
                             .steal = cpu_steal_time(),
                             .utilization = time_user + time_system};
-}
-
-uint16_t cpu_cache_line_size() { return sysconf(_SC_LEVEL1_DCACHE_LINESIZE); }
-
-std::string cpu_architecture()
-{
-    auto info = utsname{};
-    uname(&info);
-    return info.machine;
 }
 
 } // namespace openperf::cpu::internal

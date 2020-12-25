@@ -25,7 +25,7 @@ cpu_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
     if (config->getMethod() == "system") {
         config->getSystem()->setUtilization(
             std::min(config->getSystem()->getUtilization() * load_scale,
-                     100.0 * op_get_cpu_count()));
+                     100.0 * op_cpu_count()));
     } else if (config->getMethod() == "cores") {
         for (auto& core : config->getCores()) {
             core->setUtilization(

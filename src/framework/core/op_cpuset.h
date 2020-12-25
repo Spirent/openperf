@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include "op_cpu.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,14 +41,6 @@ void op_cpuset_and(op_cpuset_t dest, op_cpuset_t src);
 void op_cpuset_or(op_cpuset_t dest, op_cpuset_t src);
 
 bool op_cpuset_equal(op_cpuset_t a, op_cpuset_t b);
-
-/**
- * Get number of cpus.
- *
- * @return
- *   The number of cpus or 0 if fail.
- */
-size_t op_get_cpu_count(void);
 
 #ifdef __cplusplus
 }

@@ -72,10 +72,3 @@ bool op_cpuset_equal(op_cpuset_t a, op_cpuset_t b)
     return CPU_EQUAL_S(
         CPU_ALLOC_SIZE(CPU_SETSIZE), (cpu_set_t*)a, (cpu_set_t*)b);
 }
-
-size_t op_get_cpu_count(void)
-{
-    long count = sysconf(_SC_NPROCESSORS_ONLN);
-    if (count < 0) return 0;
-    return (size_t)count;
-}
