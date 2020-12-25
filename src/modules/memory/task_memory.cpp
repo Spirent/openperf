@@ -5,6 +5,7 @@
 #include <sys/mman.h>
 
 #include "framework/core/op_core.h"
+#include "framework/core/op_cpu.h"
 #include "framework/utils/random.hpp"
 
 #include "memory/task_memory.hpp"
@@ -73,7 +74,7 @@ task_memory::task_memory(task_memory&& t) noexcept
 task_memory::task_memory(const task_memory_config& conf)
     : m_pid(0.01, 0.0005, 0.0)
 {
-    if (auto size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE); size > 0)
+    if (auto size = op_cpu_l1_cache_line_size(); size > 0)
         m_scratch = buffer{static_cast<size_t>(size)};
 
     config(conf);

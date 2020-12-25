@@ -2,6 +2,7 @@
 
 #include "server.hpp"
 #include "cpu.hpp"
+#include "framework/core/op_cpu.h"
 #include "framework/config/op_config_utils.hpp"
 #include "framework/message/serialized_message.hpp"
 
@@ -268,9 +269,9 @@ server::handle_request(const request_cpu_generator_result_del& request)
 reply_msg server::handle_request(const request_cpu_info&)
 {
     auto info = std::make_unique<cpu_info_t>();
-    info->architecture = cpu_architecture();
-    info->cores = op_get_cpu_count();
-    info->cache_line_size = cpu_cache_line_size();
+    info->architecture = op_cpu_architecture();
+    info->cores = op_cpu_count();
+    info->cache_line_size = op_cpu_l1_cache_line_size();
 
     return reply_cpu_info{.info = std::move(info)};
 }
