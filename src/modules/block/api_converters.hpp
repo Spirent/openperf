@@ -33,14 +33,10 @@ to_swagger(const model::block_generator_result&);
 model::file from_swagger(const BlockFile&);
 model::block_generator from_swagger(const BlockGenerator&);
 request_block_file_bulk_add from_swagger(BulkCreateBlockFilesRequest&);
-request_block_file_bulk_del from_swagger(BulkDeleteBlockFilesRequest&);
 request_block_generator_bulk_add
 from_swagger(BulkCreateBlockGeneratorsRequest&);
-request_block_generator_bulk_del
-from_swagger(BulkDeleteBlockGeneratorsRequest&);
 request_block_generator_bulk_start
 from_swagger(BulkStartBlockGeneratorsRequest&);
-request_block_generator_bulk_stop from_swagger(BulkStopBlockGeneratorsRequest&);
 
 } // namespace openperf::block::api
 

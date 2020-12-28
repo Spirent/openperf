@@ -111,6 +111,7 @@ reply_msg server::handle_request(const request_block_file_del& request)
 
 reply_msg server::handle_request(const request_block_file_bulk_add& request)
 {
+    // All-or-nothing behavior
     auto reply = reply_block_files{};
 
     auto remove_created_items = [&]() -> auto
@@ -146,14 +147,10 @@ reply_msg server::handle_request(const request_block_file_bulk_add& request)
 
 reply_msg server::handle_request(const request_block_file_bulk_del& request)
 {
-    if (auto failed = std::count_if(
-            request.ids.begin(),
-            request.ids.end(),
-            [&](auto& id) { return !m_file_stack->delete_block_file(id); });
-        failed > 0)
-        return to_error(api::error_type::CUSTOM_ERROR,
-                        0,
-                        "Some files from the list cannot be deleted");
+    // Best-effort manner
+    std::for_each(request.ids.begin(), request.ids.end(), [&](const auto& id) {
+        m_file_stack->delete_block_file(id);
+    });
 
     return api::reply_ok{};
 }
@@ -172,10 +169,10 @@ reply_msg server::handle_request(const request_block_generator_list&)
 
 reply_msg server::handle_request(const request_block_generator& request)
 {
-    auto reply = reply_block_generators{};
     auto blkgenerator = m_generator_stack->block_generator(request.id);
-
     if (!blkgenerator) { return to_error(api::error_type::NOT_FOUND); }
+
+    auto reply = reply_block_generators{};
     reply.generators.emplace_back(
         std::make_unique<model::block_generator>(*blkgenerator));
 
@@ -207,16 +204,21 @@ reply_msg server::handle_request(const request_block_generator_add& request)
 
 reply_msg server::handle_request(const request_block_generator_del& request)
 {
-    if (m_generator_stack->delete_block_generator(request.id)) {
-        return reply_ok{};
-    } else {
+    if (!m_generator_stack->block_generator(request.id)) {
         return to_error(api::error_type::NOT_FOUND);
     }
+
+    if (!m_generator_stack->delete_block_generator(request.id)) {
+        return to_error(api::error_type::CUSTOM_ERROR);
+    }
+
+    return reply_ok{};
 }
 
 reply_msg
 server::handle_request(const request_block_generator_bulk_add& request)
 {
+    // All-or-nothing behavior
     auto reply = reply_block_generators{};
 
     auto remove_created_items = [&]() -> auto
@@ -254,14 +256,10 @@ server::handle_request(const request_block_generator_bulk_add& request)
 reply_msg
 server::handle_request(const request_block_generator_bulk_del& request)
 {
-    bool failed = false;
-    for (const auto& id : request.ids) {
-        failed = !m_generator_stack->delete_block_generator(id) || failed;
-    }
-    if (failed)
-        return to_error(api::error_type::CUSTOM_ERROR,
-                        0,
-                        "Some generators from the list cannot be deleted");
+    // Best-effort manner
+    std::for_each(request.ids.begin(), request.ids.end(), [&](const auto& id) {
+        m_generator_stack->delete_block_generator(id);
+    });
 
     return api::reply_ok{};
 }
@@ -287,18 +285,30 @@ reply_msg server::handle_request(const request_block_generator_start& request)
 
 reply_msg server::handle_request(const request_block_generator_stop& request)
 {
-    if (m_generator_stack->stop_generator(request.id)) {
-        return reply_ok{};
-    } else {
+    if (!m_generator_stack->block_generator(request.id)) {
         return to_error(api::error_type::NOT_FOUND);
     }
+
+    if (!m_generator_stack->stop_generator(request.id)) {
+        return to_error(api::error_type::CUSTOM_ERROR,
+                        0,
+                        "Block Generator is in active state");
+    }
+
+    return reply_ok{};
 }
 
 reply_msg
 server::handle_request(const request_block_generator_bulk_start& request)
 {
-    auto reply = reply_block_generator_results{};
+    // All-or-nothing behavior
+    for (const auto& id : request.ids) {
+        if (!m_generator_stack->block_generator(id)) {
+            return to_error(api::error_type::NOT_FOUND);
+        }
+    }
 
+    auto reply = reply_block_generator_results{};
     try {
         for (const auto& id : request.ids) {
             auto stats =
@@ -328,14 +338,10 @@ server::handle_request(const request_block_generator_bulk_start& request)
 reply_msg
 server::handle_request(const request_block_generator_bulk_stop& request)
 {
-    bool failed = false;
-    for (const auto& id : request.ids) {
-        failed = !m_generator_stack->stop_generator(id) || failed;
-    }
-    if (failed)
-        return to_error(api::error_type::CUSTOM_ERROR,
-                        0,
-                        "Some generators from the list were not found");
+    // Best-effort manner
+    std::for_each(request.ids.begin(), request.ids.end(), [&](const auto& id) {
+        m_generator_stack->stop_generator(id);
+    });
 
     return api::reply_ok{};
 }
@@ -366,11 +372,17 @@ reply_msg server::handle_request(const request_block_generator_result& request)
 reply_msg
 server::handle_request(const request_block_generator_result_del& request)
 {
-    if (m_generator_stack->delete_statistics(request.id)) {
-        return reply_ok{};
-    } else {
+    if (!m_generator_stack->statistics(request.id)) {
         return to_error(api::error_type::NOT_FOUND);
     }
+
+    if (!m_generator_stack->delete_statistics(request.id)) {
+        return to_error(api::error_type::CUSTOM_ERROR,
+                        0,
+                        "Block Generator Result is in active state ");
+    }
+
+    return reply_ok{};
 }
 
 static int _handle_rpc_request(const op_event_data* data, void* arg)

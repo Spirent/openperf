@@ -268,13 +268,6 @@ request_block_file_bulk_add from_swagger(BulkCreateBlockFilesRequest& p_request)
     return request;
 }
 
-request_block_file_bulk_del from_swagger(BulkDeleteBlockFilesRequest& p_request)
-{
-    return request_block_file_bulk_del{
-        .ids = std::move(p_request.getIds()),
-    };
-}
-
 request_block_generator_bulk_add
 from_swagger(BulkCreateBlockGeneratorsRequest& p_request)
 {
@@ -283,14 +276,6 @@ from_swagger(BulkCreateBlockGeneratorsRequest& p_request)
         request.generators.emplace_back(
             std::make_unique<model::block_generator>(from_swagger(*item)));
     return request;
-}
-
-request_block_generator_bulk_del
-from_swagger(BulkDeleteBlockGeneratorsRequest& p_request)
-{
-    return request_block_generator_bulk_del{
-        .ids = std::move(p_request.getIds()),
-    };
 }
 
 request_block_generator_bulk_start
@@ -304,14 +289,6 @@ from_swagger(BulkStartBlockGeneratorsRequest& p_request)
             dynamic::from_swagger(*p_request.getDynamicResults());
 
     return request;
-}
-
-request_block_generator_bulk_stop
-from_swagger(BulkStopBlockGeneratorsRequest& p_request)
-{
-    return request_block_generator_bulk_stop{
-        .ids = std::move(p_request.getIds()),
-    };
 }
 
 } // namespace openperf::block::api
