@@ -107,6 +107,7 @@ block_generator::block_generator(
 
 block_generator::~block_generator()
 {
+    stop();
     m_controller.clear();
     m_vdev->close();
 }
@@ -141,7 +142,6 @@ void block_generator::stop()
 void block_generator::config(const model::block_generator_config& value)
 {
     m_controller.pause();
-
     m_controller.clear();
     reset();
 
