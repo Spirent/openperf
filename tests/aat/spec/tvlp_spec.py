@@ -13,8 +13,6 @@ from common.helper import check_modules_exists
 # Generators
 from common.helper import (check_modules_exists,
                            file_model,
-                           bulk_start_model,
-                           bulk_stop_model,
                            wait_for_file_initialization_done)
 
 from common.helper.packet import get_first_port_id
