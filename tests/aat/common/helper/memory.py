@@ -26,9 +26,9 @@ def config_model():
     return config
 
 
-def memory_generator_model(api_client, id = ''):
+def memory_generator_model(api_client, running = False, id = ''):
     gen = client.models.MemoryGenerator()
-    gen.running = False
+    gen.running = running
     gen.config = config_model()
     gen.id = id
     gen.init_percent_complete = 0
