@@ -150,7 +150,7 @@ bool generator_stack::stop_generator(const std::string& id)
 {
     try {
         auto gen = m_generators.at(id);
-        if (!gen->running()) return true;
+        if (!gen->running()) return false;
 
         gen->stop();
         auto result = gen->statistics();

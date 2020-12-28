@@ -124,16 +124,6 @@ from_swagger(swagger::BulkCreateCpuGeneratorsRequest& p_request)
     return request;
 }
 
-request_cpu_generator_bulk_del
-from_swagger(swagger::BulkDeleteCpuGeneratorsRequest& p_request)
-{
-    request_cpu_generator_bulk_del request{};
-    for (auto& id : p_request.getIds()) {
-        request.ids.push_back(std::make_unique<std::string>(id));
-    }
-    return request;
-}
-
 std::shared_ptr<swagger::CpuGenerator> to_swagger(const model::generator& model)
 {
     auto gen = std::make_shared<swagger::CpuGenerator>();

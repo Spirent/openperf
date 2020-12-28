@@ -288,11 +288,27 @@ void handler::bulk_create_generators(const Rest::Request& request,
 void handler::bulk_delete_generators(const Rest::Request& request,
                                      Http::ResponseWriter response)
 {
+    // Best-effort manner
     auto request_model =
         json::parse(request.body()).get<BulkDeleteCpuGeneratorsRequest>();
 
-    auto api_reply =
-        submit_request(m_socket.get(), api::from_swagger(request_model));
+    // Erase an invalid ids from request list
+    // TODO: replace to std::erase_if for C++20
+    auto& ids = request_model.getIds();
+    ids.erase(std::remove_if(
+                  ids.begin(),
+                  ids.end(),
+                  [](const auto& id) {
+                      return !openperf::config::op_config_validate_id_string(
+                          id);
+                  }),
+              ids.end());
+
+    auto api_reply = submit_request(m_socket.get(),
+                                    api::request_cpu_generator_bulk_del{
+                                        .ids = std::move(ids),
+                                    });
+
     if (std::get_if<api::reply_ok>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
@@ -367,9 +383,11 @@ void handler::stop_generator(const Rest::Request& request,
 void handler::bulk_start_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
+    // All-or-nothing behavior
     auto request_model =
         json::parse(request.body()).get<BulkStartCpuGeneratorsRequest>();
 
+    // Check ID format
     for (const auto& id : request_model.getIds()) {
         if (auto r = openperf::config::op_config_validate_id_string(id); !r) {
             response.send(Http::Code::Bad_Request, r.error());
@@ -409,19 +427,27 @@ void handler::bulk_start_generators(const Rest::Request& request,
 void handler::bulk_stop_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
+    // Best-effort manner
     auto request_model =
         json::parse(request.body()).get<BulkStopCpuGeneratorsRequest>();
 
-    api::request_cpu_generator_bulk_stop bulk_request{};
-    for (const auto& id : request_model.getIds()) {
-        if (auto r = openperf::config::op_config_validate_id_string(id); !r) {
-            response.send(Http::Code::Bad_Request, r.error());
-            return;
-        }
-        bulk_request.ids.push_back(std::make_unique<std::string>(id));
-    }
+    // Erase an invalid ids from request list
+    // TODO: replace to std::erase_if for C++20
+    auto& ids = request_model.getIds();
+    ids.erase(std::remove_if(
+                  ids.begin(),
+                  ids.end(),
+                  [](const auto& id) {
+                      return !openperf::config::op_config_validate_id_string(
+                          id);
+                  }),
+              ids.end());
 
-    auto api_reply = submit_request(m_socket.get(), std::move(bulk_request));
+    auto api_reply = submit_request(m_socket.get(),
+                                    api::request_cpu_generator_bulk_stop{
+                                        .ids = std::move(ids),
+                                    });
+
     if (std::get_if<api::reply_ok>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
