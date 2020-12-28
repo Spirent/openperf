@@ -33,6 +33,10 @@ private:
 private:
     std::unordered_map<std::string, generator> m_generators;
     std::unordered_map<std::string, stat_variant> m_stats;
+
+    // Map holds next pairs:
+    // * Generator ID -> Active Statistics ID
+    // * Active Statistics ID -> Generator ID
     std::unordered_map<std::string, std::string> m_id_map;
 
 public:
