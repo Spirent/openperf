@@ -195,7 +195,7 @@ void handler::create_generator(const Rest::Request& request,
     }
 
     response.send(Http::Code::Internal_Server_Error);
-} // namespace openperf::memory::api
+}
 
 void handler::get_generator(const Rest::Request& request,
                             Http::ResponseWriter response)
@@ -312,6 +312,7 @@ void handler::stop_generator(const Rest::Request& request,
 void handler::bulk_create_generators(const Rest::Request& request,
                                      Http::ResponseWriter response)
 {
+    // All-or-nothing behavior
     auto model = json::parse(request.body())
                      .get<model::BulkCreateMemoryGeneratorsRequest>();
 
@@ -356,8 +357,20 @@ void handler::bulk_delete_generators(const Rest::Request& request,
     auto model = json::parse(request.body())
                      .get<model::BulkDeleteMemoryGeneratorsRequest>();
 
-    auto api_reply = submit_request(
-        request::generator::bulk::erase{{std::move(model.getIds())}});
+    // Erase an invalid ids from request list
+    // TODO: replace to std::erase_if for C++20
+    auto& ids = model.getIds();
+    ids.erase(std::remove_if(
+                  ids.begin(),
+                  ids.end(),
+                  [](const auto& id) {
+                      return !openperf::config::op_config_validate_id_string(
+                          id);
+                  }),
+              ids.end());
+
+    auto api_reply =
+        submit_request(request::generator::bulk::erase{{std::move(ids)}});
 
     if (auto ok = std::get_if<reply::ok>(&api_reply)) {
         response.send(Http::Code::No_Content);
@@ -375,6 +388,7 @@ void handler::bulk_delete_generators(const Rest::Request& request,
 void handler::bulk_start_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
+    // All-or-nothing behavior
     auto model = json::parse(request.body())
                      .get<model::BulkStartMemoryGeneratorsRequest>();
 
@@ -422,15 +436,20 @@ void handler::bulk_stop_generators(const Rest::Request& request,
     auto model = json::parse(request.body())
                      .get<model::BulkStopMemoryGeneratorsRequest>();
 
-    for (const auto& id : model.getIds()) {
-        if (auto res = config::op_config_validate_id_string(id); !res) {
-            response.send(Http::Code::Bad_Request, res.error());
-            return;
-        }
-    }
+    // Erase an invalid ids from request list
+    // TODO: replace to std::erase_if for C++20
+    auto& ids = model.getIds();
+    ids.erase(std::remove_if(
+                  ids.begin(),
+                  ids.end(),
+                  [](const auto& id) {
+                      return !openperf::config::op_config_validate_id_string(
+                          id);
+                  }),
+              ids.end());
 
-    auto api_reply = submit_request(
-        request::generator::bulk::stop{{std::move(model.getIds())}});
+    auto api_reply =
+        submit_request(request::generator::bulk::stop{{std::move(ids)}});
 
     if (auto ok = std::get_if<reply::ok>(&api_reply)) {
         response.send(Http::Code::No_Content);
