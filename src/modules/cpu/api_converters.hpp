@@ -24,8 +24,6 @@ is_valid(const swagger::CpuGeneratorConfig&);
 model::generator from_swagger(const swagger::CpuGenerator&);
 request_cpu_generator_bulk_add
 from_swagger(swagger::BulkCreateCpuGeneratorsRequest&);
-request_cpu_generator_bulk_del
-from_swagger(swagger::BulkDeleteCpuGeneratorsRequest&);
 std::shared_ptr<swagger::CpuGenerator> to_swagger(const model::generator&);
 std::shared_ptr<swagger::CpuGeneratorResult>
 to_swagger(const model::generator_result&);
