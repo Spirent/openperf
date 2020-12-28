@@ -41,9 +41,6 @@ private:
     bool m_stopped = true;
     bool m_paused = true;
 
-    std::thread m_scrub_thread;
-    std::atomic_bool m_scrub_aborted;
-
     size_t m_buffer_size = 0;
     std::shared_ptr<buffer> m_buffer;
 
@@ -52,7 +49,9 @@ private:
     uint16_t m_serial_number;
     std::chrono::nanoseconds m_run_time;
     time_point m_run_time_milestone;
-    std::atomic_int32_t m_init_percent_complete;
+
+    std::future<void> m_buffer_initializer;
+    std::atomic_int8_t m_buffer_init_percent;
 
     memory_stat m_stat;
     std::atomic<memory_stat*> m_stat_ptr;
@@ -85,7 +84,7 @@ public:
     generator::config_t config() const;
     memory_stat stat() const;
     dynamic::results dynamic_results() const;
-    int32_t init_percent_complete() const { return m_init_percent_complete; }
+    int32_t init_percent_complete() const { return m_buffer_init_percent; }
 
     bool is_initialized() const { return init_percent_complete() == 100; }
     bool is_stopped() const { return m_stopped; }
@@ -93,8 +92,6 @@ public:
     bool is_paused() const { return m_paused; }
 
 private:
-    void scrub_worker();
-
     template <typename TaskType, typename Function>
     void configure_tasks(const operation_config&,
                          Function&& vector_generator,

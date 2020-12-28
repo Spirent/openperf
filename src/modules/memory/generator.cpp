@@ -15,6 +15,30 @@ namespace openperf::memory::internal {
 static uint16_t serial_counter = 0;
 
 // Functions
+void buffer_initializer(std::weak_ptr<buffer> buffer_ptr,
+                        std::atomic_int8_t& percent_complete)
+{
+    auto buffer = buffer_ptr.lock();
+    percent_complete = 0;
+
+    auto page_size = sysconf(_SC_PAGESIZE);
+    auto block_size = ((buffer->size() / 100 - 1) / page_size + 1) * page_size;
+    auto seed = utils::random_uniform<uint32_t>();
+
+    for (size_t current = 0; current < buffer->size();) {
+        auto buf_len =
+            std::min(static_cast<size_t>(block_size), buffer->size() - current);
+        utils::op_prbs23_fill(&seed,
+                              reinterpret_cast<uint8_t*>(buffer->data())
+                                  + current,
+                              buf_len);
+        current += buf_len;
+        percent_complete = current * 100 / buffer->size();
+    }
+
+    percent_complete = 100;
+}
+
 index_vector generate_index_vector(size_t size, io_pattern pattern)
 {
     index_vector indexes(size);
@@ -124,9 +148,6 @@ generator::generator(const generator::config_t& c)
 
 generator::~generator()
 {
-    m_scrub_aborted.store(true);
-    if (m_scrub_thread.joinable()) m_scrub_thread.join();
-
     stop();
     m_controller.clear();
 }
@@ -134,7 +155,10 @@ generator::~generator()
 // Methods : public
 void generator::start()
 {
+    assert(0 < m_buffer->size());
+
     if (!m_stopped) return;
+    if (m_buffer_initializer.valid()) { m_buffer_initializer.wait(); }
 
     reset();
     m_controller.resume();
@@ -213,6 +237,8 @@ dynamic::results generator::dynamic_results() const
 
 void generator::config(const generator::config_t& cfg)
 {
+    assert(0 < cfg.buffer_size);
+
     auto was_paused = m_paused;
     pause();
 
@@ -244,22 +270,26 @@ void generator::config(const generator::config_t& cfg)
 
     m_buffer_size = cfg.buffer_size;
     if (auto buffer = cfg.buffer.lock()) {
-        assert(m_buffer_size <= buffer->size());
+        if (m_buffer_size > buffer->size()) {
+            throw std::runtime_error(
+                "Specified buffer size (" + std::to_string(m_buffer_size)
+                + " bytes) more than actual size of shared buffer ("
+                + std::to_string(buffer->size()) + " bytes)");
+        }
+
         m_buffer = buffer;
+        m_buffer_init_percent = 100;
     } else {
         m_buffer->resize(m_buffer_size);
+
+        // Fill the buffer asynchronously
+        if (m_buffer_initializer.valid()) { m_buffer_initializer.wait(); }
+        m_buffer_initializer =
+            std::async(std::launch::async,
+                       buffer_initializer,
+                       std::weak_ptr<internal::buffer>(m_buffer),
+                       std::ref(m_buffer_init_percent));
     }
-
-    m_scrub_aborted.store(true);
-    if (m_scrub_thread.joinable()) m_scrub_thread.join();
-    m_scrub_aborted.store(false);
-
-    m_init_percent_complete.store(0);
-    m_scrub_thread = std::thread([this]() {
-        scrub_worker();
-        m_init_percent_complete.store(100);
-        m_scrub_aborted.store(false);
-    });
 
     m_read = cfg.read;
     m_write = cfg.write;
@@ -277,27 +307,6 @@ generator::config_t generator::config() const
         .read = m_read,
         .write = m_write,
     };
-}
-
-// Methods : private
-void generator::scrub_worker()
-{
-    size_t current = 0;
-    auto page_size = sysconf(_SC_PAGESIZE);
-    auto block_size =
-        ((m_buffer->size() / 100 - 1) / page_size + 1) * page_size;
-    auto seed = utils::random_uniform<uint32_t>();
-
-    while (!m_scrub_aborted.load() && current < m_buffer->size()) {
-        auto buf_len = std::min(static_cast<size_t>(block_size),
-                                m_buffer->size() - current);
-        utils::op_prbs23_fill(&seed,
-                              reinterpret_cast<uint8_t*>(m_buffer->data())
-                                  + current,
-                              buf_len);
-        current += buf_len;
-        m_init_percent_complete.store(current * 100 / m_buffer->size());
-    }
 }
 
 } // namespace openperf::memory::internal
