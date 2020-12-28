@@ -55,7 +55,7 @@ bool generator_stack::delete_block_generator(const std::string& id)
 {
     auto gen = block_generator(id);
     if (!gen) return false;
-    if (gen->is_running()) gen->stop();
+    if (gen->is_running()) stop_generator(id);
 
     for (auto it = m_block_results.begin(); it != m_block_results.end();) {
         auto& value = (*it).second;
@@ -107,7 +107,7 @@ bool generator_stack::stop_generator(const std::string& id)
 {
     auto gen = block_generator(id);
     if (!gen) return false;
-    if (!gen->is_running()) return true;
+    if (!gen->is_running()) return false;
 
     gen->stop();
     auto result = gen->statistics();
@@ -156,10 +156,12 @@ bool generator_stack::delete_statistics(const std::string& id)
     if (!m_block_results.count(id)) return false;
 
     auto result = m_block_results.at(id);
-    if (std::holds_alternative<block_generator_result_ptr>(result))
+    if (std::holds_alternative<block_generator_result_ptr>(result)) {
         m_block_results.erase(id);
+        return true;
+    }
 
-    return true;
+    return false;
 }
 
 } // namespace openperf::block::generator

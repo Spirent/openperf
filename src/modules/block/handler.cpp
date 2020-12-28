@@ -340,7 +340,7 @@ void handler::get_file(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -363,7 +363,7 @@ void handler::delete_file(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found);
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -383,6 +383,7 @@ void handler::delete_file(const Rest::Request& request,
 void handler::bulk_create_files(const Rest::Request& request,
                                 Http::ResponseWriter response)
 {
+    // All-or-nothing behavior
     auto request_model =
         json::parse(request.body()).get<BulkCreateBlockFilesRequest>();
 
@@ -409,11 +410,27 @@ void handler::bulk_create_files(const Rest::Request& request,
 void handler::bulk_delete_files(const Rest::Request& request,
                                 Http::ResponseWriter response)
 {
+    // Best-effort manner
     auto request_model =
         json::parse(request.body()).get<BulkDeleteBlockFilesRequest>();
 
-    auto api_reply =
-        submit_request(m_socket.get(), api::from_swagger(request_model));
+    // Erase an invalid ids from request list
+    // TODO: replace to std::erase_if for C++20
+    auto& ids = request_model.getIds();
+    ids.erase(std::remove_if(
+                  ids.begin(),
+                  ids.end(),
+                  [](const auto& id) {
+                      return !openperf::config::op_config_validate_id_string(
+                          id);
+                  }),
+              ids.end());
+
+    auto api_reply = submit_request(m_socket.get(),
+                                    api::request_block_file_bulk_del{
+                                        .ids = std::move(ids),
+                                    });
+
     if (std::get_if<api::reply_ok>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
@@ -496,7 +513,7 @@ void handler::get_generator(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -520,7 +537,7 @@ void handler::delete_generator(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found);
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
     auto api_reply = submit_request(m_socket.get(),
@@ -539,6 +556,7 @@ void handler::delete_generator(const Rest::Request& request,
 void handler::bulk_create_generators(const Rest::Request& request,
                                      Http::ResponseWriter response)
 {
+    // All-or-nothing behavior
     auto request_model =
         json::parse(request.body()).get<BulkCreateBlockGeneratorsRequest>();
 
@@ -565,11 +583,27 @@ void handler::bulk_create_generators(const Rest::Request& request,
 void handler::bulk_delete_generators(const Rest::Request& request,
                                      Http::ResponseWriter response)
 {
+    // Best-effort manner
     auto request_model =
         json::parse(request.body()).get<BulkDeleteBlockGeneratorsRequest>();
 
-    auto api_reply =
-        submit_request(m_socket.get(), api::from_swagger(request_model));
+    // Erase an invalid ids from request list
+    // TODO: replace to std::erase_if for C++20
+    auto& ids = request_model.getIds();
+    ids.erase(std::remove_if(
+                  ids.begin(),
+                  ids.end(),
+                  [](const auto& id) {
+                      return !openperf::config::op_config_validate_id_string(
+                          id);
+                  }),
+              ids.end());
+
+    auto api_reply = submit_request(m_socket.get(),
+                                    api::request_block_generator_bulk_del{
+                                        .ids = std::move(ids),
+                                    });
+
     if (std::get_if<api::reply_ok>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
@@ -586,7 +620,7 @@ void handler::start_generator(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -622,7 +656,7 @@ void handler::stop_generator(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -642,8 +676,18 @@ void handler::stop_generator(const Rest::Request& request,
 void handler::bulk_start_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
+    // All-or-nothing behavior
     auto request_model =
         json::parse(request.body()).get<BulkStartBlockGeneratorsRequest>();
+
+    // Check the IDs format
+    for (const auto& id : request_model.getIds()) {
+        if (auto res = openperf::config::op_config_validate_id_string(id);
+            !res) {
+            response.send(Http::Code::Bad_Request, res.error());
+            return;
+        }
+    }
 
     auto data = api::request_block_generator_bulk_start{
         .ids = std::move(request_model.getIds())};
@@ -676,11 +720,27 @@ void handler::bulk_start_generators(const Rest::Request& request,
 void handler::bulk_stop_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
+    // Best-effort manner
     auto request_model =
         json::parse(request.body()).get<BulkStopBlockGeneratorsRequest>();
 
-    auto api_reply =
-        submit_request(m_socket.get(), api::from_swagger(request_model));
+    // Erase an invalid ids from request list
+    // TODO: replace to std::erase_if for C++20
+    auto& ids = request_model.getIds();
+    ids.erase(std::remove_if(
+                  ids.begin(),
+                  ids.end(),
+                  [](const auto& id) {
+                      return !openperf::config::op_config_validate_id_string(
+                          id);
+                  }),
+              ids.end());
+
+    auto api_reply = submit_request(m_socket.get(),
+                                    api::request_block_generator_bulk_stop{
+                                        .ids = std::move(ids),
+                                    });
+
     if (std::get_if<api::reply_ok>(&api_reply)) {
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
@@ -721,7 +781,7 @@ void handler::get_generator_result(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found, res.error());
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
 
@@ -746,9 +806,10 @@ void handler::delete_generator_result(const Rest::Request& request,
 {
     auto id = request.param(":id").as<std::string>();
     if (auto res = openperf::config::op_config_validate_id_string(id); !res) {
-        response.send(Http::Code::Not_Found);
+        response.send(Http::Code::Bad_Request, res.error());
         return;
     }
+
     auto api_reply = submit_request(
         m_socket.get(), api::request_block_generator_result_del{id : id});
     if (auto reply = std::get_if<api::reply_ok>(&api_reply)) {
