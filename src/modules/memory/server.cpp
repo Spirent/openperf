@@ -95,6 +95,8 @@ api_reply server::handle_request(const request::generator::create& req)
     try {
         auto id = m_generator_stack->create(req.id, req.config);
         const auto& gnr = m_generator_stack->generator(id);
+        if (req.is_running) { m_generator_stack->start(id); }
+
         return reply::generator::item{
             .id = id,
             .is_running = gnr.is_running(),
@@ -125,6 +127,8 @@ api_reply server::handle_request(const request::generator::bulk::create& req)
         try {
             auto id = m_generator_stack->create(data.id, data.config);
             const auto& gnr = m_generator_stack->generator(id);
+            if (data.is_running) { m_generator_stack->start(id); }
+
             list.push_back(reply::generator::item{
                 .id = id,
                 .is_running = gnr.is_running(),
