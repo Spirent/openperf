@@ -29,8 +29,6 @@ from common.helper.modules import (check_modules_exists)
 from common.helper.block import (get_block_dynamic_results_fields,
                                  block_generator_model,
                                  file_model,
-                                 bulk_start_model,
-                                 bulk_stop_model,
                                  wait_for_file_initialization_done)
 
 # memory.py
