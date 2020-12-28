@@ -24,35 +24,23 @@ def config_model():
     return config
 
 
-def block_generator_model(resource_id = None):
+def block_generator_model(resource_id = None, id = '', running = False):
     bg = client.models.BlockGenerator()
-    bg.id = ''
+    bg.id = id
     bg.resource_id = resource_id
-    bg.running = False
+    bg.running = running
     bg.config = config_model()
     return bg
 
 
-def file_model(size = None, path = None):
+def file_model(size = None, path = None, id = ''):
     ba = client.models.BlockFile()
-    ba.id = ''
+    ba.id = id
     ba.size = size
     ba.path = path
     ba.init_percent_complete = 0
     ba.state = 'none'
     return ba
-
-
-def bulk_start_model(ids):
-    bsbgr = client.models.BulkStartBlockGeneratorsRequest()
-    bsbgr.ids = ids
-    return bsbgr
-
-
-def bulk_stop_model(ids):
-    bsbgr = client.models.BulkStopBlockGeneratorsRequest()
-    bsbgr.ids = ids
-    return bsbgr
 
 
 def wait_for_file_initialization_done(api_client, file_id, timeout):
