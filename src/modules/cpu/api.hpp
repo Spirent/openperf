@@ -44,7 +44,6 @@ using cpu_generator_result_t = model::generator_result;
 using cpu_generator_ptr = std::unique_ptr<cpu_generator_t>;
 using cpu_generator_result_ptr = std::unique_ptr<cpu_generator_result_t>;
 using cpu_info_ptr = std::unique_ptr<cpu_info_t>;
-using id_ptr = std::unique_ptr<std::string>;
 
 enum class error_type { NONE = 0, NOT_FOUND, ZMQ_ERROR, CUSTOM_ERROR };
 
@@ -82,7 +81,7 @@ struct request_cpu_generator_bulk_add
 
 struct request_cpu_generator_bulk_del
 {
-    std::vector<id_ptr> ids;
+    std::vector<std::string> ids;
 };
 
 struct request_cpu_generator_start
@@ -104,7 +103,7 @@ struct request_cpu_generator_bulk_start
 
 struct request_cpu_generator_bulk_stop
 {
-    std::vector<id_ptr> ids;
+    std::vector<std::string> ids;
 };
 
 struct request_cpu_generator_result_list
