@@ -80,6 +80,18 @@ bool generator_stack::erase(const std::string& id)
         auto gen = m_generators.at(id);
         if (gen->running()) stop_generator(id);
 
+        // Erase statistics for given Generator ID
+        for (auto it = m_statistics.begin(); it != m_statistics.end();) {
+            if (auto stat = std::get_if<model::generator_result>(&it->second)) {
+                if (stat->generator_id() == id) {
+                    it = m_statistics.erase(it);
+                    continue;
+                }
+            }
+
+            it++;
+        }
+
         return m_generators.erase(id);
     } catch (const std::out_of_range&) {
         return false;
