@@ -37,6 +37,18 @@ void generator_collection::erase(const std::string& id)
 {
     stop(id);
     m_generators.erase(id);
+
+    // Erase statistics for given Generator ID
+    for (auto it = m_stats.begin(); it != m_stats.end();) {
+        if (auto stat = std::get_if<stat_t>(&it->second)) {
+            if (stat->generator_id == id) {
+                it = m_stats.erase(it);
+                continue;
+            }
+        }
+
+        it++;
+    }
 }
 
 std::string generator_collection::create(const std::string& id,
@@ -130,6 +142,7 @@ void generator_collection::stop()
                        .stat = g7r.stat(),
                        .dynamic_results = g7r.dynamic_results()});
             m_id_map.erase(entry.first);
+            m_id_map.erase(stat_id);
             g7r.reset();
         }
     }
@@ -148,6 +161,7 @@ void generator_collection::stop(const std::string& id)
                    .stat = g7r.stat(),
                    .dynamic_results = g7r.dynamic_results()});
         m_id_map.erase(id);
+        m_id_map.erase(stat_id);
         g7r.reset();
     }
 }
@@ -175,6 +189,7 @@ void generator_collection::resume(const std::string& id)
 generator_collection::stat_t
 generator_collection::stat(const std::string& id) const
 {
+    // Consider given ID as Statistics ID
     if (m_stats.count(id)) {
         auto stat = m_stats.at(id);
         if (auto g7r = std::get_if<generator_ref>(&stat)) {
@@ -187,6 +202,7 @@ generator_collection::stat(const std::string& id) const
         return std::get<stat_t>(stat);
     }
 
+    // in other case consider given ID as Generator ID
     auto& g7r = m_generators.at(id);
     return stat_t{.id = m_id_map.at(id),
                   .generator_id = id,
@@ -217,16 +233,7 @@ generator_collection::stat_list generator_collection::stats() const
 
 bool generator_collection::erase_stat(const std::string& id)
 {
-    // m_stats.erase(id);
-    // if (m_id_map.contains(id)) {
-    //    auto g7r = std::get<generator_ref>(m_stats.at(id));
-    //    auto stat_id = core::to_string(core::uuid::random());
-
-    //    g7r.get().reset();
-    //    m_stats.emplace(stat_id, generator_ref(g7r));
-    //    m_id_map.insert(
-    //        m_id_map.at(id), stat_id);
-    //}
+    // Allow to remove an inactive statistics only
     auto stat = m_stats.at(id);
     if (std::holds_alternative<stat_t>(stat)) {
         m_stats.erase(id);
