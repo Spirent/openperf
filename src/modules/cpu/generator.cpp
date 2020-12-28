@@ -200,6 +200,8 @@ generator::~generator()
 void generator::config(const generator_config& config)
 {
     m_controller.pause();
+    m_controller.clear();
+    reset();
 
     std::visit(
         [this](auto&& conf) {
@@ -257,7 +259,6 @@ void generator::start()
     reset();
     m_controller.resume();
     m_running = true;
-    m_dynamic.reset();
 }
 
 void generator::stop()
@@ -278,6 +279,7 @@ void generator::reset()
 {
     m_controller.pause();
     m_controller.reset();
+    m_dynamic.reset();
     m_stat.clear();
 
     m_result_id = core::to_string(core::uuid::random());
