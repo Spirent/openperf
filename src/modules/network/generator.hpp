@@ -23,6 +23,8 @@ private:
     std::string m_result_id;
     const uint16_t m_serial_number;
 
+    task::synchronizer_t m_synchronizer;
+
     task::stat_t m_read_stat, m_write_stat;
     task::conn_stat_t m_conn_stat;
     chronometer::time_point m_start_time;

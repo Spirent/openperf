@@ -540,6 +540,20 @@ definitions:
         type: integer
         description: Number of bytes to send to the server per write operation
         minimum: 0
+      ratio:
+        type: object
+        description: Relative amount of a mixed workload operations that should be performed. If value is not given, ratio is not limited.
+        title: NetworkGeneratorReadWriteRatio
+        properties:
+          writes:
+            type: integer
+            minimum: 1
+          reads:
+            type: integer
+            minimum: 1
+        required:
+          - writes
+          - reads
     required:
       - connections
       - ops_per_connection

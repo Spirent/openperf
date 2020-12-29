@@ -8,6 +8,12 @@
 
 namespace openperf::network::model {
 
+struct ratio_t
+{
+    uint32_t reads;
+    uint32_t writes;
+};
+
 struct generator_config
 {
     uint64_t connections;
@@ -16,6 +22,7 @@ struct generator_config
     uint64_t read_size;
     uint64_t writes_per_sec;
     uint64_t write_size;
+    std::optional<ratio_t> ratio;
 };
 
 struct generator_target

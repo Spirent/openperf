@@ -26,6 +26,7 @@ NetworkGeneratorConfig::NetworkGeneratorConfig()
     m_Read_size = 0;
     m_Writes_per_sec = 0;
     m_Write_size = 0;
+    m_RatioIsSet = false;
     
 }
 
@@ -52,6 +53,10 @@ nlohmann::json NetworkGeneratorConfig::toJson() const
     val["read_size"] = m_Read_size;
     val["writes_per_sec"] = m_Writes_per_sec;
     val["write_size"] = m_Write_size;
+    if(m_RatioIsSet)
+    {
+        val["ratio"] = ModelBase::toJson(m_Ratio);
+    }
     
 
     return val;
@@ -75,6 +80,16 @@ void NetworkGeneratorConfig::fromJson(nlohmann::json& val)
     setReadSize(val.at("read_size"));
     setWritesPerSec(val.at("writes_per_sec"));
     setWriteSize(val.at("write_size"));
+    if(val.find("ratio") != val.end())
+    {
+        if(!val["ratio"].is_null())
+        {
+            std::shared_ptr<NetworkGeneratorReadWriteRatio> newItem(new NetworkGeneratorReadWriteRatio());
+            newItem->fromJson(val["ratio"]);
+            setRatio( newItem );
+        }
+        
+    }
     
 }
 
@@ -149,6 +164,23 @@ void NetworkGeneratorConfig::setWriteSize(int32_t value)
 {
     m_Write_size = value;
     
+}
+std::shared_ptr<NetworkGeneratorReadWriteRatio> NetworkGeneratorConfig::getRatio() const
+{
+    return m_Ratio;
+}
+void NetworkGeneratorConfig::setRatio(std::shared_ptr<NetworkGeneratorReadWriteRatio> value)
+{
+    m_Ratio = value;
+    m_RatioIsSet = true;
+}
+bool NetworkGeneratorConfig::ratioIsSet() const
+{
+    return m_RatioIsSet;
+}
+void NetworkGeneratorConfig::unsetRatio()
+{
+    m_RatioIsSet = false;
 }
 
 }

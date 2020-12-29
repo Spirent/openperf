@@ -63,8 +63,17 @@ is_valid(const swagger::NetworkGeneratorConfig& config)
     if (config.getWritesPerSec() < 0)
         errors.emplace_back("Writes Per Sec value is not valid.");
 
+    if (config.ratioIsSet()) {
+        if (config.getRatio()->getReads() < 1)
+            errors.emplace_back("Ratio Reads value is not valid.");
+        if (config.getRatio()->getWrites() < 1)
+            errors.emplace_back("Ratio Writes value is not valid.");
+    }
     if (config.getReadsPerSec() < 1 && config.getWritesPerSec() < 1)
         errors.emplace_back("No operations were specified.");
+    if (config.ratioIsSet()
+        && (config.getReadsPerSec() < 1 || config.getWritesPerSec() < 1))
+        errors.emplace_back("Ratio is specified for empty load generation.");
 
     auto target = config.getTarget();
     if (!target) {
@@ -105,6 +114,14 @@ model::generator from_swagger(const swagger::NetworkGenerator& generator)
     config.reads_per_sec = generator.getConfig()->getReadsPerSec();
     config.write_size = generator.getConfig()->getWriteSize();
     config.writes_per_sec = generator.getConfig()->getWritesPerSec();
+    if (generator.getConfig()->ratioIsSet()) {
+        config.ratio = model::ratio_t{
+            .reads = static_cast<uint32_t>(
+                generator.getConfig()->getRatio()->getReads()),
+            .writes = static_cast<uint32_t>(
+                generator.getConfig()->getRatio()->getWrites()),
+        };
+    }
 
     model::generator_target target;
     target.host = generator.getConfig()->getTarget()->getHost();
@@ -194,6 +211,13 @@ to_swagger(const model::generator& model)
     network_config->setWritesPerSec(model.config().writes_per_sec);
     network_config->setConnections(model.config().connections);
     network_config->setOpsPerConnection(model.config().ops_per_connection);
+    if (model.config().ratio) {
+        auto ratio =
+            std::make_shared<swagger::NetworkGeneratorReadWriteRatio>();
+        ratio->setReads(model.config().ratio.value().reads);
+        ratio->setWrites(model.config().ratio.value().writes);
+        network_config->setRatio(ratio);
+    }
 
     auto network_target =
         std::make_shared<swagger::NetworkGeneratorConfig_target>();

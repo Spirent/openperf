@@ -165,41 +165,38 @@ void generator::config(const model::generator_config& config)
         throw std::runtime_error(
             "Bind to the interface is required for this driver");
 
+    auto t_config =
+        task::config_t{.operation = task::operation_t::READ,
+                       .connections = m_config.connections,
+                       .ops_per_connection = m_config.ops_per_connection,
+                       .target = task::target_t{
+                           .host = m_target.host,
+                           .port = m_target.port,
+                           .protocol = to_task_protocol(m_target.protocol),
+                           .interface = m_target.interface,
+                       }};
+
+    if (config.ratio) {
+        t_config.synchronizer = &m_synchronizer;
+        m_synchronizer.ratio_reads.store(config.ratio.value().reads,
+                                         std::memory_order_relaxed);
+        m_synchronizer.ratio_writes.store(config.ratio.value().writes,
+                                          std::memory_order_relaxed);
+    }
+
     if (config.reads_per_sec > 0) {
-        auto task = task::network_task(
-            task::config_t{
-                .operation = task::operation_t::READ,
-                .block_size = m_config.read_size,
-                .ops_per_sec = m_config.reads_per_sec,
-                .connections = m_config.connections,
-                .ops_per_connection = m_config.ops_per_connection,
-                .target =
-                    task::target_t{
-                        .host = m_target.host,
-                        .port = m_target.port,
-                        .protocol = to_task_protocol(m_target.protocol),
-                        .interface = m_target.interface,
-                    }},
-            nd);
+        t_config.operation = task::operation_t::READ;
+        t_config.block_size = m_config.read_size;
+        t_config.ops_per_sec = m_config.reads_per_sec;
+        auto task = task::network_task(t_config, nd);
         m_controller.add(std::move(task),
                          NAME_PREFIX + std::to_string(m_serial_number) + "r");
     }
     if (config.writes_per_sec > 0) {
-        auto task = task::network_task(
-            task::config_t{
-                .operation = task::operation_t::WRITE,
-                .block_size = m_config.write_size,
-                .ops_per_sec = m_config.writes_per_sec,
-                .connections = m_config.connections,
-                .ops_per_connection = m_config.ops_per_connection,
-                .target =
-                    task::target_t{
-                        .host = m_target.host,
-                        .port = m_target.port,
-                        .protocol = to_task_protocol(m_target.protocol),
-                        .interface = m_target.interface,
-                    }},
-            nd);
+        t_config.operation = task::operation_t::WRITE;
+        t_config.block_size = m_config.write_size;
+        t_config.ops_per_sec = m_config.writes_per_sec;
+        auto task = task::network_task(t_config, nd);
         m_controller.add(std::move(task),
                          NAME_PREFIX + std::to_string(m_serial_number) + "w");
     }

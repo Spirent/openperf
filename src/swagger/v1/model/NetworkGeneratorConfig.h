@@ -21,6 +21,7 @@
 
 #include "ModelBase.h"
 
+#include "NetworkGeneratorReadWriteRatio.h"
 #include "NetworkGeneratorConfig_target.h"
 
 namespace swagger {
@@ -85,7 +86,14 @@ public:
     /// </summary>
     int32_t getWriteSize() const;
     void setWriteSize(int32_t value);
-    
+        /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<NetworkGeneratorReadWriteRatio> getRatio() const;
+    void setRatio(std::shared_ptr<NetworkGeneratorReadWriteRatio> value);
+    bool ratioIsSet() const;
+    void unsetRatio();
+
 protected:
     std::shared_ptr<NetworkGeneratorConfig_target> m_Target;
     bool m_TargetIsSet;
@@ -101,6 +109,8 @@ protected:
 
     int32_t m_Write_size;
 
+    std::shared_ptr<NetworkGeneratorReadWriteRatio> m_Ratio;
+    bool m_RatioIsSet;
 };
 
 }
