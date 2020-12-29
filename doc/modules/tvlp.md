@@ -53,6 +53,7 @@ The TVLP module responds to the following configuration properties:
 
 * **start_time** - time of start profile in ISO8601 format.
 * **memory** - start options for the _memory_ series.
+* **block** - start options for the _block_ series.
 * **network** - start options for the _network_ series.
 * **cpu** - start options for the _cpu_ series.
 * **packet** - start options for the _packet_ series.

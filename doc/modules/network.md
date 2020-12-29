@@ -25,7 +25,7 @@ Component of Openperf core, listens for network generator connections and suppor
 ```
 
 * **id** - unique network server identifier. Leave field empty to generate unique identifier.
-* **interface** - bind server socket to a particular device, specified as interface name (required for dpdk driver)
+* **interface** - bind server socket to a particular device, specified as interface name (required for *dpdk* driver)
 * **port** - UDP/TCP port on which to listen for client connections
 * **protocol** - protocol which is used to establish client connections
     * **tcp**
@@ -64,7 +64,7 @@ Component of Openperf core, providing an ability for network I/O load generation
 }
 ```
 
-* **id** - unique network generator identifier. Leave field empty to generate unique generator identificator.
+* **id** - unique network generator identifier. Leave field empty to generate unique generator identifier.
 * **running** - indicates whether this generator is currently running.
 * **config** - configuration of network I/O load generation.
     * **connections** - number of connections to establish with the server
@@ -82,7 +82,7 @@ Component of Openperf core, providing an ability for network I/O load generation
             * **udp**
 
 Leave *reads_per_sec* or *writes_per_sec* as zero value to ignore operation while I/O load generation.
-Target interface is optional parameter. Required for dpdk driver only
+Target interface is optional parameter. Required for *dpdk* driver only
 
 ### Start network generator
 
