@@ -112,9 +112,26 @@ template <typename T> void worker::send(std::unique_ptr<T> stat)
 
 template <typename T> void worker::run(task<T>& task)
 {
+    using namespace std::chrono_literals;
+
+    // Send the INIT messages to the controller periodically and
+    // wait the READY message from the controller as confirmation
+    while (true) {
+        send(operation_t::INIT);
+
+        // Sleep is needed to prevent storm of ZMQ messages
+        std::this_thread::sleep_for(1ms);
+        if (auto op = next_command(false); op == operation_t::READY) {
+            // Send the READY message back to the controller
+            send(operation_t::READY);
+            break;
+        }
+    }
+
     for (bool paused = true; !m_finished;) {
         auto operation = next_command(paused);
 
+        // Process the received operation
         switch (operation) {
         case operation_t::STOP:
             m_finished = true;
@@ -127,14 +144,24 @@ template <typename T> void worker::run(task<T>& task)
             break;
         case operation_t::RESUME:
             paused = false;
-            [[fallthrough]];
+            break;
         case operation_t::NOOP:
-            [[fallthrough]];
-        default:
             send(task.spin());
+            break;
+        default:
+            break;
         }
 
-        send(operation);
+        // Report the controller about processed operation
+        switch (operation) {
+        case operation_t::NOOP:
+        case operation_t::READY:
+        case operation_t::INIT:
+            // NO REPORT
+            break;
+        default:
+            send(operation);
+        }
     }
 }
 

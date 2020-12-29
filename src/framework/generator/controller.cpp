@@ -72,7 +72,7 @@ std::optional<message::serialized_message> controller::receive(bool wait)
     return recv ? std::make_optional(std::move(recv.value())) : std::nullopt;
 }
 
-void controller::send(internal::operation_t operation)
+void controller::send(internal::operation_t operation, bool wait)
 {
     assert(!m_stop);
 
@@ -96,7 +96,7 @@ void controller::send(internal::operation_t operation)
         }
     }
 
-    m_feedback.wait(operation);
+    if (wait) { m_feedback.wait(operation); }
 }
 
 } // namespace openperf::framework::generator

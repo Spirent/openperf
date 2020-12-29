@@ -7,7 +7,16 @@
 
 namespace openperf::framework::generator::internal {
 
-enum class operation_t { NOOP = 0, PAUSE, RESUME, RESET, STOP, STATISTICS };
+enum class operation_t {
+    NOOP = 0,
+    PAUSE,
+    RESUME,
+    RESET,
+    STOP,
+    STATISTICS,
+    INIT,
+    READY,
+};
 
 class feedback_tracker
 {
@@ -33,6 +42,7 @@ public:
 
     size_t limit() const { return m_limit; }
     void wait(internal::operation_t op) const;
+    void wait(internal::operation_t op, int count) const;
 };
 
 } // namespace openperf::framework::generator::internal

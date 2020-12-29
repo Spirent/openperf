@@ -27,9 +27,17 @@ namespace openperf::framework::generator {
  *     PAUSE
  *     RESUME
  *     RESET
+ *     READY
  *
  *   WORKER -> CONTROLLER
+ *     INIT
  *     STATISTICS
+ *     as confirmation:
+ *       STOP
+ *       PAUSE
+ *       RESUME
+ *       RESET
+ *       READY
  */
 
 // template <typename S> class controller
@@ -83,7 +91,7 @@ public:
 private:
     // Methods : private
     std::optional<message::serialized_message> receive(bool wait = true);
-    void send(internal::operation_t);
+    void send(internal::operation_t, bool wait = true);
 };
 
 //
@@ -122,6 +130,8 @@ template <typename S, typename T> void controller::start(T&& processor)
                     }
                     break;
                 }
+                case internal::operation_t::INIT:
+                    send(internal::operation_t::READY, false);
                 default:
                     m_feedback.countdown(operation);
                     break;
@@ -153,6 +163,9 @@ void controller::add(T&& task,
     worker.start(std::forward<T>(task), core);
 
     m_feedback.limit(m_feedback.limit() + 1);
+
+    // Wait the one READY message as confirmation establishing connection
+    m_feedback.wait(internal::operation_t::READY, 1);
 }
 
 } // namespace openperf::framework::generator

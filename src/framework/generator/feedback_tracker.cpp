@@ -9,6 +9,7 @@ feedback_tracker::feedback_tracker()
         operation_t::STOP,
         operation_t::RESUME,
         operation_t::RESET,
+        operation_t::READY,
     };
 
     for (auto operation : list) {
@@ -21,8 +22,8 @@ void feedback_tracker::limit(size_t value)
     for (auto& [op, item] : m_vars) {
         item->counter += value - m_limit;
         if (item->counter <= 0) {
-            item->condition.notify_all();
             item->counter = value;
+            item->condition.notify_all();
         }
     }
 
@@ -34,8 +35,8 @@ void feedback_tracker::countdown(internal::operation_t op)
     if (auto it = m_vars.find(op); it != m_vars.end()) {
         it->second->counter--;
         if (it->second->counter <= 0) {
-            it->second->condition.notify_all();
             it->second->counter = m_limit;
+            it->second->condition.notify_all();
         }
     }
 }
@@ -46,6 +47,14 @@ void feedback_tracker::wait(internal::operation_t op) const
         std::mutex mutex;
         std::unique_lock<std::mutex> lock(mutex);
         it->second->condition.wait(lock);
+    }
+}
+
+void feedback_tracker::wait(internal::operation_t op, int count) const
+{
+    if (auto it = m_vars.find(op); it != m_vars.end()) {
+        it->second->counter = count;
+        wait(op);
     }
 }
 
