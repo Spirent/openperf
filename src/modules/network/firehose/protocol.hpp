@@ -21,7 +21,7 @@ struct request_t
 struct net_request_t
 {
     char protocol[16];
-    libpacket::type::endian::field<1> action;
+    libpacket::type::endian::field<4> action;
     libpacket::type::endian::field<4> length;
 };
 const size_t net_request_size = sizeof(net_request_t);
@@ -37,7 +37,7 @@ inline tl::expected<request_t, int> parse_request(uint8_t*& data,
     }
 
     auto request = request_t{
-        .action = static_cast<action_t>(net_request->action.load<uint8_t>()),
+        .action = static_cast<action_t>(net_request->action.load<int32_t>()),
         .length = net_request->length.load<uint32_t>(),
     };
 
@@ -51,7 +51,7 @@ inline tl::expected<void, int> build_request(const request_t& request,
 
     strncpy(net_request.protocol, protocol, protocol_len);
 
-    net_request.action = request.action;
+    net_request.action.store<int32_t>(request.action);
     net_request.length = request.length;
 
     data.resize(sizeof(net_request));
