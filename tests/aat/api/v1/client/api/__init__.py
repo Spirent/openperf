@@ -8,6 +8,7 @@ from client.api.cpu_generator_api import CpuGeneratorApi
 from client.api.interfaces_api import InterfacesApi
 from client.api.memory_generator_api import MemoryGeneratorApi
 from client.api.modules_api import ModulesApi
+from client.api.network_generator_api import NetworkGeneratorApi
 from client.api.packet_analyzers_api import PacketAnalyzersApi
 from client.api.packet_captures_api import PacketCapturesApi
 from client.api.packet_generators_api import PacketGeneratorsApi

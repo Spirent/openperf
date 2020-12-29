@@ -1,19 +1,17 @@
-SOCK_COMMON += \
+SOCK_COMMON_SOURCES += \
 	common.cpp \
 	shared_segment.cpp \
 	unix_socket.cpp
 
 ifeq ($(PLATFORM),linux)
-	SOCK_COMMON += process_control_linux.cpp
-	SOCKSRV_SOURCES += \
-		server/packet_socket.cpp \
-		server/socket_factory_linux.cpp
-	SOCKSRV_LDLIBS += -lcap
-	SOCKCLI_LDLIBS += -lcap
+	SOCK_COMMON_SOURCES += process_control_linux.cpp
+	SOCK_COMMON_LDLIBS += -lcap
 endif
 
+SOCK_COMMON_LDLIBS += -lrt
+SOCK_COMMON_DEPENDS += expected
+
 SOCKSRV_SOURCES += \
-	$(SOCK_COMMON) \
 	server/api_handler.cpp \
 	server/api_server.cpp \
 	server/api_server_options.c \
@@ -30,8 +28,13 @@ SOCKSRV_SOURCES += \
 	server/tcp_socket.cpp \
 	server/udp_socket.cpp
 
-SOCKSRV_DEPENDS += packet_stack versions
-SOCKSRV_LDLIBS += -lrt
+ifeq ($(PLATFORM),linux)
+SOCKSRV_SOURCES += \
+		server/packet_socket.cpp \
+		server/socket_factory_linux.cpp
+endif
+
+SOCKSRV_DEPENDS += framework packet_stack versions socket_common
 
 # Each channel object lives in shared memory and has both a client and server
 # "version".  Each version contains the same members, but client's don't touch
@@ -50,21 +53,19 @@ $(SOCKSRV_OBJ_DIR)/server/init.o: OP_CPPFLAGS += \
 	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\""
 
 SOCKCLI_SOURCES += \
-	$(SOCK_COMMON) \
 	client/api_client.cpp \
 	client/io_channel_wrapper.cpp \
 	client/dgram_channel.cpp \
 	client/stream_channel.cpp
 
-SOCKCLI_DEPENDS += expected
-SOCKCLI_LDLIBS += -lrt
+SOCKCLI_DEPENDS += framework_lists socket_common
 
 # See comment above.
 $(SOCKCLI_OBJ_DIR)/client/dgram_channel.o: OP_CXXFLAGS += -Wno-unused-private-field
 $(SOCKCLI_OBJ_DIR)/client/stream_channel.o: OP_CXXFLAGS += -Wno-unused-private-field
 
 SOCKTEST_SOURCES += \
-	$(SOCK_COMMON)
+	$(SOCK_COMMON_SOURCES)
 
 SOCKTEST_DEPENDS += expected
 SOCKTEST_LDLIBS += -lrt

@@ -115,17 +115,20 @@ void client::init(std::atomic_bool* init_flag)
     *m_init_flag = true;
 }
 
-bool client::is_socket(int s) { return (m_channels.count(s)); }
+bool client::is_socket(int s)
+{
+    return channels_hashtab::instance().find(s) != nullptr;
+}
 
 int client::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
     auto wait = channel.wait_readable();
     if (!wait) {
         errno = wait.error();
@@ -147,15 +150,14 @@ int client::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
     auto& accept = std::get<api::reply_accept>(*reply);
 
     /* Record socket data for future use */
-    auto newresult = m_channels.emplace(
+    auto newresult = channels_hashtab::instance().insert(
         accept.fd_pair.client_fd,
-        ided_channel{
-            accept.id,
-            io_channel_wrapper(to_pointer(accept.channel, m_shm->base()),
-                               accept.fd_pair.client_fd,
-                               accept.fd_pair.server_fd)});
+        accept.id,
+        to_pointer(accept.channel, m_shm->base()),
+        accept.fd_pair.client_fd,
+        accept.fd_pair.server_fd);
 
-    if (!newresult.second) {
+    if (!newresult) {
         errno = ENOBUFS;
         return (-1);
     }
@@ -164,17 +166,17 @@ int client::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
 
     /* Give the client their fd */
     return (accept.fd_pair.client_fd);
-}
+} // namespace openperf::socket::api
 
 int client::bind(int s, const struct sockaddr* name, socklen_t namelen)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
     api::request_msg request =
         api::request_bind{.id = id, .name = name, .namelen = namelen};
 
@@ -190,13 +192,13 @@ int client::bind(int s, const struct sockaddr* name, socklen_t namelen)
 
 int client::shutdown(int s, int how)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
     api::request_msg request = api::request_shutdown{.id = id, .how = how};
 
     auto reply = submit_request(m_sock.get(), request);
@@ -211,13 +213,13 @@ int client::shutdown(int s, int how)
 
 int client::getpeername(int s, struct sockaddr* name, socklen_t* namelen)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
     api::request_msg request =
         api::request_getpeername{.id = id, .name = name, .namelen = *namelen};
 
@@ -233,13 +235,13 @@ int client::getpeername(int s, struct sockaddr* name, socklen_t* namelen)
 
 int client::getsockname(int s, struct sockaddr* name, socklen_t* namelen)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
     api::request_msg request =
         api::request_getsockname{.id = id, .name = name, .namelen = *namelen};
 
@@ -256,13 +258,13 @@ int client::getsockname(int s, struct sockaddr* name, socklen_t* namelen)
 int client::getsockopt(
     int s, int level, int optname, void* optval, socklen_t* optlen)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
     api::request_msg request =
         api::request_getsockopt{.id = id,
                                 .level = level,
@@ -283,13 +285,13 @@ int client::getsockopt(
 int client::setsockopt(
     int s, int level, int optname, const void* optval, socklen_t optlen)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
     api::request_msg request = api::request_setsockopt{.id = id,
                                                        .level = level,
                                                        .optname = optname,
@@ -308,14 +310,14 @@ int client::setsockopt(
 
 int client::close(int s)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         /* XXX: should hand off to libc close */
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
     api::request_msg request = api::request_close{.id = id};
 
     auto reply = submit_request(m_sock.get(), request);
@@ -324,19 +326,19 @@ int client::close(int s)
         return (-1);
     }
 
-    m_channels.erase(result);
+    channels_hashtab::instance().erase(s);
     return (0);
 }
 
 int client::connect(int s, const struct sockaddr* name, socklen_t namelen)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
     api::request_msg request =
         api::request_connect{.id = id, .name = name, .namelen = namelen};
 
@@ -380,13 +382,13 @@ int client::connect(int s, const struct sockaddr* name, socklen_t namelen)
 
 int client::listen(int s, int backlog)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
     api::request_msg request =
         api::request_listen{.id = id, .backlog = backlog};
 
@@ -414,15 +416,14 @@ int client::socket(int domain, int type, int protocol)
     auto& socket = std::get<api::reply_socket>(*reply);
 
     /* Record socket data for future use */
-    auto result = m_channels.emplace(
+    auto result = channels_hashtab::instance().insert(
         socket.fd_pair.client_fd,
-        ided_channel{
-            socket.id,
-            io_channel_wrapper(to_pointer(socket.channel, m_shm->base()),
-                               socket.fd_pair.client_fd,
-                               socket.fd_pair.server_fd)});
+        socket.id,
+        to_pointer(socket.channel, m_shm->base()),
+        socket.fd_pair.client_fd,
+        socket.fd_pair.server_fd);
 
-    if (!result.second) {
+    if (!result) {
         errno = ENOBUFS;
         return (-1);
     }
@@ -433,13 +434,13 @@ int client::socket(int domain, int type, int protocol)
 
 int client::fcntl(int s, int cmd, ...)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
 
     va_list ap;
     va_start(ap, cmd);
@@ -473,13 +474,13 @@ int client::fcntl(int s, int cmd, ...)
 
 int client::ioctl(int s, unsigned long req, ...)
 {
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
 
     va_list ap;
     va_start(ap, req);
@@ -543,13 +544,13 @@ ssize_t client::recvmsg(int s, struct msghdr* message, int flags)
 {
     (void)flags; /* TODO */
 
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
     auto recv_result =
         channel.recv(message->msg_iov,
                      message->msg_iovlen,
@@ -576,13 +577,13 @@ ssize_t client::sendmsg(int s, const struct msghdr* message, int flags)
 {
     (void)flags; /* TODO */
 
-    auto result = m_channels.find(s);
-    if (result == m_channels.end()) {
+    auto result = channels_hashtab::instance().find(s);
+    if (result == nullptr) {
         errno = EINVAL;
         return (-1);
     }
 
-    auto& [id, channel] = result->second;
+    auto& [id, channel] = *result;
     auto send_result =
         channel.send(message->msg_iov,
                      message->msg_iovlen,

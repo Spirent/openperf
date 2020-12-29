@@ -47,6 +47,7 @@ tags:
   - name: BlockGenerator
   - name: MemoryGenerator
   - name: CpuGenerator
+  - name: NetworkGenerator
   - name: TVLP
 
 basePath: /
@@ -380,6 +381,51 @@ paths:
     $ref: ./modules/cpu.yaml#/paths/~1cpu-info
 
   ###
+  # Network paths
+  ###
+  /network/servers:
+    $ref: ./modules/network.yaml#/paths/~1network~1servers
+
+  /network/servers/{id}:
+    $ref: ./modules/network.yaml#/paths/~1network~1servers~1{id}
+
+  /network/servers/x/bulk-create:
+    $ref: ./modules/network.yaml#/paths/~1network~1servers~1x~1bulk-create
+
+  /network/servers/x/bulk-delete:
+    $ref: ./modules/network.yaml#/paths/~1network~1servers~1x~1bulk-delete
+
+  /network/generators:
+    $ref: ./modules/network.yaml#/paths/~1network~1generators
+
+  /network/generators/{id}:
+    $ref: ./modules/network.yaml#/paths/~1network~1generators~1{id}
+
+  /network/generators/x/bulk-create:
+    $ref: ./modules/network.yaml#/paths/~1network~1generators~1x~1bulk-create
+
+  /network/generators/x/bulk-delete:
+    $ref: ./modules/network.yaml#/paths/~1network~1generators~1x~1bulk-delete
+
+  /network/generators/{id}/start:
+    $ref: ./modules/network.yaml#/paths/~1network~1generators~1{id}~1start
+
+  /network/generators/{id}/stop:
+    $ref: ./modules/network.yaml#/paths/~1network~1generators~1{id}~1stop
+
+  /network/generators/x/bulk-start:
+    $ref: ./modules/network.yaml#/paths/~1network~1generators~1x~1bulk-start
+
+  /network/generators/x/bulk-stop:
+    $ref: ./modules/network.yaml#/paths/~1network~1generators~1x~1bulk-stop
+
+  /network/generator-results:
+    $ref: ./modules/network.yaml#/paths/~1network~1generator-results
+
+  /network/generator-results/{id}:
+    $ref: ./modules/network.yaml#/paths/~1network~1generator-results~1{id}
+
+  ###
   # TVLP paths
   ###
   /tvlp:
@@ -690,6 +736,31 @@ definitions:
 
   BulkStartMemoryGeneratorsRequest:
     $ref: ./modules/memory.yaml#/definitions/BulkStartMemoryGeneratorsRequest
+
+  ###
+  # Network definitions
+  ###
+  NetworkServer:
+    $ref: ./modules/network.yaml#/definitions/NetworkServer
+
+  NetworkGenerator:
+    $ref: ./modules/network.yaml#/definitions/NetworkGenerator
+
+  NetworkGeneratorConfig:
+    $ref: ./modules/network.yaml#/definitions/NetworkGeneratorConfig
+
+  NetworkGeneratorResult:
+    $ref: ./modules/network.yaml#/definitions/NetworkGeneratorResult
+
+  NetworkGeneratorStats:
+    $ref: ./modules/network.yaml#/definitions/NetworkGeneratorStats
+
+  NetworkGeneratorConnectionStats:
+    $ref: ./modules/network.yaml#/definitions/NetworkGeneratorConnectionStats
+
+  BulkStartNetworkGeneratorsRequest:
+    $ref: ./modules/network.yaml#/definitions/BulkStartNetworkGeneratorsRequest
+
 
   ###
   # CPU definitions

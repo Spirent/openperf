@@ -78,23 +78,29 @@ make_socket_common(openperf::socket::server::allocator& allocator,
     }
 }
 
-std::optional<ip_addr_t> get_address(const sockaddr_storage& sstorage)
+std::optional<ip_addr_t> get_address(const sockaddr_storage& sstorage,
+                                     bool v6only)
 {
     switch (sstorage.ss_family) {
     case AF_INET: {
+        if (v6only) return (std::nullopt);
         auto sa4 = reinterpret_cast<const sockaddr_in*>(&sstorage);
         auto data = reinterpret_cast<const uint32_t*>(&sa4->sin_addr);
         return (std::make_optional<ip_addr_t>(IPADDR4_INIT(*data)));
     }
     case AF_INET6: {
         auto sa6 = reinterpret_cast<const sockaddr_in6*>(&sstorage);
+        if (!v6only && IN6_IS_ADDR_UNSPECIFIED(&sa6->sin6_addr)) {
+            return (std::make_optional<ip_addr_t>(ip_addr_any_type));
+        }
+
         auto data = reinterpret_cast<const uint32_t*>(&sa6->sin6_addr);
         return (std::make_optional<ip_addr_t>(
             IPADDR6_INIT(data[0], data[1], data[2], data[3])));
-        break;
     }
     case AF_UNSPEC:
-        return (std::make_optional<ip_addr_t>(IPADDR_ANY_TYPE_INIT));
+        if (v6only) return (std::nullopt);
+        return (std::make_optional<ip_addr_t>(ip_addr_any_type));
     default:
         return (std::nullopt);
     }

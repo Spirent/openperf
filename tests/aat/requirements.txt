@@ -3,6 +3,7 @@ dpkt
 durationpy
 expects
 mamba == 0.11.1
+psutil
 pyyaml
 scapy
 validators

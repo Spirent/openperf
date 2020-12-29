@@ -18,7 +18,8 @@ class controller_t : public model::tvlp_configuration_t
 private:
     void* m_context;
     std::shared_ptr<model::tvlp_result_t> m_result;
-    std::unique_ptr<worker::tvlp_worker_t> m_block, m_memory, m_cpu, m_packet;
+    std::unique_ptr<worker::tvlp_worker_t> m_block, m_memory, m_cpu, m_packet,
+        m_network;
 
 public:
     // Constructors & Destructor

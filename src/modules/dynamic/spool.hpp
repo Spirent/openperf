@@ -213,6 +213,7 @@ uint64_t spool<T>::weight(const argument_t& arg, const T& stat) const
     case argument_t::DXDY: {
         auto y = m_extractor(stat, arg.y).value();
         auto last_y = m_extractor(m_last_stat, arg.y).value();
+        if (y < last_y) { return 0; }
         weight = static_cast<uint64_t>(y - last_y);
         break;
     }

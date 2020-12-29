@@ -16,6 +16,7 @@ struct tvlp_modules_results_t
     std::optional<json_vector> cpu;
     std::optional<json_vector> memory;
     std::optional<json_vector> packet;
+    std::optional<json_vector> network;
 };
 
 class tvlp_result_t

@@ -77,7 +77,7 @@ void udp_socket::handle_io()
             udp_sendto(m_pcb.get(),
                        p,
                        reinterpret_cast<const ip_addr_t*>(&dest->addr),
-                       dest->port);
+                       ntohs(dest->port));
         else
             udp_send(m_pcb.get(), p);
 
@@ -93,7 +93,7 @@ static tl::expected<void, int> do_udp_bind(udp_pcb* pcb,
     auto copy_result = copy_in(sstorage, bind.id.pid, bind.name, bind.namelen);
     if (!copy_result) { return (tl::make_unexpected(copy_result.error())); }
 
-    auto ip_addr = get_address(sstorage);
+    auto ip_addr = get_address(sstorage, IP_IS_V6_VAL(pcb->local_ip));
     auto ip_port = get_port(sstorage);
 
     if (!ip_addr || !ip_port) { return (tl::make_unexpected(EINVAL)); }
@@ -127,7 +127,7 @@ static tl::expected<bool, int> do_udp_connect(
         copy_in(sstorage, connect.id.pid, connect.name, connect.namelen);
     if (!copy_result) { return (tl::make_unexpected(copy_result.error())); }
 
-    auto ip_addr = get_address(sstorage);
+    auto ip_addr = get_address(sstorage, IP_IS_V6_VAL(pcb->local_ip));
     auto ip_port = get_port(sstorage);
 
     if (!ip_addr || !ip_port) { return (tl::make_unexpected(EINVAL)); }

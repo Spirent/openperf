@@ -372,7 +372,7 @@ tcp_socket::on_request(const api::request_bind& bind, const tcp_init&)
         return {tl::make_unexpected(copy_result.error()), std::nullopt};
     }
 
-    auto ip_addr = get_address(sstorage);
+    auto ip_addr = get_address(sstorage, IP_IS_V6_VAL(m_pcb->local_ip));
     auto ip_port = get_port(sstorage);
 
     if (!ip_addr || !ip_port) {
@@ -438,7 +438,7 @@ do_tcp_connect(tcp_pcb* pcb, const api::request_connect& connect)
         copy_in(sstorage, connect.id.pid, connect.name, connect.namelen);
     if (!copy_result) { return (tl::make_unexpected(copy_result.error())); }
 
-    auto ip_addr = get_address(sstorage);
+    auto ip_addr = get_address(sstorage, IP_IS_V6_VAL(pcb->local_ip));
     auto ip_port = get_port(sstorage);
 
     if (!ip_addr | !ip_port) { return (tl::make_unexpected(EINVAL)); }

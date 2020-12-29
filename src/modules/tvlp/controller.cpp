@@ -9,6 +9,7 @@
 #include "workers/memory.hpp"
 #include "workers/cpu.hpp"
 #include "workers/packet.hpp"
+#include "workers/network.hpp"
 
 namespace openperf::tvlp::internal {
 
@@ -64,6 +65,13 @@ controller_t::controller_t(void* context,
             m_context, m_profile.packet.value());
     }
 
+    if (m_profile.network) {
+        total_length =
+            std::max(total_length, series_length(m_profile.network.value()));
+        m_network = std::make_unique<worker::network_tvlp_worker_t>(
+            m_context, m_profile.network.value());
+    }
+
     if (total_length == 0ms) {
         throw std::runtime_error(
             "Invalid field value: no profile entries found");
@@ -117,6 +125,14 @@ controller_t::start(const model::tvlp_start_t& start_configuration)
         assert(result);
     }
 
+    if (m_profile.network) {
+        modules_results.network = model::json_vector();
+        auto result = m_network->start(start_configuration.start_time,
+                                       start_configuration.network);
+        // Starting already running worker should never happen
+        assert(result);
+    }
+
     m_start_time = start_configuration.start_time;
     if (m_start_time > timesync::chrono::realtime::now())
         m_state = model::COUNTDOWN;
@@ -136,6 +152,7 @@ void controller_t::stop()
     if (m_profile.memory) { m_memory->stop(); }
     if (m_profile.cpu) { m_cpu->stop(); }
     if (m_profile.packet) { m_packet->stop(); }
+    if (m_profile.network) { m_network->stop(); }
 }
 
 bool controller_t::is_running() const
@@ -176,6 +193,7 @@ void controller_t::update()
     if (m_profile.memory) { modules_results.memory = recv_state(*m_memory); }
     if (m_profile.cpu) { modules_results.cpu = recv_state(*m_cpu); }
     if (m_profile.packet) { modules_results.packet = recv_state(*m_packet); }
+    if (m_profile.network) { modules_results.network = recv_state(*m_network); }
 
     if (m_result) { m_result->results(modules_results); }
 }

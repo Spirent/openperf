@@ -210,6 +210,11 @@ stream_channel::recv(iovec iov[],
                      sockaddr* from __attribute__((unused)),
                      socklen_t* fromlen __attribute__((unused)))
 {
+    if ((readable() == 0)
+        && (socket_flags.load(std::memory_order_relaxed) & EFD_NONBLOCK)) {
+        return (tl::make_unexpected(EAGAIN));
+    }
+
     /*
      * Note: we only check for errors if there is nothing to read in the buffer.
      * This ensures clients clear out all data before we report an error.

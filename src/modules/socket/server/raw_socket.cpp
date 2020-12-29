@@ -174,7 +174,7 @@ static tl::expected<void, int> do_raw_bind(raw_pcb* pcb,
     auto copy_result = copy_in(sstorage, bind.id.pid, bind.name, bind.namelen);
     if (!copy_result) { return (tl::make_unexpected(copy_result.error())); }
 
-    auto ip_addr = get_address(sstorage);
+    auto ip_addr = get_address(sstorage, IP_IS_V6_VAL(pcb->local_ip));
 
     if (!ip_addr) { return (tl::make_unexpected(EINVAL)); }
 
@@ -207,7 +207,7 @@ static tl::expected<bool, int> do_raw_connect(
         copy_in(sstorage, connect.id.pid, connect.name, connect.namelen);
     if (!copy_result) { return (tl::make_unexpected(copy_result.error())); }
 
-    auto ip_addr = get_address(sstorage);
+    auto ip_addr = get_address(sstorage, IP_IS_V6_VAL(pcb->local_ip));
 
     if (!ip_addr) { return (tl::make_unexpected(EINVAL)); }
 

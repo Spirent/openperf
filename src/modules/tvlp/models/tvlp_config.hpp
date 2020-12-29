@@ -32,6 +32,7 @@ struct tvlp_profile_t
     std::optional<series> cpu;
     std::optional<series> memory;
     std::optional<series> packet;
+    std::optional<series> network;
 };
 
 struct tvlp_start_t
@@ -48,6 +49,7 @@ struct tvlp_start_t
     start_t cpu;
     start_t memory;
     start_t packet;
+    start_t network;
 };
 
 enum tvlp_state_t { READY = 0, COUNTDOWN, RUNNING, ERROR };

@@ -6,12 +6,14 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unordered_map>
+#include <atomic>
 
 #include "socket/api.hpp"
-#include "socket/client/io_channel_wrapper.hpp"
 #include "socket/shared_segment.hpp"
 #include "socket/unix_socket.hpp"
 #include "core/op_uuid.hpp"
+
+#include "channels_hashtab.hpp"
 
 namespace openperf::socket::api {
 
@@ -20,7 +22,7 @@ template <typename T> class thread_singleton
 public:
     static T& instance()
     {
-        static T instance;
+        static thread_local T instance;
         return instance;
     }
 
@@ -29,22 +31,13 @@ public:
 
 protected:
     thread_singleton() = default;
-    ;
 };
 
 class client : public thread_singleton<client>
 {
-    using io_channel_wrapper = openperf::socket::client::io_channel_wrapper;
 
     core::uuid m_uuid;
     unix_socket m_sock;
-
-    struct ided_channel
-    {
-        socket_id id;
-        io_channel_wrapper channel;
-    };
-    std::unordered_map<int, ided_channel> m_channels;
 
     std::unique_ptr<memory::shared_segment> m_shm;
     std::atomic_bool* m_init_flag;

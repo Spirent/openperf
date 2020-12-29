@@ -50,7 +50,7 @@ services:
     command: '../../build/openperf-linux-x86_64-testing/bin/openperf --modules.packetio.dpdk.test-mode --core.log.level debug --modules.socket.force-unlink --modules.packetio.dpdk.options="-m256m,--no-huge" --modules.packetio.dpdk.port-ids="port0=0, port1=1" -p 9000 -L "libopenperf_tvlp.so" -m "../../build/openperf-linux-x86_64-testing/plugins/" >> openperf.log 2>&1'
     base_url: http://127.0.0.1:9000
     init_url: http://127.0.0.1:9000/version
-    init_timeout: 75s
+    init_timeout: 15s
 
 shims:
   default:

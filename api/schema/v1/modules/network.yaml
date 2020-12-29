@@ -1,0 +1,681 @@
+parameters:
+  id:
+    name: id
+    in: path
+    description: Unique resource identifier
+    type: string
+    format: string
+    required: true
+
+  dynamic_results:
+    $ref: "./dynamic.yaml#/parameters/dynamic_results"
+
+paths:
+  /network/servers:
+    get:
+      operationId: ListNetworkServers
+      tags:
+        - NetworkGenerator
+      summary: List network servers
+      description: Returns all network servers
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/NetworkServer"
+    post:
+      operationId: CreateNetworkServer
+      tags:
+        - NetworkGenerator
+      summary: Create and run a network server
+      description: Create a new network server.
+      parameters:
+        - name: server
+          in: body
+          description: New network server
+          required: true
+          schema:
+            $ref: "#/definitions/NetworkServer"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI of created network server
+              type: string
+          schema:
+            $ref: "#/definitions/NetworkServer"
+
+  /network/servers/{id}:
+    get:
+      operationId: GetNetworkServer
+      tags:
+        - NetworkGenerator
+      summary: Get a network server
+      description: Returns a network server, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/NetworkServer"
+    delete:
+      operationId: DeleteNetworkServer
+      tags:
+        - NetworkGenerator
+      summary: Delete a network server
+      description: Deletes an existing network server. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /network/servers/x/bulk-create:
+    post:
+      operationId: BulkCreateNetworkServers
+      tags:
+        - NetworkGenerator
+      summary: Bulk create network servers
+      description: |
+        Create multiple network servers. Requests are processed in an
+        all-or-nothing manner, i.e. a single network server creation failure
+        causes all creations for this request to fail.
+      parameters:
+        - name: create
+          in: body
+          description: Bulk creation
+          required: true
+          schema:
+            type: object
+            title: BulkCreateNetworkServersRequest
+            description: Parameters for the bulk create operation
+            properties:
+              items:
+                type: array
+                description: List of network server
+                items:
+                  $ref: "#/definitions/NetworkServer"
+                minItems: 1
+            required:
+              - items
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            description: List of created network servers
+            items:
+              $ref: "#/definitions/NetworkServer"
+            minItems: 1
+
+  /network/servers/x/bulk-delete:
+    post:
+      operationId: BulkDeleteNetworkServers
+      tags:
+        - NetworkGenerator
+      summary: Bulk delete network servers
+      description: |
+        Delete multiple network servers in a best-effort manner. Non-existant network server ids
+        do not cause errors. Idempotent.
+      parameters:
+        - name: delete
+          in: body
+          description: Bulk delete
+          required: true
+          schema:
+            type: object
+            title: BulkDeleteNetworkServersRequest
+            description: Parameters for the bulk delete operation
+            properties:
+              ids:
+                type: array
+                description: List of network server ids
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
+  /network/generators:
+    get:
+      operationId: ListNetworkGenerators
+      tags:
+        - NetworkGenerator
+      summary: List network generators
+      description: The `network-generators` endpoint returns all of the configured network generators.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/NetworkGenerator"
+    post:
+      operationId: CreateNetworkGenerator
+      tags:
+        - NetworkGenerator
+      summary: Create a network generator
+      description: Create a new network generator
+      parameters:
+        - name: generator
+          in: body
+          description: New network generator
+          required: true
+          schema:
+            $ref: "#/definitions/NetworkGenerator"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI of created network generator
+              type: string
+          schema:
+            $ref: "#/definitions/NetworkGenerator"
+
+  /network/generators/{id}:
+    get:
+      operationId: GetNetworkGenerator
+      tags:
+        - NetworkGenerator
+      summary: Get a network generator
+      description: Returns a network generator, by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/NetworkGenerator"
+    delete:
+      operationId: DeleteNetworkGenerator
+      tags:
+        - NetworkGenerator
+      summary: Delete a network generator
+      description: Deletes an existing network generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /network/generators/x/bulk-create:
+    post:
+      operationId: BulkCreateNetworkGenerators
+      tags:
+        - NetworkGenerator
+      summary: Bulk create network generators
+      description: |
+        Create multiple network generators. Requests are processed in an
+        all-or-nothing manner, i.e. a single network generator creation failure
+        causes all creations for this request to fail.
+      parameters:
+        - name: create
+          in: body
+          description: Bulk creation
+          required: true
+          schema:
+            type: object
+            title: BulkCreateNetworkGeneratorsRequest
+            description: Parameters for the bulk create operation
+            properties:
+              items:
+                type: array
+                description: List of network generators
+                items:
+                  $ref: "#/definitions/NetworkGenerator"
+                minItems: 1
+            required:
+              - items
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            description: List of created network generators
+            items:
+              $ref: "#/definitions/NetworkGenerator"
+            minItems: 1
+
+  /network/generators/x/bulk-delete:
+    post:
+      operationId: BulkDeleteNetworkGenerators
+      tags:
+        - NetworkGenerator
+      summary: Bulk delete network generators
+      description: |
+        Delete multiple network generators in a best-effort manner. Non-existant network generators ids
+        do not cause errors. Idempotent.
+      parameters:
+        - name: delete
+          in: body
+          description: Bulk delete
+          required: true
+          schema:
+            type: object
+            title: BulkDeleteNetworkGeneratorsRequest
+            description: Parameters for the bulk delete operation
+            properties:
+              ids:
+                type: array
+                description: List of network generator ids
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
+  /network/generators/{id}/start:
+    post:
+      operationId: StartNetworkGenerator
+      tags:
+        - NetworkGenerator
+      summary: Start a network generator
+      description: Start an existing network generator.
+      parameters:
+        - $ref: "#/parameters/id"
+        - $ref: "#/parameters/dynamic_results"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI of created network generator result
+              type: string
+          schema:
+            $ref: "#/definitions/NetworkGeneratorResult"
+
+  /network/generators/{id}/stop:
+    post:
+      operationId: StopNetworkGenerator
+      tags:
+        - NetworkGenerator
+      summary: Stop a network generator
+      description: Stop a running network generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+  /network/generators/x/bulk-start:
+    post:
+      operationId: BulkStartNetworkGenerators
+      tags:
+        - NetworkGenerator
+      summary: Tell multiple network generators to start
+      description: Start multiple network generators.
+      parameters:
+        - name: bulk_start
+          in: body
+          description: Bulk start
+          required: true
+          schema:
+            $ref: "#/definitions/BulkStartNetworkGeneratorsRequest"
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            description: List started network generators results
+            items:
+              $ref: "#/definitions/NetworkGeneratorResult"
+
+  /network/generators/x/bulk-stop:
+    post:
+      operationId: BulkStopNetworkGenerators
+      tags:
+        - NetworkGenerator
+      summary: Bulk stop network generators
+      description: Best-effort stop multiple network generators. Non-existent network generator ids do not cause errors. Idempotent.
+      parameters:
+        - name: bulk_stop
+          in: body
+          description: Bulk stop
+          required: true
+          schema:
+            type: object
+            title: BulkStopNetworkGeneratorsRequest
+            description: Parameters for the bulk stop operation
+            properties:
+              ids:
+                type: array
+                description: List of network generator identifiers
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - ids
+      responses:
+        204:
+          description: No Content
+
+  /network/generator-results:
+    get:
+      operationId: ListNetworkGeneratorResults
+      tags:
+        - NetworkGenerator
+      summary: List network generator results
+      description: The `network-generator-results` endpoint returns all of the results produced by running network generators.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/NetworkGeneratorResult"
+
+  /network/generator-results/{id}:
+    get:
+      operationId: GetNetworkGeneratorResult
+      tags:
+        - NetworkGenerator
+      summary: Get a result from a network generator
+      description: Returns results from a network generator by result id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/NetworkGeneratorResult"
+    delete:
+      operationId: DeleteNetworkGeneratorResult
+      tags:
+        - NetworkGenerator
+      summary: Delete results from a network generator. Idempotent.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        204:
+          description: No Content
+
+definitions:
+  NetworkServer:
+    type: object
+    description: Network server
+    properties:
+      id:
+        type: string
+        description: Unique network server identifier
+      port:
+        type: integer
+        description: UDP/TCP port on which to listen for client connections
+        default: 3357
+        minimum: 0
+        maximum: 65535
+      protocol:
+        type: string
+        description: Protocol which is used to establish client connections
+        enum:
+          - tcp
+          - udp
+      interface:
+        type: string
+        description: Bind server socket to a particular device, specified as interface name (required for dpdk driver)
+      stats:
+        $ref: "#/definitions/NetworkServerStats"
+    required:
+      - id
+      - port
+      - protocol
+      - stats
+
+  NetworkServerStats:
+    type: object
+    description: Network server statistics
+    properties:
+      bytes_sent:
+        type: integer
+        description: The number of bytes written
+        format: int64
+        minimum: 0
+      bytes_received:
+        type: integer
+        description: The number of bytes read
+        format: int64
+        minimum: 0
+      connections:
+        type: integer
+        description: The number of accepted client connections (the number of operations for UDP socket)
+        format: int64
+        minimum: 0
+      closed:
+        type: integer
+        description: The number of closed client connections
+        format: int64
+        minimum: 0
+      errors:
+        type: integer
+        description: The number of errors observed during connection
+        format: int64
+        minimum: 0
+    required:
+      - bytes_sent
+      - bytes_received
+      - connections
+      - closed
+      - errors
+
+  NetworkGenerator:
+    type: object
+    description: Network generator
+    properties:
+      id:
+        type: string
+        description: Unique network generator identifier
+      config:
+        $ref: "#/definitions/NetworkGeneratorConfig"
+      running:
+        type: boolean
+        description: Indicates whether this generator is currently running.
+    required:
+      - id
+      - config
+      - running
+
+  NetworkGeneratorConfig:
+    type: object
+    description: Network generator configuration
+    properties:
+      target:
+        type: object
+        description: Network generator connection configuration
+        properties:
+          host:
+            type: string
+            description: Remote host to establish a connection
+            default: 127.0.0.1
+          port:
+            type: integer
+            description: Port on which client is trying to establish connection
+            default: 3357
+            minimum: 0
+            maximum: 65535
+          protocol:
+            type: string
+            description: Protocol to establish connection between client and host
+            enum:
+              - tcp
+              - udp
+          interface:
+            type: string
+            description: Bind client socket to a particular device, specified as interface name (required for dpdk driver)
+        required:
+          - host
+          - port
+          - protocol
+      connections:
+        type: integer
+        format: int64
+        description: Number of connections to establish with the server
+        minimum: 1
+      ops_per_connection:
+        type: integer
+        description: Number of operations over a connection before closed
+        minimum: 1
+      reads_per_sec:
+        type: integer
+        description: Number of read opertions to perform per second
+        minimum: 0
+      read_size:
+        type: integer
+        description: Number of bytes to request from the server per read operation
+        minimum: 0
+      writes_per_sec:
+        type: integer
+        description: Number of write operations to perform per second
+        minimum: 0
+      write_size:
+        type: integer
+        description: Number of bytes to send to the server per write operation
+        minimum: 0
+    required:
+      - connections
+      - ops_per_connection
+      - reads_per_sec
+      - read_size
+      - writes_per_sec
+      - write_size
+
+  NetworkGeneratorResult:
+    type: object
+    description: Results collected by a running generator
+    properties:
+      id:
+        type: string
+        description: Unique generator result identifier
+      generator_id:
+        type: string
+        description: Network generator identifier that generated this result
+      active:
+        type: boolean
+        description: Indicates whether the result is currently being updated
+      timestamp_first:
+        type: string
+        description: The ISO8601-formatted start time of the generator
+        format: date-time
+      timestamp_last:
+        type: string
+        description: The ISO8601-formatted date of the last result update
+        format: date-time
+      read:
+        $ref: "#/definitions/NetworkGeneratorStats"
+      write:
+        $ref: "#/definitions/NetworkGeneratorStats"
+      connection:
+        $ref: "#/definitions/NetworkGeneratorConnectionStats"
+      dynamic_results:
+        $ref: "./dynamic.yaml#/definitions/DynamicResults"
+    required:
+      - id
+      - active
+      - timestamp_first
+      - timestamp_last
+      - read
+      - write
+      - connection
+
+  NetworkGeneratorStats:
+    type: object
+    description: Network generator statistics
+    properties:
+      ops_target:
+        type: integer
+        description: The intended number of operations performed
+        format: int64
+        minimum: 0
+      ops_actual:
+        type: integer
+        description: The actual number of operations performed
+        format: int64
+        minimum: 0
+      bytes_target:
+        type: integer
+        description: The intended number of bytes read or written
+        format: int64
+        minimum: 0
+      bytes_actual:
+        type: integer
+        description: The actual number of bytes read or written
+        format: int64
+        minimum: 0
+      io_errors:
+        type: integer
+        description: The number of io_errors observed during reading or writing
+        format: int64
+        minimum: 0
+      latency_total:
+        type: integer
+        description: The total amount of time required to perform all operations (in nanoseconds)
+        format: int64
+        minimum: 0
+      latency_min:
+        type: integer
+        description: The minimum observed latency value (in nanoseconds)
+        format: int64
+        minimum: 0
+      latency_max:
+        type: integer
+        description: The maximum observed latency value (in nanoseconds)
+        format: int64
+        minimum: 0
+    required:
+      - ops_target
+      - ops_actual
+      - bytes_target
+      - bytes_actual
+      - io_errors
+      - latency_total
+
+  NetworkGeneratorConnectionStats:
+    type: object
+    description: Network generator connection statistics
+    properties:
+      attempted:
+        type: integer
+        description: The number of attempts to establish connections
+        format: int64
+      successful:
+        type: integer
+        description: The actual number of established connections
+        format: int64
+      errors:
+        type: integer
+        description: The number of errors observed during connecting process
+        format: int64
+      closed:
+        type: integer
+        description: The number of closed connections
+        format: int64
+    required:
+      - attempted
+      - successful
+      - errors
+      - closed
+
+  BulkStartNetworkGeneratorsRequest:
+    type: object
+    description: Parameters for the bulk start operation
+    properties:
+      ids:
+        type: array
+        description: List of network generator identifiers
+        minItems: 1
+        items:
+          type: string
+      dynamic_results:
+        $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"
+    required:
+      - ids
+

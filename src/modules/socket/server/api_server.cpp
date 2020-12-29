@@ -343,16 +343,20 @@ void server::handle_api_error(std::any arg)
     }
 
     /* Check and see if this was the last fd for this pid. */
-    if (m_pids.count(fd) == 1) {
+    auto pid = pid_result->second;
+    m_pids.erase(pid_result);
+    auto result =
+        std::find_if(m_pids.begin(), m_pids.end(), [pid](const auto& h) {
+            return h.second == pid;
+        });
+    if (result == m_pids.end()) {
         /* All other connections for this handler are gone; delete it */
-        auto pid = pid_result->second;
         OP_LOG(OP_LOG_INFO,
                "All connections from pid %d are gone; cleaning up\n",
                pid);
         m_handlers.erase(pid);
     }
 
-    m_pids.erase(pid_result);
     close(fd);
 }
 

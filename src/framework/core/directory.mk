@@ -1,12 +1,10 @@
-FW_DEPENDS += libzmq
+FW_DEPENDS += libzmq framework_lists
 FW_LDLIBS += -pthread -lstdc++fs
 
 FW_SOURCES += \
 	core/op_cpuset.c \
 	core/op_event_loop_utils.c \
-	core/op_hashtab.c \
 	core/op_init.c \
-	core/op_list.c \
 	core/op_log.c \
 	core/op_modules.c \
 	core/op_options.c \
@@ -43,3 +41,7 @@ FW_UNVERSIONED_OBJECTS :=\
 $(FW_OBJ_DIR)/core/op_version.o: $(FW_UNVERSIONED_OBJECTS:.o=.d)
 $(FW_OBJ_DIR)/core/op_version.o: OP_CFLAGS += \
         -DBUILD_VERSION="\"$(GIT_VERSION)\""
+
+FW_LISTS_SOURCES += \
+	core/op_list.c \
+	core/op_hashtab.c \
