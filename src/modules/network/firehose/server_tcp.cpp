@@ -11,6 +11,7 @@
 #include "utils/random.hpp"
 #include "framework/utils/memcpy.hpp"
 
+#include "../drivers/dpdk.hpp"
 #include "protocol.hpp"
 
 namespace openperf::network::internal::firehose {
@@ -84,14 +85,6 @@ tl::expected<int, std::string> server_tcp::new_server(
         return tl::make_unexpected<std::string>(strerror(err));
     }
 
-    if (m_driver->setsockopt(
-            sock, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(enable))
-        != 0) {
-        auto err = errno;
-        m_driver->close(sock);
-        return tl::make_unexpected<std::string>(strerror(err));
-    }
-
     if (m_driver->bind(sock, server_ptr, get_sa_len(server_ptr)) == -1) {
         OP_LOG(OP_LOG_ERROR,
                "Unable to bind to socket (domain = %d, protocol = TCP): %s\n",
@@ -119,6 +112,7 @@ server_tcp::server_tcp(in_port_t port,
                        const std::optional<std::string>& interface,
                        const drivers::driver_ptr& driver)
     : m_stopped(false)
+    , m_blocked_socket(-1)
     , m_context(zmq_ctx_new())
 {
     // Set ZMQ threads to 0 for context
@@ -150,6 +144,13 @@ server_tcp::server_tcp(in_port_t port,
 server_tcp::~server_tcp()
 {
     m_stopped.store(true, std::memory_order_relaxed);
+
+    auto fd = m_blocked_socket.load(std::memory_order_relaxed);
+    if (fd >= 0) {
+        m_driver->shutdown(fd, SHUT_RDWR);
+        m_driver->close(fd);
+    }
+
     zmq_ctx_shutdown(m_context.get());
     if (m_fd.load() >= 0) {
         m_driver->shutdown(m_fd.load(), SHUT_RDWR);
@@ -179,7 +180,12 @@ void server_tcp::run_accept_thread()
 
         int connect_fd;
         while ((connect_fd = m_driver->accept(
-                    m_fd.load(), client, &client_length, SOCK_NONBLOCK))
+                    m_fd.load(),
+                    client,
+                    &client_length,
+                    (m_driver->driver_key().compare(drivers::dpdk::key) == 0)
+                        ? SOCK_NONBLOCK
+                        : 0))
                != -1) {
             int enable = 1;
             if (m_driver->setsockopt(connect_fd,
@@ -191,6 +197,11 @@ void server_tcp::run_accept_thread()
                 m_driver->close(connect_fd);
                 continue;
             }
+
+            // SO_RCVTIMEO shows much better performance than SOCK_NONBLOCK
+            timeval tv = {.tv_sec = 0, .tv_usec = 1};
+            m_driver->setsockopt(
+                connect_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
             auto conn = connection_msg_t{.fd = connect_fd};
             memcpy(&conn.client, client, get_sa_len(client));
@@ -267,6 +278,10 @@ void server_tcp::run_worker_thread()
             }
 
             for (auto& conn : connections) {
+                if (m_stopped.load(std::memory_order_relaxed)) break;
+
+                m_blocked_socket.store(conn.fd, std::memory_order_relaxed);
+
                 uint8_t* recv_cursor;
 
                 ssize_t recv_or_err = 0;
@@ -396,6 +411,7 @@ void server_tcp::run_worker_thread()
                 } while (recv_or_err == recv_buffer_size);
             }
 
+            m_blocked_socket.store(-1, std::memory_order_relaxed);
             // Remove closed connections
             connections.erase(std::remove_if(connections.begin(),
                                              connections.end(),

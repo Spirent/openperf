@@ -13,6 +13,8 @@ public:
     kernel() = default;
     ~kernel() = default;
 
+    std::string_view driver_key() override { return key; };
+
     /* General socket functions */
     int accept(int s,
                struct sockaddr* addr,

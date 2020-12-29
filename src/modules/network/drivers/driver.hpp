@@ -26,6 +26,7 @@ public:
 
     virtual void init(){};
     virtual bool bind_to_device_required() { return false; };
+    virtual std::string_view driver_key() = 0;
 
     /* General socket functions */
     virtual int

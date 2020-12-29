@@ -23,6 +23,7 @@ private:
     };
 
     std::atomic_bool m_stopped;
+    std::atomic_int m_blocked_socket;
     std::thread m_accept_thread;
     std::vector<std::unique_ptr<std::thread>> m_worker_threads;
     std::unique_ptr<void, zmq_ctx_deleter> m_context;
