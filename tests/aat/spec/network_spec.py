@@ -242,6 +242,31 @@ with description('Network Generator Module', 'network') as self:
                                 self._model.id = self._result[0].id
                             expect(self._result[0]).to(equal(self._model))
 
+                        with it('ratio empty'):
+                            expect(self._result[0].config.ratio).to(be_none)
+
+                    with description("with ratio"):
+                        with before.all:
+                            generator = network_generator_model(self._api.api_client, interface=self._ip4_client_interface)
+                            generator.config.ratio = client.models.BlockGeneratorReadWriteRatio()
+                            generator.config.ratio.reads = 1
+                            generator.config.ratio.writes = 1
+                            self._result = self._api.create_network_generator_with_http_info(generator)
+
+                        with after.all:
+                            clear_network_instances(self._api)
+
+                        with it('succeeded'):
+                            expect(self._result[1]).to(equal(201))
+
+                        with it('has a valid network generator'):
+                            expect(self._result[0]).to(be_valid_network_generator)
+
+                        with it('ratio configured'):
+                            expect(self._result[0].config.ratio).not_to(be_none)
+                            expect(self._result[0].config.ratio.reads).to(be(1))
+                            expect(self._result[0].config.ratio.writes).to(be(1))
+
                     with description('with empty ID'):
                         with before.all:
                             self._model = network_generator_model(self._api.api_client, interface=self._ip4_client_interface)
