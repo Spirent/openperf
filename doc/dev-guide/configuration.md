@@ -63,6 +63,21 @@ Configuration parameters can be specified in a YAML configuration file, or as co
 
   Specifies a CPU core affinity mask for all Memory module threads, in hex. By, default, memory module will use all available CPU's.
 
+### Network
+- `--modules.network.cpu-mask`
+
+  Specifies a CPU core affinity mask for all Network module threads, in hex. By, default, memory module will use all available CPU's.
+
+- `--modules.network.driver`
+
+  Specifies Network driver for generators and server. Kernel driver is used by default
+  - `kernel` - control network I/O load generation using POSIX standard stack
+  - `dpdk` - control network I/O load generation using LwIP stack
+
+- `--modules.network.operation-timeout`
+
+  Specifies Network operation timeout in microseconds. By default OpenPerf will use timeout equals 1000000 (1s)
+
 ### Socket
 - `-f, --modules.socket.force-unlink`
 
