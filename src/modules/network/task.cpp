@@ -304,12 +304,21 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
     conn.operation_start_time = ref_clock::now();
 
     switch (m_config.operation) {
-    case operation_t::READ:
-        m_driver->send(conn.fd, header.data(), header.size(), flags);
+    case operation_t::READ: {
+        ssize_t send_or_err =
+            m_driver->send(conn.fd, header.data(), header.size(), flags);
+
+        if (send_or_err == -1 || send_or_err < (ssize_t)header.size()) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) { return; }
+
+            conn.state = STATE_ERROR;
+            return;
+        }
+
         conn.state = STATE_READING;
         conn.bytes_left = m_config.block_size;
-        break;
-    case operation_t::WRITE:
+    } break;
+    case operation_t::WRITE: {
         iovec iov[] = {
             {
                 .iov_base = header.data(),
@@ -354,7 +363,7 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
             conn.state = STATE_INIT;
         }
 
-        break;
+    } break;
     }
 }
 
@@ -379,7 +388,6 @@ void network_task::do_read(connection_t& conn, stat_t& stat)
             }
 
             conn.state = STATE_ERROR;
-            stat.errors++;
             return;
         } else if (recv_or_err == 0) {
             conn.state = STATE_DONE;
