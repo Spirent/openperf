@@ -145,10 +145,14 @@ server_tcp::~server_tcp()
 {
     m_stopped.store(true, std::memory_order_relaxed);
 
-    auto fd = m_blocked_socket.load(std::memory_order_relaxed);
-    if (fd >= 0) {
-        m_driver->shutdown(fd, SHUT_RDWR);
-        m_driver->close(fd);
+    // Closing blocked socket does not required for dpdk driver because of
+    // using SOCK_NONBLOCK flag
+    if (m_driver->driver_key().compare(drivers::dpdk::key) != 0) {
+        auto fd = m_blocked_socket.load(std::memory_order_relaxed);
+        if (fd >= 0) {
+            m_driver->shutdown(fd, SHUT_RDWR);
+            m_driver->close(fd);
+        }
     }
 
     zmq_ctx_shutdown(m_context.get());
