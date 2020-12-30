@@ -37,7 +37,8 @@ class NetworkGeneratorConfig(object):
         'reads_per_sec': 'int',
         'read_size': 'int',
         'writes_per_sec': 'int',
-        'write_size': 'int'
+        'write_size': 'int',
+        'ratio': 'NetworkGeneratorReadWriteRatio'
     }
 
     attribute_map = {
@@ -47,10 +48,11 @@ class NetworkGeneratorConfig(object):
         'reads_per_sec': 'reads_per_sec',
         'read_size': 'read_size',
         'writes_per_sec': 'writes_per_sec',
-        'write_size': 'write_size'
+        'write_size': 'write_size',
+        'ratio': 'ratio'
     }
 
-    def __init__(self, target=None, connections=None, ops_per_connection=None, reads_per_sec=None, read_size=None, writes_per_sec=None, write_size=None):  # noqa: E501
+    def __init__(self, target=None, connections=None, ops_per_connection=None, reads_per_sec=None, read_size=None, writes_per_sec=None, write_size=None, ratio=None):  # noqa: E501
         """NetworkGeneratorConfig - a model defined in Swagger"""  # noqa: E501
 
         self._target = None
@@ -60,6 +62,7 @@ class NetworkGeneratorConfig(object):
         self._read_size = None
         self._writes_per_sec = None
         self._write_size = None
+        self._ratio = None
         self.discriminator = None
 
         if target is not None:
@@ -70,6 +73,8 @@ class NetworkGeneratorConfig(object):
         self.read_size = read_size
         self.writes_per_sec = writes_per_sec
         self.write_size = write_size
+        if ratio is not None:
+            self.ratio = ratio
 
     @property
     def target(self):
@@ -222,6 +227,26 @@ class NetworkGeneratorConfig(object):
         :type: int
         """
         self._write_size = write_size
+
+    @property
+    def ratio(self):
+        """Gets the ratio of this NetworkGeneratorConfig.  # noqa: E501
+
+
+        :return: The ratio of this NetworkGeneratorConfig.  # noqa: E501
+        :rtype: NetworkGeneratorReadWriteRatio
+        """
+        return self._ratio
+
+    @ratio.setter
+    def ratio(self, ratio):
+        """Sets the ratio of this NetworkGeneratorConfig.
+
+
+        :param ratio: The ratio of this NetworkGeneratorConfig.  # noqa: E501
+        :type: NetworkGeneratorReadWriteRatio
+        """
+        self._ratio = ratio
 
     def to_dict(self):
         """Returns the model properties as a dict"""

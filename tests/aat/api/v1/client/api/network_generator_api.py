@@ -1701,7 +1701,7 @@ class NetworkGeneratorApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
-        :param DynamicResults dynamic_results: Dynamic results configuration
+        :param DynamicResultsConfig dynamic_results: Dynamic results configuration
         :return: NetworkGeneratorResult
                  If the method is called asynchronously,
                  returns the request thread.
@@ -1724,7 +1724,7 @@ class NetworkGeneratorApi(object):
 
         :param async_req bool
         :param str id: Unique resource identifier (required)
-        :param DynamicResults dynamic_results: Dynamic results configuration
+        :param DynamicResultsConfig dynamic_results: Dynamic results configuration
         :return: NetworkGeneratorResult
                  If the method is called asynchronously,
                  returns the request thread.

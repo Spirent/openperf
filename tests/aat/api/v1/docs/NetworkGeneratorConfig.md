@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **read_size** | **int** | Number of bytes to request from the server per read operation | 
 **writes_per_sec** | **int** | Number of write operations to perform per second | 
 **write_size** | **int** | Number of bytes to send to the server per write operation | 
+**ratio** | [**NetworkGeneratorReadWriteRatio**](NetworkGeneratorReadWriteRatio.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

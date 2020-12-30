@@ -120,6 +120,7 @@ from client.models.network_generator import NetworkGenerator
 from client.models.network_generator_config import NetworkGeneratorConfig
 from client.models.network_generator_config_target import NetworkGeneratorConfigTarget
 from client.models.network_generator_connection_stats import NetworkGeneratorConnectionStats
+from client.models.network_generator_read_write_ratio import NetworkGeneratorReadWriteRatio
 from client.models.network_generator_result import NetworkGeneratorResult
 from client.models.network_generator_stats import NetworkGeneratorStats
 from client.models.network_server import NetworkServer

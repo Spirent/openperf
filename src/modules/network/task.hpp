@@ -27,6 +27,14 @@ struct target_t
     std::optional<std::string> interface;
 };
 
+struct synchronizer_t
+{
+    std::atomic_int32_t ratio_reads;
+    std::atomic_int32_t ratio_writes;
+    std::atomic_int64_t reads_actual = 0;
+    std::atomic_int64_t writes_actual = 0;
+};
+
 struct config_t
 {
     operation_t operation;
@@ -35,6 +43,7 @@ struct config_t
     uint64_t ops_per_connection;
     uint64_t block_size;
     target_t target;
+    synchronizer_t* synchronizer = nullptr;
 };
 
 enum connection_state_t {
@@ -114,6 +123,7 @@ private:
     void do_write(connection_t& conn, stat_t& stat);
     void do_shutdown(connection_t& conn, stat_t& stat);
     stat_t worker_spin(uint64_t nb_ops);
+    int32_t calculate_rate();
 
     config_t m_config;
     stat_t m_stat;

@@ -81,6 +81,18 @@ void network_task::reset()
 {
     m_stat = {.operation = m_config.operation};
     m_operation_timestamp = {};
+    if (m_config.synchronizer) {
+        switch (m_config.operation) {
+        case operation_t::READ:
+            m_config.synchronizer->reads_actual.store(
+                0, std::memory_order_relaxed);
+            break;
+        case operation_t::WRITE:
+            m_config.synchronizer->writes_actual.store(
+                0, std::memory_order_relaxed);
+            break;
+        }
+    }
 }
 
 static tl::expected<network_sockaddr, int>
@@ -151,10 +163,14 @@ stat_t network_task::spin()
     auto stat = stat_t{.operation = m_config.operation};
     auto loop_start_ts = ref_clock::now();
     auto cur_time = ref_clock::now();
+
+    // Prepare for ratio synchronization
+    auto ops_per_sec = calculate_rate();
+
     do {
         // +1 need here to start spin at beginning of each time frame
-        auto ops_req = (cur_time - m_operation_timestamp).count()
-                           * m_config.ops_per_sec / std::nano::den
+        auto ops_req = (cur_time - m_operation_timestamp).count() * ops_per_sec
+                           / std::nano::den
                        + 1;
 
         assert(ops_req);
@@ -164,7 +180,7 @@ stat_t network_task::spin()
         cur_time = ref_clock::now();
 
         m_operation_timestamp +=
-            std::chrono::nanoseconds(std::nano::den / m_config.ops_per_sec)
+            std::chrono::nanoseconds(std::nano::den / ops_per_sec)
             * worker_spin_stat.ops_actual;
 
     } while ((m_operation_timestamp < cur_time)
@@ -507,6 +523,48 @@ void network_task::config(const config_t& p_config)
 {
     m_config = p_config;
     m_stat.operation = m_config.operation;
+}
+
+int32_t network_task::calculate_rate()
+{
+    if (!m_config.synchronizer) return m_config.ops_per_sec;
+
+    if (m_config.operation == operation_t::READ)
+        m_config.synchronizer->reads_actual.store(m_stat.ops_actual,
+                                                  std::memory_order_relaxed);
+    else
+        m_config.synchronizer->writes_actual.store(m_stat.ops_actual,
+                                                   std::memory_order_relaxed);
+
+    int64_t reads_actual =
+        m_config.synchronizer->reads_actual.load(std::memory_order_relaxed);
+    int64_t writes_actual =
+        m_config.synchronizer->writes_actual.load(std::memory_order_relaxed);
+
+    int32_t ratio_reads =
+        m_config.synchronizer->ratio_reads.load(std::memory_order_relaxed);
+    int32_t ratio_writes =
+        m_config.synchronizer->ratio_writes.load(std::memory_order_relaxed);
+
+    switch (m_config.operation) {
+    case operation_t::READ: {
+        auto reads_expected = writes_actual * ratio_reads / ratio_writes;
+        return std::min(
+            std::max(reads_expected + static_cast<int64_t>(m_config.ops_per_sec)
+                         - reads_actual,
+                     1L),
+            static_cast<long>(m_config.ops_per_sec));
+    }
+    case operation_t::WRITE: {
+        auto writes_expected = reads_actual * ratio_writes / ratio_reads;
+        return std::min(
+            std::max(writes_expected
+                         + static_cast<int64_t>(m_config.ops_per_sec)
+                         - writes_actual,
+                     1L),
+            static_cast<long>(m_config.ops_per_sec));
+    }
+    }
 }
 
 } // namespace openperf::network::internal::task
