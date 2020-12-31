@@ -27,12 +27,8 @@ network_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
     config->fromJson(const_cast<nlohmann::json&>(entry.config));
 
     // Apply Load Scale to generator configuration
-    config->setReadSize(
-        static_cast<uint32_t>(config->getReadSize() * load_scale));
     config->setReadsPerSec(
         static_cast<uint32_t>(config->getReadsPerSec() * load_scale));
-    config->setWriteSize(
-        static_cast<uint32_t>(config->getWriteSize() * load_scale));
     config->setWritesPerSec(
         static_cast<uint32_t>(config->getWritesPerSec() * load_scale));
 

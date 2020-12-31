@@ -68,15 +68,11 @@ Start options:
 The load scale multiplier is a floating point value that will be applied to next load parameters of generators.
 
 Memory Generator:
-* **read_size**
 * **reads_per_sec**
-* **write_size**
 * **writes_per_sec**
 
 Block Generator:
-* **read_size**
 * **reads_per_sec**
-* **write_size**
 * **writes_per_sec**
 
 CPU Generator:
@@ -84,9 +80,7 @@ CPU Generator:
 * **cores[_N_].utilization**
 
 Network Generator:
-* **read_size**
 * **reads_per_sec**
-* **write_size**
 * **writes_per_sec**
 
 Packet Generator:
