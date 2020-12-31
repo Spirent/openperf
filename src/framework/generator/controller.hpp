@@ -17,6 +17,7 @@
 #include "framework/message/serialized_message.hpp"
 
 #include "worker.hpp"
+#include "feedback_tracker.hpp"
 
 namespace openperf::framework::generator {
 
@@ -66,6 +67,7 @@ private:
     std::thread m_thread;
     std::atomic_bool m_stop;
     internal::feedback_tracker m_feedback;
+    internal::operation_t m_feedback_operation;
 
     std::forward_list<internal::worker> m_workers;
     size_t m_worker_count = 0;
@@ -134,7 +136,8 @@ template <typename S, typename T> void controller::start(T&& processor)
                     send(internal::operation_t::READY, false);
                     break;
                 default:
-                    m_feedback.countdown(operation);
+                    if (m_feedback_operation == operation)
+                        m_feedback.count_down();
                     break;
                 }
             } catch (const std::runtime_error& e) {
@@ -165,7 +168,8 @@ void controller::add(T&& task,
 
     // Wait the one READY message as confirmation establishing connection
     m_worker_count++;
-    m_feedback.init(internal::operation_t::READY, 1);
+    m_feedback_operation = internal::operation_t::READY;
+    m_feedback.init(1);
     m_feedback.wait();
 }
 
