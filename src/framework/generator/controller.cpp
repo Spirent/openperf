@@ -80,7 +80,10 @@ void controller::send(internal::operation_t operation, bool wait)
     // This resolve the bug with generators hanging on deletion.
     if (m_workers.empty()) return;
 
-    if (wait) m_feedback.init(operation, m_worker_count);
+    if (wait) {
+        m_feedback_operation = operation;
+        m_feedback.init(m_worker_count);
+    }
 
     auto result = zmq_send(
         m_control_socket.get(), &operation, sizeof(operation), ZMQ_DONTWAIT);
