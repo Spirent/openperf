@@ -25,6 +25,7 @@ from common.matcher import (has_location,
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
                 os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
+
 def clear_network_instances(api):
     try:
         for s in api.list_network_servers():
@@ -43,6 +44,7 @@ def clear_network_instances(api):
             api.delete_network_generator_result(res.id)
     except AttributeError:
         pass
+
 
 def get_interface_by_address(addr):
     for iface, v in psutil.net_if_addrs().items():
@@ -68,6 +70,11 @@ with description('Network Generator Module', 'network') as self:
 
         with description('Network Servers'):
             with description('/network/servers'):
+                with context('PUT'):
+                    with it('not allowed (405)'):
+                        expect(lambda: self._api.api_client.call_api('/network/servers', 'PUT')).to(
+                            raise_api_exception(405, headers={'Allow': "GET, POST"}))
+
                 with context('POST'):
                     with shared_context('create server'):
                         with before.all:
@@ -150,7 +157,7 @@ with description('Network Generator Module', 'network') as self:
                     with after.all:
                         clear_network_instances(self._api)
 
-                    with it('succeeded'):
+                    with it('success (200)'):
                         expect(self._result[1]).to(equal(200))
 
                     with it('has Content-Type: application/json header'):
@@ -174,7 +181,7 @@ with description('Network Generator Module', 'network') as self:
                             self._result = self._api.get_network_server_with_http_info(
                                 self._server.id, _return_http_data_only=False)
 
-                        with it('succeeded'):
+                        with it('success (200)'):
                             expect(self._result[1]).to(equal(200))
 
                         with it('has Content-Type: application/json header'):
@@ -195,12 +202,12 @@ with description('Network Generator Module', 'network') as self:
 
                 with context('DELETE'):
                     with description('by existing ID'):
-                        with it('removed'):
+                        with it('removed (204)'):
                             result = self._api.delete_network_server_with_http_info(
                                 self._server.id, _return_http_data_only=False)
                             expect(result[1]).to(equal(204))
 
-                        with it('not found'):
+                        with it('not found (404)'):
                             expr = lambda: self._api.get_network_server(self._server.id)
                             expect(expr).to(raise_api_exception(404))
 
@@ -216,6 +223,11 @@ with description('Network Generator Module', 'network') as self:
 
         with description('Network Generators'):
             with description('/network/generators'):
+                with context('PUT'):
+                    with it('returns 405'):
+                        expect(lambda: self._api.api_client.call_api('/network/generators', 'PUT')).to(
+                            raise_api_exception(405, headers={'Allow': "GET, POST"}))
+
                 with context('POST'):
                     with shared_context('create generator'):
                         with before.all:
@@ -225,7 +237,7 @@ with description('Network Generator Module', 'network') as self:
                         with after.all:
                             clear_network_instances(self._api)
 
-                        with it('created'):
+                        with it('created (201)'):
                             expect(self._result[1]).to(equal(201))
 
                         with it('has valid Location header'):
@@ -256,7 +268,7 @@ with description('Network Generator Module', 'network') as self:
                         with after.all:
                             clear_network_instances(self._api)
 
-                        with it('succeeded'):
+                        with it('created (201)'):
                             expect(self._result[1]).to(equal(201))
 
                         with it('has a valid network generator'):
@@ -306,7 +318,7 @@ with description('Network Generator Module', 'network') as self:
                     with after.all:
                         clear_network_instances(self._api)
 
-                    with it('succeeded'):
+                    with it('success (200)'):
                         expect(self._result[1]).to(equal(200))
 
                     with it('has Content-Type: application/json header'):
@@ -330,7 +342,7 @@ with description('Network Generator Module', 'network') as self:
                             self._result = self._api.get_network_generator_with_http_info(
                                 self._g7r.id, _return_http_data_only=False)
 
-                        with it('succeeded'):
+                        with it('success (200)'):
                             expect(self._result[1]).to(equal(200))
 
                         with it('has Content-Type: application/json header'):
@@ -351,12 +363,12 @@ with description('Network Generator Module', 'network') as self:
 
                 with context('DELETE'):
                     with description('by existing ID'):
-                        with it('removed'):
+                        with it('removed (204)'):
                             result = self._api.delete_network_generator_with_http_info(
                                 self._g7r.id, _return_http_data_only=False)
                             expect(result[1]).to(equal(204))
 
-                        with it('not found'):
+                        with it('not found (404)'):
                             expr = lambda: self._api.get_network_generator(self._g7r.id)
                             expect(expr).to(raise_api_exception(404))
 
@@ -389,7 +401,7 @@ with description('Network Generator Module', 'network') as self:
                         with it('is not running'):
                             expect(self._g7r.running).to(be_false)
 
-                        with it('started'):
+                        with it('started (201)'):
                             expect(self._result[1]).to(equal(201))
 
                         with it('has valid Location header'):
@@ -419,7 +431,7 @@ with description('Network Generator Module', 'network') as self:
                         with it('is not running'):
                             expect(self._g7r.running).to(be_false)
 
-                        with it('started'):
+                        with it('started (201)'):
                             expect(self._result[1]).to(equal(201))
 
                         with it('has valid Location header'):
@@ -470,7 +482,7 @@ with description('Network Generator Module', 'network') as self:
                         with it('is running'):
                             expect(self._g7r.running).to(be_true)
 
-                        with it('stopped'):
+                        with it('stopped (204)'):
                             result = self._api.stop_network_generator_with_http_info(
                                 self._g7r.id, _return_http_data_only=False)
                             expect(result[1]).to(equal(204))
@@ -498,6 +510,11 @@ with description('Network Generator Module', 'network') as self:
                 with after.all:
                     clear_network_instances(self._api)
 
+                with context('PUT'):
+                    with it('returns 405'):
+                        expect(lambda: self._api.api_client.call_api('/network/generators/x/bulk-start', 'PUT')).to(
+                            raise_api_exception(405, headers={'Allow': "POST"}))
+
                 with description('POST'):
                     with description('by existing IDs'):
                         with before.all:
@@ -510,7 +527,7 @@ with description('Network Generator Module', 'network') as self:
                             for g7r in self._g8s:
                                 expect(g7r.running).to(be_false)
 
-                        with it('started'):
+                        with it('started (200)'):
                             expect(self._result[1]).to(equal(200))
 
                         with it('has Content-Type: application/json header'):
@@ -583,13 +600,18 @@ with description('Network Generator Module', 'network') as self:
                 with after.all:
                     clear_network_instances(self._api)
 
+                with context('PUT'):
+                    with it('not allowed (405)'):
+                        expect(lambda: self._api.api_client.call_api('/network/generators/x/bulk-stop', 'PUT')).to(
+                            raise_api_exception(405, headers={'Allow': "POST"}))
+
                 with description('POST'):
                     with description('by existing IDs'):
                         with it('is running'):
                             for g7r in self._g8s:
                                 expect(g7r.running).to(be_true)
 
-                        with it('stopped'):
+                        with it('stopped (204)'):
                             request = client.models.BulkStopNetworkGeneratorsRequest(
                                 [g7r.id for g7r in self._g8s])
                             expr = lambda: self._api.bulk_stop_network_generators(request)
@@ -652,12 +674,17 @@ with description('Network Generator Module', 'network') as self:
                 self._api.stop_network_generator(g7r.id)
 
             with description('/network/generator-results'):
+                with context('PUT'):
+                    with it('not allowed (405)'):
+                        expect(lambda: self._api.api_client.call_api('/network/generator-results', 'PUT')).to(
+                            raise_api_exception(405, headers={'Allow': "GET"}))
+
                 with context('GET'):
                     with before.all:
                         self._result = self._api.list_network_generator_results_with_http_info(
                             _return_http_data_only=False)
 
-                    with it('success'):
+                    with it('success (200)'):
                         expect(self._result[1]).to(equal(200))
 
                     with it('has Content-Type: application/json header'):
@@ -680,7 +707,7 @@ with description('Network Generator Module', 'network') as self:
                             self._get_result = self._api.get_network_generator_result_with_http_info(
                                 self._result.id, _return_http_data_only=False)
 
-                        with it('success'):
+                        with it('success (200)'):
                             expect(self._get_result[1]).to(equal(200))
 
                         with it('has Content-Type: application/json header'):
@@ -706,7 +733,7 @@ with description('Network Generator Module', 'network') as self:
                                 self._result.id, _return_http_data_only=False)
                             expect(result[1]).to(equal(204))
 
-                        with it('not found'):
+                        with it('not found (404)'):
                             expr = lambda: self._api.get_network_generator_result(self._result.id)
                             expect(expr).to(raise_api_exception(404))
 
@@ -719,6 +746,7 @@ with description('Network Generator Module', 'network') as self:
                         with it('bad request (400)'):
                             expr = lambda: self._api.delete_network_generator_result('bad_id')
                             expect(expr).to(raise_api_exception(400))
+
             with description('Verify statistics'):
                 with shared_context('check_statistics'):
                     with before.each:
@@ -810,7 +838,6 @@ with description('Network Generator Module', 'network') as self:
                         #TODO compare server and client statistics after issue #429 fixed
                         #expect(server.stats.bytes_received).to(equal(result.write.bytes_actual))
 
-
                 with description('IPv4'):
                     with before.all:
                         self._host = self._ip4_host
@@ -854,6 +881,22 @@ with description('Network Generator Module', 'network') as self:
 
                         with included_context('check_statistics'):
                             pass
+
+            with description('delete results with generator'):
+                with it('results exists'):
+                    results = self._api.list_network_generator_results()
+                    expect(results).not_to(be_empty)
+
+                with it('generator deleted'):
+                    g8s = self._api.list_network_generators()
+                    for g7r in g8s:
+                        result = self._api.delete_network_generator_with_http_info(
+                            g7r.id, _return_http_data_only=False)
+                        expect(result[1]).to(equal(204))
+
+                with it('results deleted'):
+                    results = self._api.list_network_generator_results()
+                    expect(results).to(be_empty)
 
             with after.all:
                 clear_network_instances(self._api)
