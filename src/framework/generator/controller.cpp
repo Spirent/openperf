@@ -80,7 +80,11 @@ void controller::send(internal::operation_t operation, bool wait)
     // This resolve the bug with generators hanging on deletion.
     if (m_workers.empty()) return;
 
-    if (wait) m_feedback.init(operation, m_worker_count);
+    std::unique_lock<std::mutex> lock(m_mutex);
+    if (wait) {
+        m_track_operation = operation;
+        m_track_counter = m_worker_count;
+    }
 
     auto result = zmq_send(
         m_control_socket.get(), &operation, sizeof(operation), ZMQ_DONTWAIT);
@@ -98,7 +102,9 @@ void controller::send(internal::operation_t operation, bool wait)
         }
     }
 
-    if (wait) { m_feedback.wait(); }
+    if (wait) {
+        m_condition.wait(lock, [this] { return m_track_counter <= 0; });
+    }
 }
 
 } // namespace openperf::framework::generator

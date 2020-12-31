@@ -2,8 +2,10 @@
 #define _OP_FRAMEWORK_GENERATOR_CONTROLLER_HPP_
 
 #include <cassert>
+#include <condition_variable>
 #include <forward_list>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <thread>
@@ -65,10 +67,14 @@ private:
     std::string m_thread_name;
     std::thread m_thread;
     std::atomic_bool m_stop;
-    internal::feedback_tracker m_feedback;
 
     std::forward_list<internal::worker> m_workers;
     size_t m_worker_count = 0;
+
+    std::condition_variable m_condition;
+    internal::operation_t m_track_operation = internal::operation_t::NOOP;
+    std::atomic_int m_track_counter = 0;
+    std::mutex m_mutex;
 
 public:
     // Constructors & Destructor
@@ -134,7 +140,10 @@ template <typename S, typename T> void controller::start(T&& processor)
                     send(internal::operation_t::READY, false);
                     break;
                 default:
-                    m_feedback.countdown(operation);
+                    if (m_track_operation == operation) {
+                        m_track_counter--;
+                        m_condition.notify_all();
+                    }
                     break;
                 }
             } catch (const std::runtime_error& e) {
@@ -153,6 +162,10 @@ void controller::add(T&& task,
 {
     assert(!m_stop);
 
+    std::unique_lock<std::mutex> lock(m_mutex);
+    m_track_operation = internal::operation_t::READY;
+    m_track_counter = 1;
+
     auto control =
         internal::worker::socket_pointer(op_socket_get_client_subscription(
             m_context.get(), m_control_endpoint.c_str(), ""));
@@ -165,8 +178,7 @@ void controller::add(T&& task,
 
     // Wait the one READY message as confirmation establishing connection
     m_worker_count++;
-    m_feedback.init(internal::operation_t::READY, 1);
-    m_feedback.wait();
+    m_condition.wait(lock, [this] { return m_track_counter <= 0; });
 }
 
 } // namespace openperf::framework::generator

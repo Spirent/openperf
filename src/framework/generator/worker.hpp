@@ -15,9 +15,19 @@
 #include "framework/message/serialized_message.hpp"
 
 #include "task.hpp"
-#include "feedback_tracker.hpp"
 
 namespace openperf::framework::generator::internal {
+
+enum class operation_t {
+    NOOP = 0,
+    PAUSE,
+    RESUME,
+    RESET,
+    STOP,
+    STATISTICS,
+    INIT,
+    READY,
+};
 
 class worker final
 {
