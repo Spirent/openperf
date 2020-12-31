@@ -13,7 +13,7 @@ public:
     kernel() = default;
     ~kernel() = default;
 
-    std::string_view driver_key() override { return key; };
+    bool support_socket_timeout() override { return true; };
 
     /* General socket functions */
     int accept(int s,

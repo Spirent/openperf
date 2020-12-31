@@ -145,9 +145,7 @@ server_tcp::~server_tcp()
 {
     m_stopped.store(true, std::memory_order_relaxed);
 
-    // Closing blocked socket does not required for dpdk driver because of
-    // using SOCK_NONBLOCK flag
-    if (m_driver->driver_key().compare(drivers::dpdk::key) != 0) {
+    if (m_driver->support_socket_timeout()) {
         auto fd = m_blocked_socket.load(std::memory_order_relaxed);
         if (fd >= 0) {
             m_driver->shutdown(fd, SHUT_RDWR);
@@ -187,9 +185,7 @@ void server_tcp::run_accept_thread()
                     m_fd.load(),
                     client,
                     &client_length,
-                    (m_driver->driver_key().compare(drivers::dpdk::key) == 0)
-                        ? SOCK_NONBLOCK
-                        : 0))
+                    (!m_driver->support_socket_timeout()) ? SOCK_NONBLOCK : 0))
                != -1) {
             int enable = 1;
             if (m_driver->setsockopt(connect_fd,
@@ -202,10 +198,12 @@ void server_tcp::run_accept_thread()
                 continue;
             }
 
-            // SO_RCVTIMEO shows much better performance than SOCK_NONBLOCK
-            timeval tv = {.tv_sec = 0, .tv_usec = 1};
-            m_driver->setsockopt(
-                connect_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+            if (m_driver->support_socket_timeout()) {
+                // SO_RCVTIMEO shows much better performance than SOCK_NONBLOCK
+                timeval tv = {.tv_sec = 0, .tv_usec = 1};
+                m_driver->setsockopt(
+                    connect_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+            }
 
             auto conn = connection_msg_t{.fd = connect_fd};
             memcpy(&conn.client, client, get_sa_len(client));

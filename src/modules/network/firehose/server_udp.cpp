@@ -71,7 +71,26 @@ tl::expected<int, std::string> server_udp::new_server(
         return tl::make_unexpected<std::string>(strerror(err));
     }
 
-    if (m_driver->driver_key().compare(drivers::dpdk::key) == 0) {
+    if (m_driver->support_socket_timeout()) {
+        static auto timeout = std::chrono::microseconds(
+            openperf::config::file::op_config_get_param<OP_OPTION_TYPE_LONG>(
+                "modules.network.operation-timeout")
+                .value_or(default_operation_timeout_usec));
+
+        static auto read_timeout = timesync::to_timeval(timeout);
+        if (m_driver->setsockopt(sock,
+                                 SOL_SOCKET,
+                                 SO_RCVTIMEO,
+                                 &read_timeout,
+                                 sizeof(read_timeout))
+            != 0) {
+            OP_LOG(OP_LOG_WARNING,
+                   "Unable to set socket timeout (domain = %d, protocol = "
+                   "UDP): %s\n",
+                   domain,
+                   strerror(errno));
+        }
+    } else {
         /* Update DPDK socket to non-blocking */
         int flags = m_driver->fcntl(sock, F_GETFL);
         if (flags == -1) {
@@ -95,22 +114,6 @@ tl::expected<int, std::string> server_udp::new_server(
         auto err = errno;
         m_driver->close(sock);
         return tl::make_unexpected<std::string>(strerror(err));
-    }
-
-    static auto timeout = std::chrono::microseconds(
-        openperf::config::file::op_config_get_param<OP_OPTION_TYPE_LONG>(
-            "modules.network.operation-timeout")
-            .value_or(default_operation_timeout_usec));
-
-    static auto read_timeout = timesync::to_timeval(timeout);
-    if (m_driver->setsockopt(
-            sock, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout))
-        != 0) {
-        OP_LOG(OP_LOG_WARNING,
-               "Unable to set socket timeout (domain = %d, protocol = "
-               "UDP): %s\n",
-               domain,
-               strerror(errno));
     }
 
     return sock;

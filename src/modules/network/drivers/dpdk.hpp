@@ -17,7 +17,6 @@ public:
 
     void init() override;
     bool bind_to_device_required() override;
-    std::string_view driver_key() override { return key; };
 
     /* General socket functions */
     int accept(int s,
