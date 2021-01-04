@@ -28,7 +28,7 @@ OP_LDLIBS += -Wl,--whole-archive -l$(SOCKSRV_LIBRARY) -Wl,--no-whole-archive $(S
 
 # Load external dependencies
 -include $(SOCKSRV_OBJECTS:.o=.d)
-$(call op_include_dependencies,$(SOCKSRC_DEPENDS))
+$(call op_include_dependencies,$(SOCKSRV_DEPENDS))
 
 ###
 # Build rules

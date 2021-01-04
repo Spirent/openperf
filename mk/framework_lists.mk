@@ -35,7 +35,7 @@ OP_LDLIBS += -Wl,--whole-archive -l$(FW_LISTS_LIBRARY) -Wl,--no-whole-archive $(
 ###
 
 $(eval $(call op_generate_build_rules,$(FW_LISTS_SOURCES),FW_SRC_DIR,FW_OBJ_DIR,FW_LISTS_DEPENDS))
-$(eval $(call op_generate_clean_rules,framework,FW_LISTS_TARGET,FW_LISTS_OBJECTS))
+$(eval $(call op_generate_clean_rules,framework_lists,FW_LISTS_TARGET,FW_LISTS_OBJECTS))
 
 $(FW_LISTS_TARGET): $(FW_LISTS_OBJECTS)
 	$(call op_link_library,$@,$(FW_LISTS_OBJECTS))
