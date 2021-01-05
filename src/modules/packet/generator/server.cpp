@@ -6,6 +6,7 @@
 
 #include "swagger/v1/model/PacketGenerator.h"
 #include "swagger/v1/model/PacketGeneratorResult.h"
+#include "swagger/v1/model/PacketGeneratorLearningResults.h"
 #include "swagger/v1/model/TxFlow.h"
 
 namespace openperf::packet::generator::api {
@@ -131,6 +132,18 @@ static std::string to_string(const request_msg& request)
                            },
                            [](const request_get_tx_flow& request) {
                                return ("get tx flow " + request.id);
+                           },
+                           [](const request_get_learning_results&) {
+                               return (std::string("get learning results"));
+                           },
+                           [](const request_start_learning&) {
+                               return (std::string("start learning"));
+                           },
+                           [](const request_stop_learning&) {
+                               return (std::string("stop learning"));
+                           },
+                           [](const request_retry_learning&) {
+                               return (std::string("retry learning"));
                            }),
                        request));
 }
@@ -139,9 +152,11 @@ static std::string to_string(const reply_msg& reply)
 {
     // XXX: If we ever need to support more HTTP return codes,
     // probably makes sense to pull in the Pistache Http code to_string here.
-    // But for only 2 codes not worth the added dependency.
+    // But for only 3 codes not worth the added dependency.
     if (auto error = std::get_if<reply_error>(&reply)) {
         switch (error->info.type) {
+        case error_type::BAD_REQUEST:
+            return ("failed: Bad Request");
         case error_type::CONFLICT:
             return ("failed: Conflict");
         case error_type::NOT_FOUND:
@@ -786,6 +801,92 @@ reply_msg server::handle_request(const request_get_tx_flow& request)
     auto reply = reply_tx_flows{};
     reply.flows.emplace_back(to_swagger(*id, it->first, *result, flow_idx));
     return (reply);
+}
+
+reply_msg server::handle_request(const request_get_learning_results& request)
+{
+    auto result = binary_find(std::begin(m_sources),
+                              std::end(m_sources),
+                              request.id,
+                              source_id_comparator{});
+
+    if (result == std::end(m_sources)) {
+        return (to_error(error_type::NOT_FOUND));
+    }
+
+    auto maybe_learning =
+        result->first.template get<source>().maybe_get_learning();
+    if (!maybe_learning.has_value()) {
+        return (to_error(error_type::BAD_REQUEST));
+    }
+
+    auto reply = reply_learning_results{};
+    reply.results.emplace_back(to_swagger((*maybe_learning).get()));
+    return (reply);
+}
+
+reply_msg server::handle_request(const request_retry_learning& request)
+{
+    auto result = binary_find(std::begin(m_sources),
+                              std::end(m_sources),
+                              request.id,
+                              source_id_comparator{});
+
+    if (result == std::end(m_sources)) {
+        return (to_error(error_type::NOT_FOUND));
+    }
+
+    auto& src = result->first.template get<source>();
+
+    auto maybe_learning_retried = src.maybe_retry_learning();
+    if (!maybe_learning_retried.value_or(false)) {
+        return (to_error(error_type::BAD_REQUEST));
+    }
+
+    return (reply_ok{});
+}
+
+reply_msg server::handle_request(const request_start_learning& request)
+{
+    auto result = binary_find(std::begin(m_sources),
+                              std::end(m_sources),
+                              request.id,
+                              source_id_comparator{});
+
+    if (result == std::end(m_sources)) {
+        return (to_error(error_type::NOT_FOUND));
+    }
+
+    auto& src = result->first.template get<source>();
+
+    auto maybe_learning_retried = src.maybe_start_learning();
+    if (!maybe_learning_retried.value_or(false)) {
+        return (to_error(error_type::BAD_REQUEST));
+    }
+
+    return (reply_ok{});
+}
+reply_msg server::handle_request(const request_stop_learning& request)
+{
+    auto result = binary_find(std::begin(m_sources),
+                              std::end(m_sources),
+                              request.id,
+                              source_id_comparator{});
+
+    if (result == std::end(m_sources)) {
+        return (to_error(error_type::NOT_FOUND));
+    }
+
+    auto& src = result->first.template get<source>();
+
+    if (!src.supports_learning()) {
+        return (to_error(error_type::BAD_REQUEST));
+    }
+
+    // Stopping learning either succeeds or throws an exception.
+    src.maybe_stop_learning();
+
+    return (reply_ok{});
 }
 
 } // namespace openperf::packet::generator::api

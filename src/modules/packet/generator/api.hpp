@@ -23,6 +23,7 @@ class PacketGenerator;
 class PacketGeneratorResult;
 class PacketGeneratorConfig;
 class PacketGeneratorProtocolCountersConfig;
+class PacketGeneratorLearningResults;
 class SpirentSignature;
 class TrafficDefinition;
 class TrafficDuration;
@@ -41,6 +42,7 @@ namespace openperf::packet::generator {
 class source;
 struct source_load;
 class source_result;
+class learning_state_machine;
 
 namespace traffic {
 struct counter;
@@ -68,6 +70,10 @@ using tx_rate = openperf::units::rate<uint64_t, std::ratio<1, 3600>>;
 
 using tx_flow_type = swagger::v1::model::TxFlow;
 using tx_flow_ptr = std::unique_ptr<tx_flow_type>;
+
+using learning_results_type =
+    swagger::v1::model::PacketGeneratorLearningResults;
+using learning_results_ptr = std::unique_ptr<learning_results_type>;
 
 using id_ptr = std::unique_ptr<std::string>;
 
@@ -239,6 +245,26 @@ struct request_get_tx_flow
     std::string id;
 };
 
+struct request_get_learning_results
+{
+    std::string id;
+};
+
+struct request_retry_learning
+{
+    std::string id;
+};
+
+struct request_start_learning
+{
+    std::string id;
+};
+
+struct request_stop_learning
+{
+    std::string id;
+};
+
 struct reply_generators
 {
     std::vector<generator_ptr> generators;
@@ -252,6 +278,11 @@ struct reply_generator_results
 struct reply_tx_flows
 {
     std::vector<tx_flow_ptr> flows;
+};
+
+struct reply_learning_results
+{
+    std::vector<learning_results_ptr> results;
 };
 
 using request_msg = std::variant<request_list_generators,
@@ -271,12 +302,23 @@ using request_msg = std::variant<request_list_generators,
                                  request_get_generator_result,
                                  request_delete_generator_result,
                                  request_list_tx_flows,
-                                 request_get_tx_flow>;
+                                 request_get_tx_flow,
+                                 request_get_learning_results,
+                                 request_retry_learning,
+                                 request_start_learning,
+                                 request_stop_learning>;
 
 struct reply_ok
 {};
 
-enum class error_type { NONE = 0, CONFLICT, NOT_FOUND, POSIX, ZMQ_ERROR };
+enum class error_type {
+    NONE = 0,
+    BAD_REQUEST,
+    CONFLICT,
+    NOT_FOUND,
+    POSIX,
+    ZMQ_ERROR
+};
 
 struct typed_error
 {
@@ -292,6 +334,7 @@ struct reply_error
 using reply_msg = std::variant<reply_generators,
                                reply_generator_results,
                                reply_tx_flows,
+                               reply_learning_results,
                                reply_ok,
                                reply_error>;
 
@@ -313,6 +356,8 @@ tx_flow_ptr to_swagger(const core::uuid& id,
                        const core::uuid& result_id,
                        const source_result& result,
                        size_t flow_idx);
+
+learning_results_ptr to_swagger(const learning_state_machine& lsm);
 
 core::uuid get_generator_result_id();
 

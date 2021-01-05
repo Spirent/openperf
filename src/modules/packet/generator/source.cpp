@@ -384,12 +384,39 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
     return (to_send);
 }
 
-void source::maybe_start_learning()
+bool source::supports_learning() const
+{
+    return (std::visit(
+        utils::overloaded_visitor([](const std::monostate&) { return (false); },
+                                  [](const interface_source& intf_src) {
+                                      return (intf_src.supports_learning);
+                                  },
+                                  [](const port_source& port_src) {
+                                      return (port_src.supports_learning);
+                                  }),
+        m_helper));
+}
+
+std::optional<bool> source::maybe_retry_learning()
 {
     if (auto* maybe_intf_helper = std::get_if<interface_source>(&m_helper);
         maybe_intf_helper != nullptr) {
-        maybe_intf_helper->start_learning(m_sequence);
+        return (
+            std::make_optional(maybe_intf_helper->retry_learning(m_sequence)));
     }
+
+    return {};
+}
+
+std::optional<bool> source::maybe_start_learning()
+{
+    if (auto* maybe_intf_helper = std::get_if<interface_source>(&m_helper);
+        maybe_intf_helper != nullptr) {
+        return (
+            std::make_optional(maybe_intf_helper->start_learning(m_sequence)));
+    }
+
+    return {};
 }
 
 void source::maybe_stop_learning()
@@ -398,6 +425,8 @@ void source::maybe_stop_learning()
         maybe_intf_helper != nullptr) {
         maybe_intf_helper->stop_learning();
     }
+
+    return;
 }
 
 std::optional<bool> source::maybe_learning_resolved() const
@@ -405,6 +434,17 @@ std::optional<bool> source::maybe_learning_resolved() const
     if (auto* maybe_intf_helper = std::get_if<interface_source>(&m_helper);
         maybe_intf_helper != nullptr) {
         return (std::make_optional(maybe_intf_helper->learning_resolved()));
+    }
+
+    return {};
+}
+
+std::optional<std::reference_wrapper<const learning_state_machine>>
+source::maybe_get_learning() const
+{
+    if (auto* maybe_intf_helper = std::get_if<interface_source>(&m_helper);
+        maybe_intf_helper != nullptr) {
+        return (std::make_optional(std::cref(maybe_intf_helper->learning())));
     }
 
     return {};

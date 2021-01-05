@@ -6,6 +6,7 @@
 
 #include "swagger/v1/model/PacketGenerator.h"
 #include "swagger/v1/model/PacketGeneratorResult.h"
+#include "swagger/v1/model/PacketGeneratorLearningResults.h"
 #include "swagger/v1/model/TxFlow.h"
 
 namespace openperf::packet::generator::api {
@@ -81,6 +82,22 @@ serialized_msg serialize_request(request_msg&& msg)
                  [&](const request_get_tx_flow& request) {
                      return (message::push(
                          serialized, request.id.data(), request.id.length()));
+                 },
+                 [&](const request_get_learning_results& request) {
+                     return (message::push(
+                         serialized, request.id.data(), request.id.length()));
+                 },
+                 [&](const request_retry_learning& request) {
+                     return (message::push(
+                         serialized, request.id.data(), request.id.length()));
+                 },
+                 [&](const request_start_learning& request) {
+                     return (message::push(
+                         serialized, request.id.data(), request.id.length()));
+                 },
+                 [&](const request_stop_learning& request) {
+                     return (message::push(
+                         serialized, request.id.data(), request.id.length()));
                  }),
              msg));
     if (error) { throw std::bad_alloc(); }
@@ -93,25 +110,28 @@ serialized_msg serialize_reply(reply_msg&& msg)
     serialized_msg serialized;
     auto error =
         (message::push(serialized, msg.index())
-         || std::visit(utils::overloaded_visitor(
-                           [&](reply_generators& reply) {
-                               return (
-                                   message::push(serialized, reply.generators));
-                           },
-                           [&](reply_generator_results& reply) {
-                               return (message::push(serialized,
-                                                     reply.generator_results));
-                           },
-                           [&](reply_tx_flows& reply) {
-                               return (message::push(serialized, reply.flows));
-                           },
-                           [&](const reply_ok&) {
-                               return (message::push(serialized, 0));
-                           },
-                           [&](const reply_error& error) {
-                               return (message::push(serialized, error.info));
-                           }),
-                       msg));
+         || std::visit(
+             utils::overloaded_visitor(
+                 [&](reply_generators& reply) {
+                     return (message::push(serialized, reply.generators));
+                 },
+                 [&](reply_generator_results& reply) {
+                     return (
+                         message::push(serialized, reply.generator_results));
+                 },
+                 [&](reply_tx_flows& reply) {
+                     return (message::push(serialized, reply.flows));
+                 },
+                 [&](reply_learning_results& reply) {
+                     return (message::push(serialized, reply.results));
+                 },
+                 [&](const reply_ok&) {
+                     return (message::push(serialized, 0));
+                 },
+                 [&](const reply_error& error) {
+                     return (message::push(serialized, error.info));
+                 }),
+             msg));
     if (error) { throw std::bad_alloc(); }
 
     return (serialized);
@@ -189,6 +209,18 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     case utils::variant_index<request_msg, request_get_tx_flow>(): {
         return (request_get_tx_flow{message::pop_string(msg)});
     }
+    case utils::variant_index<request_msg, request_get_learning_results>(): {
+        return (request_get_learning_results{message::pop_string(msg)});
+    }
+    case utils::variant_index<request_msg, request_retry_learning>(): {
+        return (request_retry_learning{message::pop_string(msg)});
+    }
+    case utils::variant_index<request_msg, request_start_learning>(): {
+        return (request_start_learning{message::pop_string(msg)});
+    }
+    case utils::variant_index<request_msg, request_stop_learning>(): {
+        return (request_stop_learning{message::pop_string(msg)});
+    }
     }
 
     return (tl::make_unexpected(EINVAL));
@@ -209,6 +241,10 @@ tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg)
     }
     case utils::variant_index<reply_msg, reply_tx_flows>(): {
         return (reply_tx_flows{message::pop_unique_vector<tx_flow_type>(msg)});
+    }
+    case utils::variant_index<reply_msg, reply_learning_results>(): {
+        return (reply_learning_results{
+            message::pop_unique_vector<learning_results_type>(msg)});
     }
     case utils::variant_index<reply_msg, reply_ok>():
         return (reply_ok{});

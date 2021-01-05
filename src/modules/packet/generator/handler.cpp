@@ -15,6 +15,7 @@
 #include "swagger/v1/model/BulkStopPacketGeneratorsRequest.h"
 #include "swagger/v1/model/PacketGenerator.h"
 #include "swagger/v1/model/PacketGeneratorResult.h"
+#include "swagger/v1/model/PacketGeneratorLearningResults.h"
 #include "swagger/v1/model/TogglePacketGeneratorsRequest.h"
 #include "swagger/v1/model/TxFlow.h"
 
@@ -29,6 +30,8 @@ using namespace Pistache;
 static enum Http::Code to_code(const reply_error& error)
 {
     switch (error.info.type) {
+    case error_type::BAD_REQUEST:
+        return (Http::Code::Bad_Request);
     case error_type::CONFLICT:
         return (Http::Code::Conflict);
     case error_type::NOT_FOUND:
@@ -43,6 +46,8 @@ static enum Http::Code to_code(const reply_error& error)
 const char* to_string(const reply_error& error)
 {
     switch (error.info.type) {
+    case error_type::BAD_REQUEST:
+        [[fallthrough]];
     case error_type::CONFLICT:
         [[fallthrough]];
     case error_type::NOT_FOUND:
@@ -139,6 +144,13 @@ public:
     void list_tx_flows(const request_type& request, response_type response);
     void get_tx_flow(const request_type& request, response_type response);
 
+    /* Learning operations */
+    void get_learning_results(const request_type& request,
+                              response_type response);
+    void retry_learning(const request_type& request, response_type response);
+    void start_learning(const request_type& request, response_type response);
+    void stop_learning(const request_type& request, response_type response);
+
 private:
     std::unique_ptr<void, op_socket_deleter> m_socket;
 };
@@ -198,6 +210,19 @@ handler::handler(void* context, Pistache::Rest::Router& router)
 
     Get(router, "/packet/tx-flows", bind(&handler::list_tx_flows, this));
     Get(router, "/packet/tx-flows/:id", bind(&handler::get_tx_flow, this));
+
+    Get(router,
+        "/packet/generators/:id/learning",
+        bind(&handler::get_learning_results, this));
+    Post(router,
+         "/packet/generators/:id/learning/retry",
+         bind(&handler::retry_learning, this));
+    Post(router,
+         "/packet/generators/:id/learning/start",
+         bind(&handler::start_learning, this));
+    Post(router,
+         "/packet/generators/:id/learning/stop",
+         bind(&handler::stop_learning, this));
 }
 
 static void set_optional_filter(const handler::request_type& request,
@@ -242,7 +267,7 @@ maybe_get_request_uri(const handler::request_type& request)
 
         /*
          * XXX: Assuming http here. I don't see how to get the type
-         * of the connection fomr Pistache.  But for now, that doesn't
+         * of the connection from Pistache.  But for now, that doesn't
          * matter.
          */
         return ("http://" + host_header->host() + ":"
@@ -786,6 +811,80 @@ void handler::get_tx_flow(const request_type& request, response_type response)
         assert(reply->flows.size() == 1);
         openperf::api::utils::send_chunked_response(
             std::move(response), Http::Code::Ok, reply->flows[0]->toJson());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+void handler::get_learning_results(const request_type& request,
+                                   response_type response)
+{
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
+
+    auto api_reply =
+        submit_request(m_socket.get(), request_get_learning_results{id});
+
+    if (auto reply = std::get_if<reply_learning_results>(&api_reply)) {
+        assert(reply->results.size() == 1);
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, reply->results[0]->toJson());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+void handler::retry_learning(const request_type& request,
+                             response_type response)
+{
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
+
+    auto api_reply = submit_request(m_socket.get(), request_retry_learning{id});
+
+    if (auto reply = std::get_if<reply_ok>(&api_reply)) {
+        response.send(Http::Code::No_Content);
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+void handler::start_learning(const request_type& request,
+                             response_type response)
+{
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
+
+    auto api_reply = submit_request(m_socket.get(), request_start_learning{id});
+
+    if (auto reply = std::get_if<reply_ok>(&api_reply)) {
+        response.send(Http::Code::No_Content);
+    } else {
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+void handler::stop_learning(const request_type& request, response_type response)
+{
+    auto id = request.param(":id").as<std::string>();
+    if (auto res = config::op_config_validate_id_string(id); !res) {
+        response.send(Http::Code::Not_Found, res.error());
+        return;
+    }
+
+    auto api_reply = submit_request(m_socket.get(), request_stop_learning{id});
+
+    if (auto reply = std::get_if<reply_ok>(&api_reply)) {
+        response.send(Http::Code::No_Content);
     } else {
         handle_reply_error(api_reply, std::move(response));
     }

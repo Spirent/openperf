@@ -3,6 +3,7 @@
 #include "swagger/converters/packet_generator.hpp"
 #include "swagger/v1/model/PacketGenerator.h"
 #include "swagger/v1/model/PacketGeneratorResult.h"
+#include "swagger/v1/model/PacketGeneratorLearningResults.h"
 #include "swagger/v1/model/TxFlow.h"
 #include "modules/packet/generator/api.hpp"
 

@@ -113,12 +113,18 @@ public:
                        packetio::packet::packet_buffer* output[]) const;
 
     /*
-     * Methods to start and stop ARP/ND learning.
+     * Methods related to ARP/ND learning.
      */
-    void maybe_start_learning();
+    bool supports_learning() const;
+
+    std::optional<bool> maybe_retry_learning();
+    std::optional<bool> maybe_start_learning();
     void maybe_stop_learning();
 
     std::optional<bool> maybe_learning_resolved() const;
+
+    std::optional<std::reference_wrapper<const learning_state_machine>>
+    maybe_get_learning() const;
 
 private:
     source_config m_config;
