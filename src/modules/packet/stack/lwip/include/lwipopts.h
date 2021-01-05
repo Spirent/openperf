@@ -103,6 +103,11 @@
 /* We've already got these */
 #define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS 1
 
+/* Generator uses lwip for ARP/ND learning.
+ * Increase size of cache to a reasonable size.
+ */
+#define ARP_TABLE_SIZE 100
+
 /*
  * Debugging options
  * Enable the next three options plus whatever content you want.
