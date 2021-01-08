@@ -60,7 +60,7 @@ def ipv4_interface(api_client, **kwargs):
         method = 'static'
     if method == 'static':
         i.config.protocols = make_interface_protocols([
-            client.models.InterfaceProtocolConfigEth(mac_address=random_mac(i.port_id)),
+            client.models.InterfaceProtocolConfigEth(mac_address=kwargs.get('mac_address', random_mac(i.port_id))),
             client.models.InterfaceProtocolConfigIpv4(
                 method='static',
                 static=client.models.InterfaceProtocolConfigIpv4Static(

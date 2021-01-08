@@ -1,4 +1,5 @@
 from expects import *
+import time
 from common.helper.traffic import (make_traffic_definition,
                                    make_traffic_duration,
                                    make_traffic_load,
@@ -85,6 +86,11 @@ def get_first_port_id(api_client):
     expect(ports).not_to(be_empty)
     return ports[0].id
 
+def get_second_port_id(api_client):
+    ports_api = client.api.PortsApi(api_client)
+    ports = ports_api.list_ports()
+    expect(ports).not_to(be_empty)
+    return ports[1].id
 
 def default_traffic_packet_template_with_seq_modifiers(permute_flag=None):
     model = make_traffic_template(SEQ_MODIFIER_PACKET)
@@ -148,3 +154,17 @@ def packet_generator_models(api_client):
     gen2.target_id = ports[1].id
 
     return [gen1, gen2]
+
+def wait_for_learning_resolved(api_client, generator_id, **kwargs):
+    poll_interval = kwargs['poll_interval'] if 'poll_interval' in kwargs else 1
+    max_poll_count = kwargs['max_poll_count'] if 'max_poll_count' in kwargs else 3
+
+    for _ in range(max_poll_count):
+        gen = api_client.get_packet_generator(generator_id)
+
+        if gen.learning == 'resolved':
+            return True
+
+        time.sleep(poll_interval)
+
+    return False

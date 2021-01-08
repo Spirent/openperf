@@ -7,15 +7,18 @@ import client.models
 from common import Config, Service
 from common.helper import (make_traffic_template,
                            get_first_port_id,
+                           get_second_port_id,
                            default_traffic_packet_template_with_seq_modifiers,
                            default_traffic_packet_template_with_list_modifiers,
                            packet_generator_model,
-                           packet_generator_models)
+                           packet_generator_models,
+                           wait_for_learning_resolved)
 from common.matcher import (be_valid_packet_generator,
                             be_valid_packet_generator_result,
                             be_valid_transmit_flow,
                             raise_api_exception)
 from common.helper import check_modules_exists
+from common.helper import ipv4_interface
 
 
 CONFIG = Config(os.path.join(os.path.dirname(__file__),
@@ -54,6 +57,7 @@ with description('Packet Generator,', 'packet_generator') as self:
             service = Service(CONFIG.service())
             self.process = service.start()
             self.api = client.api.PacketGeneratorsApi(service.client())
+            self.intf_api = client.api.InterfacesApi(service.client())
             if not check_modules_exists(service.client(), 'packet-generator'):
                 self.skip()
 
@@ -119,232 +123,266 @@ with description('Packet Generator,', 'packet_generator') as self:
                     expect(lambda: self.api.get_packet_generator(':bar:')).to(raise_api_exception(404))
 
         with description('create generator,'):
-            with description('valid config,'):
-                with description('without modifiers,'):
-                    with it('succeeds'):
-                        gen = packet_generator_model(self.api.api_client)
-                        result = self.api.create_packet_generator(gen)
-                        expect(result).to(be_valid_packet_generator)
-
-                with description('with modifiers,'):
-                    with description('with sequence modifiers'):
+            with description('attached to port, '):
+                with description('valid config,'):
+                    with description('without modifiers,'):
                         with it('succeeds'):
-                            template = default_traffic_packet_template_with_seq_modifiers()
+                            gen = packet_generator_model(self.api.api_client)
+                            result = self.api.create_packet_generator(gen)
+                            expect(result).to(be_valid_packet_generator)
+
+                    with description('with modifiers,'):
+                        with description('with sequence modifiers'):
+                            with it('succeeds'):
+                                template = default_traffic_packet_template_with_seq_modifiers()
+                                gen = packet_generator_model(self.api.api_client)
+                                gen.config.traffic[0].packet = template
+                                result = self.api.create_packet_generator(gen)
+                                expect(result).to(be_valid_packet_generator)
+
+                        with description('with permuted sequence modifiers,'):
+                            with it('succeeds'):
+                                template = default_traffic_packet_template_with_seq_modifiers(permute_flag=True)
+                                gen = packet_generator_model(self.api.api_client)
+                                gen.config.traffic[0].packet = template
+                                result = self.api.create_packet_generator(gen)
+                                expect(result).to(be_valid_packet_generator)
+
+                        with description('with list modifiers'):
+                            with it('succeeds'):
+                                template = default_traffic_packet_template_with_list_modifiers()
+                                gen = packet_generator_model(self.api.api_client)
+                                gen.config.traffic[0].packet = template
+                                result = self.api.create_packet_generator(gen)
+                                expect(result).to(be_valid_packet_generator)
+
+                        with description('with permuted list modifiers,'):
+                            with it('succeeds'):
+                                template = default_traffic_packet_template_with_list_modifiers(permute_flag=True)
+                                gen = packet_generator_model(self.api.api_client)
+                                gen.config.traffic[0].packet = template
+                                result = self.api.create_packet_generator(gen)
+                                expect(result).to(be_valid_packet_generator)
+
+                    with description('with signatures enabled,'):
+                        with it('succeeds'):
+                            gen = packet_generator_model(self.api.api_client)
+                            gen.config.traffic[0].signature = client.models.SpirentSignature(
+                                stream_id=1, latency='start_of_frame')
+                            result = self.api.create_packet_generator(gen)
+                            expect(result).to(be_valid_packet_generator)
+
+                    with description('with custom packet,'):
+                        with it('succeeds'):
+                            template = make_traffic_template(CUSTOM_L2_PACKET)
                             gen = packet_generator_model(self.api.api_client)
                             gen.config.traffic[0].packet = template
                             result = self.api.create_packet_generator(gen)
                             expect(result).to(be_valid_packet_generator)
 
-                    with description('with permuted sequence modifiers,'):
+                    with description('with custom payload,'):
                         with it('succeeds'):
-                            template = default_traffic_packet_template_with_seq_modifiers(permute_flag=True)
+                            template = make_traffic_template(CUSTOM_PAYLOAD)
                             gen = packet_generator_model(self.api.api_client)
                             gen.config.traffic[0].packet = template
                             result = self.api.create_packet_generator(gen)
                             expect(result).to(be_valid_packet_generator)
 
-                    with description('with list modifiers'):
-                        with it('succeeds'):
-                            template = default_traffic_packet_template_with_list_modifiers()
-                            gen = packet_generator_model(self.api.api_client)
-                            gen.config.traffic[0].packet = template
-                            result = self.api.create_packet_generator(gen)
-                            expect(result).to(be_valid_packet_generator)
-
-                    with description('with permuted list modifiers,'):
-                        with it('succeeds'):
-                            template = default_traffic_packet_template_with_list_modifiers(permute_flag=True)
-                            gen = packet_generator_model(self.api.api_client)
-                            gen.config.traffic[0].packet = template
-                            result = self.api.create_packet_generator(gen)
-                            expect(result).to(be_valid_packet_generator)
-
-                with description('with signatures enabled,'):
-                    with it('succeeds'):
-                        gen = packet_generator_model(self.api.api_client)
-                        gen.config.traffic[0].signature = client.models.SpirentSignature(
-                            stream_id=1, latency='start_of_frame')
-                        result = self.api.create_packet_generator(gen)
-                        expect(result).to(be_valid_packet_generator)
-
-                with description('with custom packet,'):
-                    with it('succeeds'):
-                        template = make_traffic_template(CUSTOM_L2_PACKET)
-                        gen = packet_generator_model(self.api.api_client)
-                        gen.config.traffic[0].packet = template
-                        result = self.api.create_packet_generator(gen)
-                        expect(result).to(be_valid_packet_generator)
-
-                with description('with custom payload,'):
-                    with it('succeeds'):
-                        template = make_traffic_template(CUSTOM_PAYLOAD)
-                        gen = packet_generator_model(self.api.api_client)
-                        gen.config.traffic[0].packet = template
-                        result = self.api.create_packet_generator(gen)
-                        expect(result).to(be_valid_packet_generator)
-
-            with description('invalid config'):
-                with description('empty target id,'):
-                    with it('returns 400'):
-                        gen = packet_generator_model(self.api.api_client)
-                        gen.target_id = None
-                        expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
-
-                with description('non-existent target id,'):
-                    with it('returns 400'):
-                        gen = packet_generator_model(self.api.api_client)
-                        gen.target_id = 'foo'
-                        expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
-
-                with description('invalid ordering'):
-                    with it('returns 400'):
-                        gen = packet_generator_model(self.api.api_client)
-                        gen.config.order = 'foo'
-                        expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
-
-                with description('invalid load,'):
-                    with description('invalid schema,'):
+                with description('invalid config'):
+                    with description('empty target id,'):
                         with it('returns 400'):
                             gen = packet_generator_model(self.api.api_client)
-                            gen.config.load.rate = -1
+                            gen.target_id = None
                             expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
 
-                with description('invalid rate,'):
-                    with it('returns 400'):
-                        gen = packet_generator_model(self.api.api_client)
-                        gen.config.load.rate.value = -1
-                        expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
-
-                with description('invalid duration,'):
-                    with description('empty duration object,'):
+                    with description('non-existent target id,'):
                         with it('returns 400'):
                             gen = packet_generator_model(self.api.api_client)
-                            gen.config.duration = client.models.TrafficDuration()
+                            gen.target_id = 'foo'
                             expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
 
-                    with description('negative frame count,'):
+                    with description('invalid ordering'):
                         with it('returns 400'):
-                            duration = client.models.TrafficDuration()
-                            duration.frames = -1;
                             gen = packet_generator_model(self.api.api_client)
-                            gen.config.duration = duration
+                            gen.config.order = 'foo'
                             expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
 
-                    with description('invalid time object,'):
-                        with description('negative time,'):
+                    with description('invalid load,'):
+                        with description('invalid schema,'):
                             with it('returns 400'):
-                                time = client.models.TrafficDurationTime()
-                                time.value = -1;
-                                time.units = "seconds"
+                                gen = packet_generator_model(self.api.api_client)
+                                gen.config.load.rate = -1
+                                expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+                    with description('invalid rate,'):
+                        with it('returns 400'):
+                            gen = packet_generator_model(self.api.api_client)
+                            gen.config.load.rate.value = -1
+                            expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+                    with description('invalid duration,'):
+                        with description('empty duration object,'):
+                            with it('returns 400'):
+                                gen = packet_generator_model(self.api.api_client)
+                                gen.config.duration = client.models.TrafficDuration()
+                                expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+                        with description('negative frame count,'):
+                            with it('returns 400'):
                                 duration = client.models.TrafficDuration()
-                                duration.time = time
+                                duration.frames = -1;
                                 gen = packet_generator_model(self.api.api_client)
                                 gen.config.duration = duration
                                 expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
 
-                        with description('bogus units,'):
+                        with description('invalid time object,'):
+                            with description('negative time,'):
+                                with it('returns 400'):
+                                    time = client.models.TrafficDurationTime()
+                                    time.value = -1;
+                                    time.units = "seconds"
+                                    duration = client.models.TrafficDuration()
+                                    duration.time = time
+                                    gen = packet_generator_model(self.api.api_client)
+                                    gen.config.duration = duration
+                                    expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+                            with description('bogus units,'):
+                                with it('returns 400'):
+                                    time = client.models.TrafficDurationTime()
+                                    time.value = 10;
+                                    time.units = "foobars"
+                                    duration = client.models.TrafficDuration()
+                                    duration.time = time
+                                    gen = packet_generator_model(self.api.api_client)
+                                    gen.config.duration = duration
+                                    expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+                    with description('invalid traffic definition,'):
+                        with description('no traffic definition,'):
                             with it('returns 400'):
-                                time = client.models.TrafficDurationTime()
-                                time.value = 10;
-                                time.units = "foobars"
-                                duration = client.models.TrafficDuration()
-                                duration.time = time
                                 gen = packet_generator_model(self.api.api_client)
-                                gen.config.duration = duration
+                                gen.config.traffic = []
                                 expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
 
-                with description('invalid traffic definition,'):
-                    with description('no traffic definition,'):
-                        with it('returns 400'):
+                        with description('invalid packet,'):
+                            with description('invalid modifier tie,'):
+                                with it('returns 400'):
+                                    gen = packet_generator_model(self.api.api_client)
+                                    gen.config.traffic[0].packet.modifier_tie = 'foo'
+                                    expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+                            with description('invalid address,'):
+                                with it('returns 400'):
+                                    gen = packet_generator_model(self.api.api_client)
+                                    gen.config.traffic[0].packet.protocols[0].ethernet.source = 'foo'
+                                    expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+                        with description('invalid length,'):
+                            with description('invalid fixed length,'):
+                                with it('returns 400'):
+                                    length = client.models.TrafficLength()
+                                    length.fixed = 16
+                                    gen = packet_generator_model(self.api.api_client)
+                                    gen.config.traffic[0].length = length
+                                    expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+                            with description('invalid list length,'):
+                                with it('returns 400'):
+                                    length = client.models.TrafficLength()
+                                    length.list = [128, 256, 512, 0]
+                                    gen = packet_generator_model(self.api.api_client)
+                                    gen.config.traffic[0].length = length
+                                    expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+                            with description('invalid sequence length,'):
+                                with description('invalid count,'):
+                                    with it('returns 400'):
+                                        seq = client.models.TrafficLengthSequence()
+                                        seq.count = 0
+                                        seq.start = 128
+                                        length = client.models.TrafficLength()
+                                        length.sequence = seq
+                                        gen = packet_generator_model(self.api.api_client)
+                                        gen.config.traffic[0].length = length
+                                        expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+                                with description('invalid start,'):
+                                    with it('returns 400'):
+                                        seq = client.models.TrafficLengthSequence()
+                                        seq.count = 10
+                                        seq.start = 0
+                                        length = client.models.TrafficLength()
+                                        length.sequence = seq
+                                        gen = packet_generator_model(self.api.api_client)
+                                        gen.config.traffic[0].length = length
+                                        expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+                            with description('invalid weight,'):
+                                with it('returns 400'):
+                                    gen = packet_generator_model(self.api.api_client)
+                                    gen.config.traffic[0].weight = -1
+                                    expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+                        with description('invalid modifiers,'):
+                            with description('too many flows,'):
+                                with it('returns 400'):
+                                    # total flows = 65536^3 which exceeds our flow limit of (1 << 48) - 1
+                                    template = default_traffic_packet_template_with_seq_modifiers()
+                                    template.protocols[0].modifiers.items[0].mac.sequence.count = 65536
+                                    template.protocols[1].modifiers.items[0].ipv4.sequence.count = 65536
+                                    template.protocols[1].modifiers.items[1].ipv4.sequence.count = 65536
+                                    template.protocols[1].modifiers.tie = 'cartesian'
+                                    template.modifier_tie = 'cartesian'
+                                    gen = packet_generator_model(self.api.api_client)
+                                    gen.config.traffic[0].packet = template
+                                    expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+                            with description('too many signature flows,'):
+                                with it('returns 400'):
+                                    # total flows = 256^2 which exceeds our signature flow limit of 64k - 1
+                                    template = default_traffic_packet_template_with_seq_modifiers()
+                                    template.protocols[1].modifiers.items[0].ipv4.sequence.count = 256
+                                    template.protocols[1].modifiers.items[1].ipv4.sequence.count = 256
+                                    template.protocols[1].modifiers.tie = 'cartesian'
+                                    gen = packet_generator_model(self.api.api_client)
+                                    gen.config.traffic[0].packet = template
+                                    gen.config.traffic[0].signature = client.models.SpirentSignature(
+                                        stream_id=1, latency='start_of_frame')
+                                    expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+
+            with description('attached to interface, '):
+                with before.each:
+                    self.intf1 = ipv4_interface(self.intf_api.api_client, method="static", ipv4_address="192.168.22.10", gateway="192.168.22.1", mac_address="aa:bb:cc:dd:ee:01")
+                    self.intf1.target_id = get_first_port_id(self.api.api_client)
+                    self.intf1.id = "interface-one"
+                    intf1_impl = self.intf_api.create_interface(self.intf1)
+
+                    self.target_ip = "192.168.22.1"
+                    self.target_mac = "aa:bb:cc:dd:ee:20"
+                    self.intf2 = ipv4_interface(self.intf_api.api_client, method="static", ipv4_address=self.target_ip, mac_address=self.target_mac)
+                    self.intf2.port_id = get_second_port_id(self.api.api_client)
+                    self.intf2.id = "interface-two"
+                    intf2_impl = self.intf_api.create_interface(self.intf2)
+
+                with description('valid config,'):
+                    with description('without modifiers,'):
+                        with it('succeeds'):
                             gen = packet_generator_model(self.api.api_client)
-                            gen.config.traffic = []
-                            expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+                            gen.target_id = "interface-one"
+                            gen.id = "generator-one"
+                            result = self.api.create_packet_generator(gen)
+                            expect(result).to(be_valid_packet_generator)
 
-                    with description('invalid packet,'):
-                        with description('invalid modifier tie,'):
-                            with it('returns 400'):
-                                gen = packet_generator_model(self.api.api_client)
-                                gen.config.traffic[0].packet.modifier_tie = 'foo'
-                                expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+                            # Wait for learning to resolve.
+                            expect(wait_for_learning_resolved(self.api, "generator-one")).to(be_true)
 
-                        with description('invalid address,'):
-                            with it('returns 400'):
-                                gen = packet_generator_model(self.api.api_client)
-                                gen.config.traffic[0].packet.protocols[0].ethernet.source = 'foo'
-                                expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+                            # Verify MAC address resolved correctly.
+                            learning_results = self.api.get_packet_generator_learning_results('generator-one')
+                            expect(learning_results.resolved_state).to(equal('resolved'))
 
-                    with description('invalid length,'):
-                        with description('invalid fixed length,'):
-                            with it('returns 400'):
-                                length = client.models.TrafficLength()
-                                length.fixed = 16
-                                gen = packet_generator_model(self.api.api_client)
-                                gen.config.traffic[0].length = length
-                                expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
-
-                        with description('invalid list length,'):
-                            with it('returns 400'):
-                                length = client.models.TrafficLength()
-                                length.list = [128, 256, 512, 0]
-                                gen = packet_generator_model(self.api.api_client)
-                                gen.config.traffic[0].length = length
-                                expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
-
-                        with description('invalid sequence length,'):
-                            with description('invalid count,'):
-                                with it('returns 400'):
-                                    seq = client.models.TrafficLengthSequence()
-                                    seq.count = 0
-                                    seq.start = 128
-                                    length = client.models.TrafficLength()
-                                    length.sequence = seq
-                                    gen = packet_generator_model(self.api.api_client)
-                                    gen.config.traffic[0].length = length
-                                    expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
-
-                            with description('invalid start,'):
-                                with it('returns 400'):
-                                    seq = client.models.TrafficLengthSequence()
-                                    seq.count = 10
-                                    seq.start = 0
-                                    length = client.models.TrafficLength()
-                                    length.sequence = seq
-                                    gen = packet_generator_model(self.api.api_client)
-                                    gen.config.traffic[0].length = length
-                                    expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
-
-                        with description('invalid weight,'):
-                            with it('returns 400'):
-                                gen = packet_generator_model(self.api.api_client)
-                                gen.config.traffic[0].weight = -1
-                                expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
-
-                    with description('invalid modifiers,'):
-                        with description('too many flows,'):
-                            with it('returns 400'):
-                                # total flows = 65536^3 which exceeds our flow limit of (1 << 48) - 1
-                                template = default_traffic_packet_template_with_seq_modifiers()
-                                template.protocols[0].modifiers.items[0].mac.sequence.count = 65536
-                                template.protocols[1].modifiers.items[0].ipv4.sequence.count = 65536
-                                template.protocols[1].modifiers.items[1].ipv4.sequence.count = 65536
-                                template.protocols[1].modifiers.tie = 'cartesian'
-                                template.modifier_tie = 'cartesian'
-                                gen = packet_generator_model(self.api.api_client)
-                                gen.config.traffic[0].packet = template
-                                expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
-
-                        with description('too many signature flows,'):
-                            with it('returns 400'):
-                                # total flows = 256^2 which exceeds our signature flow limit of 64k - 1
-                                template = default_traffic_packet_template_with_seq_modifiers()
-                                template.protocols[1].modifiers.items[0].ipv4.sequence.count = 256
-                                template.protocols[1].modifiers.items[1].ipv4.sequence.count = 256
-                                template.protocols[1].modifiers.tie = 'cartesian'
-                                gen = packet_generator_model(self.api.api_client)
-                                gen.config.traffic[0].packet = template
-                                gen.config.traffic[0].signature = client.models.SpirentSignature(
-                                    stream_id=1, latency='start_of_frame')
-                                expect(lambda: self.api.create_packet_generator(gen)).to(raise_api_exception(400))
+                            expected = client.models.PacketGeneratorLearningResultIpv4(ip_address=self.target_ip, mac_address=self.target_mac)
+                            expect(learning_results.ipv4).to(contain(expected))
 
         with description('delete generator,'):
             with description('by existing generator id,'):
@@ -366,19 +404,45 @@ with description('Packet Generator,', 'packet_generator') as self:
                     expect(lambda: self.api.delete_packet_generator("invalid_id")).to(raise_api_exception(404))
 
         with description('start generator,'):
-            with before.each:
-                gen = self.api.create_packet_generator(packet_generator_model(self.api.api_client))
-                expect(gen).to(be_valid_packet_generator)
-                self.generator = gen
+            with description('attached to port, '):
+                with before.each:
+                    gen = self.api.create_packet_generator(packet_generator_model(self.api.api_client))
+                    expect(gen).to(be_valid_packet_generator)
+                    self.generator = gen
 
-            with description('by existing generator id,'):
-                with it('succeeds'):
-                    result = self.api.start_packet_generator(self.generator.id)
-                    expect(result).to(be_valid_packet_generator_result)
+                with description('by existing generator id,'):
+                    with it('succeeds'):
+                        result = self.api.start_packet_generator(self.generator.id)
+                        expect(result).to(be_valid_packet_generator_result)
 
-            with description('non-existent generator id,'):
-                with it('returns 404'):
-                    expect(lambda: self.api.start_packet_generator('foo')).to(raise_api_exception(404))
+                with description('non-existent generator id,'):
+                    with it('returns 404'):
+                        expect(lambda: self.api.start_packet_generator('foo')).to(raise_api_exception(404))
+
+            with description('attached to interface, '):
+                with before.each:
+                    self.intf1 = ipv4_interface(self.intf_api.api_client, method="static", ipv4_address="192.168.22.10", gateway="192.168.22.1", mac_address="aa:bb:cc:dd:ee:01")
+                    self.intf1.target_id = get_first_port_id(self.api.api_client)
+                    self.intf1.id = "interface-one"
+                    intf1_impl = self.intf_api.create_interface(self.intf1)
+
+                    self.intf2 = ipv4_interface(self.intf_api.api_client, method="static", ipv4_address="192.168.22.1", mac_address="aa:bb:cc:dd:ee:20")
+                    self.intf2.port_id = get_second_port_id(self.api.api_client)
+                    self.intf2.id = "interface-two"
+                    intf2_impl = self.intf_api.create_interface(self.intf2)
+
+                    gen = packet_generator_model(self.api.api_client)
+                    gen.target_id = "interface-one"
+                    gen.id = "generator-one"
+                    result = self.api.create_packet_generator(gen)
+                    expect(result).to(be_valid_packet_generator)
+
+                    expect(wait_for_learning_resolved(self.api, "generator-one")).to(be_true)
+
+                with description('by existing generator id,'):
+                    with it('succeeds'):
+                        result = self.api.start_packet_generator("generator-one")
+                        expect(result).to(be_valid_packet_generator_result)
 
         with description('stop running generator,'):
             with before.each:
@@ -708,6 +772,9 @@ with description('Packet Generator,', 'packet_generator') as self:
                     if gen.active:
                         self.api.stop_packet_generator(gen.id)
                 self.api.delete_packet_generators()
+
+                for intf in self.intf_api.list_interfaces():
+                    self.intf_api.delete_interface(intf.id)
             except AttributeError:
                 pass
             self.generator = None
