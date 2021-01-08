@@ -42,11 +42,13 @@ from common.helper.cpu import (cpu_generator_model,
 
 # packet.py
 from common.helper.packet import (get_first_port_id,
+                                  get_second_port_id,
                                   default_traffic_packet_template_with_seq_modifiers,
                                   default_traffic_packet_template_with_list_modifiers,
                                   packet_generator_config,
                                   packet_generator_model,
-                                  packet_generator_models)
+                                  packet_generator_models,
+                                  wait_for_learning_resolved)
 
 # network.py
 from common.helper.network import (get_network_dynamic_results_fields,
