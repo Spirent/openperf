@@ -7,6 +7,16 @@
 
 namespace openperf::framework::generator::internal {
 
+/**
+ * This class implements a count down latch mechanism to allow one thread
+ * to wait() while other threads count_down() the counter to 0 which
+ * unblocks thre waiting thread.
+ *
+ * FIXME: This class uses a condition_variable and mutex lock.
+ *        OpenPerf code should avoid using locks, so code using
+ *        this class should be modifed to use lockfree or
+ *        ZMQ message based synchronization/wait.
+ */
 class feedback_tracker
 {
 private:
