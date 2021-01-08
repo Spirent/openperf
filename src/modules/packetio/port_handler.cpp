@@ -4,6 +4,7 @@
 #include "config/op_config_utils.hpp"
 #include "core/op_core.h"
 #include "message/serialized_message.hpp"
+#include "packetio/init.hpp"
 #include "packetio/port_api.hpp"
 
 #include "swagger/converters/packetio.hpp"
@@ -18,6 +19,8 @@ public:
 
     using request_type = Pistache::Rest::Request;
     using response_type = Pistache::Http::ResponseWriter;
+
+    tl::expected<void, std::string> check_server() const;
 
     void list_ports(const request_type& request, response_type response);
     void create_port(const request_type& request, response_type response);
@@ -114,8 +117,24 @@ static void set_optional_filter(const handler::request_type& request,
     }
 }
 
+tl::expected<void, std::string> handler::check_server() const
+{
+    if (!openperf::packetio::is_enabled()) {
+        return (tl::make_unexpected("PacketIO is not enabled."));
+    }
+
+    return {};
+}
+
 void handler::list_ports(const request_type& request, response_type response)
 {
+    if (!check_server()) {
+        // Return empty list if not supported
+        auto ports = nlohmann::json::array();
+        response.send(Http::Code::Ok, ports.dump());
+        return;
+    }
+
     auto api_request = request_list_ports{};
 
     set_optional_filter(request, api_request.filter, filter_key_type::kind);
@@ -160,6 +179,11 @@ maybe_get_request_uri(const handler::request_type& request)
 
 void handler::create_port(const request_type& request, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto port = parse_create_port(request);
     if (!port) {
         response.send(Http::Code::Bad_Request, port.error());
@@ -206,6 +230,11 @@ void handler::create_port(const request_type& request, response_type response)
 
 void handler::get_port(const request_type& request, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -226,6 +255,11 @@ void handler::get_port(const request_type& request, response_type response)
 
 void handler::update_port(const request_type& request, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto port = parse_create_port(request);
     if (!port) {
         response.send(Http::Code::Bad_Request, port.error());
@@ -272,6 +306,11 @@ void handler::update_port(const request_type& request, response_type response)
 
 void handler::delete_port(const request_type& request, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
