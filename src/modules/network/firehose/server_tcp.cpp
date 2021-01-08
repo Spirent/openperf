@@ -341,9 +341,10 @@ void server_tcp::run_worker_thread()
                                 OP_LOG(
                                     OP_LOG_ERROR,
                                     "Invalid firehose request received "
-                                    "from %s:%d\n",
+                                    "from %s:%d with %zu bytes\n",
                                     addr ? addr : "unknown",
-                                    ntohs(network_sockaddr_port(conn.client)));
+                                    ntohs(network_sockaddr_port(conn.client)),
+                                    bytes_left);
                                 conn.state = STATE_ERROR;
                                 bytes_left = 0;
                                 break;
@@ -385,6 +386,7 @@ void server_tcp::run_worker_thread()
                                    get_state_string(conn.state),
                                    bytes_left);
                             conn.state = STATE_ERROR;
+                            bytes_left = 0;
                             break;
                         }
                         }
