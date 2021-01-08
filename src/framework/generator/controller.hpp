@@ -162,14 +162,16 @@ void controller::add(T&& task,
     auto stats = internal::worker::socket_pointer(op_socket_get_client(
         m_context.get(), ZMQ_PUB, m_statistics_endpoint.c_str()));
 
+    // Expect one READY message as confirmation for worker startup
+    m_feedback_operation = internal::operation_t::READY;
+    m_feedback.init(1);
+
     auto& worker =
         m_workers.emplace_front(std::move(control), std::move(stats), name);
     worker.start(std::forward<T>(task), core);
-
-    // Wait the one READY message as confirmation establishing connection
     m_worker_count++;
-    m_feedback_operation = internal::operation_t::READY;
-    m_feedback.init(1);
+
+    // Wait for READY message
     m_feedback.wait();
 }
 

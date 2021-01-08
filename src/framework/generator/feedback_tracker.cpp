@@ -4,6 +4,7 @@ namespace openperf::framework::generator::internal {
 
 void feedback_tracker::count_down()
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
     if (m_counter > 0) {
         m_counter--;
         m_condition.notify_all();
