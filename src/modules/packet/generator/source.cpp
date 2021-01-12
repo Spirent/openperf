@@ -93,9 +93,7 @@ source_helper make_source_helper(packetio::internal::api::client& client,
 
     if (maybe_port_index.has_value()) { return (port_source{}); }
 
-    auto maybe_interface = client.interface(target_id);
-
-    if (maybe_interface.has_value()) {
+    if (auto maybe_interface = client.interface(target_id)) {
         return (interface_source{loop, maybe_interface.value()});
     }
 
@@ -386,15 +384,12 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
 
 bool source::supports_learning() const
 {
-    return (std::visit(
-        utils::overloaded_visitor([](const std::monostate&) { return (false); },
-                                  [](const interface_source& intf_src) {
-                                      return (intf_src.supports_learning);
-                                  },
-                                  [](const port_source& port_src) {
-                                      return (port_src.supports_learning);
-                                  }),
-        m_helper));
+    return (
+        std::visit(utils::overloaded_visitor(
+                       [](const std::monostate&) { return (false); },
+                       [](const interface_source& intf_src) { return (true); },
+                       [](const port_source& port_src) { return (false); }),
+                   m_helper));
 }
 
 std::optional<bool> source::maybe_retry_learning()

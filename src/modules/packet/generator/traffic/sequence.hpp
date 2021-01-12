@@ -29,12 +29,12 @@ public:
     using iterator = view_iterator<sequence>;
     using const_iterator = const iterator;
 
-    static constexpr size_t flow_index = static_cast<size_t>(0);
-    static constexpr size_t pointer_to_header = static_cast<size_t>(1);
-    static constexpr size_t header_length = static_cast<size_t>(2);
-    static constexpr size_t protocol_flags = static_cast<size_t>(3);
-    static constexpr size_t signature = static_cast<size_t>(4);
-    static constexpr size_t packet_length = static_cast<size_t>(5);
+    static constexpr size_t flow_index = 0;
+    static constexpr size_t pointer_to_header = 1;
+    static constexpr size_t header_length = 2;
+    static constexpr size_t protocol_flags = 3;
+    static constexpr size_t signature = 4;
+    static constexpr size_t packet_length = 5;
 
     /* Named constructors to simplify instantiation. */
     static sequence round_robin_sequence(definition_container&& definitions);

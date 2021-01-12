@@ -72,7 +72,7 @@ std::unordered_set<libpacket::type::ipv4_address> extract_addresses_to_learn(
     // XXX: In an ideal world this would be a std::for_each with a lambda.
     // But lambda capture doesn't play well with structured binding under clang.
     // https://stackoverflow.com/questions/46114214/lambda-implicit-capture-fails-with-variable-declared-from-structured-binding
-    for (auto seq : sequence) {
+    for (const auto seq : sequence) {
 
         const auto hdr_ptr =
             std::get<traffic::sequence::pointer_to_header>(seq);
@@ -237,7 +237,6 @@ void interface_source::populate_source_addresses(traffic::sequence& sequence)
     // But lambda capture doesn't play well with structured binding under
     // clang.
     // https://stackoverflow.com/questions/46114214/lambda-implicit-capture-fails-with-variable-declared-from-structured-binding
-    // std::for_each(sequence.begin(), sequence.end(), [&](auto seq) {
     for (auto seq : sequence) {
         auto hdr_ptr = std::get<traffic::sequence::pointer_to_header>(seq);
         const auto pkt_flags = std::get<traffic::sequence::protocol_flags>(seq);

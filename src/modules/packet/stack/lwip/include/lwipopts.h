@@ -105,8 +105,10 @@
 
 /* Generator uses lwip for ARP/ND learning.
  * Increase size of cache to a reasonable size.
+ * 256 is a nice power of 2 and lines up nicely with the default /24
+ * network size.
  */
-#define ARP_TABLE_SIZE 100
+#define ARP_TABLE_SIZE 256
 
 /*
  * Debugging options

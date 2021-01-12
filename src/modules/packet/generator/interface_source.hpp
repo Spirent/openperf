@@ -23,8 +23,6 @@ public:
 
     const learning_state_machine& learning() const { return (m_learning); }
 
-    static constexpr bool supports_learning = true;
-
 private:
     learning_state_machine m_learning;
     packetio::interface::generic_interface m_interface;

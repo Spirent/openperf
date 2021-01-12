@@ -115,12 +115,6 @@ bool learning_state_machine::retry_learning()
 
 bool learning_state_machine::start_learning_impl()
 {
-    // If we're already learning, don't start again.
-    if (in_progress()) { return (false); }
-
-    // Are we being asked to learn nothing?
-    if (m_results.empty()) { return (false); }
-
     // Do we have a valid interface to learn on?
     auto* intf =
         const_cast<netif*>(std::any_cast<const netif*>(m_interface.data()));
