@@ -44,8 +44,8 @@ std::string to_string(const capture_state& state)
         return "stopped";
     case capture_state::ARMED:
         return "armed";
-    case capture_state::STARTED:
-        return "started";
+    case capture_state::RUNNING:
+        return "running";
     }
 }
 
@@ -161,7 +161,7 @@ size_t sink::worker_count() const { return (m_indexes.size()); }
 void sink::start(sink_result* results)
 {
     if (!m_start_trigger) {
-        set_state(*results, capture_state::STARTED);
+        set_state(*results, capture_state::RUNNING);
     } else {
         set_state(*results, capture_state::ARMED);
     }
@@ -223,7 +223,7 @@ void sink::set_state(sink_result& results, capture_state state) const noexcept
     if (results.state.compare_exchange_strong(cur_state, state) == false)
         return;
 
-    if (state == capture_state::STARTED) {
+    if (state == capture_state::RUNNING) {
         results.start_time = timesync::chrono::realtime::now();
 
         if (m_config.duration.count()) {
@@ -350,7 +350,7 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
     auto length = packets_length;
     bool stopping = false;
 
-    if (state != capture_state::STARTED) {
+    if (state != capture_state::RUNNING) {
         if (state == capture_state::ARMED) {
             auto trigger_offset =
                 check_start_trigger_condition(packets, packets_length);
@@ -360,7 +360,7 @@ uint16_t sink::push(const packetio::packet::packet_buffer* const packets[],
             }
             start += trigger_offset;
             length -= trigger_offset;
-            state = capture_state::STARTED;
+            state = capture_state::RUNNING;
             set_state(*results, state);
         } else {
             return packets_length;

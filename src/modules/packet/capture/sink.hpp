@@ -21,7 +21,7 @@ enum class traffic_direction;
 
 namespace openperf::packet::capture {
 
-enum class capture_state { STOPPED, ARMED, STARTED };
+enum class capture_state { STOPPED, ARMED, RUNNING };
 
 std::string to_string(const packetio::packet::traffic_direction& direction);
 

@@ -282,7 +282,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                 cap = self.api.create_packet_capture(capture_model(self.api.api_client, buffer_size = 1024*1024*1024*1024))
                 expect(cap).to(be_valid_packet_capture)
                 self.capture = cap
-                # Capture memory is allocated when the capture is started
+                # Capture memory is allocated when the capture is running
                 # so memory allocation failure occurs on start
                 expect(lambda: self.api.start_packet_capture(self.capture.id)).to(raise_api_exception(400))
 
@@ -417,7 +417,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     start_time = datetime.datetime.now()
                     self.result = self.api.start_packet_capture(self.capture.id)
                     expect(self.result).to(be_valid_packet_capture_result)
-                    expect(self.result.state == 'started')
+                    expect(self.result.state == 'running')
                     do_ping(self.intf_api, self.temp_ping,
                             'client-v4', 'server-v4',
                             socket.AF_INET, 4)
@@ -456,7 +456,7 @@ with description('Packet Capture,', 'packet_capture') as self:
                     start_time = datetime.datetime.now()
                     self.result = self.api.start_packet_capture(self.capture.id)
                     expect(self.result).to(be_valid_packet_capture_result)
-                    expect(self.result.state == 'started')
+                    expect(self.result.state == 'running')
                     do_ping(self.intf_api, self.temp_ping,
                             'client-v4', 'server-v4',
                             socket.AF_INET, 5)
@@ -485,7 +485,7 @@ with description('Packet Capture,', 'packet_capture') as self:
 
                     self.result = self.api.start_packet_capture(self.capture.id)
                     expect(self.result).to(be_valid_packet_capture_result)
-                    expect(self.result.state == 'started')
+                    expect(self.result.state == 'running')
                     # Send normal size packets
                     do_ping(self.intf_api, self.temp_ping,
                             'client-v4', 'server-v4',
@@ -523,7 +523,7 @@ with description('Packet Capture,', 'packet_capture') as self:
 
                     self.result = self.api.start_packet_capture(self.capture.id)
                     expect(self.result).to(be_valid_packet_capture_result)
-                    expect(self.result.state == 'started')
+                    expect(self.result.state == 'running')
 
                     do_ping(self.intf_api, self.temp_ping,
                             'client-v4', 'server-v4',
@@ -581,7 +581,7 @@ with description('Packet Capture,', 'packet_capture') as self:
 
                     self.result = self.api.start_packet_capture(self.capture.id)
                     expect(self.result).to(be_valid_packet_capture_result)
-                    expect(self.result.state == 'started')
+                    expect(self.result.state == 'running')
                     # Send normal size packets
                     do_ping(self.intf_api, self.temp_ping,
                             'client-v4', 'server-v4',
@@ -618,7 +618,7 @@ with description('Packet Capture,', 'packet_capture') as self:
 
                     self.result = self.api.start_packet_capture(self.capture.id)
                     expect(self.result).to(be_valid_packet_capture_result)
-                    expect(self.result.state == 'started')
+                    expect(self.result.state == 'running')
                     # Send normal size packets
                     do_ping(self.intf_api, self.temp_ping,
                             'client-v4', 'server-v4',
@@ -664,7 +664,7 @@ with description('Packet Capture,', 'packet_capture') as self:
 
                     self.result = self.api.start_packet_capture(self.capture.id)
                     expect(self.result).to(be_valid_packet_capture_result)
-                    expect(self.result.state == 'started')
+                    expect(self.result.state == 'running')
                     do_ping(self.intf_api, self.temp_ping,
                             'client-v4', 'server-v4',
                             socket.AF_INET, 2)
@@ -697,7 +697,7 @@ with description('Packet Capture,', 'packet_capture') as self:
 
                     self.result = self.api.start_packet_capture(self.capture.id)
                     expect(self.result).to(be_valid_packet_capture_result)
-                    expect(self.result.state == 'started')
+                    expect(self.result.state == 'running')
                     do_ping(self.intf_api, self.temp_ping,
                             'client-v4', 'server-v4',
                             socket.AF_INET, 2)
@@ -730,7 +730,7 @@ with description('Packet Capture,', 'packet_capture') as self:
 
                     self.result = self.api.start_packet_capture(self.capture.id)
                     expect(self.result).to(be_valid_packet_capture_result)
-                    expect(self.result.state == 'started')
+                    expect(self.result.state == 'running')
                     do_ping(self.intf_api, self.temp_ping,
                             'client-v4', 'server-v4',
                             socket.AF_INET, 2)
@@ -764,11 +764,11 @@ with description('Packet Capture,', 'packet_capture') as self:
 
                     server_result = self.api.start_packet_capture(server_cap.id)
                     expect(server_result).to(be_valid_packet_capture_result)
-                    expect(server_result.state == 'started')
+                    expect(server_result.state == 'running')
 
                     client_result = self.api.start_packet_capture(client_cap.id)
                     expect(client_result).to(be_valid_packet_capture_result)
-                    expect(client_result.state == 'started')
+                    expect(client_result.state == 'running')
 
                     do_ping(self.intf_api, self.temp_ping,
                             'client-v4', 'server-v4',

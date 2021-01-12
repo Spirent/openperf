@@ -288,16 +288,15 @@ reply_msg server::handle_request(const request_list_captures& request)
 
     if (request.filter && request.filter->count(filter_key_type::source_id)) {
         auto& source = (*request.filter)[filter_key_type::source_id];
-        transform_if(
-            std::begin(m_sinks),
-            std::end(m_sinks),
-            std::back_inserter(reply.captures),
-            [&](const auto& item) {
-                return (item.template get<sink>().source() == source);
-            },
-            [&](const auto& item) {
-                return (to_swagger(item.template get<sink>()));
-            });
+        transform_if(std::begin(m_sinks),
+                     std::end(m_sinks),
+                     std::back_inserter(reply.captures),
+                     [&](const auto& item) {
+                         return (item.template get<sink>().source() == source);
+                     },
+                     [&](const auto& item) {
+                         return (to_swagger(item.template get<sink>()));
+                     });
     } else {
         /* return all captures */
         std::transform(std::begin(m_sinks),
@@ -602,7 +601,7 @@ void server::add_capture_start_trigger(const core::uuid& id,
                result->parent.id().c_str(),
                to_string(id).c_str(),
                (int)state);
-        if (state == capture_state::STARTED) {
+        if (state == capture_state::RUNNING) {
             auto& config = result->parent.get_config();
             if (config.duration.count())
                 srv->add_capture_stop_timer(*result, config.duration);
@@ -859,16 +858,15 @@ reply_msg server::handle_request(const request_delete_capture_results&)
 {
     std::vector<result_value_ptr> del_list;
     /* Move all inactive results to del_list */
-    move_if(
-        m_results,
-        del_list,
-        [&](const auto& pair) {
-            auto& result = pair.second;
-            return (!result->parent.active());
-        },
-        [&](auto& results, auto& pair) {
-            results.emplace_back(std::move(pair.second));
-        });
+    move_if(m_results,
+            del_list,
+            [&](const auto& pair) {
+                auto& result = pair.second;
+                return (!result->parent.active());
+            },
+            [&](auto& results, auto& pair) {
+                results.emplace_back(std::move(pair.second));
+            });
 
     /* Sort results in del_list so deferred deletes are last */
     auto cursor = std::stable_partition(
