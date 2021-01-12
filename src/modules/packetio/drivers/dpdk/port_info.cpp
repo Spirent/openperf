@@ -114,6 +114,11 @@ uint64_t rx_offloads(uint16_t port_id)
 
 uint64_t tx_offloads(uint16_t port_id)
 {
+    auto driver = driver_name(port_id);
+    if (driver == "net_virtio") {
+        // virtio doesn't handle Tx TCP/UDP checksum offloads correctly
+        return 0;
+    }
     return (get_info_field(port_id, &rte_eth_dev_info::tx_offload_capa));
 }
 
