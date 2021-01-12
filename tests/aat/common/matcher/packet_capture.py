@@ -1,4 +1,4 @@
-from expects import expect, be_a, be_empty, be_none
+from expects import expect, be_a, be_empty, be_none, be_above
 from expects.matchers import Matcher
 
 import client.models
@@ -11,6 +11,9 @@ class _be_valid_packet_capture(Matcher):
         expect(capture.source_id).not_to(be_empty)
         expect(capture.active).not_to(be_none)
         expect(capture.config).to(be_a(client.models.PacketCaptureConfig))
+        expect(capture.config.mode).not_to(be_empty)
+        expect(capture.config.buffer_wrap).not_to(be_none)
+        expect(capture.config.buffer_size).to(be_above(0))
         return True, ['is valid packet capture']
 
 

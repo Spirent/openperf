@@ -23,6 +23,7 @@ capture_ptr to_swagger(const sink& src)
     auto dst_config =
         std::make_shared<swagger::v1::model::PacketCaptureConfig>();
     dst_config->setMode(to_string(src_config.capture_mode));
+    dst_config->setBufferSize(src_config.buffer_size);
     dst_config->setBufferWrap(src_config.buffer_wrap);
     if (src_config.max_packet_size != UINT32_MAX)
         dst_config->setPacketSize(src_config.max_packet_size);
