@@ -4,10 +4,10 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**get_packet_generator_learning_results**](LearningApi.md#get_packet_generator_learning_results) | **GET** /generators/{id}/learning | Get detailed learning information
-[**retry_packet_generator_learning**](LearningApi.md#retry_packet_generator_learning) | **POST** /generators/{id}/learning/retry | Retry MAC learning
-[**start_packet_generator_learning**](LearningApi.md#start_packet_generator_learning) | **POST** /generators/{id}/learning/start | Start MAC learning
-[**stop_packet_generator_learning**](LearningApi.md#stop_packet_generator_learning) | **POST** /generators/{id}/learning/stop | Stop MAC learning
+[**get_packet_generator_learning_results**](LearningApi.md#get_packet_generator_learning_results) | **GET** /packet/generators/{id}/learning | Get detailed learning information
+[**retry_packet_generator_learning**](LearningApi.md#retry_packet_generator_learning) | **POST** /packet/generators/{id}/learning/retry | Retry MAC learning
+[**start_packet_generator_learning**](LearningApi.md#start_packet_generator_learning) | **POST** /packet/generators/{id}/learning/start | Start MAC learning
+[**stop_packet_generator_learning**](LearningApi.md#stop_packet_generator_learning) | **POST** /packet/generators/{id}/learning/stop | Stop MAC learning
 
 
 # **get_packet_generator_learning_results**

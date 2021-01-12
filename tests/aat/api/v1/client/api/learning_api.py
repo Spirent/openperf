@@ -117,7 +117,7 @@ class LearningApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/generators/{id}/learning', 'GET',
+            '/packet/generators/{id}/learning', 'GET',
             path_params,
             query_params,
             header_params,
@@ -216,7 +216,7 @@ class LearningApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/generators/{id}/learning/retry', 'POST',
+            '/packet/generators/{id}/learning/retry', 'POST',
             path_params,
             query_params,
             header_params,
@@ -315,7 +315,7 @@ class LearningApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/generators/{id}/learning/start', 'POST',
+            '/packet/generators/{id}/learning/start', 'POST',
             path_params,
             query_params,
             header_params,
@@ -414,7 +414,7 @@ class LearningApi(object):
         auth_settings = []  # noqa: E501
 
         return self.api_client.call_api(
-            '/generators/{id}/learning/stop', 'POST',
+            '/packet/generators/{id}/learning/stop', 'POST',
             path_params,
             query_params,
             header_params,

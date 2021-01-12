@@ -14,17 +14,17 @@ Method | HTTP request | Description
 [**delete_packet_generator_results**](PacketGeneratorsApi.md#delete_packet_generator_results) | **DELETE** /packet/generator-results | Delete all generator results
 [**delete_packet_generators**](PacketGeneratorsApi.md#delete_packet_generators) | **DELETE** /packet/generators | Delete all packet generators
 [**get_packet_generator**](PacketGeneratorsApi.md#get_packet_generator) | **GET** /packet/generators/{id} | Get a packet generator
-[**get_packet_generator_learning_results**](PacketGeneratorsApi.md#get_packet_generator_learning_results) | **GET** /generators/{id}/learning | Get detailed learning information
+[**get_packet_generator_learning_results**](PacketGeneratorsApi.md#get_packet_generator_learning_results) | **GET** /packet/generators/{id}/learning | Get detailed learning information
 [**get_packet_generator_result**](PacketGeneratorsApi.md#get_packet_generator_result) | **GET** /packet/generator-results/{id} | Get a packet generator result
 [**get_tx_flow**](PacketGeneratorsApi.md#get_tx_flow) | **GET** /packet/tx-flows/{id} | Get a transmit packet flow
 [**list_packet_generator_results**](PacketGeneratorsApi.md#list_packet_generator_results) | **GET** /packet/generator-results | List generator results
 [**list_packet_generators**](PacketGeneratorsApi.md#list_packet_generators) | **GET** /packet/generators | List packet generators
 [**list_tx_flows**](PacketGeneratorsApi.md#list_tx_flows) | **GET** /packet/tx-flows | List packet generator transmit flows
-[**retry_packet_generator_learning**](PacketGeneratorsApi.md#retry_packet_generator_learning) | **POST** /generators/{id}/learning/retry | Retry MAC learning
+[**retry_packet_generator_learning**](PacketGeneratorsApi.md#retry_packet_generator_learning) | **POST** /packet/generators/{id}/learning/retry | Retry MAC learning
 [**start_packet_generator**](PacketGeneratorsApi.md#start_packet_generator) | **POST** /packet/generators/{id}/start | Start generating packets
-[**start_packet_generator_learning**](PacketGeneratorsApi.md#start_packet_generator_learning) | **POST** /generators/{id}/learning/start | Start MAC learning
+[**start_packet_generator_learning**](PacketGeneratorsApi.md#start_packet_generator_learning) | **POST** /packet/generators/{id}/learning/start | Start MAC learning
 [**stop_packet_generator**](PacketGeneratorsApi.md#stop_packet_generator) | **POST** /packet/generators/{id}/stop | Stop generating packets.
-[**stop_packet_generator_learning**](PacketGeneratorsApi.md#stop_packet_generator_learning) | **POST** /generators/{id}/learning/stop | Stop MAC learning
+[**stop_packet_generator_learning**](PacketGeneratorsApi.md#stop_packet_generator_learning) | **POST** /packet/generators/{id}/learning/stop | Stop MAC learning
 [**toggle_packet_generators**](PacketGeneratorsApi.md#toggle_packet_generators) | **POST** /packet/generators/x/toggle | Replace a running generator with a stopped generator
 
 

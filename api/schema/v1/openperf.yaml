@@ -206,16 +206,16 @@ paths:
   /packet/generators/{id}:
     $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}
 
-  /generators/{id}/learning:
+  /packet/generators/{id}/learning:
     $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}~1learning
 
-  /generators/{id}/learning/retry:
+  /packet/generators/{id}/learning/retry:
     $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}~1learning~1retry
 
-  /generators/{id}/learning/start:
+  /packet/generators/{id}/learning/start:
     $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}~1learning~1start
 
-  /generators/{id}/learning/stop:
+  /packet/generators/{id}/learning/stop:
     $ref: ./modules/packet/generator.yaml#/paths/~1generators~1{id}~1learning~1stop
 
   /packet/generators/{id}/start:
