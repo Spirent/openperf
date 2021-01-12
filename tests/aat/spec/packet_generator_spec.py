@@ -353,10 +353,17 @@ with description('Packet Generator,', 'packet_generator') as self:
 
             with description('attached to interface, '):
                 with before.each:
-                    self.intf1 = ipv4_interface(self.intf_api.api_client, method="static", ipv4_address="192.168.22.10", gateway="192.168.22.1")
-                    self.intf1.port_id = get_first_port_id(self.api.api_client)
+                    self.intf1 = ipv4_interface(self.intf_api.api_client, method="static", ipv4_address="192.168.22.10", gateway="192.168.22.1", mac_address="aa:bb:cc:dd:ee:01")
+                    self.intf1.target_id = get_first_port_id(self.api.api_client)
                     self.intf1.id = "interface-one"
                     intf1_impl = self.intf_api.create_interface(self.intf1)
+
+                    self.target_ip = "192.168.22.1"
+                    self.target_mac = "aa:bb:cc:dd:ee:20"
+                    self.intf2 = ipv4_interface(self.intf_api.api_client, method="static", ipv4_address=self.target_ip, mac_address=self.target_mac)
+                    self.intf2.port_id = get_second_port_id(self.api.api_client)
+                    self.intf2.id = "interface-two"
+                    intf2_impl = self.intf_api.create_interface(self.intf2)
 
                 with description('valid config,'):
                     with description('without modifiers,'):
@@ -367,8 +374,15 @@ with description('Packet Generator,', 'packet_generator') as self:
                             result = self.api.create_packet_generator(gen)
                             expect(result).to(be_valid_packet_generator)
 
-                            # XXX: learning state implicitly verified during start generator test.
-                            # No need to check it again here.
+                            # Wait for learning to resolve.
+                            expect(wait_for_learning_resolved(self.api, "generator-one")).to(be_true)
+
+                            # Verify MAC address resolved correctly.
+                            learning_results = self.api.get_packet_generator_learning_results('generator-one')
+                            expect(learning_results.resolved_state).to(equal('resolved'))
+
+                            expected = client.models.PacketGeneratorLearningResultIpv4(ip_address=self.target_ip, mac_address=self.target_mac)
+                            expect(learning_results.ipv4).to(contain(expected))
 
         with description('delete generator,'):
             with description('by existing generator id,'):
@@ -407,12 +421,12 @@ with description('Packet Generator,', 'packet_generator') as self:
 
             with description('attached to interface, '):
                 with before.each:
-                    self.intf1 = ipv4_interface(self.intf_api.api_client, method="static", ipv4_address="192.168.22.10", gateway="192.168.22.1")
+                    self.intf1 = ipv4_interface(self.intf_api.api_client, method="static", ipv4_address="192.168.22.10", gateway="192.168.22.1", mac_address="aa:bb:cc:dd:ee:01")
                     self.intf1.target_id = get_first_port_id(self.api.api_client)
                     self.intf1.id = "interface-one"
                     intf1_impl = self.intf_api.create_interface(self.intf1)
 
-                    self.intf2 = ipv4_interface(self.intf_api.api_client, method="static", ipv4_address="192.168.22.1")
+                    self.intf2 = ipv4_interface(self.intf_api.api_client, method="static", ipv4_address="192.168.22.1", mac_address="aa:bb:cc:dd:ee:20")
                     self.intf2.port_id = get_second_port_id(self.api.api_client)
                     self.intf2.id = "interface-two"
                     intf2_impl = self.intf_api.create_interface(self.intf2)
