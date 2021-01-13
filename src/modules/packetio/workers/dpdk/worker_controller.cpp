@@ -15,8 +15,6 @@
 
 namespace openperf::packetio::dpdk {
 
-inline constexpr auto net_ring_driver_name = "net_ring";
-
 using mac_address = libpacket::type::mac_address;
 
 static void launch_workers(void* context,
@@ -189,7 +187,7 @@ bool always_has_tx_sink(uint16_t port_index)
 {
     // Always need tx sink callback when using net_ring driver
     // This is used to clear the mbuf tx_sink flag so it is not seen on rx
-    return (port_info::driver_name(port_index) == net_ring_driver_name);
+    return (port_info::driver_name(port_index) == driver_names::ring);
 }
 
 worker_controller::worker_controller(void* context,
@@ -282,8 +280,8 @@ worker_controller::worker_controller(worker_controller&& other) noexcept
     , m_source_features(std::move(other.m_source_features))
 {}
 
-worker_controller&
-worker_controller::operator=(worker_controller&& other) noexcept
+worker_controller& worker_controller::
+operator=(worker_controller&& other) noexcept
 {
     if (this != &other) {
         m_context = other.m_context;
@@ -378,9 +376,10 @@ std::vector<unsigned>
 worker_controller::get_worker_ids(packet::traffic_direction direction,
                                   std::optional<std::string_view> obj_id) const
 {
-    return (obj_id ? get_queue_worker_ids(
-                direction, get_port_index(*obj_id, m_driver, m_fib.get()))
-                   : get_queue_worker_ids(direction));
+    return (obj_id
+                ? get_queue_worker_ids(
+                      direction, get_port_index(*obj_id, m_driver, m_fib.get()))
+                : get_queue_worker_ids(direction));
 }
 
 template <typename T>
@@ -403,7 +402,7 @@ worker_controller::get_transmit_function(std::string_view port_id) const
      * we transmit them directly.
      */
     const bool use_direct = rte_lcore_count() <= 2;
-    if (port_info::driver_name(*port_idx) == net_ring_driver_name) {
+    if (port_info::driver_name(*port_idx) == driver_names::ring) {
         /*
          * For LwIP based stack, we use a portion of the mbuf private area to
          * store the lwip pbuf.  Because the net_ring driver hands transmitted
@@ -1039,7 +1038,7 @@ bool need_sink_feature(const worker::fib&,
                        size_t port_idx,
                        const port::net_ring_fixup&)
 {
-    return (port_info::driver_name(port_idx) == net_ring_driver_name);
+    return (port_info::driver_name(port_idx) == driver_names::ring);
 }
 
 template <>

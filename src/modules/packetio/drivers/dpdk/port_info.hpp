@@ -8,6 +8,13 @@
 #include "lib/packet/type/mac_address.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
 
+namespace openperf::packetio::dpdk::driver_names {
+
+inline constexpr std::string_view ring = "net_ring";
+inline constexpr std::string_view virtio = "net_virtio";
+
+} // namespace openperf::packetio::dpdk::driver_names
+
 namespace openperf::packetio::dpdk::port_info {
 
 unsigned socket_id(uint16_t port_id);

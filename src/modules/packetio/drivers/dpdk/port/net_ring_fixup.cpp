@@ -30,7 +30,7 @@ callback_net_ring_fixup::callback()
 
 static net_ring_fixup::variant_type make_net_ring_fixup(uint16_t port_id)
 {
-    if (port_info::driver_name(port_id) == "net_ring") {
+    if (port_info::driver_name(port_id) == driver_names::ring) {
         return (callback_net_ring_fixup(port_id));
     }
 
