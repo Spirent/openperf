@@ -65,13 +65,11 @@ public:
     bool isActive() const;
     void setActive(bool value);
         /// <summary>
-    /// Indicates whether this object resolved all destination MAC address. If present and false this object cannot start. 
+    /// Current state of MAC learning. For generators targeted to interfaces this must be \&quot;resolved\&quot; else generator won&#39;t start. 
     /// </summary>
-    bool isLearningResolved() const;
-    void setLearningResolved(bool value);
-    bool learningResolvedIsSet() const;
-    void unsetLearning_resolved();
-    /// <summary>
+    std::string getLearning() const;
+    void setLearning(std::string value);
+        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<PacketGeneratorConfig> getConfig() const;
@@ -84,8 +82,8 @@ protected:
 
     bool m_Active;
 
-    bool m_Learning_resolved;
-    bool m_Learning_resolvedIsSet;
+    std::string m_Learning;
+
     std::shared_ptr<PacketGeneratorConfig> m_Config;
 
 };
