@@ -16,8 +16,9 @@ public:
     bool start_learning(traffic::sequence& sequence);
     void stop_learning();
     bool retry_learning(traffic::sequence& sequence);
-    bool learning_resolved() const { return (m_learning_resolved); }
     void populate_source_addresses(traffic::sequence& sequence);
+
+    learning_resolved_state learning_state() const;
 
     std::string target_port() const;
 
@@ -26,7 +27,6 @@ public:
 private:
     learning_state_machine m_learning;
     packetio::interface::generic_interface m_interface;
-    bool m_learning_resolved;
 };
 } // namespace openperf::packet::generator
 

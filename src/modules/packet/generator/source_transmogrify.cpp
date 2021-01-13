@@ -120,12 +120,7 @@ generator_ptr to_swagger(const source& src)
     dst->setConfig(src.config());
     dst->getConfig()->setFlowCount(src.sequence().flow_count());
 
-    auto learning_resolved = src.maybe_learning_resolved();
-    if (learning_resolved.has_value()) {
-        dst->setLearningResolved(*learning_resolved);
-    } else {
-        dst->unsetLearning_resolved();
-    }
+    dst->setLearning(to_string(src.maybe_learning_resolved()));
 
     return (dst);
 }
@@ -244,7 +239,7 @@ learning_results_ptr to_swagger(const learning_state_machine& lsm)
     auto dst =
         std::make_unique<swagger::v1::model::PacketGeneratorLearningResults>();
 
-    dst->setResolvedState(lsm.state());
+    dst->setResolvedState(to_string(lsm.state()));
 
     auto& ipv4_results = dst->getIpv4();
 

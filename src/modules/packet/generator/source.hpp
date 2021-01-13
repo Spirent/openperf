@@ -70,6 +70,8 @@ struct source_load
 using source_helper =
     std::variant<std::monostate, interface_source, port_source>;
 
+enum class learning_operation_result { unsupported = 0, success, fail };
+
 class source
 {
 public:
@@ -117,11 +119,11 @@ public:
      */
     bool supports_learning() const;
 
-    std::optional<bool> maybe_retry_learning();
-    std::optional<bool> maybe_start_learning();
-    void maybe_stop_learning();
+    learning_operation_result maybe_retry_learning();
+    learning_operation_result maybe_start_learning();
+    learning_operation_result maybe_stop_learning();
 
-    std::optional<bool> maybe_learning_resolved() const;
+    learning_resolved_state maybe_learning_resolved() const;
 
     std::optional<std::reference_wrapper<const learning_state_machine>>
     maybe_get_learning() const;

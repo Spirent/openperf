@@ -392,46 +392,54 @@ bool source::supports_learning() const
                    m_helper));
 }
 
-std::optional<bool> source::maybe_retry_learning()
+learning_operation_result source::maybe_retry_learning()
 {
     if (auto* maybe_intf_helper = std::get_if<interface_source>(&m_helper);
         maybe_intf_helper != nullptr) {
-        return (
-            std::make_optional(maybe_intf_helper->retry_learning(m_sequence)));
+        if (maybe_intf_helper->retry_learning(m_sequence)) {
+            return (learning_operation_result::success);
+        }
+
+        return (learning_operation_result::fail);
     }
 
-    return {};
+    return (learning_operation_result::unsupported);
 }
 
-std::optional<bool> source::maybe_start_learning()
+learning_operation_result source::maybe_start_learning()
 {
     if (auto* maybe_intf_helper = std::get_if<interface_source>(&m_helper);
         maybe_intf_helper != nullptr) {
-        return (
-            std::make_optional(maybe_intf_helper->start_learning(m_sequence)));
+        if (maybe_intf_helper->start_learning(m_sequence)) {
+            return (learning_operation_result::success);
+        }
+
+        return (learning_operation_result::fail);
     }
 
-    return {};
+    return (learning_operation_result::unsupported);
 }
 
-void source::maybe_stop_learning()
+learning_operation_result source::maybe_stop_learning()
 {
     if (auto* maybe_intf_helper = std::get_if<interface_source>(&m_helper);
         maybe_intf_helper != nullptr) {
         maybe_intf_helper->stop_learning();
+
+        return (learning_operation_result::success);
     }
 
-    return;
+    return (learning_operation_result::unsupported);
 }
 
-std::optional<bool> source::maybe_learning_resolved() const
+learning_resolved_state source::maybe_learning_resolved() const
 {
     if (auto* maybe_intf_helper = std::get_if<interface_source>(&m_helper);
         maybe_intf_helper != nullptr) {
-        return (std::make_optional(maybe_intf_helper->learning_resolved()));
+        return (maybe_intf_helper->learning_state());
     }
 
-    return {};
+    return (learning_resolved_state::unsupported);
 }
 
 std::optional<std::reference_wrapper<const learning_state_machine>>

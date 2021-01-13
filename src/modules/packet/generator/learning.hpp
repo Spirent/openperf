@@ -42,6 +42,16 @@ using learning_state = std::variant<std::monostate,
                                     state_done,
                                     state_timeout>;
 
+enum class learning_resolved_state {
+    unsupported = 0, // This is used at higher levels.
+    unresolved,
+    resolving,
+    resolved,
+    timed_out
+};
+
+std::string to_string(const learning_resolved_state& state);
+
 /**
  * @brief Finite State Machine class that handles MAC learning.
  *
@@ -132,7 +142,7 @@ public:
                 || std::holds_alternative<state_learning>(m_current_state));
     }
 
-    std::string state() const;
+    learning_resolved_state state() const;
 
     /**
      * @brief Get instance's event loop timeout ID.

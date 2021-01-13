@@ -11,7 +11,6 @@ interface_source::interface_source(core::event_loop& loop,
                                    packetio::interface::generic_interface& intf)
     : m_learning(loop, intf)
     , m_interface(intf)
-    , m_learning_resolved(false)
 {}
 
 bool same_ipv4_subnet(const libpacket::type::ipv4_address& addr1,
@@ -130,11 +129,9 @@ void set_ipv4_dest_mac(const learning_result_map& learning_results,
 static void
 process_learning_results(const learning_state_machine& lsm,
                          traffic::sequence& sequence,
-                         packetio::interface::generic_interface& interface,
-                         bool& learning_resolved)
+                         packetio::interface::generic_interface& interface)
 {
     // This function is called iff all addresses resolved correctly.
-    learning_resolved = true;
 
     auto [intf_ipv4_addr,
           intf_ipv4_gateway_addr,
@@ -186,12 +183,9 @@ bool interface_source::start_learning(traffic::sequence& sequence)
 
     if (to_learn.empty()) { return (false); }
 
-    resolve_complete_callback callback =
-        std::bind(process_learning_results,
-                  std::placeholders::_1,
-                  std::ref(sequence),
-                  m_interface,
-                  std::ref(m_learning_resolved));
+    auto callback = [&](const learning_state_machine& lsm) {
+        process_learning_results(lsm, sequence, m_interface);
+    };
 
     m_learning.start_learning(to_learn, callback);
 
@@ -202,13 +196,6 @@ void interface_source::stop_learning() { m_learning.stop_learning(); }
 
 bool interface_source::retry_learning(traffic::sequence& sequence)
 {
-    resolve_complete_callback callback =
-        std::bind(process_learning_results,
-                  std::placeholders::_1,
-                  std::ref(sequence),
-                  m_interface,
-                  std::ref(m_learning_resolved));
-
     return (m_learning.retry_learning());
 }
 
@@ -268,6 +255,10 @@ void interface_source::populate_source_addresses(traffic::sequence& sequence)
         // XXX: when IPv6 support gets added there will be a block
         // here to update those addresses.
     }
+}
+learning_resolved_state interface_source::learning_state() const
+{
+    return (m_learning.state());
 }
 
 std::string interface_source::target_port() const

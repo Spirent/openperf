@@ -430,6 +430,24 @@ template <typename Map> static core::uuid get_unique_result_id(const Map& map)
     return (id);
 }
 
+static bool generator_can_start(const learning_resolved_state& state)
+{
+    switch (state) {
+    case learning_resolved_state::unsupported:
+        [[fallthrough]];
+    case learning_resolved_state::resolved:
+        return (true);
+    case learning_resolved_state::unresolved:
+        [[fallthrough]];
+    case learning_resolved_state::resolving:
+        [[fallthrough]];
+    case learning_resolved_state::timed_out:
+        return (false);
+    default:
+        throw std::invalid_argument("unknown state value");
+    }
+}
+
 reply_msg server::handle_request(const request_start_generator& request)
 {
     auto found = binary_find(std::begin(m_sources),
@@ -445,14 +463,7 @@ reply_msg server::handle_request(const request_start_generator& request)
 
     auto& impl = found->first.template get<source>();
 
-    // Return value is one of three things:
-    // <no value> - source does not support learning; nothing to see here.
-    // true - learning resolved, proceed.
-    // false - source supports learning and requires all addresses resolved
-    // before starting.
-    auto maybe_learning_resolved = impl.maybe_learning_resolved();
-    if (maybe_learning_resolved.has_value()
-        && maybe_learning_resolved.value() == false) {
+    if (!generator_can_start(impl.maybe_learning_resolved())) {
         return (to_error(error_type::CONFLICT));
     }
 
@@ -839,7 +850,7 @@ reply_msg server::handle_request(const request_retry_learning& request)
     auto& src = result->first.template get<source>();
 
     auto maybe_learning_retried = src.maybe_retry_learning();
-    if (!maybe_learning_retried.value_or(false)) {
+    if (maybe_learning_retried == learning_operation_result::fail) {
         return (to_error(error_type::BAD_REQUEST));
     }
 
@@ -860,7 +871,8 @@ reply_msg server::handle_request(const request_start_learning& request)
     auto& src = result->first.template get<source>();
 
     auto maybe_learning_retried = src.maybe_start_learning();
-    if (!maybe_learning_retried.value_or(false)) {
+
+    if (maybe_learning_retried == learning_operation_result::fail) {
         return (to_error(error_type::BAD_REQUEST));
     }
 

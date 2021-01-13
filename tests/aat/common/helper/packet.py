@@ -162,7 +162,7 @@ def wait_for_learning_resolved(api_client, generator_id, **kwargs):
     for _ in range(max_poll_count):
         gen = api_client.get_packet_generator(generator_id)
 
-        if gen.learning_resolved:
+        if gen.learning == 'resolved':
             return True
 
         time.sleep(poll_interval)

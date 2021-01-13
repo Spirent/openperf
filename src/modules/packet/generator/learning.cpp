@@ -303,21 +303,48 @@ void learning_state_machine::stop_learning()
     m_current_state = state_timeout{};
 }
 
-static std::string to_string(const learning_state& state)
+std::string to_string(const learning_resolved_state& state)
 {
-    return (std::visit(
-        utils::overloaded_visitor(
-            [](const std::monostate&) { return (std::string("unresolved")); },
-            [](const state_start&) { return (std::string("resolving")); },
-            [](const state_learning&) { return (std::string("resolving")); },
-            [](const state_done&) { return (std::string("resolved")); },
-            [](const state_timeout&) { return (std::string("timed_out")); }),
-        state));
+    switch (state) {
+    case learning_resolved_state::unsupported:
+        return (std::string("unsupported"));
+        break;
+    case learning_resolved_state::unresolved:
+        return (std::string("unresolved"));
+        break;
+    case learning_resolved_state::resolving:
+        return (std::string("resolving"));
+        break;
+    case learning_resolved_state::resolved:
+        return (std::string("resolved"));
+        break;
+    case learning_resolved_state::timed_out:
+        return (std::string("timed_out"));
+        break;
+    default:
+        throw std::invalid_argument("unknown state value");
+    }
 }
 
-std::string learning_state_machine::state() const
+learning_resolved_state learning_state_machine::state() const
 {
-    return (to_string(m_current_state));
+    return (std::visit(utils::overloaded_visitor(
+                           [](const std::monostate&) {
+                               return (learning_resolved_state::unresolved);
+                           },
+                           [](const state_start&) {
+                               return (learning_resolved_state::resolving);
+                           },
+                           [](const state_learning&) {
+                               return (learning_resolved_state::resolving);
+                           },
+                           [](const state_done&) {
+                               return (learning_resolved_state::resolved);
+                           },
+                           [](const state_timeout&) {
+                               return (learning_resolved_state::timed_out);
+                           }),
+                       m_current_state));
 }
 
 } // namespace openperf::packet::generator
