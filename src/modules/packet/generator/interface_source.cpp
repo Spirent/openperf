@@ -194,7 +194,7 @@ bool interface_source::start_learning(traffic::sequence& sequence)
 
 void interface_source::stop_learning() { m_learning.stop_learning(); }
 
-bool interface_source::retry_learning(traffic::sequence& sequence)
+bool interface_source::retry_learning()
 {
     return (m_learning.retry_learning());
 }

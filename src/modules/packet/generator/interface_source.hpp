@@ -15,7 +15,7 @@ public:
 
     bool start_learning(traffic::sequence& sequence);
     void stop_learning();
-    bool retry_learning(traffic::sequence& sequence);
+    bool retry_learning();
     void populate_source_addresses(traffic::sequence& sequence);
 
     learning_resolved_state learning_state() const;

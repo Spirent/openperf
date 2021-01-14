@@ -396,7 +396,7 @@ learning_operation_result source::maybe_retry_learning()
 {
     if (auto* maybe_intf_helper = std::get_if<interface_source>(&m_helper);
         maybe_intf_helper != nullptr) {
-        if (maybe_intf_helper->retry_learning(m_sequence)) {
+        if (maybe_intf_helper->retry_learning()) {
             return (learning_operation_result::success);
         }
 
