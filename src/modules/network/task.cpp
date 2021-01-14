@@ -287,10 +287,10 @@ network_task::new_connection(const network_sockaddr& server,
     return connection_t{
         .fd = sock,
         .state = STATE_INIT,
-        .ops_left = config.ops_per_connection,
-        .bytes_left = 0,
         .buffer =
             std::vector<uint8_t>(std::min(config.block_size, max_buffer_size)),
+        .bytes_left = 0,
+        .ops_left = config.ops_per_connection,
     };
 }
 
