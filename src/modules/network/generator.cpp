@@ -15,11 +15,11 @@ constexpr auto NAME_PREFIX = "op_network";
 auto to_load_stat_t(const task::stat_t& task_stat)
 {
     return model::generator_result::load_stat_t{
-        .bytes_actual = task_stat.bytes_actual,
-        .bytes_target = task_stat.bytes_target,
-        .io_errors = task_stat.errors,
-        .ops_actual = task_stat.ops_actual,
         .ops_target = task_stat.ops_target,
+        .ops_actual = task_stat.ops_actual,
+        .bytes_target = task_stat.bytes_target,
+        .bytes_actual = task_stat.bytes_actual,
+        .io_errors = task_stat.errors,
         .latency = task_stat.latency,
         .latency_min = task_stat.latency_min,
         .latency_max = task_stat.latency_max};

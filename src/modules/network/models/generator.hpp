@@ -2,6 +2,7 @@
 #define _OP_NETWORK_GENERATOR_MODEL_HPP_
 
 #include <cinttypes>
+#include <optional>
 #include <string>
 #include <vector>
 #include "server.hpp"

@@ -1,8 +1,8 @@
 #ifndef _OP_NETWORK_DRIVER_DPDK_HPP_
 #define _OP_NETWORK_DRIVER_DPDK_HPP_
 
+#include <string_view>
 #include "driver.hpp"
-#include <atomic>
 
 namespace openperf::network::internal::drivers {
 
@@ -12,7 +12,6 @@ public:
     static constexpr std::string_view key = "dpdk";
 
     dpdk() = default;
-    dpdk(const dpdk&) = default;
     ~dpdk() = default;
 
     void init() override;
