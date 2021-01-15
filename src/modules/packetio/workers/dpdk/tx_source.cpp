@@ -12,12 +12,23 @@ static rte_mempool* get_packet_pool(uint16_t port_idx,
                                     const packet::generic_source& source)
 {
     /*
-     * A note about pool and cache sizing: we want to make sure we have packets
-     * available if the NIC's transmit ring is completely full, so we need our
-     * pool size to be a little larger than the ring size.  Similarly, we need
-     * the cache to be larger than the worker's standard transaction size,
-     * otherwise every call to retrieve buffers from the pool will bypass the
-     * CPU cache and go straight to the pool.
+     * Mmempools may be unique or shared. It's really only safe to share
+     * pools when using signatures, since any stale signature data will be
+     * overwritten.
+     */
+    auto pool_type =
+        (source.uses_feature(
+             packet::source_feature_flags::spirent_signature_encode)
+             ? mempool::mempool_type::shared
+             : mempool::mempool_type::unique);
+
+    /*
+     * A note about pool and cache sizing: we want to make sure we have
+     * packets available if the NIC's transmit ring is completely full, so we
+     * need our pool size to be a little larger than the ring size.  Similarly,
+     * we need the cache to be larger than the worker's standard transaction
+     * size, otherwise every call to retrieve buffers from the pool will bypass
+     * the CPU cache and go straight to the pool.
      */
     return (mempool::acquire(port_idx,
                              queue_idx,
@@ -25,7 +36,8 @@ static rte_mempool* get_packet_pool(uint16_t port_idx,
                              source.max_packet_length() + RTE_PKTMBUF_HEADROOM,
                              port_info::tx_desc_count(port_idx)
                                  + 2 * worker::pkt_burst_size,
-                             2 * worker::pkt_burst_size));
+                             2 * worker::pkt_burst_size,
+                             pool_type));
 }
 
 tx_source::tx_source(uint16_t port_idx,
