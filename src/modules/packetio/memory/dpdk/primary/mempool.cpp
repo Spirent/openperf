@@ -30,11 +30,17 @@ static std::atomic_uint mempool_idx = 0;
 #define local_container_of(ptr, type, member)                                  \
     ((type*)((char*)(ptr)-offsetof(type, member)))
 
+static void free_mempool(const rte_mempool* pool)
+{
+    OP_LOG(OP_LOG_DEBUG, "Freeing memory pool %s\n", pool->name);
+    rte_mempool_free(const_cast<rte_mempool*>(pool));
+}
+
 static void drop_mempool_entry(const struct op_reference* ref)
 {
     auto* entry = local_container_of(ref, mempool_entry, ref);
     mempool_list.remove(entry);
-    rte_mempool_free(entry->pool);
+    free_mempool(entry->pool);
     entry->pool = nullptr;
 }
 
@@ -160,19 +166,42 @@ static void log_mempool(const struct rte_mempool* mpool)
            mpool->socket_id);
 }
 
+static rte_mempool* create_mempool(unsigned numa_node,
+                                   uint16_t packet_length,
+                                   uint16_t packet_count,
+                                   uint16_t cache_size)
+{
+    auto name =
+        "pool-"
+        + std::to_string(mempool_idx.fetch_add(1, std::memory_order_acq_rel));
+
+    auto* pool = create_spsc_pktmbuf_mempool(name.c_str(),
+                                             pool_size_adjust(packet_count),
+                                             cache_size,
+                                             0,
+                                             packet_length,
+                                             numa_node);
+    if (!pool) {
+        OP_LOG(OP_LOG_ERROR, "Could not create packet pool %s\n", name.c_str());
+        return (nullptr);
+    }
+
+    log_mempool(pool);
+
+    return (pool);
+}
+
 /*
  * XXX: We are forced to use new/delete pairs for our entry objects
  * because the c-based list implementation only accepts pointers.
  */
-rte_mempool* acquire(uint16_t port_id,
-                     uint16_t queue_id,
-                     unsigned numa_node,
-                     uint16_t packet_length,
-                     uint16_t packet_count,
-                     uint16_t cache_size)
+static rte_mempool* acquire_shared(uint16_t port_id,
+                                   uint16_t queue_id,
+                                   unsigned numa_node,
+                                   uint16_t packet_length,
+                                   uint16_t packet_count,
+                                   uint16_t cache_size)
 {
-    maybe_mempool_list_init();
-
     /* See if we can find a matching pool in our list of pools */
     auto snapshot = mempool_list.snapshot();
     auto cursor = std::find_if(
@@ -207,22 +236,9 @@ rte_mempool* acquire(uint16_t port_id,
     }
 
     /* No matching mempool found; create one */
-    auto name =
-        "pool-"
-        + std::to_string(mempool_idx.fetch_add(1, std::memory_order_acq_rel));
-
-    auto* pool = create_spsc_pktmbuf_mempool(name.c_str(),
-                                             pool_size_adjust(packet_count),
-                                             cache_size,
-                                             0,
-                                             packet_length,
-                                             numa_node);
-    if (!pool) {
-        OP_LOG(OP_LOG_ERROR, "Could not create packet pool %s\n", name.c_str());
-        return (nullptr);
-    }
-
-    log_mempool(pool);
+    auto* pool =
+        create_mempool(numa_node, packet_length, packet_count, cache_size);
+    if (!pool) { return (nullptr); }
 
     auto* entry = new mempool_entry{
         .pool = pool, .port_id = port_id, .queue_id = queue_id};
@@ -233,7 +249,7 @@ rte_mempool* acquire(uint16_t port_id,
     if (!mempool_list.insert(entry)) {
         OP_LOG(OP_LOG_ERROR,
                "Could not insert packet pool %s into packet pool list\n",
-               name.c_str());
+               entry->pool->name);
         op_reference_release(&entry->ref);
         return (nullptr);
     }
@@ -241,10 +257,48 @@ rte_mempool* acquire(uint16_t port_id,
     return (entry->pool);
 }
 
+/*
+ * Acquire a memory pool from somewheres. We have two types: shared and unique.
+ * Shared pools get added to a list so that they can be reused. Unique pools
+ * are only handed back to their callers. Hopefully they will release them
+ * later!
+ */
+rte_mempool* acquire(uint16_t port_id,
+                     uint16_t queue_id,
+                     unsigned numa_node,
+                     uint16_t packet_length,
+                     uint16_t packet_count,
+                     uint16_t cache_size,
+                     mempool_type pool_type)
+{
+    maybe_mempool_list_init();
+
+    switch (pool_type) {
+    case mempool_type::shared:
+        return (acquire_shared(port_id,
+                               queue_id,
+                               numa_node,
+                               packet_length,
+                               packet_count,
+                               cache_size));
+    case mempool_type::unique:
+        return (
+            create_mempool(numa_node, packet_length, packet_count, cache_size));
+    default:
+        /* mempool_type::none?  Ok... */
+        OP_LOG(OP_LOG_WARNING, "Unrecognized mempool type: %d\n", pool_type);
+        return (nullptr);
+    }
+}
+
 void release(const rte_mempool* pool)
 {
     if (!pool) { return; }
 
+    /*
+     * At this point, we don't know if this is a shared pool or not.
+     * Look for it in the shared pool list.
+     */
     auto snapshot = mempool_list.snapshot();
     auto cursor = std::find_if(
         std::begin(snapshot), std::end(snapshot), [&](auto& entry) {
@@ -257,15 +311,13 @@ void release(const rte_mempool* pool)
             return (entry.pool == pool);
         });
 
-    if (cursor == std::end(snapshot)) {
-        OP_LOG(OP_LOG_WARNING,
-               "Could not find %s in packet pool list; "
-               "ignoring release request\n",
-               pool->name);
-        return;
+    if (cursor != std::end(snapshot)) {
+        /* Definitely shared, drop the ref count */
+        op_reference_release(&(cursor->ref));
+    } else {
+        /* Presume this is a unique pool; free it */
+        free_mempool(pool);
     }
-
-    op_reference_release(&(cursor->ref));
 }
 
 rte_mempool* get_default(unsigned numa_node)

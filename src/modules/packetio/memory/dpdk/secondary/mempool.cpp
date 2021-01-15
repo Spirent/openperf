@@ -31,7 +31,8 @@ rte_mempool* acquire([[maybe_unused]] uint16_t port_id,
                      unsigned numa_node,
                      uint16_t packet_length,
                      uint16_t packet_count,
-                     [[maybe_unused]] uint16_t cache_size)
+                     [[maybe_unused]] uint16_t cache_size,
+                     [[maybe_unused]] mempool_type pool_type)
 {
     static rte_mempool* pool = get_mempool();
     if (!pool) { throw std::runtime_error("No memory pool available"); }
