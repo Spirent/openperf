@@ -317,4 +317,17 @@ bool is_linklocal(const ipv6_address&);
 
 } // namespace libpacket::type
 
+namespace std {
+
+template <> struct hash<libpacket::type::ipv6_address>
+{
+    size_t operator()(const libpacket::type::ipv6_address& ip) const
+    {
+        return (std::hash<uint64_t>{}(ip.load<uint64_t>(0))
+                ^ std::hash<uint64_t>{}(ip.load<uint64_t>(1)));
+    }
+};
+
+} // namespace std
+
 #endif /* _LIB_PACKET_TYPE_IPV6_ADDRESS_HPP_ */
