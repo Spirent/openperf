@@ -14,6 +14,7 @@ STACK_SOURCES += \
 	handler.cpp \
 	lwip/memp.c \
 	lwip/ipv6_netifapi.c \
+	lwip/nd6.c \
 	lwip/netif_wrapper.cpp \
 	lwip/tcp_in.c \
 	lwip/tcpip.cpp \

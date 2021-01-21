@@ -103,12 +103,24 @@
 /* We've already got these */
 #define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS 1
 
-/* Generator uses lwip for ARP/ND learning.
+/*
+ * Generator uses lwip for ARP/ND learning.
  * Increase size of cache to a reasonable size.
  * 256 is a nice power of 2 and lines up nicely with the default /24
  * network size.
  */
 #define ARP_TABLE_SIZE 256
+
+/*
+ * These two define the size of separate but tightly coupled
+ * cache structures. Best to increase both to the same value.
+ *
+ * XXX: 127 is on the low side, BUT internally LwIP uses a signed int8_t
+ * to track indexes for these caches. Fow now 127 is fine, but watch out
+ * for this at scale.
+ */
+#define LWIP_ND6_NUM_NEIGHBORS 127
+#define LWIP_ND6_NUM_DESTINATIONS 127
 
 /*
  * Debugging options
