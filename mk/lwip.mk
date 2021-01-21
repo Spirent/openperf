@@ -55,8 +55,7 @@ LWIP_CORE6_SOURCES := \
 	core/ipv6/ip6.c \
 	core/ipv6/ip6_addr.c \
 	core/ipv6/ip6_frag.c \
-	core/ipv6/mld6.c \
-	core/ipv6/nd6.c
+	core/ipv6/mld6.c
 
 LWIP_API_SOURCES := \
 	api/err.c \
