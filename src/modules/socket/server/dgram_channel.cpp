@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cerrno>
+#include <system_error>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -162,8 +163,8 @@ dgram_channel::dgram_channel(int flags,
 
     if ((server_fds.client_fd = eventfd(0, event_flags)) == -1
         || (server_fds.server_fd = eventfd(0, 0)) == -1) {
-        throw std::runtime_error("Could not create eventfd: "
-                                 + std::string(strerror(errno)));
+        throw std::system_error(
+            errno, std::generic_category(), "Could not create eventfd");
     }
 }
 

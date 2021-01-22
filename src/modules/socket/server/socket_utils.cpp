@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cerrno>
+#include <system_error>
 
 #include "socket/server/generic_socket.hpp"
 #include "socket/server/icmp_socket.hpp"
@@ -22,7 +23,11 @@ make_socket(openperf::socket::server::allocator& allocator,
             int type,
             int protocol)
 {
-    return (make_socket_common(allocator, domain, type, protocol));
+    try {
+        return (make_socket_common(allocator, domain, type, protocol));
+    } catch (const std::system_error& e) {
+        return (tl::make_unexpected(e.code().value()));
+    }
 }
 
 tl::expected<generic_socket, int>

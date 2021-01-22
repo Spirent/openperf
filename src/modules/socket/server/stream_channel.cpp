@@ -3,6 +3,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <numeric>
+#include <system_error>
 #include <sys/eventfd.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -165,8 +166,8 @@ stream_channel::stream_channel(int flags,
 
     if ((server_fds.client_fd = eventfd(0, event_flags)) == -1
         || (server_fds.server_fd = eventfd(0, 0)) == -1) {
-        throw std::runtime_error("Could not create eventfd: "
-                                 + std::string(strerror(errno)));
+        throw std::system_error(
+            errno, std::generic_category(), "Could not create eventfd");
     }
 
     socket_flags.store(event_flags, std::memory_order_release);
