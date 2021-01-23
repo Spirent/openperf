@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <map>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "framework/generator/task.hpp"
@@ -11,7 +12,13 @@
 #include "utils/network_sockaddr.hpp"
 #include "drivers/driver.hpp"
 
+namespace openperf::core {
+class event_loop;
+}
+
 namespace openperf::network::internal::task {
+
+class network_task;
 
 using realtime = timesync::chrono::realtime;
 using ref_clock = timesync::chrono::monotime;
@@ -54,6 +61,7 @@ enum connection_state_t {
     STATE_ERROR,    /**< Connection has encountered an error */
     STATE_DONE      /**< Transaction limit reached; connection should close */
 };
+
 struct connection_t
 {
     int fd;
@@ -62,7 +70,10 @@ struct connection_t
     size_t bytes_left;
     ref_clock::time_point operation_start_time;
     uint_fast64_t ops_left;
+    network_task* task;
 };
+
+using connection_ptr = std::unique_ptr<connection_t>;
 
 struct conn_stat_t
 {
@@ -104,9 +115,15 @@ struct stat_t
 
 class network_task : public framework::generator::task<stat_t>
 {
+    friend class connection_init_state;
+    friend class connection_reading_state;
+    friend class connection_writing_state;
+
 public:
     network_task(const config_t&, const drivers::driver_ptr& driver);
     ~network_task();
+    network_task(const network_task&) = delete;
+    network_task(network_task&& orig);
 
     config_t config() const { return m_config; }
 
@@ -115,20 +132,23 @@ public:
 
 private:
     void config(const config_t&);
-    tl::expected<connection_t, int>
+    tl::expected<connection_ptr, int>
     new_connection(const network_sockaddr& server, const config_t& config);
-    void do_init(connection_t& conn, stat_t& stat);
-    void do_read(connection_t& conn, stat_t& stat);
-    void do_write(connection_t& conn, stat_t& stat);
-    void do_shutdown(connection_t& conn, stat_t& stat);
+    int do_init(connection_t& conn, stat_t& stat);
+    int do_read(connection_t& conn, stat_t& stat);
+    int do_write(connection_t& conn, stat_t& stat);
+    int do_shutdown(connection_t& conn, stat_t& stat);
     stat_t worker_spin(uint64_t nb_ops);
     int32_t calculate_rate();
 
     config_t m_config;
     stat_t m_stat;
+    stat_t m_spin_stat;
+    uint_fast64_t m_spin_ops_left;
     drivers::driver_ptr m_driver;
+    std::unique_ptr<core::event_loop> m_loop;
     ref_clock::time_point m_operation_timestamp;
-    std::vector<connection_t> m_connections;
+    std::map<int, connection_ptr> m_connections;
     std::vector<uint8_t> m_write_buffer;
 };
 

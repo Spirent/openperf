@@ -2,6 +2,7 @@
 #include <limits>
 #include <cerrno>
 #include <cstdlib>
+#include <cinttypes>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 #include <tl/expected.hpp>
@@ -11,6 +12,7 @@
 
 #include "config/op_config_file.hpp"
 #include "framework/core/op_log.h"
+#include "framework/core/op_event_loop.hpp"
 #include "framework/utils/random.hpp"
 #include "framework/utils/overloaded_visitor.hpp"
 #include "firehose/protocol.hpp"
@@ -23,6 +25,7 @@ namespace openperf::network::internal::task {
 
 using namespace std::chrono_literals;
 constexpr duration TASK_SPIN_THRESHOLD = 100ms;
+constexpr duration QUANTA = 10ms;
 constexpr auto default_operation_timeout_usec = 1000000;
 const size_t max_buffer_size = 64 * 1024;
 
@@ -60,10 +63,95 @@ stat_t& stat_t::operator+=(const stat_t& stat)
     return *this;
 }
 
+class connection_init_state
+{
+public:
+    static int write(const struct op_event_data* data, void* arg)
+    {
+        connection_t* con = reinterpret_cast<connection_t*>(arg);
+        assert(con);
+        if (!con) return -1;
+        auto task = con->task;
+        assert(task);
+        return task->do_init(*con, task->m_spin_stat);
+    }
+
+    static int close(const struct op_event_data* data, void* arg)
+    {
+        connection_t* con = reinterpret_cast<connection_t*>(arg);
+        assert(con);
+        if (!con) return -1;
+        auto task = con->task;
+        assert(task);
+        return task->do_shutdown(*con, task->m_spin_stat);
+    }
+
+    static constexpr op_event_callbacks callbacks = {
+        .on_write = connection_init_state::write,
+        .on_delete = connection_init_state::close};
+};
+
+class connection_reading_state
+{
+public:
+    static int read(const struct op_event_data* data, void* arg)
+    {
+        connection_t* con = reinterpret_cast<connection_t*>(arg);
+        assert(con);
+        if (!con) return -1;
+        auto task = con->task;
+        assert(task);
+        return task->do_read(*con, task->m_spin_stat);
+    }
+
+    static int close(const struct op_event_data* data, void* arg)
+    {
+        connection_t* con = reinterpret_cast<connection_t*>(arg);
+        assert(con);
+        if (!con) return -1;
+        auto task = con->task;
+        assert(task);
+        return task->do_shutdown(*con, task->m_spin_stat);
+    }
+
+    static constexpr op_event_callbacks callbacks = {
+        .on_read = connection_reading_state::read,
+        .on_delete = connection_reading_state::close};
+};
+
+class connection_writing_state
+{
+public:
+    static int write(const struct op_event_data* data, void* arg)
+    {
+        connection_t* con = reinterpret_cast<connection_t*>(arg);
+        assert(con);
+        if (!con) return -1;
+        auto task = con->task;
+        assert(task);
+        return task->do_write(*con, task->m_spin_stat);
+    }
+
+    static int close(const struct op_event_data* data, void* arg)
+    {
+        connection_t* con = reinterpret_cast<connection_t*>(arg);
+        assert(con);
+        if (!con) return -1;
+        auto task = con->task;
+        assert(task);
+        return task->do_shutdown(*con, task->m_spin_stat);
+    }
+
+    static constexpr op_event_callbacks callbacks = {
+        .on_write = connection_writing_state::write,
+        .on_delete = connection_writing_state::close};
+};
+
 // Constructors & Destructor
 network_task::network_task(const config_t& configuration,
                            const drivers::driver_ptr& driver)
     : m_driver(driver)
+    , m_loop(new core::event_loop())
 {
     m_write_buffer.resize(std::min(configuration.block_size, max_buffer_size));
     utils::op_prbs23_fill(m_write_buffer.data(), m_write_buffer.size());
@@ -72,8 +160,33 @@ network_task::network_task(const config_t& configuration,
 
 network_task::~network_task()
 {
-    for (auto& conn : m_connections) { do_shutdown(conn, m_stat); }
-    m_connections.clear();
+    if (m_loop) {
+        if (m_loop->count()) {
+            OP_LOG(OP_LOG_DEBUG, "Purging %zu connections", m_loop->count());
+            m_loop->purge();
+
+            // FIXME:
+            // The worker class calls op_log_close() before exiting the thread
+            // function. Unfortunatley the task object is passed by value as
+            // an argument when creating the thread so this dtor is called
+            // after the thread function exits.
+            // So any logging here will cause log zmq sockets to leak unless
+            // the log socket is closed.
+            op_log_close();
+        }
+    }
+}
+
+network_task::network_task(network_task&& orig)
+    : m_config(orig.m_config)
+    , m_stat(orig.m_stat)
+    , m_driver(std::move(orig.m_driver))
+    , m_loop(std::move(orig.m_loop))
+    , m_operation_timestamp(orig.m_operation_timestamp)
+    , m_connections(std::move(orig.m_connections))
+    , m_write_buffer(std::move(orig.m_write_buffer))
+{
+    for (auto& it : m_connections) { it.second->task = this; }
 }
 
 // Methods : public
@@ -161,24 +274,22 @@ stat_t network_task::spin()
 
     // Worker loop
     auto stat = stat_t{.operation = m_config.operation};
-    auto loop_start_ts = ref_clock::now();
     auto cur_time = ref_clock::now();
+    auto loop_start_ts = cur_time;
 
     // Prepare for ratio synchronization
     auto ops_per_sec = calculate_rate();
 
     do {
         // +1 need here to start spin at beginning of each time frame
-        auto ops_req = (cur_time - m_operation_timestamp).count() * ops_per_sec
-                           / std::nano::den
-                       + 1;
+        uint64_t dt = (cur_time - m_operation_timestamp).count();
+        auto ops_req = dt * ops_per_sec / std::nano::den + 1;
 
         assert(ops_req);
         auto worker_spin_stat = worker_spin(ops_req);
         stat += worker_spin_stat;
 
         cur_time = ref_clock::now();
-
         m_operation_timestamp +=
             std::chrono::nanoseconds(std::nano::den / ops_per_sec)
             * worker_spin_stat.ops_actual;
@@ -192,7 +303,7 @@ stat_t network_task::spin()
     return stat;
 }
 
-tl::expected<connection_t, int>
+tl::expected<connection_ptr, int>
 network_task::new_connection(const network_sockaddr& server,
                              const config_t& config)
 {
@@ -284,22 +395,32 @@ network_task::new_connection(const network_sockaddr& server,
             sock, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout));
     }
 
-    return connection_t{
+    return std::unique_ptr<connection_t>(new connection_t{
         .fd = sock,
         .state = STATE_INIT,
         .buffer =
             std::vector<uint8_t>(std::min(config.block_size, max_buffer_size)),
         .bytes_left = 0,
         .ops_left = config.ops_per_connection,
-    };
+        .task = this});
 }
 
-void network_task::do_init(connection_t& conn, stat_t& stat)
+int network_task::do_init(connection_t& conn, stat_t& stat)
 {
     int flags = 0;
 #if defined(MSG_NOSIGNAL)
     flags |= MSG_NOSIGNAL;
 #endif
+
+    if (m_spin_ops_left == 0) {
+        m_loop->exit();
+        return 0;
+    }
+
+    if (conn.ops_left == 0) {
+        conn.state = STATE_DONE;
+        return -1;
+    }
 
     firehose::request_t to_request = {
         .action = (m_config.operation == operation_t::READ)
@@ -314,7 +435,7 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
         OP_LOG(OP_LOG_ERROR,
                "Cannot build firehose request: %s",
                strerror(r.error()));
-        return;
+        return -1;
     }
 
     conn.operation_start_time = ref_clock::now();
@@ -323,16 +444,16 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
     case operation_t::READ: {
         ssize_t send_or_err =
             m_driver->send(conn.fd, header.data(), header.size(), flags);
-
         if (send_or_err == -1 || send_or_err < (ssize_t)header.size()) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) { return; }
+            if (errno == EAGAIN || errno == EWOULDBLOCK) { return 0; }
 
             conn.state = STATE_ERROR;
-            return;
+            return -1;
         }
 
         conn.state = STATE_READING;
         conn.bytes_left = m_config.block_size;
+        m_loop->update(conn.fd, &connection_reading_state::callbacks);
     } break;
     case operation_t::WRITE: {
         iovec iov[] = {
@@ -351,7 +472,6 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
             .msg_iov = iov,
             .msg_iovlen = 2,
         };
-
         ssize_t send_or_err = m_driver->sendmsg(conn.fd, &to_send, flags);
         /*
          * Obviously check to see if we could send our data.
@@ -361,29 +481,39 @@ void network_task::do_init(connection_t& conn, stat_t& stat)
          * from it.
          */
         if (send_or_err == -1 || send_or_err < (ssize_t)header.size()) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) { return; }
+            if (errno == EAGAIN || errno == EWOULDBLOCK) { return 0; }
 
             conn.state = STATE_ERROR;
-            return;
+            return -1;
         }
 
         conn.bytes_left = header.size() + m_config.block_size - send_or_err;
         if (conn.bytes_left) {
             conn.state = STATE_WRITING;
+            m_loop->update(conn.fd, &connection_writing_state::callbacks);
         } else {
             stat.bytes_actual += send_or_err;
             stat.ops_actual++;
             update_stat_latency(stat,
                                 ref_clock::now() - conn.operation_start_time);
             conn.ops_left--;
-            conn.state = STATE_INIT;
+            m_spin_ops_left--;
+            if (conn.ops_left > 0) {
+                conn.state = STATE_INIT;
+                m_loop->update(conn.fd, &connection_init_state::callbacks);
+            } else {
+                conn.state = STATE_DONE;
+                return -1;
+            }
         }
 
     } break;
     }
+
+    return 0;
 }
 
-void network_task::do_read(connection_t& conn, stat_t& stat)
+int network_task::do_read(connection_t& conn, stat_t& stat)
 {
     assert(conn.state == STATE_READING);
     ssize_t recv_or_err = 0;
@@ -400,14 +530,13 @@ void network_task::do_read(connection_t& conn, stat_t& stat)
                     .value_or(default_operation_timeout_usec));
             if ((errno == EAGAIN || errno == EWOULDBLOCK)
                 && (ref_clock::now() - conn.operation_start_time < timeout)) {
-                return;
+                return 0;
             }
-
             conn.state = STATE_ERROR;
-            return;
+            return -1;
         } else if (recv_or_err == 0) {
             conn.state = STATE_DONE;
-            return; /* remote side closed connection */
+            return -1; /* remote side closed connection */
         } else {
             conn.bytes_left -= recv_or_err;
         }
@@ -415,15 +544,17 @@ void network_task::do_read(connection_t& conn, stat_t& stat)
 
     stat.ops_actual++;
     conn.ops_left--;
+    m_spin_ops_left--;
     stat.bytes_actual += m_config.block_size;
     update_stat_latency(stat, ref_clock::now() - conn.operation_start_time);
 
     conn.state = STATE_INIT;
+    m_loop->update(conn.fd, &connection_init_state::callbacks);
 
-    return;
+    return 0;
 }
 
-void network_task::do_write(connection_t& conn, stat_t& stat)
+int network_task::do_write(connection_t& conn, stat_t& stat)
 {
     assert(conn.state == STATE_WRITING);
 
@@ -439,10 +570,10 @@ void network_task::do_write(connection_t& conn, stat_t& stat)
                            std::min(conn.bytes_left, m_write_buffer.size()),
                            flags);
         if (send_or_err == -1) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) { return; }
+            if (errno == EAGAIN || errno == EWOULDBLOCK) { return 0; }
 
             conn.state = STATE_ERROR;
-            return;
+            return -1;
         }
         conn.bytes_left -= send_or_err;
     }
@@ -451,26 +582,31 @@ void network_task::do_write(connection_t& conn, stat_t& stat)
 
     stat.ops_actual++;
     conn.ops_left--;
+    m_spin_ops_left--;
     stat.bytes_actual += m_config.block_size;
     update_stat_latency(stat, ref_clock::now() - conn.operation_start_time);
 
     conn.state = STATE_INIT;
-
-    return;
+    m_loop->update(conn.fd, &connection_init_state::callbacks);
+    return 0;
 }
 
-void network_task::do_shutdown(connection_t& conn, stat_t& stat)
+int network_task::do_shutdown(connection_t& conn, stat_t& stat)
 {
     if (conn.state == STATE_ERROR) stat.errors++;
 
     m_driver->close(conn.fd);
     stat.conn_stat.closed++;
+    m_connections.erase(conn.fd);
+    return 0;
 }
 
 // Methods : private
 stat_t network_task::worker_spin(uint64_t nb_ops)
 {
-    stat_t stat{.operation = m_config.operation};
+    // Clear spin stats
+    m_spin_stat = stat_t{.operation = m_config.operation};
+    m_spin_ops_left = nb_ops;
 
     /* Make sure we have the right number of connections */
     size_t connections_required = m_config.connections - m_connections.size();
@@ -483,48 +619,29 @@ stat_t network_task::worker_spin(uint64_t nb_ops)
             OP_LOG(OP_LOG_TRACE,
                    "Could not open new connection: %s\n",
                    strerror(abs(server.error())));
-            stat.conn_stat.errors++;
+            m_spin_stat.conn_stat.errors++;
             break;
         }
-        stat.conn_stat.attempted++;
+        m_spin_stat.conn_stat.attempted++;
         auto conn = new_connection(server.value(), m_config);
         if (!conn) {
             OP_LOG(OP_LOG_TRACE,
                    "Could not open new connection: %s\n",
                    strerror(abs(conn.error())));
-            stat.conn_stat.errors++;
+            m_spin_stat.conn_stat.errors++;
             break;
         }
-        stat.conn_stat.successful++;
-        m_connections.push_back(std::move(conn.value()));
+        m_spin_stat.conn_stat.successful++;
+        m_loop->add(conn.value()->fd,
+                    &connection_init_state::callbacks,
+                    reinterpret_cast<void*>(conn.value().get()));
+        m_connections[conn.value()->fd] = std::move(conn.value());
     }
 
-    for (size_t i = 0; i < nb_ops && i < m_connections.size(); i++) {
-        auto& conn = m_connections[i];
-        if (conn.state == STATE_INIT) do_init(conn, stat);
+    m_loop->run(
+        std::chrono::duration_cast<std::chrono::milliseconds>(QUANTA).count());
 
-        if (conn.state == STATE_READING) {
-            do_read(conn, stat);
-        } else if (conn.state == STATE_WRITING) {
-            do_write(conn, stat);
-        }
-
-        if (conn.ops_left == 0) conn.state = STATE_DONE;
-
-        if (conn.state == STATE_DONE || conn.state == STATE_ERROR) {
-            do_shutdown(conn, stat);
-        }
-    }
-
-    // Remove closed connections
-    m_connections.erase(std::remove_if(m_connections.begin(),
-                                       m_connections.end(),
-                                       [](const auto& conn) {
-                                           return conn.state == STATE_DONE
-                                                  || conn.state == STATE_ERROR;
-                                       }),
-                        m_connections.end());
-    return stat;
+    return m_spin_stat;
 }
 
 void network_task::config(const config_t& p_config)
