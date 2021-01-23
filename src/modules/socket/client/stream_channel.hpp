@@ -61,6 +61,8 @@ public:
     stream_channel(const stream_channel&) = delete;
     stream_channel& operator=(const stream_channel&&) = delete;
 
+    void close();
+
     int error() const;
 
     int flags() const;

@@ -182,10 +182,18 @@ dgram_channel::dgram_channel(int client_fd, int server_fd)
     client_fds.server_fd = server_fd;
 }
 
-dgram_channel::~dgram_channel()
+dgram_channel::~dgram_channel() { close(); }
+
+void dgram_channel::close()
 {
-    close(client_fds.client_fd);
-    close(client_fds.server_fd);
+    if (client_fds.client_fd >= 0) {
+        ::close(client_fds.client_fd);
+        client_fds.client_fd = -1;
+    }
+    if (client_fds.server_fd >= 0) {
+        ::close(client_fds.server_fd);
+        client_fds.server_fd = -1;
+    }
 }
 
 int dgram_channel::error() const
