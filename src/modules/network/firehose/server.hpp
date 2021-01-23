@@ -76,32 +76,6 @@ inline const char* get_state_string(connection_state_t state)
 #undef CASE_MAP
 }
 
-inline int
-parse_request(uint8_t*& data, size_t& data_length, connection_t& conn)
-{
-    firehose::request_t request;
-
-    auto req = firehose::parse_request(data, data_length);
-    if (req) {
-        switch (req.value().action) {
-        case firehose::action_t::GET:
-            conn.bytes_left = request.length;
-            conn.state = STATE_WRITING;
-            break;
-        case firehose::action_t::PUT:
-            conn.bytes_left = request.length;
-            conn.state = STATE_READING;
-            break;
-        default:
-            conn.bytes_left = 0;
-            conn.state = STATE_ERROR;
-            return -1;
-        }
-    }
-
-    return 0;
-}
-
 } // namespace openperf::network::internal::firehose
 
 #endif
