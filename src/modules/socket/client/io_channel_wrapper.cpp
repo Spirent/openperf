@@ -57,8 +57,8 @@ io_channel_wrapper::io_channel_wrapper(io_channel_wrapper&& other) noexcept
     std::swap(m_channel, other.m_channel);
 }
 
-io_channel_wrapper& io_channel_wrapper::
-operator=(io_channel_wrapper&& other) noexcept
+io_channel_wrapper&
+io_channel_wrapper::operator=(io_channel_wrapper&& other) noexcept
 {
     if (this != &other) { std::swap(m_channel, other.m_channel); }
     return (*this);

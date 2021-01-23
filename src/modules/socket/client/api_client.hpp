@@ -13,8 +13,6 @@
 #include "socket/unix_socket.hpp"
 #include "core/op_uuid.hpp"
 
-#include "channels_hashtab.hpp"
-
 namespace openperf::socket::api {
 
 template <typename T> class thread_singleton

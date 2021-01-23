@@ -11,6 +11,7 @@
 #include "socket/api.hpp"
 #include "socket/process_control.hpp"
 #include "socket/client/api_client.hpp"
+#include "socket/client/channels_hashtab.hpp"
 
 namespace openperf::socket::api {
 
