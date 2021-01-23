@@ -1,6 +1,8 @@
 #ifndef _OP_SOCKET_API_CHANNELS_HASHTAB_HPP_
 #define _OP_SOCKET_API_CHANNELS_HASHTAB_HPP_
 
+#include <shared_mutex>
+
 #include "core/op_hashtab.h"
 #include "socket/client/io_channel_wrapper.hpp"
 #include "utils/singleton.hpp"
@@ -33,6 +35,7 @@ public:
                        int client_fd,
                        int server_fd)
     {
+        std::shared_lock<std::shared_mutex> m_guard(m_lock);
         auto value = new ided_channel{
             id, io_channel_wrapper(channel, client_fd, server_fd)};
         return op_hashtab_insert(
@@ -41,17 +44,35 @@ public:
 
     inline ided_channel* find(int fd)
     {
+        std::shared_lock<std::shared_mutex> m_guard(m_lock);
         return reinterpret_cast<ided_channel*>(
             op_hashtab_find(m_tab, reinterpret_cast<void*>(fd)));
     };
 
     inline bool erase(int fd)
     {
-        return op_hashtab_delete(m_tab, reinterpret_cast<void*>(fd));
+        // hashtab garbage collection requires exclusive lock
+        std::lock_guard<std::shared_mutex> m_guard(m_lock);
+
+        auto idc = reinterpret_cast<ided_channel*>(
+            op_hashtab_find(m_tab, reinterpret_cast<void*>(fd)));
+        if (!idc) return false;
+
+        // Mark the channel deleted
+        op_hashtab_delete(m_tab, reinterpret_cast<void*>(fd));
+
+        // Perform garbage collection to actually delete the channel object
+        op_hashtab_garbage_collect(m_tab);
+        return true;
     };
 
 private:
     op_hashtab* m_tab;
+
+    // This shared mutex is used only used to obtain exclusive access
+    // when doing garbage collection.  All other hashtab operations
+    // are lock free thread safe so they don't need exclusive lock.
+    std::shared_mutex m_lock;
 };
 } // namespace openperf::socket::api
 
