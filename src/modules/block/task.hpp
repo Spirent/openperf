@@ -107,7 +107,6 @@ public:
 
 private:
     void config(const task_config_t&);
-    void reset_spin_stat();
     int32_t calculate_rate();
     task_stat_t worker_spin(uint64_t nb_ops, ref_clock::time_point deadline);
 

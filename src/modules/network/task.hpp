@@ -115,7 +115,6 @@ public:
 
 private:
     void config(const config_t&);
-    void reset_spin_stat();
     tl::expected<connection_t, int>
     new_connection(const network_sockaddr& server, const config_t& config);
     void do_init(connection_t& conn, stat_t& stat);
