@@ -32,24 +32,29 @@ class PacketGeneratorLearningResults(object):
     """
     swagger_types = {
         'resolved_state': 'str',
-        'ipv4': 'list[PacketGeneratorLearningResultIpv4]'
+        'ipv4': 'list[PacketGeneratorLearningResultIpv4]',
+        'ipv6': 'list[PacketGeneratorLearningResultIpv6]'
     }
 
     attribute_map = {
         'resolved_state': 'resolved_state',
-        'ipv4': 'ipv4'
+        'ipv4': 'ipv4',
+        'ipv6': 'ipv6'
     }
 
-    def __init__(self, resolved_state=None, ipv4=None):  # noqa: E501
+    def __init__(self, resolved_state=None, ipv4=None, ipv6=None):  # noqa: E501
         """PacketGeneratorLearningResults - a model defined in Swagger"""  # noqa: E501
 
         self._resolved_state = None
         self._ipv4 = None
+        self._ipv6 = None
         self.discriminator = None
 
         self.resolved_state = resolved_state
         if ipv4 is not None:
             self.ipv4 = ipv4
+        if ipv6 is not None:
+            self.ipv6 = ipv6
 
     @property
     def resolved_state(self):
@@ -94,6 +99,28 @@ class PacketGeneratorLearningResults(object):
         :type: list[PacketGeneratorLearningResultIpv4]
         """
         self._ipv4 = ipv4
+
+    @property
+    def ipv6(self):
+        """Gets the ipv6 of this PacketGeneratorLearningResults.  # noqa: E501
+
+        List of IPv6 destinations, IPv6 next hop, and next hop MAC addresses.  # noqa: E501
+
+        :return: The ipv6 of this PacketGeneratorLearningResults.  # noqa: E501
+        :rtype: list[PacketGeneratorLearningResultIpv6]
+        """
+        return self._ipv6
+
+    @ipv6.setter
+    def ipv6(self, ipv6):
+        """Sets the ipv6 of this PacketGeneratorLearningResults.
+
+        List of IPv6 destinations, IPv6 next hop, and next hop MAC addresses.  # noqa: E501
+
+        :param ipv6: The ipv6 of this PacketGeneratorLearningResults.  # noqa: E501
+        :type: list[PacketGeneratorLearningResultIpv6]
+        """
+        self._ipv6 = ipv6
 
     def to_dict(self):
         """Returns the model properties as a dict"""
