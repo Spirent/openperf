@@ -681,6 +681,24 @@ definitions:
     required:
       - ip_address
 
+  PacketGeneratorLearningResultIpv6:
+    type: object
+    description: Defines an IPv6 destination address, IPv6 next hop address,  next hop MAC address tuple.
+    properties:
+      ip_address:
+        pattern: ^((::[0-9a-fA-F]{1,4})|([0-9a-fA-F]{1,4}::)|(([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F])|(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}))$
+        type: string
+        description: IPv6 destination address.
+      next_hop_address:
+        pattern: ^((::[0-9a-fA-F]{1,4})|([0-9a-fA-F]{1,4}::)|(([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F])|(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}))$
+        type: string
+        description: IPv6 next hop address.
+      mac_address:
+        type: string
+        description: MAC address of next hop IPv6 address.
+    required:
+      - ip_address
+
   PacketGeneratorLearningResults:
     type: object
     description: |
@@ -702,6 +720,12 @@ definitions:
         description: List of IPv4 address and their associated MAC addresses.
         items:
           $ref: "#/definitions/PacketGeneratorLearningResultIpv4"
+      ipv6:
+        type:
+          array
+        description: List of IPv6 destinations, IPv6 next hop, and next hop MAC addresses.
+        items:
+          $ref: "#/definitions/PacketGeneratorLearningResultIpv6"
     required:
       - resolved_state
 

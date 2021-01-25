@@ -629,6 +629,9 @@ definitions:
   PacketGeneratorLearningResultIpv4:
     $ref: ./modules/packet/generator.yaml#/definitions/PacketGeneratorLearningResultIpv4
 
+  PacketGeneratorLearningResultIpv6:
+    $ref: ./modules/packet/generator.yaml#/definitions/PacketGeneratorLearningResultIpv6
+
   PacketGeneratorLearningResults:
     $ref: ./modules/packet/generator.yaml#/definitions/PacketGeneratorLearningResults
 
