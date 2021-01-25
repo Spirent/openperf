@@ -241,26 +241,46 @@ learning_results_ptr to_swagger(const learning_state_machine& lsm)
 
     dst->setResolvedState(to_string(lsm.state()));
 
-    auto& ipv4_results = dst->getIpv4();
-
     auto& learning_results = lsm.results();
 
-    // XXX: this could be std::generate. But when IPv6 support gets added that
-    // will be a separate target vector, and generate only outputs to a single
-    // data structure.
-    std::for_each(
-        learning_results.begin(), learning_results.end(), [&](auto& res) {
+    auto& ipv4_results = dst->getIpv4();
+    std::transform(
+        learning_results.ipv4.begin(),
+        learning_results.ipv4.end(),
+        std::back_inserter(ipv4_results),
+        [&](auto& res) {
             auto swagger_result = std::make_shared<
                 swagger::v1::model::PacketGeneratorLearningResultIpv4>();
             swagger_result->setIpAddress(to_string(res.first));
-            std::visit(utils::overloaded_visitor(
-                           [](const unresolved&) { /* no op*/ },
-                           [&](const libpacket::type::mac_address& mac) {
-                               swagger_result->setMacAddress(to_string(mac));
-                           }),
-                       res.second);
+            if (res.second) {
+                swagger_result->setMacAddress(to_string(*res.second));
+            }
 
-            ipv4_results.push_back(swagger_result);
+            return (swagger_result);
+        });
+
+    auto& ipv6_results = dst->getIpv6();
+    std::transform(
+        learning_results.ipv6.begin(),
+        learning_results.ipv6.end(),
+        std::back_inserter(ipv6_results),
+        [&](auto& res) {
+            auto swagger_result = std::make_shared<
+                swagger::v1::model::PacketGeneratorLearningResultIpv6>();
+            swagger_result->setIpAddress(to_string(res.first));
+
+            // Set next hop IPv6 address
+            if (res.second.next_hop_address) {
+                swagger_result->setNextHopAddress(
+                    to_string(*res.second.next_hop_address));
+            }
+
+            // Set next hop MAC address
+            if (res.second.next_hop_mac) {
+                swagger_result->setMacAddress(
+                    to_string(*res.second.next_hop_mac));
+            }
+            return (swagger_result);
         });
 
     return (dst);
