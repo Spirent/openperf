@@ -110,6 +110,20 @@ tl::expected<size_t, int> io_channel_wrapper::recv(
     return (std::visit(recv_visitor, m_channel));
 }
 
+int io_channel_wrapper::ack()
+{
+    auto ack_visitor = [&](auto channel) -> int { return (channel->ack()); };
+    return (std::visit(ack_visitor, m_channel));
+}
+
+int io_channel_wrapper::ack_undo()
+{
+    auto ack_undo_visitor = [&](auto channel) -> int {
+        return (channel->ack_undo());
+    };
+    return (std::visit(ack_undo_visitor, m_channel));
+}
+
 tl::expected<void, int> io_channel_wrapper::block_writes()
 {
     auto block_writes_visitor = [&](auto channel) -> tl::expected<void, int> {

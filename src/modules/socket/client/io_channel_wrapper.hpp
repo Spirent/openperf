@@ -43,6 +43,9 @@ public:
                                    sockaddr* from,
                                    socklen_t* fromlen);
 
+    int ack();
+    int ack_undo();
+
     tl::expected<void, int> block_writes();
     tl::expected<void, int> wait_readable();
     tl::expected<void, int> wait_writable();
