@@ -348,6 +348,11 @@ tl::expected<generic_socket, int> tcp_socket::handle_accept(int flags)
 
     auto pcb = m_acceptq.front();
     m_acceptq.pop();
+
+    // client will ack the event queue before sending accept request so
+    // need to notify again if there are more connections to accept
+    if (!m_acceptq.empty()) { m_channel->notify(); }
+
     tcp_backlog_accepted(pcb);
     return (generic_socket(tcp_socket(channel_allocator(), flags, pcb)));
 }

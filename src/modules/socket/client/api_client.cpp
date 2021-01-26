@@ -135,10 +135,14 @@ int client::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
     }
 
     auto& [id, channel] = *result;
-    auto wait = channel.wait_readable();
-    if (!wait) {
-        errno = wait.error();
-        return (-1);
+    if (channel.flags() & SOCK_NONBLOCK) {
+        channel.ack();
+    } else {
+        auto wait = channel.wait_readable();
+        if (!wait) {
+            errno = wait.error();
+            return (-1);
+        }
     }
 
     api::request_msg request =
@@ -172,7 +176,7 @@ int client::accept(int s, struct sockaddr* addr, socklen_t* addrlen, int flags)
 
     /* Give the client their fd */
     return (accept.fd_pair.client_fd);
-} // namespace openperf::socket::api
+}
 
 int client::bind(int s, const struct sockaddr* name, socklen_t namelen)
 {
