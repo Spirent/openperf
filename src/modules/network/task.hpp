@@ -141,6 +141,7 @@ private:
     stat_t worker_spin(uint64_t nb_ops);
     int32_t calculate_rate();
 
+    bool m_active;
     config_t m_config;
     stat_t m_stat;
     stat_t m_spin_stat;
