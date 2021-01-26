@@ -153,6 +153,7 @@ network_task::network_task(const config_t& configuration,
     : m_driver(driver)
     , m_loop(new core::event_loop())
 {
+    m_active = true;
     m_write_buffer.resize(std::min(configuration.block_size, max_buffer_size));
     utils::op_prbs23_fill(m_write_buffer.data(), m_write_buffer.size());
     config(configuration);
@@ -160,25 +161,38 @@ network_task::network_task(const config_t& configuration,
 
 network_task::~network_task()
 {
-    if (m_loop) {
-        if (m_loop->count()) {
-            OP_LOG(OP_LOG_DEBUG, "Purging %zu connections", m_loop->count());
-            m_loop->purge();
+    if (!m_loop) return; // might be null if passed to a move operator
 
-            // FIXME:
-            // The worker class calls op_log_close() before exiting the thread
-            // function. Unfortunatley the task object is passed by value as
-            // an argument when creating the thread so this dtor is called
-            // after the thread function exits.
-            // So any logging here will cause log zmq sockets to leak unless
-            // the log socket is closed.
-            op_log_close();
+    m_active = false;
+    auto count = m_loop->count();
+    if (count) {
+        // Wait a bit for current operations to complete and exit gracefully
+        m_spin_ops_left = count;
+        m_loop->run(
+            std::chrono::duration_cast<std::chrono::milliseconds>(QUANTA)
+                .count());
+
+        // Forcefully close any remaining connections
+        count = m_loop->count();
+        if (count) {
+            OP_LOG(OP_LOG_DEBUG, "Forcefully closing %zu connections", count);
+            m_loop->purge();
         }
+
+        // FIXME:
+        // The worker class calls op_log_close() before exiting the thread
+        // function. Unfortunatley the task object is passed by value as
+        // an argument when creating the thread so this dtor is called
+        // after the thread function exits.
+        // So any logging here will cause log zmq sockets to leak unless
+        // the log socket is closed.
+        op_log_close();
     }
 }
 
 network_task::network_task(network_task&& orig)
-    : m_config(orig.m_config)
+    : m_active(orig.m_active)
+    , m_config(orig.m_config)
     , m_stat(orig.m_stat)
     , m_driver(std::move(orig.m_driver))
     , m_loop(std::move(orig.m_loop))
@@ -186,6 +200,7 @@ network_task::network_task(network_task&& orig)
     , m_connections(std::move(orig.m_connections))
     , m_write_buffer(std::move(orig.m_write_buffer))
 {
+    // connections have a reference to the task so need to update pointer
     for (auto& it : m_connections) { it.second->task = this; }
 }
 
@@ -412,14 +427,13 @@ int network_task::do_init(connection_t& conn, stat_t& stat)
     flags |= MSG_NOSIGNAL;
 #endif
 
+    if (conn.ops_left == 0 || !m_active) {
+        conn.state = STATE_DONE;
+        return -1;
+    }
     if (m_spin_ops_left == 0) {
         m_loop->exit();
         return 0;
-    }
-
-    if (conn.ops_left == 0) {
-        conn.state = STATE_DONE;
-        return -1;
     }
 
     firehose::request_t to_request = {
