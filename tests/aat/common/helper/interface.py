@@ -90,7 +90,7 @@ def ipv6_interface(api_client, **kwargs):
         method = 'static'
     if method == 'static':
         i.config.protocols = make_interface_protocols([
-            client.models.InterfaceProtocolConfigEth(mac_address=random_mac(i.port_id)),
+            client.models.InterfaceProtocolConfigEth(mac_address=kwargs.get('mac_address', random_mac(i.port_id))),
             client.models.InterfaceProtocolConfigIpv6(
                 method='static',
                 link_local_address=kwargs.get('ipv6_link_local_address', None),
