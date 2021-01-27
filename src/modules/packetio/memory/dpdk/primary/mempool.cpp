@@ -208,12 +208,16 @@ static rte_mempool* acquire_shared(uint16_t port_id,
         std::begin(snapshot), std::end(snapshot), [&](auto& entry) {
             auto guard = mempool_entry_guard(entry);
 
+            /*
+             * Note: need to compare the adjusted pool size, as that is what
+             * is used when creating the pool.
+             */
             auto match =
                 (entry.pool != nullptr && port_id == entry.port_id
                  && queue_id == entry.queue_id
                  && numa_node == static_cast<unsigned>(entry.pool->socket_id)
                  && packet_length <= entry.pool->elt_size
-                 && packet_count <= entry.pool->size
+                 && pool_size_adjust(packet_count) <= entry.pool->size
                  && cache_size <= entry.pool->cache_size);
 
             if (match) {
