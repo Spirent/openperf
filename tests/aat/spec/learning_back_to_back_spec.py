@@ -16,7 +16,8 @@ from common.matcher import (be_valid_packet_analyzer,
                             be_valid_packet_generator,
                             raise_api_exception)
 from common.helper import check_modules_exists
-from common.helper import ipv4_interface
+from common.helper import (ipv4_interface,
+                           ipv6_interface)
 
 GENERATOR_CONFIG_NO_SOURCES = {
     'duration': {'continuous': True},
@@ -28,6 +29,38 @@ GENERATOR_CONFIG_NO_SOURCES = {
             'packet': [
                 'ethernet',
                 {'ipv4': {'destination': '198.18.15.20'}},
+                'udp'
+            ]
+        }
+    ]
+}
+
+GENERATOR_CONFIG_WITH_SOURCES_IPV6 = {
+    'duration': {'continuous': True},
+    'load': {'rate': 10},
+    'protocol_counters': ['ethernet', 'ip', 'transport'],
+    'traffic': [
+        {
+            'length': {'fixed': 128},
+            'packet': [
+                {'ethernet': {'source': '00:bb:cc:dd:ee:01'}},
+                {'ipv6': {'destination': 'fe80:1::202', 'source': 'fe80:1::303'}},
+                'udp'
+            ]
+        }
+    ]
+}
+
+GENERATOR_CONFIG_WITHOUT_SOURCES_IPV6 = {
+    'duration': {'continuous': True},
+    'load': {'rate': 10},
+    'protocol_counters': ['ethernet', 'ip', 'transport'],
+    'traffic': [
+        {
+            'length': {'fixed': 128},
+            'packet': [
+                'ethernet',
+                {'ipv6': {'destination': 'fe80:1::202'}},
                 'udp'
             ]
         }
@@ -145,6 +178,95 @@ with description('MAC Learning,', 'learning') as self:
                         expect(ana_results).to_not(be_empty)
                         expect(ana_results[0].flow_counters.frame_count).to(be_above(0))
 
+            with description('IPv6, '):
+                with before.each:
+                    self.source_ipv6 = "2001:1::101"
+                    self.source_ipv6_ll = "fe80:1::101"
+                    self.source_mac = "aa:bb:cc:dd:ee:01"
+                    self.target_ipv6 = "2001:1::202"
+                    self.target_ipv6_ll = "fe80:1::202"
+                    self.intf1v6 = ipv6_interface(self.intf_api.api_client, method="static", ipv6_address=self.source_ipv6, ipv6_link_local_address=self.source_ipv6_ll, gateway=self.target_ipv6, mac_address=self.source_mac)
+                    self.intf1v6.target_id = get_first_port_id(self.intf_api.api_client)
+                    self.intf1v6.id = "interface-one"
+                    intf1_impl = self.intf_api.create_interface(self.intf1v6)
+
+                    self.target_mac = "aa:bb:cc:dd:ee:20"
+                    self.intf2v6 = ipv6_interface(self.intf_api.api_client, method="static", ipv6_address=self.target_ipv6, ipv6_link_local_address=self.target_ipv6_ll, mac_address=self.target_mac)
+                    self.intf2v6.port_id = get_second_port_id(self.intf_api.api_client)
+                    self.intf2v6.id = "interface-two"
+                    self.intf_api.create_interface(self.intf2v6)
+
+                with description('with source addresses, '):
+                    with before.each:
+                        ana_filter = "ether dst " + self.target_mac
+                        ana_filter += " and not ether src " + self.source_mac
+                        ana_filter += " and not src host " + self.source_ipv6
+                        ana_filter += " and not src host " + self.source_ipv6_ll
+                        self.filtered_analyzer = create_analyzer_with_filter(self.ana_api,
+                                                                            'analyzer-one',
+                                                                            get_second_port_id(self.ana_api.api_client),
+                                                                            ana_filter)
+
+                    with it('does not automatically populate from interface'):
+                        gen_cfg = packet_generator_config(**GENERATOR_CONFIG_WITH_SOURCES_IPV6)
+                        gen = client.models.PacketGenerator()
+                        gen.target_id = "interface-one"
+                        gen.id = "generator-one"
+                        gen.config = gen_cfg
+
+                        result = self.gen_api.create_packet_generator(gen)
+                        expect(result).to(be_valid_packet_generator)
+
+                        # Wait for learning to resolve.
+                        expect(wait_for_learning_resolved(self.gen_api, "generator-one")).to(be_true)
+
+                        # Start stuff
+                        self.ana_api.start_packet_analyzer('analyzer-one')
+                        self.gen_api.start_packet_generator('generator-one')
+
+                        # Wait a sec for packets to transmit
+                        time.sleep(0.5)
+
+                        # Verify analyzer got packets that matched filter parameters
+                        ana_results = self.ana_api.list_packet_analyzer_results(analyzer_id='analyzer-one')
+                        expect(ana_results).to_not(be_empty)
+                        expect(ana_results[0].flow_counters.frame_count).to(be_above(0))
+
+                with description('without source addresses, '):
+                    with before.each:
+                        ana_filter = "src host " + self.source_ipv6_ll
+                        ana_filter += " and ether src " + self.source_mac
+                        ana_filter += " and ether dst " + self.target_mac
+
+                        self.filtered_analyzer = create_analyzer_with_filter(self.ana_api,
+                                                                            'analyzer-one',
+                                                                            get_second_port_id(self.ana_api.api_client),
+                                                                            ana_filter)
+
+                    with it('does automatically populate from interface'):
+                        gen_cfg = packet_generator_config(**GENERATOR_CONFIG_WITHOUT_SOURCES_IPV6)
+                        gen = client.models.PacketGenerator()
+                        gen.target_id = 'interface-one'
+                        gen.id = 'generator-one'
+                        gen.config = gen_cfg
+
+                        gen_result = self.gen_api.create_packet_generator(gen)
+                        expect(gen_result).to(be_valid_packet_generator)
+
+                        # Wait for learning to resolve.
+                        expect(wait_for_learning_resolved(self.gen_api, "generator-one")).to(be_true)
+
+                        # Start stuff
+                        self.ana_api.start_packet_analyzer('analyzer-one')
+                        self.gen_api.start_packet_generator('generator-one')
+
+                        # Wait a sec for packets to transmit
+                        time.sleep(0.5)
+
+                        # Verify analyzer got packets that matched filter parameters
+                        ana_results = self.ana_api.list_packet_analyzer_results(analyzer_id='analyzer-one')
+                        expect(ana_results).to_not(be_empty)
+                        expect(ana_results[0].flow_counters.frame_count).to(be_above(0))
 
         with after.each:
             try:
