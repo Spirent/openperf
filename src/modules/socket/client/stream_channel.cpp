@@ -133,10 +133,18 @@ stream_channel::stream_channel(int client_fd, int server_fd)
     client_fds.server_fd = server_fd;
 }
 
-stream_channel::~stream_channel()
+stream_channel::~stream_channel() { close(); }
+
+void stream_channel::close()
 {
-    close(client_fds.client_fd);
-    close(client_fds.server_fd);
+    if (client_fds.client_fd >= 0) {
+        ::close(client_fds.client_fd);
+        client_fds.client_fd = -1;
+    }
+    if (client_fds.server_fd >= 0) {
+        ::close(client_fds.server_fd);
+        client_fds.server_fd = -1;
+    }
 }
 
 int stream_channel::error() const

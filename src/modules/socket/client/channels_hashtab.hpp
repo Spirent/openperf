@@ -16,13 +16,14 @@ class channels_hashtab : public utils::singleton<channels_hashtab>
         socket_id id;
         io_channel_wrapper channel;
     };
+    using ided_channel_ptr = std::shared_ptr<ided_channel>;
 
 public:
     channels_hashtab()
     {
         m_tab = op_hashtab_allocate();
         auto descructor = [](void* value) -> void {
-            auto channel = reinterpret_cast<ided_channel*>(value);
+            auto channel = reinterpret_cast<ided_channel_ptr*>(value);
             delete channel;
         };
         op_hashtab_set_value_destructor(m_tab, descructor);
@@ -36,37 +37,57 @@ public:
                        int server_fd)
     {
         std::shared_lock<std::shared_mutex> m_guard(m_lock);
-        auto value = new ided_channel{
-            id, io_channel_wrapper(channel, client_fd, server_fd)};
+        auto value = new ided_channel_ptr(new ided_channel{
+            id, io_channel_wrapper(channel, client_fd, server_fd)});
         return op_hashtab_insert(
             m_tab, reinterpret_cast<void*>(fd), reinterpret_cast<void*>(value));
     }
 
-    inline ided_channel* find(int fd)
+    inline ided_channel_ptr find(int fd)
     {
         std::shared_lock<std::shared_mutex> m_guard(m_lock);
-        return reinterpret_cast<ided_channel*>(
+        auto ptr = reinterpret_cast<ided_channel_ptr*>(
             op_hashtab_find(m_tab, reinterpret_cast<void*>(fd)));
+        if (!ptr) return {};
+        return *ptr;
     };
 
     inline bool erase(int fd)
     {
-        // hashtab garbage collection requires exclusive lock
-        std::lock_guard<std::shared_mutex> m_guard(m_lock);
-
-        auto idc = reinterpret_cast<ided_channel*>(
-            op_hashtab_find(m_tab, reinterpret_cast<void*>(fd)));
-        if (!idc) return false;
-
-        // Mark the channel deleted
-        op_hashtab_delete(m_tab, reinterpret_cast<void*>(fd));
+        if (!close_channel(fd)) { return false; }
 
         // Perform garbage collection to actually delete the channel object
-        op_hashtab_garbage_collect(m_tab);
+        garbage_collect();
         return true;
     };
 
 private:
+    inline bool close_channel(int fd)
+    {
+        auto ptr = find(fd);
+        if (!ptr) return false;
+
+        // Mark the channel deleted
+        op_hashtab_delete(m_tab, reinterpret_cast<void*>(fd));
+
+        // Close the channel eventfds
+        //
+        // When using LD_PRELOAD all close() calls will get the overridden
+        // close function so don't want those calls to find the eventfd in
+        // the hashtab or to see a locked mutex.  There is currently no
+        // recursive_shared_mutex in the standard library.
+        //
+        ptr->channel.close();
+        return true;
+    }
+
+    inline void garbage_collect()
+    {
+        // hashtab garbage collection requires exclusive lock
+        std::lock_guard<std::shared_mutex> m_guard(m_lock);
+        op_hashtab_garbage_collect(m_tab);
+    }
+
     op_hashtab* m_tab;
 
     // This shared mutex is used only used to obtain exclusive access

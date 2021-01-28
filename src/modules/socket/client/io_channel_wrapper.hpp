@@ -27,6 +27,8 @@ public:
     io_channel_wrapper(io_channel_wrapper&&) noexcept;
     io_channel_wrapper& operator=(io_channel_wrapper&&) noexcept;
 
+    void close();
+
     int error() const;
 
     int flags() const;
