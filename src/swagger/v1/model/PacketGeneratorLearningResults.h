@@ -22,6 +22,7 @@
 #include "ModelBase.h"
 
 #include "PacketGeneratorLearningResultIpv4.h"
+#include "PacketGeneratorLearningResultIpv6.h"
 #include <string>
 #include <vector>
 
@@ -61,12 +62,20 @@ public:
     std::vector<std::shared_ptr<PacketGeneratorLearningResultIpv4>>& getIpv4();
     bool ipv4IsSet() const;
     void unsetIpv4();
+    /// <summary>
+    /// List of IPv6 destinations, IPv6 next hop, and next hop MAC addresses.
+    /// </summary>
+    std::vector<std::shared_ptr<PacketGeneratorLearningResultIpv6>>& getIpv6();
+    bool ipv6IsSet() const;
+    void unsetIpv6();
 
 protected:
     std::string m_Resolved_state;
 
     std::vector<std::shared_ptr<PacketGeneratorLearningResultIpv4>> m_Ipv4;
     bool m_Ipv4IsSet;
+    std::vector<std::shared_ptr<PacketGeneratorLearningResultIpv6>> m_Ipv6;
+    bool m_Ipv6IsSet;
 };
 
 }

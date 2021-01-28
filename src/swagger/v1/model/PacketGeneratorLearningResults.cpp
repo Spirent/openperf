@@ -21,6 +21,7 @@ PacketGeneratorLearningResults::PacketGeneratorLearningResults()
 {
     m_Resolved_state = "";
     m_Ipv4IsSet = false;
+    m_Ipv6IsSet = false;
     
 }
 
@@ -48,6 +49,18 @@ nlohmann::json PacketGeneratorLearningResults::toJson() const
         if(jsonArray.size() > 0)
         {
             val["ipv4"] = jsonArray;
+        }
+    }
+    {
+        nlohmann::json jsonArray;
+        for( auto& item : m_Ipv6 )
+        {
+            jsonArray.push_back(ModelBase::toJson(item));
+        }
+        
+        if(jsonArray.size() > 0)
+        {
+            val["ipv6"] = jsonArray;
         }
     }
     
@@ -80,6 +93,28 @@ void PacketGeneratorLearningResults::fromJson(nlohmann::json& val)
         }
         }
     }
+    {
+        m_Ipv6.clear();
+        nlohmann::json jsonArray;
+        if(val.find("ipv6") != val.end())
+        {
+        for( auto& item : val["ipv6"] )
+        {
+            
+            if(item.is_null())
+            {
+                m_Ipv6.push_back( std::shared_ptr<PacketGeneratorLearningResultIpv6>(nullptr) );
+            }
+            else
+            {
+                std::shared_ptr<PacketGeneratorLearningResultIpv6> newItem(new PacketGeneratorLearningResultIpv6());
+                newItem->fromJson(item);
+                m_Ipv6.push_back( newItem );
+            }
+            
+        }
+        }
+    }
     
 }
 
@@ -104,6 +139,18 @@ bool PacketGeneratorLearningResults::ipv4IsSet() const
 void PacketGeneratorLearningResults::unsetIpv4()
 {
     m_Ipv4IsSet = false;
+}
+std::vector<std::shared_ptr<PacketGeneratorLearningResultIpv6>>& PacketGeneratorLearningResults::getIpv6()
+{
+    return m_Ipv6;
+}
+bool PacketGeneratorLearningResults::ipv6IsSet() const
+{
+    return m_Ipv6IsSet;
+}
+void PacketGeneratorLearningResults::unsetIpv6()
+{
+    m_Ipv6IsSet = false;
 }
 
 }

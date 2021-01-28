@@ -9,6 +9,7 @@
 #include "packetio/generic_interface.hpp"
 
 #include "lib/packet/type/ipv4_address.hpp"
+#include "lib/packet/type/ipv6_address.hpp"
 #include "lib/packet/type/mac_address.hpp"
 
 #include "core/op_core.h"
@@ -20,11 +21,25 @@ class learning_state_machine;
 using resolve_complete_callback =
     std::function<void(const learning_state_machine&)>;
 
-using unresolved = std::monostate;
-using mac_type = std::variant<unresolved, libpacket::type::mac_address>;
+using learning_result_map_ipv4 =
+    std::unordered_map<libpacket::type::ipv4_address,
+                       std::optional<libpacket::type::mac_address>>;
 
-using learning_result_map =
-    std::unordered_map<libpacket::type::ipv4_address, mac_type>;
+struct ipv6_nd_result
+{
+    std::optional<libpacket::type::ipv6_address> next_hop_address;
+    std::optional<libpacket::type::mac_address> next_hop_mac;
+    int neighbor_cache_offset;
+};
+
+using learning_result_map_ipv6 =
+    std::unordered_map<libpacket::type::ipv6_address, ipv6_nd_result>;
+
+struct learning_results
+{
+    learning_result_map_ipv4 ipv4;
+    learning_result_map_ipv6 ipv6;
+};
 
 // Concrete types representing individual states.
 struct state_start
@@ -78,12 +93,14 @@ public:
      * @brief Start MAC learning process.
      *
      * @param interface lwip interface to use for learning
-     * @param to_learn list of IP addresses to learn
+     * @param to_learn_ipv4 list of IPv4 addresses to learn
+     * @param to_learn_ipv6 list of IPv6 addresses to learn
      * @return true if learning started successfully
      * @return false learning did not start
      */
     bool start_learning(
-        const std::unordered_set<libpacket::type::ipv4_address>& to_learn,
+        const std::unordered_set<libpacket::type::ipv4_address>& to_learn_ipv4,
+        const std::unordered_set<libpacket::type::ipv6_address>& to_learn_ipv6,
         resolve_complete_callback callback);
 
     /**
@@ -115,7 +132,7 @@ public:
      *
      * @return const reference to results data structure.
      */
-    const learning_result_map& results() const { return m_results; }
+    const learning_results& results() const { return m_results; }
 
     /**
      * @brief Did learning resolve all requested MAC addresses?
@@ -178,7 +195,7 @@ private:
     int m_polls_remaining;
 
     packetio::interface::generic_interface m_interface;
-    learning_result_map m_results;
+    learning_results m_results;
     learning_state m_current_state;
 
     resolve_complete_callback m_resolved_callback;
