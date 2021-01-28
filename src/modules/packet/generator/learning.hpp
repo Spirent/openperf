@@ -21,18 +21,14 @@ class learning_state_machine;
 using resolve_complete_callback =
     std::function<void(const learning_state_machine&)>;
 
-using unresolved = std::monostate;
-using mac_type = std::variant<unresolved, libpacket::type::mac_address>;
-
 using learning_result_map_ipv4 =
-    std::unordered_map<libpacket::type::ipv4_address, mac_type>;
-
-using ipv6_type = std::variant<unresolved, libpacket::type::ipv6_address>;
+    std::unordered_map<libpacket::type::ipv4_address,
+                       std::optional<libpacket::type::mac_address>>;
 
 struct ipv6_nd_result
 {
-    ipv6_type next_hop_address;
-    mac_type next_hop_mac;
+    std::optional<libpacket::type::ipv6_address> next_hop_address;
+    std::optional<libpacket::type::mac_address> next_hop_mac;
     int neighbor_cache_offset;
 };
 

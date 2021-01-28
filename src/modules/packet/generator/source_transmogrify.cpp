@@ -252,12 +252,9 @@ learning_results_ptr to_swagger(const learning_state_machine& lsm)
             auto swagger_result = std::make_shared<
                 swagger::v1::model::PacketGeneratorLearningResultIpv4>();
             swagger_result->setIpAddress(to_string(res.first));
-            std::visit(utils::overloaded_visitor(
-                           [](const unresolved&) { /* no op*/ },
-                           [&](const libpacket::type::mac_address& mac) {
-                               swagger_result->setMacAddress(to_string(mac));
-                           }),
-                       res.second);
+            if (res.second) {
+                swagger_result->setMacAddress(to_string(*res.second));
+            }
 
             return (swagger_result);
         });
@@ -273,21 +270,16 @@ learning_results_ptr to_swagger(const learning_state_machine& lsm)
             swagger_result->setIpAddress(to_string(res.first));
 
             // Set next hop IPv6 address
-            std::visit(utils::overloaded_visitor(
-                           [](const unresolved&) { /* no op*/ },
-                           [&](const libpacket::type::ipv6_address& ip) {
-                               swagger_result->setNextHopAddress(to_string(ip));
-                           }),
-                       res.second.next_hop_address);
+            if (res.second.next_hop_address) {
+                swagger_result->setNextHopAddress(
+                    to_string(*res.second.next_hop_address));
+            }
 
             // Set next hop MAC address
-            std::visit(utils::overloaded_visitor(
-                           [](const unresolved&) { /* no op*/ },
-                           [&](const libpacket::type::mac_address& mac) {
-                               swagger_result->setMacAddress(to_string(mac));
-                           }),
-                       res.second.next_hop_mac);
-
+            if (res.second.next_hop_mac) {
+                swagger_result->setMacAddress(
+                    to_string(*res.second.next_hop_mac));
+            }
             return (swagger_result);
         });
 

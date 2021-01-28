@@ -16,20 +16,19 @@ static constexpr std::chrono::seconds check_callback_timeout(1);
 static constexpr std::chrono::seconds poll_check_interval(1);
 static constexpr int max_poll_count = 30;
 
-static constexpr int nd_neighbor_cache_no_entry =
-    -10; // -1 and -4 are already used to signal other errors by LwIP.
+static constexpr int ND_NEIGHBOR_CACHE_NO_ENTRY =
+    -127; // -1 and -4 are already used to signal other errors by LwIP.
 
 bool all_addresses_resolved(const learning_results& results)
 {
-    auto ipv4_resolved = std::none_of(
+    auto ipv4_resolved = std::all_of(
         results.ipv4.begin(), results.ipv4.end(), [](const auto& address_pair) {
-            return (std::holds_alternative<unresolved>(address_pair.second));
+            return (address_pair.second);
         });
 
-    auto ipv6_resolved = std::none_of(
+    auto ipv6_resolved = std::all_of(
         results.ipv6.begin(), results.ipv6.end(), [](const auto& address_pair) {
-            return (std::holds_alternative<unresolved>(
-                address_pair.second.next_hop_mac));
+            return (address_pair.second.next_hop_mac);
         });
 
     return (ipv4_resolved && ipv6_resolved);
@@ -60,9 +59,7 @@ static err_t send_ipv4_learning_requests(start_learning_params& slp)
 
             // Is this entry unresolved?
             // Don't repeat learning for addresses we've already resolved.
-            if (!std::holds_alternative<unresolved>(addr_pair.second)) {
-                return;
-            }
+            if (addr_pair.second) { return; }
 
             ip4_addr_t target{
                 .addr = htonl(addr_pair.first.template load<uint32_t>())};
@@ -116,8 +113,7 @@ get_nd_cache_entry(int cache_entry_index)
             std::make_pair(next_hop, libpacket::type::mac_address(ll_addr))));
     }
 
-    return (std::make_pair(libpacket::type::ipv6_address(),
-                           libpacket::type::mac_address()));
+    return (std::nullopt);
 }
 
 static ip6_addr_t
@@ -149,10 +145,7 @@ static err_t send_ipv6_learning_requests(start_learning_params& slp)
 
             // Is this entry unresolved?
             // Don't repeat learning for addresses we've already resolved.
-            if (!std::holds_alternative<unresolved>(
-                    addr_pair.second.next_hop_mac)) {
-                return;
-            }
+            if (addr_pair.second.next_hop_mac) { return; }
 
             auto target = make_stack_address(addr_pair.first);
 
@@ -244,7 +237,7 @@ bool learning_state_machine::start_learning(
                    to_learn_ipv4.end(),
                    std::inserter(m_results.ipv4, m_results.ipv4.end()),
                    [](const auto& ip_addr) {
-                       return (std::make_pair(ip_addr, unresolved{}));
+                       return (std::make_pair(ip_addr, std::nullopt));
                    });
 
     // Populate results with IPv6 addresses.
@@ -255,7 +248,7 @@ bool learning_state_machine::start_learning(
                        return (std::make_pair(
                            ip_addr,
                            ipv6_nd_result{.neighbor_cache_offset =
-                                              nd_neighbor_cache_no_entry}));
+                                              ND_NEIGHBOR_CACHE_NO_ENTRY}));
                    });
 
     m_resolved_callback = std::move(callback);
@@ -375,8 +368,7 @@ static void check_arp_cache(check_learning_params& clp)
             continue;
         }
 
-        if (std::holds_alternative<libpacket::type::mac_address>(
-                found_result->second)) {
+        if (found_result->second.has_value()) {
             // We already know this address.
             continue;
         }
@@ -399,11 +391,14 @@ static void check_nd_cache(check_learning_params& slp)
         slp.results.ipv6.begin(),
         slp.results.ipv6.end(),
         [](auto& ipv6_result) {
+            // Is this entry already resolved?
+            if (ipv6_result.second.next_hop_mac.has_value()) { return; }
+
             switch (ipv6_result.second.neighbor_cache_offset) {
             case ERR_RTE:
                 // Stack indicated no route to destination.
                 return;
-            case nd_neighbor_cache_no_entry:
+            case ND_NEIGHBOR_CACHE_NO_ENTRY:
                 // Checking a result that was not accepted by the stack. Let's
                 // maybe not do that. This could happen at scale when the stack
                 // runs out of cache entries at request time.
@@ -420,13 +415,9 @@ static void check_nd_cache(check_learning_params& slp)
 
                 // Sanity check: is the MAC associated with the expected next
                 // hop address from when we started learning?
-                if (std::visit(
-                        utils::overloaded_visitor(
-                            [](const unresolved&) { return (false); },
-                            [&](const libpacket::type::ipv6_address& addr) {
-                                return (addr == next_hop_address);
-                            }),
-                        ipv6_result.second.next_hop_address)) {
+                if (ipv6_result.second.next_hop_address.has_value()
+                    && (ipv6_result.second.next_hop_address.value()
+                        == next_hop_address)) {
 
                     auto mac_address =
                         std::get<libpacket::type::mac_address>(*neighbor_entry);
@@ -462,7 +453,7 @@ int learning_state_machine::check_learning()
     if ((m_polls_remaining--) <= 0) {
         m_current_state = state_timeout{};
         OP_LOG(OP_LOG_WARNING,
-               "Not all addresses resolved during ARP process.");
+               "Not all addresses resolved during ARP/ND process.");
         return (-1);
     }
 
