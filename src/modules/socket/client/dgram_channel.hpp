@@ -58,6 +58,8 @@ public:
     dgram_channel(const dgram_channel&) = delete;
     dgram_channel& operator=(const dgram_channel&&) = delete;
 
+    void close();
+
     int error() const;
 
     int flags() const;

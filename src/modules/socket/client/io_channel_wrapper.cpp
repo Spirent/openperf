@@ -64,6 +64,12 @@ io_channel_wrapper::operator=(io_channel_wrapper&& other) noexcept
     return (*this);
 }
 
+void io_channel_wrapper::close()
+{
+    auto close_visitor = [](auto channel) -> void { channel->close(); };
+    return (std::visit(close_visitor, m_channel));
+}
+
 int io_channel_wrapper::error() const
 {
     auto error_visitor = [](auto channel) -> int { return (channel->error()); };
