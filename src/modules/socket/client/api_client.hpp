@@ -2,6 +2,7 @@
 #define _OP_SOCKET_API_CLIENT_HPP_
 
 #include <memory>
+#include <mutex>
 #include <string>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -9,35 +10,37 @@
 #include <atomic>
 
 #include "socket/api.hpp"
+#include "socket/client/channels_hashtab.hpp"
 #include "socket/shared_segment.hpp"
 #include "socket/unix_socket.hpp"
 #include "core/op_uuid.hpp"
 
 namespace openperf::socket::api {
 
-template <typename T> class thread_singleton
+template <typename T> class singleton
 {
 public:
     static T& instance()
     {
-        static thread_local T instance;
+        static T instance;
         return instance;
     }
 
-    thread_singleton(const thread_singleton&) = delete;
-    thread_singleton& operator=(const thread_singleton) = delete;
+    singleton(const singleton&) = delete;
+    singleton& operator=(const singleton) = delete;
 
 protected:
-    thread_singleton() = default;
+    singleton() = default;
 };
 
-class client : public thread_singleton<client>
+class client : public singleton<client>
 {
 
-    core::uuid m_uuid;
-    unix_socket m_sock;
-
-    std::unique_ptr<memory::shared_segment> m_shm;
+    core::uuid m_uuid;           /* our unique id for OP */
+    unix_socket m_sock;          /* RPC socket to OP instance */
+    std::mutex m_sock_lock;      /* socket lock for handling threaded clients */
+    channels_hashtab m_channels; /* thread safe fd <-> channel map */
+    std::unique_ptr<memory::shared_segment> m_shm; /* OP shared memory */
     std::atomic_bool* m_init_flag;
 
 public:

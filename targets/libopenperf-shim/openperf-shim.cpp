@@ -31,6 +31,12 @@ struct linux_sockaddr_ll
 
 static void openperf_shim_init() __attribute__((constructor));
 
+/*
+ * This flag is used to prevent libc calls from the client constructor
+ * from instantiating a new client instance. Intercepted socket
+ * calls MUST verify this variable is true before attempting to call
+ * functions in the client instance.
+ */
 static std::atomic_bool client_initialized = ATOMIC_VAR_INIT(false);
 
 static bool client_trace = false;
