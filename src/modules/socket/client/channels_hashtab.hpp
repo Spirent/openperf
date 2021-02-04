@@ -5,10 +5,10 @@
 
 #include "core/op_hashtab.h"
 #include "socket/client/io_channel_wrapper.hpp"
-#include "utils/singleton.hpp"
 
 namespace openperf::socket::api {
-class channels_hashtab : public utils::singleton<channels_hashtab>
+
+class channels_hashtab
 {
     using io_channel_wrapper = openperf::socket::client::io_channel_wrapper;
     struct ided_channel
