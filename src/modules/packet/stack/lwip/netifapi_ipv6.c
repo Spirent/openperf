@@ -20,11 +20,11 @@
 #include "lwip/memp.h"
 #include "lwip/dhcp6.h"
 #include "lwip/priv/tcpip_priv.h"
-#include "packet/stack/lwip/ipv6_netifapi.h"
+#include "packet/stack/lwip/netifapi_ipv6.h"
 
 #include <string.h> /* strncpy */
 
-struct ipv6_netifapi_msg
+struct netifapi_ipv6_msg
 {
     struct tcpip_api_call_data call;
     struct netif* netif;
@@ -44,9 +44,9 @@ struct ipv6_netifapi_msg
 
 #define NETIFAPI_VAR_REF(name) API_VAR_REF(name)
 #define NETIFAPI_VAR_DECLARE(name)                                             \
-    API_VAR_DECLARE(struct ipv6_netifapi_msg, name)
+    API_VAR_DECLARE(struct netifapi_ipv6_msg, name)
 #define NETIFAPI_VAR_ALLOC(name)                                               \
-    API_VAR_ALLOC(struct ipv6_netifapi_msg, MEMP_NETIFAPI_MSG, name, ERR_MEM)
+    API_VAR_ALLOC(struct netifapi_ipv6_msg, MEMP_NETIFAPI_MSG, name, ERR_MEM)
 #define NETIFAPI_VAR_FREE(name) API_VAR_FREE(MEMP_NETIFAPI_MSG, name)
 
 err_t netifapi_do_netif_create_ip6_linklocal_address(
@@ -55,7 +55,7 @@ err_t netifapi_do_netif_create_ip6_linklocal_address(
     /* cast through void* to silence alignment warnings.
      * We know it works because the structs have been instantiated as struct
      * netifapi_msg */
-    struct ipv6_netifapi_msg* msg = (struct ipv6_netifapi_msg*)(void*)m;
+    struct netifapi_ipv6_msg* msg = (struct netifapi_ipv6_msg*)(void*)m;
 
     netif_create_ip6_linklocal_address(
         msg->netif, API_EXPR_REF(msg->msg.add_linklocal.from_mac_48bit));
@@ -70,7 +70,7 @@ static err_t netifapi_do_netif_add_ip6_address(struct tcpip_api_call_data* m)
     /* cast through void* to silence alignment warnings.
      * We know it works because the structs have been instantiated as struct
      * netifapi_msg */
-    struct ipv6_netifapi_msg* msg = (struct ipv6_netifapi_msg*)(void*)m;
+    struct netifapi_ipv6_msg* msg = (struct netifapi_ipv6_msg*)(void*)m;
 
     return netif_add_ip6_address(msg->netif,
                                  API_EXPR_REF(msg->msg.add.ipaddr),
@@ -85,7 +85,7 @@ static err_t netifapi_do_netif_ip6_addr_set(struct tcpip_api_call_data* m)
     /* cast through void* to silence alignment warnings.
      * We know it works because the structs have been instantiated as struct
      * netifapi_msg */
-    struct ipv6_netifapi_msg* msg = (struct ipv6_netifapi_msg*)(void*)m;
+    struct netifapi_ipv6_msg* msg = (struct netifapi_ipv6_msg*)(void*)m;
 
     netif_ip6_addr_set(msg->netif,
                        API_EXPR_REF(msg->msg.add.addr_idx),

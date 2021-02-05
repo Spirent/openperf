@@ -17,8 +17,9 @@
 #include "packetio/drivers/dpdk/mbuf_tx.hpp"
 #include "packetio/drivers/dpdk/port_info.hpp"
 #if LWIP_IPV6
-#include "packet/stack/lwip/ipv6_netifapi.h"
+#include "packet/stack/lwip/netifapi_ipv6.h"
 #endif
+#include "packet/stack/lwip/netifapi_utils.h"
 #if LWIP_PACKET
 #include "packet/stack/lwip/packet.h"
 #endif
@@ -577,7 +578,7 @@ void net_interface::down()
         m_netif);
 #endif // LWIP_IPV6
 
-    netifapi_netif_set_down(&m_netif);
+    netifapi_netif_safe_set_down(&m_netif);
 }
 
 void net_interface::handle_link_state_change(bool link_up)
