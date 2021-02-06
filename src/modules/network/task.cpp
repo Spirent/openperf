@@ -66,7 +66,7 @@ stat_t& stat_t::operator+=(const stat_t& stat)
 class connection_init_state
 {
 public:
-    static int write(const struct op_event_data* data, void* arg)
+    static int on_write(const struct op_event_data* data, void* arg)
     {
         connection_t* con = reinterpret_cast<connection_t*>(arg);
         assert(con);
@@ -76,7 +76,7 @@ public:
         return task->do_init(*con, task->m_spin_stat);
     }
 
-    static int close(const struct op_event_data* data, void* arg)
+    static int on_delete(const struct op_event_data* data, void* arg)
     {
         connection_t* con = reinterpret_cast<connection_t*>(arg);
         assert(con);
@@ -87,14 +87,14 @@ public:
     }
 
     static constexpr op_event_callbacks callbacks = {
-        .on_write = connection_init_state::write,
-        .on_delete = connection_init_state::close};
+        .on_write = connection_init_state::on_write,
+        .on_delete = connection_init_state::on_delete};
 };
 
 class connection_reading_state
 {
 public:
-    static int read(const struct op_event_data* data, void* arg)
+    static int on_read(const struct op_event_data* data, void* arg)
     {
         connection_t* con = reinterpret_cast<connection_t*>(arg);
         assert(con);
@@ -104,7 +104,7 @@ public:
         return task->do_read(*con, task->m_spin_stat);
     }
 
-    static int close(const struct op_event_data* data, void* arg)
+    static int on_delete(const struct op_event_data* data, void* arg)
     {
         connection_t* con = reinterpret_cast<connection_t*>(arg);
         assert(con);
@@ -115,8 +115,8 @@ public:
     }
 
     static constexpr op_event_callbacks callbacks = {
-        .on_read = connection_reading_state::read,
-        .on_delete = connection_reading_state::close};
+        .on_read = connection_reading_state::on_read,
+        .on_delete = connection_reading_state::on_delete};
 };
 
 class connection_writing_state
@@ -460,7 +460,6 @@ int network_task::do_init(connection_t& conn, stat_t& stat)
             m_driver->send(conn.fd, header.data(), header.size(), flags);
         if (send_or_err == -1 || send_or_err < (ssize_t)header.size()) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) { return 0; }
-
             conn.state = STATE_ERROR;
             return -1;
         }
@@ -531,6 +530,21 @@ int network_task::do_read(connection_t& conn, stat_t& stat)
 {
     assert(conn.state == STATE_READING);
     ssize_t recv_or_err = 0;
+
+    if (m_spin_ops_left == 0) {
+        m_loop->exit();
+        return 0;
+    }
+
+    if (conn.bytes_left == 0) {
+        // Entering read state with 0 bytes to read shouldn't happen
+        OP_LOG(OP_LOG_ERROR,
+               "invalid connection read state fd=%d bytes_left=%zu",
+               conn.fd,
+               conn.bytes_left);
+        return -1;
+    }
+
     while (conn.bytes_left) {
         if ((recv_or_err =
                  m_driver->recv(conn.fd,
@@ -542,9 +556,11 @@ int network_task::do_read(connection_t& conn, stat_t& stat)
                 openperf::config::file::op_config_get_param<
                     OP_OPTION_TYPE_LONG>("modules.network.operation-timeout")
                     .value_or(default_operation_timeout_usec));
-            if ((errno == EAGAIN || errno == EWOULDBLOCK)
-                && (ref_clock::now() - conn.operation_start_time < timeout)) {
-                return 0;
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                if (ref_clock::now() - conn.operation_start_time < timeout) {
+                    return 0;
+                }
+                OP_LOG(OP_LOG_DEBUG, "network read operation timed out fd=%d", conn.fd);
             }
             conn.state = STATE_ERROR;
             return -1;
@@ -576,6 +592,20 @@ int network_task::do_write(connection_t& conn, stat_t& stat)
 #if defined(MSG_NOSIGNAL)
     flags |= MSG_NOSIGNAL;
 #endif
+
+    if (m_spin_ops_left == 0) {
+        m_loop->exit();
+        return 0;
+    }
+
+    if (conn.bytes_left == 0) {
+        // Entering write state with 0 bytes to write shouldn't happen
+        OP_LOG(OP_LOG_ERROR,
+               "invalid connection write state fd=%d bytes_left=%zu",
+               conn.fd,
+               conn.bytes_left);
+        return -1;
+    }
 
     while (conn.bytes_left) {
         ssize_t send_or_err =
