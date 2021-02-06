@@ -12,6 +12,7 @@
 #include "core/op_log.h"
 #include "core/op_thread.h"
 #include "core/op_socket.h"
+#include "core/op_event_loop.hpp"
 #include "utils/random.hpp"
 #include "framework/utils/memcpy.hpp"
 
@@ -20,7 +21,8 @@
 namespace openperf::network::internal::firehose {
 
 const static size_t tcp_backlog = 128;
-const std::string endpoint = "inproc://firehose_server";
+const std::string accept_endpoint = "inproc://firehose_tcp_server_accept";
+const std::string ctrl_endpoint = "inproc://firehose_tcp_server_ctrl";
 
 struct connection_msg_t
 {
@@ -32,6 +34,14 @@ struct connection_msg_t
         struct sockaddr_in6 client6;
     };
 };
+
+static inline bool sock_is_readable(void* sock)
+{
+    uint32_t flags = 0;
+    size_t flag_size = sizeof(flags);
+    if (zmq_getsockopt(sock, ZMQ_EVENTS, &flags, &flag_size) != 0) return false;
+    return (flags & ZMQ_POLLIN);
+}
 
 tl::expected<int, std::string>
 create_server_socket(drivers::driver* drv,
@@ -141,7 +151,7 @@ tcp_acceptor::tcp_acceptor(const drivers::driver_ptr& driver, void* context)
     , m_running(false)
 {
     m_accept_pub.reset(
-        op_socket_get_server(context, ZMQ_PUSH, endpoint.data()));
+        op_socket_get_server(context, ZMQ_PUSH, accept_endpoint.data()));
     if (!m_accept_pub) {
         throw std::runtime_error("Unable to create ZMQ push socket");
     }
@@ -241,18 +251,367 @@ void tcp_acceptor::run()
                 }
                 auto conn = connection_msg_t{.fd = conn_fd};
                 memcpy(&conn.client, saddr, get_sa_len(saddr));
-                zmq_send(m_accept_pub.get(), &conn, sizeof(conn), ZMQ_DONTWAIT);
+                if (zmq_send(m_accept_pub.get(), &conn, sizeof(conn), 0) < 0) {
+                    OP_LOG(OP_LOG_ERROR,
+                           "tcp_acceptor failed to send fd=%d\n",
+                           conn.fd);
+                    m_driver->close(conn.fd);
+                }
             }
         }
     }
 }
 
+class tcp_connection_reading_state
+{
+public:
+    static int on_read(const struct op_event_data* data, void* arg)
+    {
+        auto con = reinterpret_cast<tcp_connection_t*>(arg);
+        if (!con || !con->worker) return -1;
+        return con->worker->do_read(*con);
+    }
+    static int on_delete(const struct op_event_data* data, void* arg)
+    {
+        auto con = reinterpret_cast<tcp_connection_t*>(arg);
+        if (!con || !con->worker) return -1;
+        return con->worker->do_close(*con);
+    }
+    static constexpr op_event_callbacks callbacks = {
+        .on_read = tcp_connection_reading_state::on_read,
+        .on_delete = tcp_connection_reading_state::on_delete};
+};
+
+class tcp_connection_writing_state
+{
+public:
+    static int on_write(const struct op_event_data* data, void* arg)
+    {
+        auto con = reinterpret_cast<tcp_connection_t*>(arg);
+        if (!con || !con->worker) return -1;
+        return con->worker->do_write(*con);
+    }
+    static int on_delete(const struct op_event_data* data, void* arg)
+    {
+        auto con = reinterpret_cast<tcp_connection_t*>(arg);
+        if (!con || !con->worker) return -1;
+        return con->worker->do_close(*con);
+    }
+    static constexpr op_event_callbacks callbacks = {
+        .on_write = tcp_connection_writing_state::on_write,
+        .on_delete = tcp_connection_writing_state::on_delete};
+};
+
+tcp_worker::tcp_worker(const drivers::driver_ptr& driver,
+                       void* context,
+                       server::stat_t& stat)
+    : m_driver(driver)
+    , m_stat(stat)
+    , m_loop(new core::event_loop())
+    , m_running(false)
+    , m_read_buffer(recv_buffer_size)
+    , m_write_buffer(send_buffer_size)
+{
+    // ZMQ sockets are edge triggered so need to use edge triggered mode
+    m_loop->set_edge_triggered(true);
+
+    m_ctrl_sub.reset(
+        op_socket_get_client_subscription(context, ctrl_endpoint.data(), ""));
+    if (!m_ctrl_sub) {
+        constexpr auto err_msg =
+            "Network load generator tcp worker failed to create control socket";
+        OP_LOG(OP_LOG_ERROR, err_msg);
+        throw std::runtime_error(err_msg);
+    }
+    m_accept_sub.reset(
+        op_socket_get_client(context, ZMQ_PULL, accept_endpoint.data()));
+    if (!m_accept_sub) {
+        constexpr auto err_msg =
+            "Network load generator tcp worker failed to create accept socket";
+        OP_LOG(OP_LOG_ERROR, err_msg);
+        throw std::runtime_error(err_msg);
+    }
+
+    utils::op_prbs23_fill(m_write_buffer.data(), m_write_buffer.size());
+}
+
+tcp_worker::~tcp_worker() {}
+
+void tcp_worker::start()
+{
+    m_running = true;
+    m_thread = std::thread([this] {
+        op_thread_setname("op_net_srv_w");
+        this->run();
+        op_log_close();
+    });
+}
+
+void tcp_worker::join()
+{
+    if (m_thread.joinable()) { m_thread.join(); }
+}
+
+void tcp_worker::run()
+{
+    struct op_event_callbacks ctrl_callbacks = {
+        .on_read = [](const op_event_data* data, void* arg) -> int {
+            auto w = reinterpret_cast<tcp_worker*>(arg);
+            if (!w) return -1;
+            return w->do_control();
+        }};
+    m_loop->add(m_ctrl_sub.get(), &ctrl_callbacks, this);
+
+    struct op_event_callbacks accept_callbacks = {
+        .on_read = [](const op_event_data* data, void* arg) -> int {
+            auto w = reinterpret_cast<tcp_worker*>(arg);
+            if (!w) return -1;
+            return w->do_accept();
+        }};
+    m_loop->add(m_accept_sub.get(), &accept_callbacks, this);
+
+    if (sock_is_readable(m_ctrl_sub.get())) { do_control(); }
+    if (sock_is_readable(m_accept_sub.get())) { do_accept(); }
+
+    while (m_running) { m_loop->run(); }
+
+    // Close all remaining connections
+    m_loop->purge();
+    assert(m_connections.empty());
+}
+
+int tcp_worker::do_accept()
+{
+    connection_msg_t msg;
+
+    while (zmq_recv(m_accept_sub.get(), &msg, sizeof(msg), ZMQ_DONTWAIT) >= 0) {
+        auto r = network_sockaddr_assign(&msg.client);
+        if (!r) {
+            OP_LOG(OP_LOG_ERROR, "Error getting TCP connection sockaddr");
+            m_driver->close(msg.fd);
+            continue;
+        }
+        auto conn = std::unique_ptr<tcp_connection_t>(
+            new tcp_connection_t{.fd = msg.fd,
+                                 .state = STATE_WAITING,
+                                 .client = r.value(),
+                                 .worker = this});
+        m_loop->add(
+            conn->fd, &tcp_connection_reading_state::callbacks, conn.get());
+        m_connections[msg.fd] = std::move(conn);
+        m_stat.connections++;
+    }
+
+    if (errno != EAGAIN) { return -1; }
+    return 0;
+}
+
+int tcp_worker::do_control()
+{
+    uint32_t msg = 0;
+
+    while (zmq_recv(m_ctrl_sub.get(), &msg, sizeof(msg), ZMQ_DONTWAIT) >= 0) {
+        m_running = false;
+        m_loop->exit();
+    }
+
+    if (errno != EAGAIN) { return -1; }
+    return 0;
+}
+
+int tcp_worker::do_close(tcp_connection_t& conn)
+{
+    if (conn.state == STATE_ERROR) m_stat.errors++;
+    m_stat.closed++;
+    m_driver->close(conn.fd);
+    m_connections.erase(conn.fd);
+
+    return 0;
+}
+
+int tcp_worker::do_read(tcp_connection_t& conn)
+{
+    uint8_t* recv_cursor;
+    ssize_t recv_or_err = 0;
+
+    if (conn.state == STATE_WRITING) return 0;
+
+    do {
+        recv_cursor = m_read_buffer.data();
+        if (conn.request.size()) {
+            /* handle leftovers from last go round */
+            utils::memcpy(
+                m_read_buffer.data(), conn.request.data(), conn.request.size());
+            recv_cursor += conn.request.size();
+        }
+
+        if ((recv_or_err =
+                 m_driver->recv(conn.fd,
+                                recv_cursor,
+                                m_read_buffer.size() - conn.request.size(),
+                                0))
+            == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                /* Process remaining data if there is enough available */
+                if (conn.request.size() < firehose::net_request_size) {
+                    return 0;
+                }
+                recv_or_err = 0;
+            } else {
+                char ntopbuf[INET6_ADDRSTRLEN];
+                const char* addr =
+                    inet_ntop(network_sockaddr_family(conn.client),
+                              network_sockaddr_addr(conn.client),
+                              ntopbuf,
+                              INET6_ADDRSTRLEN);
+                OP_LOG(OP_LOG_ERROR,
+                       "Error reading from %s:%d: %s\n",
+                       addr ? addr : "unknown",
+                       ntohs(network_sockaddr_port(conn.client)),
+                       strerror(errno));
+                conn.state = STATE_ERROR;
+                return -1;
+            }
+        } else if (recv_or_err == 0) {
+            conn.state = STATE_DONE;
+            return -1;
+        }
+        m_stat.bytes_received += recv_or_err;
+
+        if (conn.request.size()) {
+            /* put the cursor back in the right spot */
+            recv_cursor -= conn.request.size();
+            recv_or_err += conn.request.size();
+            conn.request.clear();
+        }
+
+        size_t bytes_left = recv_or_err;
+        while (bytes_left) {
+            switch (conn.state) {
+            case STATE_WAITING: {
+                if (bytes_left < firehose::net_request_size) {
+                    /* need to wait for more header */
+                    conn.request.insert(conn.request.end(),
+                                        recv_cursor,
+                                        recv_cursor + bytes_left);
+                    bytes_left = 0;
+                    continue;
+                }
+
+                /* Note: this function updates the note,
+                 * including the state */
+                auto req = firehose::parse_request(recv_cursor, bytes_left);
+                if (!req) {
+                    char ntopbuf[INET6_ADDRSTRLEN];
+                    const char* addr =
+                        inet_ntop(network_sockaddr_family(conn.client),
+                                  network_sockaddr_addr(conn.client),
+                                  ntopbuf,
+                                  INET6_ADDRSTRLEN);
+                    OP_LOG(OP_LOG_ERROR,
+                           "Invalid firehose request received "
+                           "from %s:%d with %zu bytes\n",
+                           addr ? addr : "unknown",
+                           ntohs(network_sockaddr_port(conn.client)),
+                           bytes_left);
+                    conn.state = STATE_ERROR;
+                    return -1;
+                }
+                conn.state = (req.value().action == action_t::GET)
+                                 ? STATE_WRITING
+                                 : STATE_READING;
+                conn.bytes_left = req.value().length;
+                bytes_left -= firehose::net_request_size;
+                recv_cursor += firehose::net_request_size;
+                break;
+            }
+            case STATE_READING: {
+                size_t consumed = std::min(bytes_left, conn.bytes_left);
+                conn.bytes_left -= consumed;
+                bytes_left -= consumed;
+                recv_cursor += consumed;
+
+                if (conn.bytes_left == 0) { conn.state = STATE_WAITING; }
+
+                break;
+            }
+            default: {
+                char ntopbuf[INET6_ADDRSTRLEN];
+                const char* addr =
+                    inet_ntop(network_sockaddr_family(conn.client),
+                              network_sockaddr_addr(conn.client),
+                              ntopbuf,
+                              INET6_ADDRSTRLEN);
+                OP_LOG(OP_LOG_WARNING,
+                       "Connection from %s:%d is in state %s"
+                       " with %zu bytes left to read. Dropping "
+                       "connection.\n",
+                       addr ? addr : "unknown",
+                       ntohs(network_sockaddr_port(conn.client)),
+                       get_state_string(conn.state),
+                       bytes_left);
+                conn.state = STATE_ERROR;
+                return -1;
+            }
+            }
+        }
+    } while (recv_or_err == recv_buffer_size);
+
+    if (conn.state == STATE_WRITING) { return do_write(conn); }
+
+    return 0;
+}
+
+int tcp_worker::do_write(tcp_connection_t& conn)
+{
+    int flags = 0;
+#if defined(MSG_NOSIGNAL)
+    flags |= MSG_NOSIGNAL;
+#endif
+
+    if (conn.state != STATE_WRITING) { return 0; }
+
+    assert(conn.bytes_left);
+
+    while (conn.bytes_left) {
+        size_t to_send = std::min(send_buffer_size, conn.bytes_left);
+        ssize_t send_or_err =
+            m_driver->send(conn.fd, m_write_buffer.data(), to_send, flags);
+        if (send_or_err == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                m_loop->update(conn.fd,
+                               &tcp_connection_writing_state::callbacks);
+                return 0;
+            }
+            int saved_errno = errno;
+            char ntopbuf[INET6_ADDRSTRLEN];
+            const char* addr = inet_ntop(network_sockaddr_family(conn.client),
+                                         network_sockaddr_addr(conn.client),
+                                         ntopbuf,
+                                         INET6_ADDRSTRLEN);
+            OP_LOG(OP_LOG_WARNING,
+                   "Error sending to %s:%d: %s",
+                   addr ? addr : "unknown",
+                   ntohs(network_sockaddr_port(conn.client)),
+                   strerror(saved_errno));
+            conn.state = STATE_ERROR;
+            return -1;
+        }
+
+        m_stat.bytes_sent += send_or_err;
+        conn.bytes_left -= send_or_err;
+    }
+
+    conn.state = STATE_WAITING;
+    m_loop->update(conn.fd, &tcp_connection_reading_state::callbacks);
+
+    return 0;
+}
+
 server_tcp::server_tcp(in_port_t port,
                        const std::optional<std::string>& interface,
                        const drivers::driver_ptr& driver)
-    : m_stopped(false)
-    , m_context(zmq_ctx_new())
-    , m_acceptor(driver, m_context.get())
+    : m_context(zmq_ctx_new())
 {
     // Set ZMQ threads to 0 for context
     // Note: Value 0 valid only for inproc:// transport
@@ -263,6 +622,15 @@ server_tcp::server_tcp(in_port_t port,
     }
 
     m_driver = driver;
+
+    m_ctrl_pub.reset(
+        op_socket_get_server(m_context.get(), ZMQ_PUB, ctrl_endpoint.data()));
+    if (!m_ctrl_pub) {
+        constexpr auto err_msg =
+            "Network TCP load server failed to create control socket";
+        OP_LOG(OP_LOG_ERROR, err_msg);
+        throw std::runtime_error(err_msg);
+    }
 
     /* IPv6 any supports IPv4 and IPv6 */
     tl::expected<int, std::string> res;
@@ -279,263 +647,52 @@ server_tcp::server_tcp(in_port_t port,
 
     int acceptfd = res.value();
     try {
-        m_acceptor.start(acceptfd);
+        m_acceptor = std::make_unique<tcp_acceptor>(driver, m_context.get());
+        m_acceptor->start(acceptfd);
     } catch (...) {
         m_driver->close(acceptfd);
         throw;
     }
 
-    run_worker_thread();
+    start_workers();
 }
 
 server_tcp::~server_tcp()
 {
-    m_stopped.store(true, std::memory_order_relaxed);
-    m_acceptor.stop();
+    m_acceptor->stop();
+    m_acceptor.reset();
 
-    zmq_ctx_shutdown(m_context.get());
+    stop_workers();
 
-    for (auto& thread : m_worker_threads) {
-        if (thread->joinable()) thread->join();
-    }
+    m_ctrl_pub.reset();
 }
 
-int server_tcp::tcp_write(connection_t& conn, std::vector<uint8_t> send_buffer)
-{
-
-    int flags = 0;
-#if defined(MSG_NOSIGNAL)
-    flags |= MSG_NOSIGNAL;
-#endif
-
-    if (conn.state != STATE_WRITING) { return 0; }
-
-    assert(conn.bytes_left);
-
-    errno = 0;
-    size_t to_send = std::min(send_buffer_size, conn.bytes_left);
-    ssize_t send_or_err =
-        m_driver->send(conn.fd, send_buffer.data(), to_send, flags);
-    if (send_or_err == -1) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) { return 0; }
-
-        conn.state = STATE_ERROR;
-        return -1;
-    }
-
-    m_stat.bytes_sent += send_or_err;
-    conn.bytes_left -= send_or_err;
-
-    if (conn.bytes_left == 0) { conn.state = STATE_WAITING; }
-
-    return 0;
-}
-
-void server_tcp::run_worker_thread()
+void server_tcp::start_workers()
 {
     // Accept thread has to be started first to avoid ZMQ fault
-    assert(m_acceptor.running());
+    assert(m_acceptor->running());
 
-    void* sync =
-        op_socket_get_client(m_context.get(), ZMQ_PULL, endpoint.data());
-    m_worker_threads.push_back(std::make_unique<std::thread>([this, sync] {
-        // Set the thread name
-        op_thread_setname("op_net_srv_w");
+    m_workers.push_back(
+        std::make_unique<tcp_worker>(m_driver, m_context.get(), m_stat));
+    m_workers.back()->start();
+}
 
-        std::vector<connection_t> connections;
-        connection_msg_t conn_buffer;
-        std::vector<uint8_t> send_buffer(send_buffer_size);
-        utils::op_prbs23_fill(send_buffer.data(), send_buffer.size());
-        std::vector<uint8_t> recv_buffer(recv_buffer_size);
+void server_tcp::stop_workers()
+{
+    if (m_workers.empty()) return;
 
-        while (!m_stopped.load(std::memory_order_relaxed)) {
-            // Receive all accepted connections
+    // Send stop message to all workers
+    uint32_t ctrl_msg = 1;
+    if (zmq_send(m_ctrl_pub.get(), &ctrl_msg, sizeof(ctrl_msg), 0) < 0) {
+        OP_LOG(OP_LOG_ERROR,
+               "Network TCP load server failed to send stop message.  %s",
+               zmq_strerror(errno));
+    }
 
-            while (zmq_recv(sync,
-                            &conn_buffer,
-                            sizeof(conn_buffer),
-                            (connections.size() > 0) ? ZMQ_DONTWAIT : 0)
-                   >= 0) {
-                auto conn = connection_t{
-                    .fd = conn_buffer.fd,
-                    .state = STATE_WAITING,
-                };
-                auto r = network_sockaddr_assign(&conn_buffer.client);
-                if (!r) {
-                    OP_LOG(OP_LOG_ERROR, "Error getting sockaddr");
-                    m_driver->close(conn.fd);
-                    continue;
-                }
-                conn.client = r.value();
-                connections.push_back(std::move(conn));
-                m_stat.connections++;
-            }
+    // Wait for all workers to exit
+    for (auto& worker : m_workers) { worker->join(); }
 
-            for (auto& conn : connections) {
-                uint8_t* recv_cursor;
-
-                ssize_t recv_or_err = 0;
-                do {
-                    recv_cursor = recv_buffer.data();
-                    if (conn.request.size()) {
-                        /* handle leftovers from last go round */
-                        utils::memcpy(recv_buffer.data(),
-                                      conn.request.data(),
-                                      conn.request.size());
-                        recv_cursor += conn.request.size();
-                    }
-
-                    if ((recv_or_err = m_driver->recv(conn.fd,
-                                                      recv_cursor,
-                                                      recv_buffer.size()
-                                                          - conn.request.size(),
-                                                      0))
-                        == -1) {
-                        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                            if (conn.state == STATE_WRITING) {
-                                recv_or_err = 0;
-                            } else {
-                                break;
-                            }
-                        } else {
-                            char ntopbuf[INET6_ADDRSTRLEN];
-                            const char* addr =
-                                inet_ntop(network_sockaddr_family(conn.client),
-                                          network_sockaddr_addr(conn.client),
-                                          ntopbuf,
-                                          INET6_ADDRSTRLEN);
-                            OP_LOG(OP_LOG_ERROR,
-                                   "Error reading from %s:%d: %s\n",
-                                   addr ? addr : "unknown",
-                                   ntohs(network_sockaddr_port(conn.client)),
-                                   strerror(errno));
-                            conn.state = STATE_ERROR;
-                            break;
-                        }
-                    } else if (recv_or_err == 0) {
-                        conn.state = STATE_DONE;
-                        break;
-                    }
-                    m_stat.bytes_received += recv_or_err;
-
-                    if (conn.request.size()) {
-                        /* put the cursor back in the right spot */
-                        recv_cursor -= conn.request.size();
-                        recv_or_err += conn.request.size();
-                        conn.request.clear();
-                    }
-
-                    size_t bytes_left = recv_or_err;
-                    while (bytes_left) {
-                        switch (conn.state) {
-                        case STATE_WAITING: {
-                            if (bytes_left < firehose::net_request_size) {
-                                /* need to wait for more header */
-                                conn.request.insert(conn.request.end(),
-                                                    recv_cursor,
-                                                    recv_cursor + bytes_left);
-                                bytes_left = 0;
-                                continue;
-                            }
-
-                            /* Note: this function updates the note,
-                             * including the state */
-                            auto req = firehose::parse_request(recv_cursor,
-                                                               bytes_left);
-                            if (!req) {
-                                char ntopbuf[INET6_ADDRSTRLEN];
-                                const char* addr = inet_ntop(
-                                    network_sockaddr_family(conn.client),
-                                    network_sockaddr_addr(conn.client),
-                                    ntopbuf,
-                                    INET6_ADDRSTRLEN);
-                                OP_LOG(
-                                    OP_LOG_ERROR,
-                                    "Invalid firehose request received "
-                                    "from %s:%d with %zu bytes\n",
-                                    addr ? addr : "unknown",
-                                    ntohs(network_sockaddr_port(conn.client)),
-                                    bytes_left);
-                                conn.state = STATE_ERROR;
-                                bytes_left = 0;
-                                break;
-                            }
-                            conn.state = (req.value().action == action_t::GET)
-                                             ? STATE_WRITING
-                                             : STATE_READING;
-                            conn.bytes_left = req.value().length;
-                            bytes_left -= firehose::net_request_size;
-                            recv_cursor += firehose::net_request_size;
-                            break;
-                        }
-                        case STATE_READING: {
-                            size_t consumed =
-                                std::min(bytes_left, conn.bytes_left);
-                            conn.bytes_left -= consumed;
-                            bytes_left -= consumed;
-                            recv_cursor += consumed;
-
-                            if (conn.bytes_left == 0) {
-                                conn.state = STATE_WAITING;
-                            }
-
-                            break;
-                        }
-                        default: {
-                            char ntopbuf[INET6_ADDRSTRLEN];
-                            const char* addr =
-                                inet_ntop(network_sockaddr_family(conn.client),
-                                          network_sockaddr_addr(conn.client),
-                                          ntopbuf,
-                                          INET6_ADDRSTRLEN);
-                            OP_LOG(OP_LOG_WARNING,
-                                   "Connection from %s:%d is in state %s"
-                                   " with %zu bytes left to read. Dropping "
-                                   "connection.\n",
-                                   addr ? addr : "unknown",
-                                   ntohs(network_sockaddr_port(conn.client)),
-                                   get_state_string(conn.state),
-                                   bytes_left);
-                            conn.state = STATE_ERROR;
-                            bytes_left = 0;
-                            break;
-                        }
-                        }
-                    }
-                    if (conn.state == STATE_WRITING) {
-                        tcp_write(conn, send_buffer);
-                        break;
-                    }
-                } while (recv_or_err == recv_buffer_size);
-            }
-
-            // Remove closed connections
-            connections.erase(std::remove_if(connections.begin(),
-                                             connections.end(),
-                                             [this](const auto& conn) {
-                                                 if (conn.state == STATE_ERROR)
-                                                     m_stat.errors++;
-                                                 if (conn.state == STATE_DONE
-                                                     || conn.state
-                                                            == STATE_ERROR) {
-                                                     m_stat.closed++;
-                                                     m_driver->close(conn.fd);
-                                                     return true;
-                                                 }
-                                                 return false;
-                                             }),
-                              connections.end());
-        }
-
-        // Close all remaining connections
-        for (auto& conn : connections) {
-            if (conn.state == STATE_ERROR) m_stat.errors++;
-            m_stat.closed++;
-            m_driver->close(conn.fd);
-        }
-
-        op_socket_close(sync);
-    }));
+    m_workers.clear();
 }
 
 } // namespace openperf::network::internal::firehose
