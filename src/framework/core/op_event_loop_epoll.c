@@ -516,7 +516,11 @@ int _do_event_handling(struct op_event_loop* loop,
                 if (!op_event_loop_get_socket_is_readable(event->data.socket))
                     break; /* fall through if readable */
             case OP_EVENT_TYPE_FD:
-                if (event->callbacks.on_read(&event->data, event->arg) != 0) {
+                // when switching from EPOLLIN enabled to disabled it is
+                // possible get NULL on_read callback
+                if (event->callbacks.on_read
+                    && event->callbacks.on_read(&event->data, event->arg)
+                           != 0) {
                     SLIST_INSERT_IF_MISSING(
                         &loop->remove_list, event, remove_link);
                 }
@@ -534,7 +538,11 @@ int _do_event_handling(struct op_event_loop* loop,
                 if (!op_event_loop_get_socket_is_writable(event->data.socket))
                     break; /* fall through if writable */
             case OP_EVENT_TYPE_FD:
-                if (event->callbacks.on_write(&event->data, event->arg) != 0) {
+                // when switching from EPOLLOUT enabled to disabled it is
+                // possible get NULL on_write callback
+                if (event->callbacks.on_write
+                    && event->callbacks.on_write(&event->data, event->arg)
+                           != 0) {
                     SLIST_INSERT_IF_MISSING(
                         &loop->remove_list, event, remove_link);
                 }
