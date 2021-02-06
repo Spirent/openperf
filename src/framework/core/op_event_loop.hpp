@@ -24,6 +24,11 @@ public:
     }
     void exit() { return op_event_loop_exit(m_loop.get()); }
 
+    void set_edge_triggered(bool value)
+    {
+        op_event_loop_set_edge_triggered(m_loop.get(), value);
+    }
+
     // Add callbacks
     int add(int fd, const struct op_event_callbacks* callbacks, void* arg)
     {
