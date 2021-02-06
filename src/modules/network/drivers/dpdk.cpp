@@ -7,7 +7,7 @@ namespace openperf::network::internal::drivers {
 
 using client = socket::api::client;
 
-static thread_local std::atomic_bool init_flag = false;
+static std::atomic_bool init_flag = false;
 
 void dpdk::init()
 {
