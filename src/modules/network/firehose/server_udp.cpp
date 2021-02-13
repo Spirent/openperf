@@ -1,6 +1,9 @@
 #include <cassert>
 #include <stdexcept>
 #include <fcntl.h>
+#include <unistd.h>
+#include <poll.h>
+#include <sys/eventfd.h>
 
 #include "config/op_config_file.hpp"
 #include "core/op_log.h"
@@ -120,6 +123,12 @@ server_udp::server_udp(in_port_t port,
 {
     m_driver = driver;
 
+    m_eventfd = eventfd(0, EFD_NONBLOCK);
+    if (m_eventfd < 0) {
+        throw std::system_error(
+            errno, std::generic_category(), "Failed to create eventfd");
+    }
+
     /* IPv6 any supports IPv4 and IPv6 */
     tl::expected<int, std::string> res;
     if ((res = new_server(AF_INET6, port, interface)); res) {
@@ -138,21 +147,23 @@ server_udp::server_udp(in_port_t port,
 server_udp::~server_udp()
 {
     m_stopped.store(true, std::memory_order_relaxed);
+    eventfd_write(m_eventfd, 1);
+    if (m_worker_thread.joinable()) m_worker_thread.join();
+
     if (m_fd.load() >= 0) { m_driver->close(m_fd); }
 
-    if (m_worker_thread.joinable()) m_worker_thread.join();
+    close(m_eventfd);
 }
 
-// One worker for udp connections
+// One worker for udp
 void server_udp::run_worker_thread()
 {
     m_worker_thread = std::thread([&] {
         // Set the thread name
         op_thread_setname("op_net_srv_w");
 
-        std::vector<connection_t> connections;
         ssize_t recv_or_err = 0;
-        connection_t conn;
+        connection_t conn = { .fd = m_fd, .state = STATE_WAITING, .bytes_left = 0};
         sockaddr_storage client_storage;
         auto* client = reinterpret_cast<sockaddr*>(&client_storage);
         socklen_t client_length = sizeof(struct sockaddr_in6);
@@ -162,7 +173,22 @@ void server_udp::run_worker_thread()
         utils::op_prbs23_fill(send_buffer.data(), send_buffer.size());
 
         while (!m_stopped.load(std::memory_order_relaxed)) {
-            // Receive all accepted connections
+            // Wait for rx data or eventfd notification
+            std::array<struct pollfd, 2> pfd;
+            pfd[0] = {.fd = m_eventfd, .events = POLLIN, .revents = 0};
+            pfd[1] = {.fd = m_fd, .events = POLLIN, .revents = 0};
+            int npoll = poll(pfd.data(), pfd.size(), -1);
+            if (npoll < 0 && errno != EINTR) {
+                OP_LOG(OP_LOG_ERROR, "poll failed.  %s", strerror(errno));
+                break;
+            }
+            if (npoll <= 0) { continue; }
+
+            if (pfd[0].revents & POLLIN) {
+                eventfd_t value = 0;
+                eventfd_read(m_eventfd, &value);
+            }
+
             while ((recv_or_err = m_driver->recvfrom(m_fd,
                                                      read_buffer.data(),
                                                      read_buffer.size(),
@@ -221,6 +247,7 @@ void server_udp::run_worker_thread()
                 m_stat.closed++;
             }
         }
+        op_log_close();
     });
 }
 
