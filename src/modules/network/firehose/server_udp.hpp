@@ -14,6 +14,7 @@ class server_udp final : public server
 private:
     std::atomic_bool m_stopped;
     std::thread m_worker_thread;
+    int m_eventfd;
 
     int udp_write(connection_t&);
     tl::expected<int, std::string>
