@@ -41,6 +41,7 @@ private:
     std::thread m_thread;
     std::string m_thread_name;
     std::atomic_bool m_finished;
+    task_base* m_task;
 
 public:
     worker(const worker&) = delete;
@@ -52,6 +53,8 @@ public:
     template <typename T>
     void start(T&&, std::optional<uint16_t> core_id = std::nullopt);
     bool is_finished() const { return m_finished; }
+    void set_finished(bool val) { m_finished = val; }
+    task_base* get_task() { return m_task; }
 
 private:
     template <typename T> void run(task<T>&);
@@ -72,25 +75,31 @@ void worker::start(T&& task, std::optional<uint16_t> core_id)
 {
     if (!m_finished) return;
 
+    auto task_ptr = std::make_unique<T>(std::move(task));
+    m_task = task_ptr.get();
+
     m_finished = false;
-    m_thread = std::thread([this, task = std::move(task), core_id]() mutable {
-        // Set Thread name
-        op_thread_setname(m_thread_name.c_str());
 
-        // Set Thread core affinity, if specified
-        if (core_id) {
-            if (auto err = op_thread_set_affinity(core_id.value())) {
-                OP_LOG(OP_LOG_ERROR,
-                       "Cannot set worker thread affinity: %s",
-                       std::strerror(err));
+    m_thread =
+        std::thread([this, task = std::move(task_ptr), core_id]() mutable {
+            // Set Thread name
+            op_thread_setname(m_thread_name.c_str());
+
+            // Set Thread core affinity, if specified
+            if (core_id) {
+                if (auto err = op_thread_set_affinity(core_id.value())) {
+                    OP_LOG(OP_LOG_ERROR,
+                           "Cannot set worker thread affinity: %s",
+                           std::strerror(err));
+                }
             }
-        }
 
-        OP_LOG(OP_LOG_DEBUG, "Worker thread started");
+            OP_LOG(OP_LOG_DEBUG, "Worker thread started");
 
-        run(task);
-        op_log_close();
-    });
+            run(*task);
+            m_task = nullptr;
+            op_log_close();
+        });
 }
 
 // Methods : private
