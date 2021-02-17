@@ -48,6 +48,14 @@ serialized_msg serialize_request(request_msg&& msg)
                      return openperf::message::push(serialized,
                                                     request.servers);
                  },
+                 [&](request::generator::toggle& request) -> int {
+                     return openperf::message::push(serialized,
+                                                    std::move(request.ids))
+                            || openperf::message::push(
+                                serialized,
+                                std::make_unique<dynamic::configuration>(
+                                    std::move(request.dynamic_results)));
+                 },
                  [&](id_message& msg) {
                      return openperf::message::push(serialized, msg.id);
                  },
@@ -143,6 +151,14 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     case utils::variant_index<request_msg, request::generator::bulk::stop>(): {
         return std::move(
             *openperf::message::pop<request::generator::bulk::stop*>(msg));
+    }
+    case utils::variant_index<request_msg, request::generator::toggle>(): {
+        auto request = request::generator::toggle{};
+        using ptr = decltype(request::generator::toggle::ids)::pointer;
+        request.ids.reset(openperf::message::pop<ptr>(msg));
+        request.dynamic_results = *std::unique_ptr<dynamic::configuration>(
+            openperf::message::pop<dynamic::configuration*>(msg));
+        return (request);
     }
     case utils::variant_index<request_msg, request::statistic::list>(): {
         return request::statistic::list{};

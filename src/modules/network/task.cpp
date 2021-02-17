@@ -154,8 +154,6 @@ network_task::network_task(const config_t& configuration,
     , m_loop(new core::event_loop())
 {
     m_active = true;
-    m_write_buffer.resize(std::min(configuration.block_size, max_buffer_size));
-    utils::op_prbs23_fill(m_write_buffer.data(), m_write_buffer.size());
     config(configuration);
 }
 
@@ -427,7 +425,8 @@ int network_task::do_init(connection_t& conn, stat_t& stat)
     flags |= MSG_NOSIGNAL;
 #endif
 
-    if (conn.ops_left == 0 || !m_active) {
+    if (conn.ops_left == 0 || !m_active
+        || (m_connections.size() > m_config.connections)) {
         conn.state = STATE_DONE;
         return -1;
     }
@@ -560,7 +559,9 @@ int network_task::do_read(connection_t& conn, stat_t& stat)
                 if (ref_clock::now() - conn.operation_start_time < timeout) {
                     return 0;
                 }
-                OP_LOG(OP_LOG_DEBUG, "network read operation timed out fd=%d", conn.fd);
+                OP_LOG(OP_LOG_DEBUG,
+                       "network read operation timed out fd=%d",
+                       conn.fd);
             }
             conn.state = STATE_ERROR;
             return -1;
@@ -692,6 +693,9 @@ void network_task::config(const config_t& p_config)
 {
     m_config = p_config;
     m_stat.operation = m_config.operation;
+
+    m_write_buffer.resize(std::min(m_config.block_size, max_buffer_size));
+    utils::op_prbs23_fill(m_write_buffer.data(), m_write_buffer.size());
 }
 
 int32_t network_task::calculate_rate()

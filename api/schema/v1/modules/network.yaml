@@ -360,6 +360,36 @@ paths:
         204:
           description: No Content
 
+  /network/generators/x/toggle:
+    post:
+      operationId: ToggleNetworkGenerators
+      tags:
+        - NetworkGenerator
+      summary: Replace a running network generator with a stopped network generator
+      description: |
+        Swap a running network generator with an idle network generator.
+        Upon success, the idle generator will be in the run state, the running generator
+        will be in the stopped state and all active TCP/UDP sessions will be transferred
+        to the newly running generator.
+        If the original network generator had a read/write load and the new network generator
+        does not have this type of load, these sessions will be immediately stopped. 
+      parameters:
+        - name: toggle
+          in: body
+          description: Network generator toggle
+          required: true
+          schema:
+            $ref: "#/definitions/ToggleNetworkGeneratorsRequest"
+      responses:
+        201:
+          description: Created
+          headers:
+            Location:
+              description: URI to created network generator result object
+              type: string
+          schema:
+            $ref: "#/definitions/NetworkGeneratorResult"
+
   /network/generator-results:
     get:
       operationId: ListNetworkGeneratorResults
@@ -693,3 +723,18 @@ definitions:
     required:
       - ids
 
+  ToggleNetworkGeneratorsRequest:
+    type: object
+    description: Parameters for the toggle operation
+    properties:
+      replace:
+        type: string
+        description: The unique id of the running network generator
+      with:
+        type: string
+        description: The unique id of the stopped network generator
+      dynamic_results:
+        $ref: "./dynamic.yaml#/definitions/DynamicResultsConfig"
+    required:
+      - replace
+      - with

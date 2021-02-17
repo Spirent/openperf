@@ -162,4 +162,28 @@ bool generator_stack::stop_generator(const std::string& id)
     }
 }
 
+tl::expected<model::generator_result, std::string>
+generator_stack::toggle_generator(const std::string& out_id,
+                                  const std::string& in_id,
+                                  const dynamic::configuration& cfg)
+{
+    try {
+        auto out_gen = m_generators.at(out_id);
+        if (!out_gen->running())
+            return tl::make_unexpected("Out generator is not running");
+        auto in_gen = m_generators.at(in_id);
+        if (in_gen->running())
+            return tl::make_unexpected("In generator is running");
+        swap_running(*out_gen, *in_gen, cfg);
+        auto out_result = out_gen->statistics();
+        m_statistics[out_result.id()] = out_result;
+        out_gen->reset();
+        auto in_result = in_gen->statistics();
+        m_statistics[in_result.id()] = in_gen;
+        return in_result;
+    } catch (const std::out_of_range&) {
+        return tl::make_unexpected("Generator not found");
+    }
+}
+
 } // namespace openperf::network::internal

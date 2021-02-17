@@ -126,12 +126,12 @@ public:
     network_task(network_task&& orig);
 
     config_t config() const { return m_config; }
+    void config(const config_t&);
 
     stat_t spin() override;
     void reset() override;
 
 private:
-    void config(const config_t&);
     tl::expected<connection_ptr, int>
     new_connection(const network_sockaddr& server, const config_t& config);
     int do_init(connection_t& conn, stat_t& stat);

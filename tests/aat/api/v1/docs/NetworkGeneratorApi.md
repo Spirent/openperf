@@ -23,6 +23,7 @@ Method | HTTP request | Description
 [**list_network_servers**](NetworkGeneratorApi.md#list_network_servers) | **GET** /network/servers | List network servers
 [**start_network_generator**](NetworkGeneratorApi.md#start_network_generator) | **POST** /network/generators/{id}/start | Start a network generator
 [**stop_network_generator**](NetworkGeneratorApi.md#stop_network_generator) | **POST** /network/generators/{id}/stop | Stop a network generator
+[**toggle_network_generators**](NetworkGeneratorApi.md#toggle_network_generators) | **POST** /network/generators/x/toggle | Replace a running network generator with a stopped network generator
 
 
 # **bulk_create_network_generators**
@@ -906,6 +907,54 @@ Name | Type | Description  | Notes
 ### Return type
 
 void (empty response body)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **toggle_network_generators**
+> NetworkGeneratorResult toggle_network_generators(toggle)
+
+Replace a running network generator with a stopped network generator
+
+Swap a running network generator with an idle network generator. Upon success, the idle generator will be in the run state, the running generator will be in the stopped state and all active TCP/UDP sessions will be transferred to the newly running generator. If the original network generator had a read/write load and the new network generator does not have this type of load, these sessions will be immediately stopped.  
+
+### Example
+```python
+from __future__ import print_function
+import time
+import client
+from client.rest import ApiException
+from pprint import pprint
+
+# create an instance of the API class
+api_instance = client.NetworkGeneratorApi()
+toggle = client.ToggleNetworkGeneratorsRequest() # ToggleNetworkGeneratorsRequest | Network generator toggle
+
+try:
+    # Replace a running network generator with a stopped network generator
+    api_response = api_instance.toggle_network_generators(toggle)
+    pprint(api_response)
+except ApiException as e:
+    print("Exception when calling NetworkGeneratorApi->toggle_network_generators: %s\n" % e)
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **toggle** | [**ToggleNetworkGeneratorsRequest**](ToggleNetworkGeneratorsRequest.md)| Network generator toggle | 
+
+### Return type
+
+[**NetworkGeneratorResult**](NetworkGeneratorResult.md)
 
 ### Authorization
 

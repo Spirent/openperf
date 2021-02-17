@@ -31,6 +31,7 @@ public:
     reply_msg handle_request(const request::generator::stop&);
     reply_msg handle_request(const request::generator::bulk::start&);
     reply_msg handle_request(const request::generator::bulk::stop&);
+    reply_msg handle_request(const request::generator::toggle&);
     reply_msg handle_request(const request::statistic::list&);
     reply_msg handle_request(const request::statistic::get&);
     reply_msg handle_request(const request::statistic::erase&);
