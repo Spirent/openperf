@@ -44,6 +44,11 @@ public:
     tl::expected<model::generator_result, std::string>
     start_generator(const std::string& id, const dynamic::configuration&);
     bool stop_generator(const std::string& id);
+
+    tl::expected<model::generator_result, std::string>
+    toggle_generator(const std::string& out_id,
+                     const std::string& in_id,
+                     const dynamic::configuration& cfg);
 };
 
 } // namespace openperf::network::internal

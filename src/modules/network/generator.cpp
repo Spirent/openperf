@@ -72,64 +72,6 @@ std::optional<double> get_field(const model::generator_result& stat,
     return std::nullopt;
 }
 
-// Constructors & Destructor
-generator::generator(const model::generator& generator_model)
-    : model::generator(generator_model)
-    , m_result_id(core::to_string(core::uuid::random()))
-    , m_serial_number(++serial_counter)
-    , m_dynamic(get_field)
-    , m_controller(NAME_PREFIX + std::to_string(m_serial_number) + "_ctl")
-{
-    m_controller.start<task::stat_t>([this](const task::stat_t& stat) {
-        auto elapsed_time = stat.updated - m_start_time;
-
-        switch (stat.operation) {
-        case task::operation_t::READ:
-            m_read_stat += stat;
-            using double_time = std::chrono::duration<double>;
-            // +1 here is because target value has to be rounded to the upper
-            // value, otherwise it will be equal 0 on a first iteration
-            m_read_stat.ops_target = static_cast<uint64_t>(
-                (std::chrono::duration_cast<double_time>(elapsed_time)
-                 * std::min(m_config.read_size, 1UL) * m_config.reads_per_sec)
-                    .count()
-                + 1);
-            m_read_stat.bytes_target =
-                m_read_stat.ops_target * m_config.read_size;
-            break;
-        case task::operation_t::WRITE:
-            m_write_stat += stat;
-            // +1 here is because target value has to be rounded to the upper
-            // value, otherwise it will be equal 0 on a first iteration
-            m_write_stat.ops_target = static_cast<uint64_t>(
-                (std::chrono::duration_cast<double_time>(elapsed_time)
-                 * std::min(m_config.write_size, 1UL) * m_config.writes_per_sec)
-                    .count()
-                + 1);
-            m_write_stat.bytes_target =
-                m_write_stat.ops_target * m_config.write_size;
-            break;
-        }
-
-        auto complete_stat = model::generator_result();
-        complete_stat.read_stats(to_load_stat_t(m_read_stat));
-        complete_stat.write_stats(to_load_stat_t(m_write_stat));
-        complete_stat.conn_stats(to_conn_stat_t(m_write_stat, m_read_stat));
-        complete_stat.timestamp(
-            std::max(m_write_stat.updated, m_read_stat.updated));
-
-        m_dynamic.add(complete_stat);
-    });
-
-    generator::config(m_config);
-}
-
-generator::~generator()
-{
-    stop();
-    m_controller.clear();
-}
-
 inline int to_task_protocol(model::protocol_t p)
 {
     switch (p) {
@@ -142,11 +84,74 @@ inline int to_task_protocol(model::protocol_t p)
     }
 }
 
+stat_collector::stat_collector(generator* gen)
+    : m_gen(gen)
+{}
+
+void stat_collector::set_generator(generator* gen) { m_gen = gen; }
+
+void stat_collector::update(const task::stat_t& stat)
+{
+    auto elapsed_time = stat.updated - m_gen->m_start_time;
+    auto& read_stat = m_gen->m_read_stat;
+    auto& write_stat = m_gen->m_write_stat;
+    auto& config = m_gen->m_config;
+
+    switch (stat.operation) {
+    case task::operation_t::READ:
+        read_stat += stat;
+        using double_time = std::chrono::duration<double>;
+        // +1 here is because target value has to be rounded to the upper
+        // value, otherwise it will be equal 0 on a first iteration
+        read_stat.ops_target = static_cast<uint64_t>(
+            (std::chrono::duration_cast<double_time>(elapsed_time)
+             * std::min(config.read_size, 1UL) * config.reads_per_sec)
+                .count()
+            + 1);
+        read_stat.bytes_target = read_stat.ops_target * config.read_size;
+        break;
+    case task::operation_t::WRITE:
+        write_stat += stat;
+        // +1 here is because target value has to be rounded to the upper
+        // value, otherwise it will be equal 0 on a first iteration
+        write_stat.ops_target = static_cast<uint64_t>(
+            (std::chrono::duration_cast<double_time>(elapsed_time)
+             * std::min(config.write_size, 1UL) * config.writes_per_sec)
+                .count()
+            + 1);
+        write_stat.bytes_target = write_stat.ops_target * config.write_size;
+        break;
+    }
+
+    auto complete_stat = model::generator_result();
+    complete_stat.read_stats(to_load_stat_t(read_stat));
+    complete_stat.write_stats(to_load_stat_t(write_stat));
+    complete_stat.conn_stats(to_conn_stat_t(write_stat, read_stat));
+    complete_stat.timestamp(std::max(write_stat.updated, read_stat.updated));
+
+    m_gen->m_dynamic.add(complete_stat);
+}
+
+// Constructors & Destructor
+generator::generator(const model::generator& generator_model)
+    : model::generator(generator_model)
+    , m_result_id(core::to_string(core::uuid::random()))
+    , m_serial_number(++serial_counter)
+    , m_dynamic(get_field)
+{
+    m_stat_collector = std::make_unique<stat_collector>(this);
+    generator::config(m_config);
+}
+
+generator::~generator()
+{
+    stop();
+
+    if (m_controller) m_controller->clear();
+}
+
 void generator::config(const model::generator_config& config)
 {
-    m_controller.pause();
-    m_controller.clear();
-
     static auto driver =
         openperf::config::file::op_config_get_param<OP_OPTION_TYPE_STRING>(
             "modules.network.driver");
@@ -164,6 +169,12 @@ void generator::config(const model::generator_config& config)
     if (!m_target.interface && nd->bind_to_device_required())
         throw std::runtime_error(
             "Bind to the interface is required for this driver");
+
+    if (!m_controller) {
+        return; // just do validation if controller is not running
+    }
+
+    if (m_running) m_controller->pause();
 
     auto t_config =
         task::config_t{.operation = task::operation_t::READ,
@@ -184,24 +195,53 @@ void generator::config(const model::generator_config& config)
                                           std::memory_order_relaxed);
     }
 
+    // Find existing read/write tasks
+    auto tasks = m_controller->get_tasks<task::network_task>();
+    task::network_task *read_task = nullptr, *write_task = nullptr;
+    for (auto task : tasks) {
+        switch (task->config().operation) {
+        case task::operation_t::READ:
+            read_task = task;
+            break;
+        case task::operation_t::WRITE:
+            write_task = task;
+            break;
+        }
+    }
+
     if (config.reads_per_sec > 0) {
         t_config.operation = task::operation_t::READ;
         t_config.block_size = m_config.read_size;
         t_config.ops_per_sec = m_config.reads_per_sec;
-        auto task = task::network_task(t_config, nd);
-        m_controller.add(std::move(task),
-                         NAME_PREFIX + std::to_string(m_serial_number) + "r");
+        if (!read_task) {
+            auto task = task::network_task(t_config, nd);
+            m_controller->add(std::move(task),
+                              NAME_PREFIX + std::to_string(m_serial_number)
+                                  + "r");
+        } else {
+            read_task->config(t_config);
+        }
+    } else {
+        m_controller->remove_task(read_task);
     }
+
     if (config.writes_per_sec > 0) {
         t_config.operation = task::operation_t::WRITE;
         t_config.block_size = m_config.write_size;
         t_config.ops_per_sec = m_config.writes_per_sec;
-        auto task = task::network_task(t_config, nd);
-        m_controller.add(std::move(task),
-                         NAME_PREFIX + std::to_string(m_serial_number) + "w");
+        if (!write_task) {
+            auto task = task::network_task(t_config, nd);
+            m_controller->add(std::move(task),
+                              NAME_PREFIX + std::to_string(m_serial_number)
+                                  + "w");
+        } else {
+            write_task->config(t_config);
+        }
+    } else {
+        m_controller->remove_task(write_task);
     }
 
-    if (m_running) m_controller.resume();
+    if (m_running) m_controller->resume();
 }
 
 model::generator_result generator::statistics() const
@@ -228,19 +268,55 @@ void generator::start(const dynamic::configuration& cfg)
     start();
 }
 
+void swap_running(generator& out_gen,
+                  generator& in_gen,
+                  const dynamic::configuration& cfg)
+{
+    bool in_running = out_gen.running();
+    out_gen.stop();
+
+    // The serial number should go with the controller so the thread names match
+    std::swap(in_gen.m_serial_number, out_gen.m_serial_number);
+
+    // The stat_collector is used by the controller stats maintenance thread so
+    // need to swap it and update the generator it references.
+    std::swap(in_gen.m_stat_collector, out_gen.m_stat_collector);
+    in_gen.m_stat_collector->set_generator(&in_gen);
+    out_gen.m_stat_collector->set_generator(&out_gen);
+
+    // Swap the controller between the generators and update the task
+    // configuration to the new generator.
+    std::swap(in_gen.m_controller, out_gen.m_controller);
+    in_gen.config(in_gen.m_config);
+
+    if (in_running) in_gen.start(cfg);
+}
+
 void generator::start()
 {
     if (m_running) return;
 
+    if (!m_controller) {
+        m_controller = std::make_unique<controller>(
+            NAME_PREFIX + std::to_string(m_serial_number) + "_ctl");
+        m_controller->start<task::stat_t>(
+            [stat_collector = m_stat_collector.get()](
+                const task::stat_t& stat) { stat_collector->update(stat); });
+
+        generator::config(m_config);
+    }
+
     reset();
-    m_controller.resume();
+    m_controller->resume();
     m_running = true;
     m_dynamic.reset();
 }
 
 void generator::stop()
 {
-    m_controller.pause();
+    if (!m_running) return;
+
+    m_controller->pause();
     m_running = false;
 }
 
@@ -254,15 +330,17 @@ void generator::running(bool is_running)
 
 void generator::reset()
 {
-    m_controller.pause();
-    m_controller.reset();
+    if (!m_controller) return;
+
+    m_controller->pause();
+    m_controller->reset();
     m_read_stat = {.operation = task::operation_t::READ};
     m_write_stat = {.operation = task::operation_t::WRITE};
 
     m_result_id = core::to_string(core::uuid::random());
     m_start_time = chronometer::now();
 
-    if (m_running) m_controller.resume();
+    if (m_running) m_controller->resume();
 }
 
 } // namespace openperf::network::internal

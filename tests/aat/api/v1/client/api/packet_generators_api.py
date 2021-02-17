@@ -1697,7 +1697,7 @@ class PacketGeneratorsApi(object):
     def start_packet_generator(self, id, **kwargs):  # noqa: E501
         """Start generating packets  # noqa: E501
 
-        Used to start a non-running generator. Creates a new generator result upon success.   # noqa: E501
+        Used to start a non-running generator. Creates a new generator result upon success. Sequence numbers for signature traffic start at 0.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.start_packet_generator(id, async_req=True)
@@ -1719,7 +1719,7 @@ class PacketGeneratorsApi(object):
     def start_packet_generator_with_http_info(self, id, **kwargs):  # noqa: E501
         """Start generating packets  # noqa: E501
 
-        Used to start a non-running generator. Creates a new generator result upon success.   # noqa: E501
+        Used to start a non-running generator. Creates a new generator result upon success. Sequence numbers for signature traffic start at 0.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.start_packet_generator_with_http_info(id, async_req=True)
@@ -2093,7 +2093,7 @@ class PacketGeneratorsApi(object):
     def toggle_packet_generators(self, toggle, **kwargs):  # noqa: E501
         """Replace a running generator with a stopped generator  # noqa: E501
 
-        Atomically swap a running generator with an idle generator. Upon success, the idle generator will be in the run state and the previously running generator will be stopped.   # noqa: E501
+        Atomically swap a running generator with an idle generator. Additionally, any sequence numbers for matching signature traffic will be copied from the running generator to the idle one.  Upon success, the idle generator will be in the run state, all matching signature traffic sequence numbers will continue uninterrupted, and the previously running generator will be stopped.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.toggle_packet_generators(toggle, async_req=True)
@@ -2115,7 +2115,7 @@ class PacketGeneratorsApi(object):
     def toggle_packet_generators_with_http_info(self, toggle, **kwargs):  # noqa: E501
         """Replace a running generator with a stopped generator  # noqa: E501
 
-        Atomically swap a running generator with an idle generator. Upon success, the idle generator will be in the run state and the previously running generator will be stopped.   # noqa: E501
+        Atomically swap a running generator with an idle generator. Additionally, any sequence numbers for matching signature traffic will be copied from the running generator to the idle one.  Upon success, the idle generator will be in the run state, all matching signature traffic sequence numbers will continue uninterrupted, and the previously running generator will be stopped.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.toggle_packet_generators_with_http_info(toggle, async_req=True)

@@ -431,6 +431,9 @@ paths:
   /network/generators/x/bulk-stop:
     $ref: ./modules/network.yaml#/paths/~1network~1generators~1x~1bulk-stop
 
+  /network/generators/x/toggle:
+    $ref: ./modules/network.yaml#/paths/~1network~1generators~1x~1toggle
+
   /network/generator-results:
     $ref: ./modules/network.yaml#/paths/~1network~1generator-results
 
@@ -782,6 +785,8 @@ definitions:
   BulkStartNetworkGeneratorsRequest:
     $ref: ./modules/network.yaml#/definitions/BulkStartNetworkGeneratorsRequest
 
+  ToggleNetworkGeneratorsRequest:
+    $ref: ./modules/network.yaml#/definitions/ToggleNetworkGeneratorsRequest
 
   ###
   # CPU definitions
