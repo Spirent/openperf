@@ -44,7 +44,6 @@ void controller::clear()
 {
     send(internal::operation_t::STOP);
     m_workers.clear();
-    m_worker_count = 0;
 }
 
 // Methods : private
@@ -82,7 +81,7 @@ void controller::send(internal::operation_t operation, bool wait)
 
     if (wait) {
         m_feedback_operation = operation;
-        m_feedback.init(m_worker_count);
+        m_feedback.init(m_workers.size());
     }
 
     auto result = zmq_send(

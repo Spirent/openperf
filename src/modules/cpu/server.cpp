@@ -1,4 +1,5 @@
 #include <zmq.h>
+#include <forward_list>
 
 #include "server.hpp"
 #include "cpu.hpp"

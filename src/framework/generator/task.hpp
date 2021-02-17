@@ -3,7 +3,13 @@
 
 namespace openperf::framework::generator {
 
-template <typename S> class task
+class task_base
+{
+public:
+    virtual ~task_base() = default;
+};
+
+template <typename S> class task : public task_base
 {
 public:
     virtual ~task() = default;
