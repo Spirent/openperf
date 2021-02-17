@@ -5,6 +5,7 @@
 #include "swagger/v1/model/BulkDeleteNetworkGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartNetworkGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/ToggleNetworkGeneratorsRequest.h"
 #include "swagger/v1/model/NetworkGeneratorResult.h"
 #include "swagger/v1/model/NetworkServer.h"
 #include "swagger/v1/model/BulkCreateNetworkServersRequest.h"
@@ -50,6 +51,12 @@ void from_json(const nlohmann::json& j,
 
 void from_json(const nlohmann::json& j,
                BulkStopNetworkGeneratorsRequest& request)
+{
+    request.fromJson(const_cast<nlohmann::json&>(j));
+}
+
+void from_json(const nlohmann::json& j,
+               ToggleNetworkGeneratorsRequest& request)
 {
     request.fromJson(const_cast<nlohmann::json&>(j));
 }

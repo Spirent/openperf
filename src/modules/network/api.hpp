@@ -80,6 +80,12 @@ struct start
 struct stop : id_message
 {};
 
+struct toggle
+{
+    std::unique_ptr<std::pair<std::string, std::string>> ids;
+    dynamic::configuration dynamic_results;
+};
+
 namespace bulk {
 struct create
 {
@@ -179,6 +185,7 @@ using request_msg = std::variant<request::generator::list,
                                  request::generator::stop,
                                  request::generator::bulk::start,
                                  request::generator::bulk::stop,
+                                 request::generator::toggle,
                                  request::statistic::list,
                                  request::statistic::get,
                                  request::statistic::erase,

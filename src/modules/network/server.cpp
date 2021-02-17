@@ -201,6 +201,33 @@ reply_msg server::handle_request(const request::generator::bulk::stop& request)
     return api::reply::ok{};
 }
 
+reply_msg server::handle_request(const request::generator::toggle& request)
+{
+    auto out_gen = m_generator_stack.generator(request.ids->first);
+    auto in_gen = m_generator_stack.generator(request.ids->second);
+    if (!out_gen || !in_gen) { return to_error(api::error_type::NOT_FOUND); }
+
+    if (!out_gen->running() || in_gen->running()) {
+        return to_error(
+            error_type::CUSTOM_ERROR,
+            0,
+            "Generator(s) not in correct state for toggle operation.");
+    }
+
+    try {
+        auto result = m_generator_stack.toggle_generator(
+            request.ids->first, request.ids->second, request.dynamic_results);
+        if (!result) throw std::logic_error(result.error());
+
+        auto reply = reply::statistic::list{};
+        reply.results.emplace_back(
+            std::make_unique<model::generator_result>(result.value()));
+        return reply;
+    } catch (const std::logic_error& e) {
+        return to_error(error_type::CUSTOM_ERROR, 0, e.what());
+    }
+}
+
 reply_msg server::handle_request(const request::statistic::list&)
 {
     auto reply = reply::statistic::list{};

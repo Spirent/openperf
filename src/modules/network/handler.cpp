@@ -15,6 +15,7 @@
 #include "swagger/v1/model/BulkDeleteNetworkGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStartNetworkGeneratorsRequest.h"
 #include "swagger/v1/model/BulkStopNetworkGeneratorsRequest.h"
+#include "swagger/v1/model/ToggleNetworkGeneratorsRequest.h"
 #include "swagger/v1/model/NetworkGenerator.h"
 #include "swagger/v1/model/NetworkGeneratorResult.h"
 #include "swagger/v1/model/NetworkServer.h"
@@ -80,6 +81,10 @@ public:
     void bulk_stop_generators(const Rest::Request& request,
                               Http::ResponseWriter response);
 
+    /* Replace a running generator with an inactive generator */
+    void toggle_generators(const Rest::Request& request,
+                           Http::ResponseWriter response);
+
     void list_generator_results(const Rest::Request& request,
                                 Http::ResponseWriter response);
 
@@ -100,6 +105,24 @@ enum Http::Code to_code(const api::reply::error& error)
     default:
         return (Http::Code::Internal_Server_Error);
     }
+}
+
+static std::optional<std::string>
+maybe_get_request_uri(const Rest::Request& request)
+{
+    if (request.headers().has<Http::Header::Host>()) {
+        auto host_header = request.headers().get<Http::Header::Host>();
+
+        /*
+         * XXX: Assuming http here.  I don't know how to get the type
+         * of the connection from Pistache...  But for now, that doesn't
+         * matter.
+         */
+        return ("http://" + host_header->host() + ":"
+                + host_header->port().toString() + request.resource() + "/");
+    }
+
+    return (std::nullopt);
 }
 
 handler::handler(void* context, Rest::Router& router)
@@ -157,6 +180,9 @@ handler::handler(void* context, Rest::Router& router)
         router,
         "/network/generators/x/bulk-stop",
         Rest::Routes::bind(&handler::bulk_stop_generators, this));
+    Rest::Routes::Post(router,
+                       "/network/generators/x/toggle",
+                       Rest::Routes::bind(&handler::toggle_generators, this));
     Rest::Routes::Get(
         router,
         "/network/generator-results",
@@ -632,6 +658,39 @@ void handler::bulk_stop_generators(const Rest::Request& request,
         response.headers().add<Http::Header::ContentType>(
             MIME(Application, Json));
         response.send(Http::Code::No_Content);
+    } else if (auto error = std::get_if<api::reply::error>(&api_reply)) {
+        response.send(to_code(*error), api::to_string(*error->info));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
+}
+
+void handler::toggle_generators(const Rest::Request& request,
+                                Http::ResponseWriter response)
+{
+    auto request_model =
+        json::parse(request.body()).get<ToggleNetworkGeneratorsRequest>();
+
+    api::request::generator::toggle toggle = {
+        .ids = std::make_unique<std::pair<std::string, std::string>>(
+            request_model.getReplace(), request_model.getWith())};
+    if (request_model.dynamicResultsIsSet())
+        toggle.dynamic_results =
+            dynamic::from_swagger(*request_model.getDynamicResults().get());
+
+    auto api_reply = submit_request(m_socket.get(), std::move(toggle));
+
+    if (auto reply = std::get_if<api::reply::statistic::list>(&api_reply)) {
+        assert(!reply->results.empty());
+        if (auto uri = maybe_get_request_uri(request); uri.has_value()) {
+            response.headers().add<Http::Header::Location>(
+                *uri + reply->results.front()->id());
+        }
+        response.headers().add<Http::Header::ContentType>(
+            MIME(Application, Json));
+        response.send(
+            Http::Code::Created,
+            api::to_swagger(*reply->results.front())->toJson().dump());
     } else if (auto error = std::get_if<api::reply::error>(&api_reply)) {
         response.send(to_code(*error), api::to_string(*error->info));
     } else {

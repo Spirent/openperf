@@ -52,6 +52,28 @@ def get_interface_by_address(addr):
             if item.address == addr:
                 return iface
 
+def is_nonzero_op_result(op_result):
+    return  (op_result.ops_target != 0 and
+             op_result.ops_actual != 0 and
+             op_result.bytes_target != 0 and
+             op_result.bytes_actual != 0 and
+             op_result.latency_total != 0)
+
+def wait_for_nonzero_result(api, result_id, mode='rw', timeout=5.0):
+    sleep_time = .1
+    elapsed_time = 0
+    while elapsed_time <= timeout:
+        result = api.get_network_generator_result(result_id)
+        expect(result).to(be_valid_network_generator_result)
+        valid = ((not 'r' in mode or is_nonzero_op_result(result.read)) and
+                 (not 'w' in mode or is_nonzero_op_result(result.write)))
+        if valid:
+            return result
+        time.sleep(sleep_time)
+        elapsed_time += sleep_time
+
+    raise AssertionError('Failed waiting for nonzero %s result.  %s' % (mode, str(result)))
+
 
 with description('Network Generator Module', 'network') as self:
     with shared_context('network_module'):
@@ -768,24 +790,7 @@ with description('Network Generator Module', 'network') as self:
                         self._result = self._api.start_network_generator(g7r.id)
                         expect(self._result).to(be_valid_network_generator_result)
 
-                        def empty_results():
-                            for i in range(50):
-                                result = self._api.get_network_generator_result(self._result.id)
-                                expect(result).to(be_valid_network_generator_result)
-                                try:
-                                    expect(result).to(be_valid_network_generator_result)
-                                    expect(result.read.ops_target).not_to(equal(0))
-                                    expect(result.read.ops_actual).not_to(equal(0))
-                                    expect(result.read.bytes_target).not_to(equal(0))
-                                    expect(result.read.bytes_actual).not_to(equal(0))
-                                    expect(result.read.latency_total).not_to(equal(0))
-                                    return False
-                                except:
-                                    time.sleep(.1)
-                            return True
-
-                        if empty_results():
-                            raise AssertionError("Failed with empty statistics")
+                        wait_for_nonzero_result(self._api, self._result.id, 'r')
 
                         self._api.stop_network_generator(g7r.id)
                         result = self._api.get_network_generator_result(self._result.id)
@@ -809,24 +814,7 @@ with description('Network Generator Module', 'network') as self:
                         self._result = self._api.start_network_generator(g7r.id)
                         expect(self._result).to(be_valid_network_generator_result)
 
-                        def empty_results():
-                            for i in range(50):
-                                result = self._api.get_network_generator_result(self._result.id)
-                                expect(result).to(be_valid_network_generator_result)
-                                try:
-                                    expect(result).to(be_valid_network_generator_result)
-                                    expect(result.write.ops_target).not_to(equal(0))
-                                    expect(result.write.ops_actual).not_to(equal(0))
-                                    expect(result.write.bytes_target).not_to(equal(0))
-                                    expect(result.write.bytes_actual).not_to(equal(0))
-                                    expect(result.write.latency_total).not_to(equal(0))
-                                    return False
-                                except:
-                                    time.sleep(.1)
-                            return True
-
-                        if empty_results():
-                            raise AssertionError("Failed with empty statistics")
+                        wait_for_nonzero_result(self._api, self._result.id, 'w')
 
                         self._api.stop_network_generator(g7r.id)
                         result = self._api.get_network_generator_result(self._result.id)
@@ -837,6 +825,164 @@ with description('Network Generator Module', 'network') as self:
 
                         #TODO compare server and client statistics after issue #429 fixed
                         #expect(server.stats.bytes_received).to(equal(result.write.bytes_actual))
+
+                    with it('toggle generator'):
+                        generator_model = network_generator_model(self._api.api_client,
+                                                                    protocol=self._protocol,
+                                                                    interface=self._client_interface,
+                                                                    host=self._host)
+                        g7r1 = self._api.create_network_generator(generator_model)
+                        expect(g7r1).to(be_valid_network_generator)
+
+                        generator_model = network_generator_model(self._api.api_client,
+                                                                    protocol=self._protocol,
+                                                                    interface=self._client_interface,
+                                                                    host=self._host)
+                        g7r2 = self._api.create_network_generator(generator_model)
+                        expect(g7r2).to(be_valid_network_generator)
+
+                        self._result1 = self._api.start_network_generator(g7r1.id)
+                        expect(self._result1).to(be_valid_network_generator_result)
+
+                        wait_for_nonzero_result(self._api, self._result1.id, 'rw')
+
+                        # Switch to 2nd generator
+                        request = client.models.ToggleNetworkGeneratorsRequest(g7r1.id, g7r2.id)
+                        self._result2 = self._api.toggle_network_generators(request)
+                        expect(self._result2).to(be_valid_network_generator_result)
+
+                        # Get last result from read generator
+                        result1 = self._api.get_network_generator_result(self._result1.id)
+                        expect(result1).to(be_valid_network_generator_result)
+
+                        # Verify generator state changed as expected
+                        g7r = self._api.get_network_generator(g7r1.id)
+                        expect(g7r.running).to(equal(False))
+                        g7r = self._api.get_network_generator(g7r2.id)
+                        expect(g7r.running).to(equal(True))
+
+                        wait_for_nonzero_result(self._api, self._result2.id, 'rw')
+
+                        self._api.stop_network_generator(g7r2.id)
+                        result2 = self._api.get_network_generator_result(self._result2.id)
+                        expect(result2).to(be_valid_network_generator_result)
+
+                        server = self._api.get_network_server(self._server.id)
+                        expect(server).to(be_valid_network_server)
+                        expect(server.stats.connections).not_to(equal(0))
+                        expect(server.stats.bytes_received).not_to(equal(0))
+
+                    with it('toggle generator read to write'):
+                        generator_model = network_generator_model(self._api.api_client,
+                                                                    protocol=self._protocol,
+                                                                    interface=self._client_interface,
+                                                                    host=self._host)
+                        generator_model.config.writes_per_sec = 0
+                        g7r_read = self._api.create_network_generator(generator_model)
+                        expect(g7r_read).to(be_valid_network_generator)
+
+                        generator_model = network_generator_model(self._api.api_client,
+                                                                    protocol=self._protocol,
+                                                                    interface=self._client_interface,
+                                                                    host=self._host)
+                        generator_model.config.reads_per_sec = 0
+                        g7r_write = self._api.create_network_generator(generator_model)
+                        expect(g7r_write).to(be_valid_network_generator)
+
+                        self._read_result = self._api.start_network_generator(g7r_read.id)
+                        expect(self._read_result).to(be_valid_network_generator_result)
+
+                        result = wait_for_nonzero_result(self._api, self._read_result.id, 'r')
+                        expect(result.write.ops_target).to(equal(0))
+                        expect(result.write.ops_actual).to(equal(0))
+                        expect(result.write.bytes_target).to(equal(0))
+                        expect(result.write.bytes_actual).to(equal(0))
+
+                        # Switch to write generator
+                        request = client.models.ToggleNetworkGeneratorsRequest(g7r_read.id, g7r_write.id)
+                        self._write_result = self._api.toggle_network_generators(request)
+                        expect(self._write_result).to(be_valid_network_generator_result)
+
+                        # Get last result from read generator
+                        read_result = self._api.get_network_generator_result(self._read_result.id)
+                        expect(read_result).to(be_valid_network_generator_result)
+
+                        # Verify generator state changed as expected
+                        g7r = self._api.get_network_generator(g7r_read.id)
+                        expect(g7r.running).to(equal(False))
+                        g7r = self._api.get_network_generator(g7r_write.id)
+                        expect(g7r.running).to(equal(True))
+
+                        result = wait_for_nonzero_result(self._api, self._write_result.id, 'w')
+                        expect(result.read.ops_target).to(equal(0))
+                        expect(result.read.ops_actual).to(equal(0))
+                        expect(result.read.bytes_target).to(equal(0))
+                        expect(result.read.bytes_actual).to(equal(0))
+
+                        self._api.stop_network_generator(g7r_write.id)
+                        write_result = self._api.get_network_generator_result(self._write_result.id)
+                        expect(write_result).to(be_valid_network_generator_result)
+
+                        server = self._api.get_network_server(self._server.id)
+                        expect(server).to(be_valid_network_server)
+                        expect(server.stats.connections).not_to(equal(0))
+                        expect(server.stats.bytes_received).not_to(equal(0))
+
+                    with it('toggle generator write to read'):
+                        generator_model = network_generator_model(self._api.api_client,
+                                                                    protocol=self._protocol,
+                                                                    interface=self._client_interface,
+                                                                    host=self._host)
+                        generator_model.config.writes_per_sec = 0
+                        g7r_read = self._api.create_network_generator(generator_model)
+                        expect(g7r_read).to(be_valid_network_generator)
+
+                        generator_model = network_generator_model(self._api.api_client,
+                                                                    protocol=self._protocol,
+                                                                    interface=self._client_interface,
+                                                                    host=self._host)
+                        generator_model.config.reads_per_sec = 0
+                        g7r_write = self._api.create_network_generator(generator_model)
+                        expect(g7r_write).to(be_valid_network_generator)
+
+                        self._write_result = self._api.start_network_generator(g7r_write.id)
+                        expect(self._write_result).to(be_valid_network_generator_result)
+
+                        result = wait_for_nonzero_result(self._api, self._write_result.id, 'w')
+                        expect(result.read.ops_target).to(equal(0))
+                        expect(result.read.ops_actual).to(equal(0))
+                        expect(result.read.bytes_target).to(equal(0))
+                        expect(result.read.bytes_actual).to(equal(0))
+
+                        # Switch to write generator
+                        request = client.models.ToggleNetworkGeneratorsRequest(g7r_write.id, g7r_read.id)
+                        self._read_result = self._api.toggle_network_generators(request)
+                        expect(self._read_result).to(be_valid_network_generator_result)
+
+                        # Get last result from read generator
+                        write_result = self._api.get_network_generator_result(self._write_result.id)
+                        expect(write_result).to(be_valid_network_generator_result)
+
+                        # Verify generator state changed as expected
+                        g7r = self._api.get_network_generator(g7r_write.id)
+                        expect(g7r.running).to(equal(False))
+                        g7r = self._api.get_network_generator(g7r_read.id)
+                        expect(g7r.running).to(equal(True))
+
+                        result = wait_for_nonzero_result(self._api, self._read_result.id, 'r')
+                        expect(result.write.ops_target).to(equal(0))
+                        expect(result.write.ops_actual).to(equal(0))
+                        expect(result.write.bytes_target).to(equal(0))
+                        expect(result.write.bytes_actual).to(equal(0))
+
+                        self._api.stop_network_generator(g7r_read.id)
+                        read_result = self._api.get_network_generator_result(self._read_result.id)
+                        expect(read_result).to(be_valid_network_generator_result)
+
+                        server = self._api.get_network_server(self._server.id)
+                        expect(server).to(be_valid_network_server)
+                        expect(server.stats.connections).not_to(equal(0))
+                        expect(server.stats.bytes_received).not_to(equal(0))
 
                 with description('IPv4'):
                     with before.all:
