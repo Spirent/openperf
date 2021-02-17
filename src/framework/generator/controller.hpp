@@ -2,7 +2,7 @@
 #define _OP_FRAMEWORK_GENERATOR_CONTROLLER_HPP_
 
 #include <cassert>
-#include <forward_list>
+#include <list>
 #include <memory>
 #include <optional>
 #include <string>
@@ -69,8 +69,7 @@ private:
     internal::feedback_tracker m_feedback;
     internal::operation_t m_feedback_operation;
 
-    std::forward_list<internal::worker> m_workers;
-    size_t m_worker_count = 0;
+    std::list<internal::worker> m_workers;
 
 public:
     // Constructors & Destructor
@@ -88,6 +87,8 @@ public:
     void add(T&& task,
              const std::string& name,
              std::optional<uint16_t> core = std::nullopt);
+    template <typename T> std::vector<T*> get_tasks();
+    template <typename T> void remove_task(T* task);
 
     template <typename S, typename T> void start(T&& processor);
 
@@ -167,12 +168,39 @@ void controller::add(T&& task,
     m_feedback.init(1);
 
     auto& worker =
-        m_workers.emplace_front(std::move(control), std::move(stats), name);
+        m_workers.emplace_back(std::move(control), std::move(stats), name);
     worker.start(std::forward<T>(task), core);
-    m_worker_count++;
 
     // Wait for READY message
     m_feedback.wait();
+}
+
+template <typename T> std::vector<T*> controller::get_tasks()
+{
+    std::vector<T*> tasks;
+    for (auto& worker : m_workers) {
+        auto task = dynamic_cast<T*>(worker.get_task());
+        if (!task) continue;
+        tasks.push_back(task);
+    }
+    return tasks;
+}
+
+template <typename T> void controller::remove_task(T* task)
+{
+    m_workers.remove_if([this, task](auto& worker) {
+        auto worker_task = dynamic_cast<T*>(worker.get_task());
+        if (worker_task == task) {
+            if (!worker.is_finished()) {
+                // stop the worker thread by directly setting it's finished flag
+                // and sending a broadcast READY message so it is checked
+                worker.set_finished(true);
+                send(internal::operation_t::READY, false);
+            }
+            return true;
+        }
+        return false;
+    });
 }
 
 } // namespace openperf::framework::generator

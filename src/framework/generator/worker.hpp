@@ -41,6 +41,7 @@ private:
     std::thread m_thread;
     std::string m_thread_name;
     std::atomic_bool m_finished;
+    std::unique_ptr<task_base> m_task;
 
 public:
     worker(const worker&) = delete;
@@ -52,6 +53,8 @@ public:
     template <typename T>
     void start(T&&, std::optional<uint16_t> core_id = std::nullopt);
     bool is_finished() const { return m_finished; }
+    void set_finished(bool val) { m_finished = val; }
+    task_base* get_task() { return m_task.get(); }
 
 private:
     template <typename T> void run(task<T>&);
@@ -72,8 +75,15 @@ void worker::start(T&& task, std::optional<uint16_t> core_id)
 {
     if (!m_finished) return;
 
+    // Create copy of task object and store in m_task pointer
+    // m_task stores the base class so pass derived class in task_ptr
+    // to the run() function because that is also a template function.
+    T* task_ptr = new T(std::move(task));
+    m_task.reset(task_ptr);
+
     m_finished = false;
-    m_thread = std::thread([this, task = std::move(task), core_id]() mutable {
+
+    m_thread = std::thread([this, task = task_ptr, core_id]() mutable {
         // Set Thread name
         op_thread_setname(m_thread_name.c_str());
 
@@ -88,7 +98,7 @@ void worker::start(T&& task, std::optional<uint16_t> core_id)
 
         OP_LOG(OP_LOG_DEBUG, "Worker thread started");
 
-        run(task);
+        run(*task);
         op_log_close();
     });
 }
