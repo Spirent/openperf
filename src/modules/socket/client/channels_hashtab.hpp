@@ -54,7 +54,18 @@ public:
 
     inline bool erase(int fd)
     {
-        if (!close_channel(fd)) { return false; }
+        if (auto ptr = mark_delete_channel(fd)) {
+            // Close the channel eventfds
+            //
+            // When using LD_PRELOAD all close() calls will get the overridden
+            // close function so don't want those calls to find the eventfd in
+            // the hashtab or to see a locked mutex.  There is currently no
+            // recursive_shared_mutex in the standard library.
+            //
+            ptr->channel.close();
+        } else {
+            return false;
+        }
 
         // Perform garbage collection to actually delete the channel object
         garbage_collect();
@@ -62,23 +73,14 @@ public:
     };
 
 private:
-    inline bool close_channel(int fd)
+    inline ided_channel_ptr mark_delete_channel(int fd)
     {
-        auto ptr = find(fd);
-        if (!ptr) return false;
-
-        // Mark the channel deleted
+        std::shared_lock<std::shared_mutex> m_guard(m_lock);
+        auto ptr = reinterpret_cast<ided_channel_ptr*>(
+            op_hashtab_find(m_tab, reinterpret_cast<void*>(fd)));
+        if (!ptr) return {};
         op_hashtab_delete(m_tab, reinterpret_cast<void*>(fd));
-
-        // Close the channel eventfds
-        //
-        // When using LD_PRELOAD all close() calls will get the overridden
-        // close function so don't want those calls to find the eventfd in
-        // the hashtab or to see a locked mutex.  There is currently no
-        // recursive_shared_mutex in the standard library.
-        //
-        ptr->channel.close();
-        return true;
+        return *ptr;
     }
 
     inline void garbage_collect()

@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "core/op_log.h"
 #include "socket/api.hpp"
 #include "socket/process_control.hpp"
 #include "socket/client/api_client.hpp"
@@ -344,13 +345,21 @@ int client::close(int s)
     auto& [id, channel] = *result;
     api::request_msg request = api::request_close{.id = id};
 
+    // Release channel before sending close request to server.
+    // Once the server receives the close request the shared channel memory will
+    // get freed and could be reused before the client can free it.
+    result.reset();
+    m_channels.erase(s);
+
     auto reply = submit_request(m_sock.get(), m_sock_lock, request);
     if (!reply) {
+        OP_LOG(OP_LOG_ERROR,
+               "Failed sending socket close to server.  %s",
+               strerror(reply.error()));
         errno = reply.error();
         return (-1);
     }
 
-    m_channels.erase(s);
     return (0);
 }
 
