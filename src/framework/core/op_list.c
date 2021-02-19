@@ -87,6 +87,16 @@ void _initialize_head_item(struct op_list_item* head)
     atomic_init(&head->entry, head_entry);
 }
 
+/**
+ * Move deleted items to the free list.
+ */
+void _op_list_collect_deleted(struct op_list* list)
+{
+    /* op_list_next moves deleted items to the free list, so just need to iterate through the list */
+    struct op_list_item* cursor = op_list_head(list);
+    while(op_list_next(list, &cursor)){}
+}
+
 struct op_list* op_list_allocate()
 {
     struct op_list* list = NULL;
@@ -175,6 +185,7 @@ int op_list_purge(struct op_list* list)
  */
 void op_list_garbage_collect(struct op_list* list)
 {
+    _op_list_collect_deleted(list);
     _destroy_list_items(&list->free_head, list->destructor);
     atomic_store(&list->free_length, 0);
 }
