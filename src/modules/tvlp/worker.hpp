@@ -65,6 +65,11 @@ protected:
     send_stat(const std::string& id) = 0;
     virtual tl::expected<void, std::string>
     send_delete(const std::string& id) = 0;
+    virtual bool supports_toggle() const { return false; }
+    virtual tl::expected<start_result_t, std::string>
+    send_toggle(const std::string& out_id,
+                const std::string& in_id,
+                const dynamic::configuration& = {});
 
     tl::expected<message::serialized_message, int>
     submit_request(message::serialized_message request);
@@ -72,10 +77,25 @@ protected:
     std::unique_ptr<void, op_socket_deleter> m_socket;
 
 private:
+    struct entry_state_t
+    {
+        const model::tvlp_profile_t::entry* entry;
+        model::ref_clock::time_point start_time;
+        std::string gen_id;
+        std::string result_id;
+    };
+
     tl::expected<void, std::string>
     schedule(const model::tvlp_profile_t::series& profile,
              const model::time_point& time,
              const model::tvlp_start_t::start_t& start_config);
+
+    tl::expected<void, std::string>
+    do_entry_start(entry_state_t& state,
+                   const model::tvlp_profile_t::entry& entry,
+                   const model::tvlp_start_t::start_t& start_config);
+    tl::expected<void, std::string> do_entry_stop(entry_state_t& state);
+    tl::expected<void, std::string> do_entry_stats(entry_state_t& state);
 
     tvlp_worker_state_t m_state;
     std::string m_error;

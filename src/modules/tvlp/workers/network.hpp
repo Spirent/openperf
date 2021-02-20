@@ -24,6 +24,11 @@ protected:
     tl::expected<nlohmann::json, std::string>
     send_stat(const std::string& id) override;
     tl::expected<void, std::string> send_delete(const std::string& id) override;
+    bool supports_toggle() const override { return true; }
+    tl::expected<start_result_t, std::string>
+    send_toggle(const std::string& out_id,
+                const std::string& in_id,
+                const dynamic::configuration& = {}) override;
 };
 
 } // namespace openperf::tvlp::internal::worker
