@@ -120,4 +120,31 @@ network_tvlp_worker_t::send_delete(const std::string& id)
     return tl::make_unexpected("Unexpected error");
 }
 
+tl::expected<network_tvlp_worker_t::start_result_t, std::string>
+network_tvlp_worker_t::send_toggle(
+    const std::string& out_id,
+    const std::string& in_id,
+    const dynamic::configuration& dynamic_results)
+{
+    auto api_reply =
+        submit_request(
+            serialize_request(request::generator::toggle{
+                .ids = std::make_unique<std::pair<std::string, std::string>>(
+                    out_id, in_id),
+                .dynamic_results = dynamic_results,
+            }))
+            .and_then(deserialize_reply);
+
+    if (auto r = std::get_if<reply::statistic::list>(&api_reply.value())) {
+        return start_result_t{
+            .result_id = r->results.front()->id(),
+            .statistics = to_swagger(*r->results.front())->toJson(),
+            .start_time = r->results.front()->start_timestamp(),
+        };
+    } else if (auto error = std::get_if<reply::error>(&api_reply.value())) {
+        return tl::make_unexpected(to_string(*error->info));
+    }
+    return tl::make_unexpected("Unexpected error");
+}
+
 } // namespace openperf::tvlp::internal::worker
