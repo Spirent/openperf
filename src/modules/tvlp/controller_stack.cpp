@@ -2,6 +2,17 @@
 
 namespace openperf::tvlp::internal {
 
+template <typename ContainerT, typename PredicateT>
+void erase_if(ContainerT& items, const PredicateT& predicate)
+{
+    for (auto it = items.begin(); it != items.end();) {
+        if (predicate(*it))
+            it = items.erase(it);
+        else
+            ++it;
+    }
+}
+
 controller_stack::controller_stack(void* context)
     : m_context(context)
 {}
@@ -61,6 +72,10 @@ tl::expected<void, std::string> controller_stack::erase(const std::string& id)
     }
 
     m_controllers.erase(id);
+
+    // Delete results associated with the TVLP configuration
+    erase_if(m_results,
+             [id](const auto& item) { return (item.second->tvlp_id() == id); });
 
     return {};
 }
