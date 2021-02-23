@@ -2,9 +2,10 @@ import os
 import client.api
 import client.models
 import datetime
+import math
 import time
 
-from mamba import description, before, after
+from mamba import description, before, after, shared_context
 from expects import *
 from expects.matchers import Matcher
 from common import Config, Service
@@ -486,6 +487,70 @@ with description('TVLP,', 'tvlp') as self:
                 with it('returns 400'):
                     expect(lambda: self.tvlp_api.delete_tvlp_configuration('f_oo')).to(raise_api_exception(400))
 
+
+        with description('start w/ multiple entries,'):
+            with shared_context('test_multiple_entries'):
+                with it('succeeds'):
+                    file = self.block_api.create_block_file(file_model(1024, '/tmp/foo'))
+                    expect(file).to(be_valid_block_file)
+                    self.file = file
+                    wait_for_file_initialization_done(self.block_api, file.id, 1)
+
+                    t = tvlp_model()
+                    if self._block_linked and 'block' in self._enabled_profiles:
+                        t.profile.block = tvlp_block_profile_model(self._num_entries, self._entry_duration, file.id)
+                    if self._memory_linked and 'memory' in self._enabled_profiles:
+                        t.profile.memory = tvlp_memory_profile_model(self._num_entries, self._entry_duration)
+                    if self._cpu_linked and 'cpu' in self._enabled_profiles:
+                        t.profile.cpu = tvlp_cpu_profile_model(self._num_entries, self._entry_duration)
+                    if self._packet_linked and 'packet' in self._enabled_profiles:
+                        t.profile.packet = tvlp_packet_profile_model(self._num_entries, self._entry_duration, get_first_port_id(self.service.client()))
+                    if self._network_linked and 'network' in self._enabled_profiles:
+                        t.profile.network = tvlp_network_profile_model(self._num_entries, self._entry_duration)
+                    self._config = self.tvlp_api.create_tvlp_configuration(t)
+
+                    worker_task_quanta = 100000000  # worker tasks use a 100 msec quata, so changing entry could take up to that much longer
+                    grace_period = 5
+                    max_wait_time = int(math.ceil(self._num_entries * (self._entry_duration + worker_task_quanta) / 1000000000.0)) + grace_period
+
+                    result = self.tvlp_api.start_tvlp_configuration_with_http_info(self._config.id)
+                    expect(result[1]).to(equal(201))
+                    expect(result[2]).to(has_location('/tvlp-results/' + result[0].id))
+                    expect(result[0]).to(be_valid_tvlp_result)
+                    tvlp_result = result[0]
+
+                    # Wait for TVLP to complete
+                    wait_for_tvlp_state(self.tvlp_api, self._config.id, "ready", max_wait_time)
+
+                    # Verify TVLP results
+                    tvlp_result = self.tvlp_api.get_tvlp_result(tvlp_result.id)
+                    if t.profile.block:
+                        expect(len(tvlp_result.block)).to(equal(self._num_entries))
+                    if t.profile.memory:
+                        expect(len(tvlp_result.memory)).to(equal(self._num_entries))
+                    if t.profile.cpu:
+                        expect(len(tvlp_result.cpu)).to(equal(self._num_entries))
+                    if t.profile.packet:
+                        expect(len(tvlp_result.packet)).to(equal(self._num_entries))
+                    if t.profile.network:
+                        expect(len(tvlp_result.network)).to(equal(self._num_entries))
+
+            with description('3 entries 1 sec each,'):
+                with before.each:
+                    self._enabled_profiles = ['block', 'memory', 'cpu', 'packet', 'network']
+                    self._num_entries = 3
+                    self._entry_duration = 1000000000
+                with included_context('test_multiple_entries'):
+                    pass
+
+            with description('50 entries .1 sec each,'):
+                with before.each:
+                    # block load generator has issues with short duration entries
+                    self._enabled_profiles = ['memory', 'cpu', 'packet', 'network']
+                    self._num_entries = 50
+                    self._entry_duration = 100000000
+                with included_context('test_multiple_entries'):
+                    pass
 
         with after.each:
             try:
