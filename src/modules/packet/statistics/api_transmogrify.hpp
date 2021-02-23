@@ -49,7 +49,7 @@ void populate_counters(
 
         dst->setIp(p_dst);
     }
-    if (src.holds<ip>()) {
+    if (src.holds<transport>()) {
         const auto& p_src = src.get<transport>();
         auto p_dst = std::make_shared<
             swagger::v1::model::PacketTransportProtocolCounters>();
