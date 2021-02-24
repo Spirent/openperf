@@ -190,7 +190,7 @@ static size_t buffer_required(size_t length)
     return (sizeof(dgram_channel_descriptor) + length);
 }
 
-bool dgram_channel::send(const pbuf* p)
+bool dgram_channel::send(pbuf* p)
 {
     if (writable() < buffer_required(p->len)) return (false);
 
@@ -213,6 +213,7 @@ bool dgram_channel::send(const pbuf* p)
     [[maybe_unused]] auto written = write(items.data(), items.size());
     assert(written == buffer_required(p->len));
     notify();
+    pbuf_free(p);
 
     return (true);
 }
@@ -252,7 +253,7 @@ to_dgram_channel_addr(const dgram_ip_addr* addr, in_port_t port)
 }
 
 template <typename Channel, typename SocketAddress>
-bool channel_send(Channel& channel, const pbuf* p, const SocketAddress& sa)
+bool channel_send(Channel& channel, pbuf* p, const SocketAddress& sa)
 {
     if (channel.writable() < buffer_required(p->len)) { return (false); }
 
@@ -275,18 +276,17 @@ bool channel_send(Channel& channel, const pbuf* p, const SocketAddress& sa)
     [[maybe_unused]] auto written = channel.write(items.data(), items.size());
     assert(written == buffer_required(p->len));
     channel.notify();
+    pbuf_free(p);
 
     return (true);
 }
 
-bool dgram_channel::send(const pbuf* p,
-                         const dgram_ip_addr* addr,
-                         in_port_t port)
+bool dgram_channel::send(pbuf* p, const dgram_ip_addr* addr, in_port_t port)
 {
     return (channel_send(*this, p, to_dgram_channel_addr(addr, port)));
 }
 
-bool dgram_channel::send(const pbuf* p, const dgram_sockaddr_ll* sll)
+bool dgram_channel::send(pbuf* p, const dgram_sockaddr_ll* sll)
 {
     return (channel_send(*this, p, *sll));
 }
