@@ -28,7 +28,7 @@ class dgram_channel
     friend class event_queue_consumer<dgram_channel>;
     friend class event_queue_producer<dgram_channel>;
 
-    static constexpr size_t init_buffer_size = 32 * 1024; /* 64 kb */
+    static constexpr size_t init_buffer_size = 64 * 1024; /* 64 kb */
 
 protected:
     uint8_t* producer_base() const;
@@ -69,9 +69,9 @@ public:
     int server_fd();
 
     bool send_empty() const;
-    bool send(const pbuf* p);
-    bool send(const pbuf* p, const dgram_ip_addr* addr, in_port_t);
-    bool send(const pbuf* p, const dgram_sockaddr_ll* sll);
+    bool send(pbuf* p);
+    bool send(pbuf* p, const dgram_ip_addr* addr, in_port_t);
+    bool send(pbuf* p, const dgram_sockaddr_ll* sll);
 
     bool recv_available() const;
 
