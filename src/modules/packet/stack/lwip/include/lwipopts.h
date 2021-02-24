@@ -112,6 +112,15 @@
 #define ARP_TABLE_SIZE 256
 
 /*
+ * Enable ARP/NDP resolve packet hold queue so multiple packets
+ * to the same destination IP can be held without dropping them.
+ */
+#define ARP_QUEUEING  1
+#define ARP_QUEUE_LEN 32
+#define LWIP_ND6_QUEUEING 1
+#define MEMP_NUM_ND6_QUEUE 32
+
+/*
  * These two define the size of separate but tightly coupled
  * cache structures. Best to increase both to the same value.
  *
