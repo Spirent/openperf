@@ -153,7 +153,10 @@ void raw_socket::handle_io()
     while (m_channel->recv_available()) {
         auto [p, dest] = m_channel->recv_ip();
 
-        assert(p);
+        if (!p) { // probably pbuf_alloc() error
+            m_channel->ack_undo();
+            break;
+        }
 
         if (dest)
             raw_sendto(m_pcb.get(),
