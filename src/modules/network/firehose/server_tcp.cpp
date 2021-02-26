@@ -265,13 +265,13 @@ void tcp_acceptor::run()
 class tcp_connection_reading_state
 {
 public:
-    static int on_read(const struct op_event_data* data, void* arg)
+    static int on_read(const struct op_event_data*, void* arg)
     {
         auto con = reinterpret_cast<tcp_connection_t*>(arg);
         if (!con || !con->worker) return -1;
         return con->worker->do_read(*con);
     }
-    static int on_delete(const struct op_event_data* data, void* arg)
+    static int on_delete(const struct op_event_data*, void* arg)
     {
         auto con = reinterpret_cast<tcp_connection_t*>(arg);
         if (!con || !con->worker) return -1;
@@ -285,13 +285,13 @@ public:
 class tcp_connection_writing_state
 {
 public:
-    static int on_write(const struct op_event_data* data, void* arg)
+    static int on_write(const struct op_event_data*, void* arg)
     {
         auto con = reinterpret_cast<tcp_connection_t*>(arg);
         if (!con || !con->worker) return -1;
         return con->worker->do_write(*con);
     }
-    static int on_delete(const struct op_event_data* data, void* arg)
+    static int on_delete(const struct op_event_data*, void* arg)
     {
         auto con = reinterpret_cast<tcp_connection_t*>(arg);
         if (!con || !con->worker) return -1;
@@ -334,8 +334,6 @@ tcp_worker::tcp_worker(const drivers::driver_ptr& driver,
 
     utils::op_prbs23_fill(m_write_buffer.data(), m_write_buffer.size());
 }
-
-tcp_worker::~tcp_worker() {}
 
 void tcp_worker::start()
 {
@@ -391,11 +389,11 @@ int tcp_worker::do_accept()
             m_driver->close(msg.fd);
             continue;
         }
-        auto conn = std::unique_ptr<tcp_connection_t>(
-            new tcp_connection_t{.fd = msg.fd,
-                                 .state = STATE_WAITING,
-                                 .client = r.value(),
-                                 .worker = this});
+        auto conn = std::make_unique<tcp_connection_t>(
+            tcp_connection_t{.fd = msg.fd,
+                             .state = STATE_WAITING,
+                             .client = r.value(),
+                             .worker = this});
         m_loop->add(
             conn->fd, &tcp_connection_reading_state::callbacks, conn.get());
         m_connections[msg.fd] = std::move(conn);
@@ -659,10 +657,18 @@ server_tcp::server_tcp(in_port_t port,
 
 server_tcp::~server_tcp()
 {
-    m_acceptor->stop();
+    try {
+        m_acceptor->stop();
+    } catch (...) {
+        // no exceptions in destructor
+    }
     m_acceptor.reset();
 
-    stop_workers();
+    try {
+        stop_workers();
+    } catch (...) {
+        // no exceptions in destructor
+    }
 
     m_ctrl_pub.reset();
 }

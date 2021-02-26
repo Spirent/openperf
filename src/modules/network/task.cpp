@@ -66,9 +66,9 @@ stat_t& stat_t::operator+=(const stat_t& stat)
 class connection_init_state
 {
 public:
-    static int on_write(const struct op_event_data* data, void* arg)
+    static int on_write(const struct op_event_data*, void* arg)
     {
-        connection_t* con = reinterpret_cast<connection_t*>(arg);
+        auto con = reinterpret_cast<connection_t*>(arg);
         assert(con);
         if (!con) return -1;
         auto task = con->task;
@@ -76,9 +76,9 @@ public:
         return task->do_init(*con, task->m_spin_stat);
     }
 
-    static int on_delete(const struct op_event_data* data, void* arg)
+    static int on_delete(const struct op_event_data*, void* arg)
     {
-        connection_t* con = reinterpret_cast<connection_t*>(arg);
+        auto con = reinterpret_cast<connection_t*>(arg);
         assert(con);
         if (!con) return -1;
         auto task = con->task;
@@ -94,9 +94,9 @@ public:
 class connection_reading_state
 {
 public:
-    static int on_read(const struct op_event_data* data, void* arg)
+    static int on_read(const struct op_event_data*, void* arg)
     {
-        connection_t* con = reinterpret_cast<connection_t*>(arg);
+        auto con = reinterpret_cast<connection_t*>(arg);
         assert(con);
         if (!con) return -1;
         auto task = con->task;
@@ -104,9 +104,9 @@ public:
         return task->do_read(*con, task->m_spin_stat);
     }
 
-    static int on_delete(const struct op_event_data* data, void* arg)
+    static int on_delete(const struct op_event_data*, void* arg)
     {
-        connection_t* con = reinterpret_cast<connection_t*>(arg);
+        auto con = reinterpret_cast<connection_t*>(arg);
         assert(con);
         if (!con) return -1;
         auto task = con->task;
@@ -122,9 +122,9 @@ public:
 class connection_writing_state
 {
 public:
-    static int write(const struct op_event_data* data, void* arg)
+    static int write(const struct op_event_data*, void* arg)
     {
-        connection_t* con = reinterpret_cast<connection_t*>(arg);
+        auto con = reinterpret_cast<connection_t*>(arg);
         assert(con);
         if (!con) return -1;
         auto task = con->task;
@@ -132,9 +132,9 @@ public:
         return task->do_write(*con, task->m_spin_stat);
     }
 
-    static int close(const struct op_event_data* data, void* arg)
+    static int close(const struct op_event_data*, void* arg)
     {
-        connection_t* con = reinterpret_cast<connection_t*>(arg);
+        auto con = reinterpret_cast<connection_t*>(arg);
         assert(con);
         if (!con) return -1;
         auto task = con->task;
@@ -188,9 +188,9 @@ network_task::~network_task()
     }
 }
 
-network_task::network_task(network_task&& orig)
+network_task::network_task(network_task&& orig) noexcept
     : m_active(orig.m_active)
-    , m_config(orig.m_config)
+    , m_config(std::move(orig.m_config))
     , m_stat(orig.m_stat)
     , m_driver(std::move(orig.m_driver))
     , m_loop(std::move(orig.m_loop))
@@ -408,7 +408,7 @@ network_task::new_connection(const network_sockaddr& server,
             sock, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout));
     }
 
-    return std::unique_ptr<connection_t>(new connection_t{
+    return std::make_unique<connection_t>(connection_t{
         .fd = sock,
         .state = STATE_INIT,
         .buffer =

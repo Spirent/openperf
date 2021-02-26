@@ -123,7 +123,7 @@ public:
     network_task(const config_t&, const drivers::driver_ptr& driver);
     ~network_task();
     network_task(const network_task&) = delete;
-    network_task(network_task&& orig);
+    network_task(network_task&& orig) noexcept;
 
     config_t config() const { return m_config; }
     void config(const config_t&);
