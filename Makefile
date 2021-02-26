@@ -36,7 +36,7 @@ test_unit: deps
 	@cd tests/unit && $(MAKE)
 
 .PHONY: clean
-clean: image_clean codegen_clean
+clean: image_clean codegen_clean api_clean
 	@cd targets/openperf && $(MAKE) clean
 	@cd targets/libopenperf-shim && $(MAKE) clean
 	@cd pkg && $(MAKE) clean
@@ -95,6 +95,22 @@ libpacket_codegen:
 codegen_clean:
 	@cd src/modules/packet/protocol && $(MAKE) clean
 	@cd src/lib/packet && $(MAKE) clean
+
+###
+# Targets for combined schema api
+###
+.PHONY: api
+api:
+	@mkdir -p build/api
+	$(strip deps/swagger-codegen/swagger-codegen generate \
+		-DoutputFile=openperf.yaml \
+		-l swagger \
+		-i api/schema/v1/openperf.yaml \
+		-o build/api)
+
+.PHONY: api_clean
+api_clean:
+	@rm -rf build/api
 
 ###
 # Targets for code formatting and analysis
