@@ -10,7 +10,7 @@
     - [Let's make a module](module-creation.md)
 
 * Internal APIs:
-    - [Source and Skinks](internal-api.md)
+    - [Source and Sinks](internal-api.md)
 
 * Modules:
     - [Socket](module-socket.md)
