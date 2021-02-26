@@ -836,7 +836,7 @@ No authorization required
 
 Start generating packets
 
-Used to start a non-running generator. Creates a new generator result upon success. 
+Used to start a non-running generator. Creates a new generator result upon success. Sequence numbers for signature traffic start at 0. 
 
 ### Example
 ```python
@@ -1025,7 +1025,7 @@ No authorization required
 
 Replace a running generator with a stopped generator
 
-Atomically swap a running generator with an idle generator. Upon success, the idle generator will be in the run state and the previously running generator will be stopped. 
+Atomically swap a running generator with an idle generator. Additionally, any sequence numbers for matching signature traffic will be copied from the running generator to the idle one.  Upon success, the idle generator will be in the run state, all matching signature traffic sequence numbers will continue uninterrupted, and the previously running generator will be stopped. 
 
 ### Example
 ```python
