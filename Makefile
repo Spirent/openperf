@@ -104,7 +104,7 @@ api:
 	@mkdir -p build/api
 	$(strip deps/swagger-codegen/swagger-codegen generate \
 		-DoutputFile=openperf.yaml \
-		-l swagger \
+		-l swagger-yaml \
 		-i api/schema/v1/openperf.yaml \
 		-o build/api)
 
