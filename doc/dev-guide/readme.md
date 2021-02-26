@@ -1,6 +1,6 @@
 
 
-# OpenPerf Developper Guide
+# OpenPerf Developer Guide
 
 *Table of contents:*
 
