@@ -455,7 +455,7 @@ definitions:
             - inner_ethernet
             - inner_ip
             - inner_transport
-          uniqueItems: true
+        uniqueItems: true
       flow_counters:
         type: array
         description: |
@@ -474,9 +474,9 @@ definitions:
             - jitter_rfc
             - prbs
             - header
-          default:
-            - frame_count
-          uniqueItems: true
+        default:
+          - frame_count
+        uniqueItems: true
     required:
       - protocol_counters
       - flow_counters
