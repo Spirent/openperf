@@ -86,7 +86,7 @@ public:
     tcp_worker(tcp_worker&&) = delete;
     tcp_worker& operator=(const tcp_worker&) = delete;
     tcp_worker& operator=(tcp_worker&&) = delete;
-    ~tcp_worker();
+    ~tcp_worker() = default;
 
     void start();
     void join();
