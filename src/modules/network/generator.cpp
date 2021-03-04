@@ -196,9 +196,9 @@ void generator::config(const model::generator_config& config)
     }
 
     // Find existing read/write tasks
-    auto tasks = m_controller->get_tasks<task::network_task>();
     task::network_task *read_task = nullptr, *write_task = nullptr;
-    for (auto task : tasks) {
+    for (auto bt : m_controller->get_tasks()) {
+        auto* task = static_cast<task::network_task*>(bt);
         switch (task->config().operation) {
         case task::operation_t::READ:
             read_task = task;

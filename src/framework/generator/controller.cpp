@@ -103,4 +103,31 @@ void controller::send(internal::operation_t operation, bool wait)
     if (wait) { m_feedback.wait(); }
 }
 
+std::vector<task_base*> controller::get_tasks()
+{
+    std::vector<task_base*> tasks;
+    std::transform(m_workers.begin(),
+                   m_workers.end(),
+                   std::back_inserter(tasks),
+                   [](auto& worker) { return worker.get_task(); });
+    return tasks;
+}
+
+void controller::remove_task(task_base* task)
+{
+    m_workers.remove_if([this, task](auto& worker) {
+        auto worker_task = worker.get_task();
+        if (worker_task == task) {
+            if (!worker.is_finished()) {
+                // stop the worker thread by directly setting it's finished flag
+                // and sending a broadcast READY message so it is checked
+                worker.set_finished(true);
+                send(internal::operation_t::READY, false);
+            }
+            return true;
+        }
+        return false;
+    });
+}
+
 } // namespace openperf::framework::generator
