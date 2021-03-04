@@ -87,8 +87,8 @@ public:
     void add(std::unique_ptr<T>& task,
              const std::string& name,
              std::optional<uint16_t> core = std::nullopt);
-    template <typename T> std::vector<T*> get_tasks();
-    template <typename T> void remove_task(T* task);
+    std::vector<task_base*> get_tasks();
+    void remove_task(task_base* task);
 
     template <typename S, typename T> void start(T&& processor);
 
@@ -173,34 +173,6 @@ void controller::add(std::unique_ptr<T>& task,
 
     // Wait for READY message
     m_feedback.wait();
-}
-
-template <typename T> std::vector<T*> controller::get_tasks()
-{
-    std::vector<T*> tasks;
-    for (auto& worker : m_workers) {
-        auto task = dynamic_cast<T*>(worker.get_task());
-        if (!task) continue;
-        tasks.push_back(task);
-    }
-    return tasks;
-}
-
-template <typename T> void controller::remove_task(T* task)
-{
-    m_workers.remove_if([this, task](auto& worker) {
-        auto worker_task = dynamic_cast<T*>(worker.get_task());
-        if (worker_task == task) {
-            if (!worker.is_finished()) {
-                // stop the worker thread by directly setting it's finished flag
-                // and sending a broadcast READY message so it is checked
-                worker.set_finished(true);
-                send(internal::operation_t::READY, false);
-            }
-            return true;
-        }
-        return false;
-    });
 }
 
 } // namespace openperf::framework::generator
