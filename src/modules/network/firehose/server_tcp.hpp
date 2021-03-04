@@ -34,9 +34,9 @@ private:
     drivers::driver_ptr m_driver;
     std::unique_ptr<void, op_socket_deleter> m_accept_pub;
     std::thread m_thread;
-    int m_eventfd;
-    int m_acceptfd;
-    bool m_running;
+    int m_eventfd;  /* eventfd used to wakeup from poll */
+    int m_acceptfd; /* socket fd used for accept() */
+    bool m_running; /* acceptor is running */
 
     void run();
 
