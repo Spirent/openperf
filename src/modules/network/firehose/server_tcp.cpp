@@ -196,7 +196,7 @@ void tcp_acceptor::stop()
     // signal thread to stop
     m_running = false;
 
-    // wakeup the thread
+    // wakeup the accept thread by writing to eventfd
     if (eventfd_write(m_eventfd, 1) < 0) {
         OP_LOG(OP_LOG_ERROR, "Failed writing to tcp_acceptor eventfd");
         throw std::system_error(
@@ -213,6 +213,7 @@ void tcp_acceptor::stop()
 void tcp_acceptor::run()
 {
     while (m_running) {
+        // use poll to block waiting for accept or eventfd notification
         std::array<struct pollfd, 2> pfd;
         pfd[0] = {.fd = m_eventfd, .events = POLLIN, .revents = 0};
         pfd[1] = {.fd = m_acceptfd, .events = POLLIN, .revents = 0};
@@ -224,6 +225,8 @@ void tcp_acceptor::run()
         if (npoll <= 0) { continue; }
 
         if (pfd[0].revents & POLLIN) {
+            // m_eventfd is used to wake up from poll().  Read it to be nice.
+            // loop will probably be exiting due to m_running change.
             eventfd_t value = 0;
             eventfd_read(m_eventfd, &value);
         }
