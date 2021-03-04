@@ -146,15 +146,17 @@ void block_generator::config(const model::block_generator_config& value)
     reset();
 
     if (value.reads_per_sec && value.read_size) {
+        auto task = std::make_unique<block_task>(
+            make_task_config(value, task_operation::READ));
         m_controller.add(
-            block_task{make_task_config(value, task_operation::READ)},
-            NAME_PREFIX + std::to_string(m_serial_number) + "_read");
+            task, NAME_PREFIX + std::to_string(m_serial_number) + "_read");
     }
 
     if (value.writes_per_sec && value.write_size) {
+        auto task = std::make_unique<block_task>(
+            make_task_config(value, task_operation::WRITE));
         m_controller.add(
-            block_task{make_task_config(value, task_operation::WRITE)},
-            NAME_PREFIX + std::to_string(m_serial_number) + "_write");
+            task, NAME_PREFIX + std::to_string(m_serial_number) + "_write");
     }
 
     if (m_running) m_controller.resume();

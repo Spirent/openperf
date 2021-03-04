@@ -51,7 +51,8 @@ public:
     ~worker();
 
     template <typename T>
-    void start(T&&, std::optional<uint16_t> core_id = std::nullopt);
+    void start(std::unique_ptr<T>&,
+               std::optional<uint16_t> core_id = std::nullopt);
     bool is_finished() const { return m_finished; }
     void set_finished(bool val) { m_finished = val; }
     task_base* get_task() { return m_task.get(); }
@@ -71,15 +72,13 @@ private:
 
 // Methods : public
 template <typename T>
-void worker::start(T&& task, std::optional<uint16_t> core_id)
+void worker::start(std::unique_ptr<T>& task, std::optional<uint16_t> core_id)
 {
     if (!m_finished) return;
 
-    // Create copy of task object and store in m_task pointer
-    // m_task stores the base class so pass derived class in task_ptr
-    // to the run() function because that is also a template function.
-    T* task_ptr = new T(std::move(task));
-    m_task.reset(task_ptr);
+    T* task_ptr = task.get();
+    assert(task_ptr);
+    m_task.reset(task.release());
 
     m_finished = false;
 

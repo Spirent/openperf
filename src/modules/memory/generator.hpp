@@ -118,7 +118,7 @@ void generator::configure_tasks(const operation_config& op_config,
                                                     op_config.pattern));
 
     for (size_t i = 0; i < op_config.threads; i++) {
-        auto task = TaskType(task_memory_config{
+        auto task = std::make_unique<TaskType>(task_memory_config{
             .block_size = op_config.block_size,
             .op_per_sec = op_config.op_per_sec / op_config.threads,
             .pattern = op_config.pattern,
@@ -126,7 +126,7 @@ void generator::configure_tasks(const operation_config& op_config,
             .indexes = index_initializer,
         });
 
-        m_controller.add(std::move(task),
+        m_controller.add(task,
                          NAME_PREFIX + std::to_string(m_serial_number)
                              + thread_suffix + std::to_string(i + 1));
     }

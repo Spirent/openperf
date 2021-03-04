@@ -214,10 +214,9 @@ void generator::config(const model::generator_config& config)
         t_config.block_size = m_config.read_size;
         t_config.ops_per_sec = m_config.reads_per_sec;
         if (!read_task) {
-            auto task = task::network_task(t_config, nd);
-            m_controller->add(std::move(task),
-                              NAME_PREFIX + std::to_string(m_serial_number)
-                                  + "r");
+            auto task = std::make_unique<task::network_task>(t_config, nd);
+            m_controller->add(
+                task, NAME_PREFIX + std::to_string(m_serial_number) + "r");
         } else {
             read_task->config(t_config);
         }
@@ -230,10 +229,9 @@ void generator::config(const model::generator_config& config)
         t_config.block_size = m_config.write_size;
         t_config.ops_per_sec = m_config.writes_per_sec;
         if (!write_task) {
-            auto task = task::network_task(t_config, nd);
-            m_controller->add(std::move(task),
-                              NAME_PREFIX + std::to_string(m_serial_number)
-                                  + "w");
+            auto task = std::make_unique<task::network_task>(t_config, nd);
+            m_controller->add(
+                task, NAME_PREFIX + std::to_string(m_serial_number) + "w");
         } else {
             write_task->config(t_config);
         }

@@ -76,7 +76,7 @@ std::optional<double> get_field(const cpu_stat& stat, std::string_view name)
     return std::nullopt;
 }
 
-auto config_mode(double utilization, uint16_t core_count)
+auto create_tasks(double utilization, uint16_t core_count)
 {
     if (utilization <= 0 || 100 * core_count < utilization) {
         throw std::runtime_error("System utilization value "
@@ -85,15 +85,16 @@ auto config_mode(double utilization, uint16_t core_count)
                                  + std::to_string(100 * core_count));
     }
 
-    std::vector<internal::task_cpu_system> tasks;
+    std::vector<std::unique_ptr<internal::task_cpu_system>> tasks;
     for (uint16_t core = 0; core < core_count; ++core) {
-        tasks.emplace_back(core, core_count, utilization / core_count);
+        tasks.emplace_back(std::make_unique<internal::task_cpu_system>(
+            core, core_count, utilization / core_count));
     }
 
     return tasks;
 }
 
-auto config_mode(const cores_config& cores, uint16_t core_count)
+auto create_tasks(const cores_config& cores, uint16_t core_count)
 {
     if (cores.size() > core_count) {
         throw std::runtime_error(
@@ -101,7 +102,7 @@ auto config_mode(const cores_config& cores, uint16_t core_count)
             + std::to_string(core_count) + ").");
     }
 
-    std::vector<internal::task_cpu> tasks;
+    std::vector<std::unique_ptr<internal::task_cpu>> tasks;
     for (size_t core = 0; core < cores.size(); ++core) {
         auto core_conf = cores.at(core);
         for (const auto& target : core_conf.targets) {
@@ -120,7 +121,7 @@ auto config_mode(const cores_config& cores, uint16_t core_count)
         }
 
         core_conf.core = core;
-        tasks.emplace_back(core_conf);
+        tasks.emplace_back(std::make_unique<internal::task_cpu>(core_conf));
     }
 
     return tasks;
@@ -206,20 +207,20 @@ void generator::config(const generator_config& config)
     std::visit(
         [this](auto&& conf) {
             auto cores = available_cores();
-            auto task_list = config_mode(conf, cores.size());
+            auto task_list = create_tasks(conf, cores.size());
 
             m_core_count = cores.size();
             m_config = conf;
             m_stat = {task_list.size()};
 
             m_controller.clear();
-            for (auto&& task : task_list) {
-                auto task_config = task.config();
+            for (auto& task : task_list) {
+                auto task_config = task->config();
                 m_stat.cores[task_config.core].targets.resize(
                     task_config.targets.size());
 
                 m_controller.add(
-                    std::move(task),
+                    task,
                     NAME_PREFIX + std::to_string(m_serial_number) + "_c"
                         + std::to_string(cores.at(task_config.core)),
                     cores.at(task_config.core));

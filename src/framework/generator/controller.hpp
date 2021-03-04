@@ -84,7 +84,7 @@ public:
     void reset() { send(internal::operation_t::RESET); }
 
     template <typename T>
-    void add(T&& task,
+    void add(std::unique_ptr<T>& task,
              const std::string& name,
              std::optional<uint16_t> core = std::nullopt);
     template <typename T> std::vector<T*> get_tasks();
@@ -151,7 +151,7 @@ template <typename S, typename T> void controller::start(T&& processor)
 }
 
 template <typename T>
-void controller::add(T&& task,
+void controller::add(std::unique_ptr<T>& task,
                      const std::string& name,
                      std::optional<uint16_t> core)
 {
@@ -169,7 +169,7 @@ void controller::add(T&& task,
 
     auto& worker =
         m_workers.emplace_back(std::move(control), std::move(stats), name);
-    worker.start(std::forward<T>(task), core);
+    worker.start(task, core);
 
     // Wait for READY message
     m_feedback.wait();
