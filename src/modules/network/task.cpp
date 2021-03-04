@@ -159,8 +159,6 @@ network_task::network_task(const config_t& configuration,
 
 network_task::~network_task()
 {
-    if (!m_loop) return; // might be null if passed to a move operator
-
     m_active = false;
     auto count = m_loop->count();
     if (count) {
@@ -176,30 +174,7 @@ network_task::~network_task()
             OP_LOG(OP_LOG_DEBUG, "Forcefully closing %zu connections", count);
             m_loop->purge();
         }
-
-        // FIXME:
-        // The worker class calls op_log_close() before exiting the thread
-        // function. Unfortunatley the task object is passed by value as
-        // an argument when creating the thread so this dtor is called
-        // after the thread function exits.
-        // So any logging here will cause log zmq sockets to leak unless
-        // the log socket is closed.
-        op_log_close();
     }
-}
-
-network_task::network_task(network_task&& orig) noexcept
-    : m_active(orig.m_active)
-    , m_config(std::move(orig.m_config))
-    , m_stat(orig.m_stat)
-    , m_driver(std::move(orig.m_driver))
-    , m_loop(std::move(orig.m_loop))
-    , m_operation_timestamp(orig.m_operation_timestamp)
-    , m_connections(std::move(orig.m_connections))
-    , m_write_buffer(std::move(orig.m_write_buffer))
-{
-    // connections have a reference to the task so need to update pointer
-    for (auto& it : m_connections) { it.second->task = this; }
 }
 
 // Methods : public
