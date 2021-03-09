@@ -6,6 +6,7 @@
 #include "api_converters.hpp"
 #include "swagger/converters/tvlp.hpp"
 
+#include "api/api_utils.hpp"
 #include "framework/core/op_core.h"
 #include "framework/config/op_config_utils.hpp"
 #include "message/serialized_message.hpp"
@@ -32,7 +33,7 @@ void response_error(Http::ResponseWriter& rsp, const reply::error& error)
     case reply::error::EXISTS:
         rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
         rsp.send(Http::Code::Bad_Request,
-                 json_error("Item with such ID already existst"));
+                 json_error("Item with ID already exists"));
         break;
     case reply::error::INVALID_ID:
         rsp.headers().add<Http::Header::ContentType>(MIME(Application, Json));
@@ -115,9 +116,8 @@ void handler::list_tvlp(const Rest::Request&, Http::ResponseWriter response)
             std::back_inserter(array),
             [](const auto& item) -> json { return to_swagger(item).toJson(); });
 
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok, array.dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, array);
         return;
     }
 
@@ -291,9 +291,8 @@ void handler::list_results(const Rest::Request&, Http::ResponseWriter response)
             std::back_inserter(array),
             [](const auto& item) -> json { return to_swagger(item).toJson(); });
 
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok, array.dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, array);
         return;
     }
 
@@ -316,9 +315,8 @@ void handler::get_result(const Rest::Request& request,
 
     auto api_reply = submit_request(request::tvlp::result::get{{.id = id}});
     if (auto item = std::get_if<reply::tvlp::result::item>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok, to_swagger(*item).toJson().dump());
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, to_swagger(*item).toJson());
         return;
     }
 
