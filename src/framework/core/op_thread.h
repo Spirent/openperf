@@ -7,6 +7,7 @@
 #define OP_THREAD_NAME_MAX_LENGTH 16
 
 #ifdef __cplusplus
+#include <stdexcept>
 extern "C" {
 #endif
 

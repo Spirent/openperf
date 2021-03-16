@@ -2,7 +2,7 @@
 # Makefile component to build Packet Generator code
 #
 
-PG_DEPENDS += api base_n framework versions packet_protocol range_v3
+PG_DEPENDS += api base_n framework versions packet_protocol packet_stack range_v3
 
 PG_SOURCES += \
 	api_strings.cpp \

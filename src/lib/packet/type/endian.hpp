@@ -6,6 +6,7 @@
 #include <cassert>
 #include <climits>
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 
 namespace libpacket::type::endian {

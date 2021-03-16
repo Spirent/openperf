@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <cassert>
+#include <stdexcept>
+#include <string>
 
 #include "lwip/netif.h"
 #include "lwip/snmp.h"

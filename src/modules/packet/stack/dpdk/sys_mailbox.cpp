@@ -2,6 +2,7 @@
 #include <cassert>
 #include <chrono>
 #include <memory>
+#include <stdexcept>
 
 #include <poll.h>
 #include <sys/eventfd.h>
