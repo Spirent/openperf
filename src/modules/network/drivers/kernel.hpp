@@ -1,6 +1,8 @@
 #ifndef _OP_NETWORK_DRIVER_KERNEL_HPP_
 #define _OP_NETWORK_DRIVER_KERNEL_HPP_
 
+#include <string_view>
+
 #include "driver.hpp"
 
 namespace openperf::network::internal::drivers {

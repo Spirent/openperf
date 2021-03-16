@@ -1,8 +1,9 @@
 #include <algorithm>
 #include <numeric>
-#include <vector>
 #include <map>
 #include <memory>
+#include <stdexcept>
+#include <vector>
 
 #include "core/op_log.h"
 #include "packet/bpf/bpf.hpp"

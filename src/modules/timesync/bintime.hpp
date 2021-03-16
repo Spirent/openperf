@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 
 #include <sys/time.h>
@@ -21,13 +22,11 @@ struct bintime
 
 inline int compare(const bintime& lhs, const bintime& rhs)
 {
-    return (lhs.bt_sec < rhs.bt_sec
-                ? -1
-                : lhs.bt_sec > rhs.bt_sec
-                      ? 1
-                      : lhs.bt_frac < rhs.bt_frac
-                            ? -1
-                            : lhs.bt_frac > rhs.bt_frac ? 1 : 0);
+    return (lhs.bt_sec < rhs.bt_sec     ? -1
+            : lhs.bt_sec > rhs.bt_sec   ? 1
+            : lhs.bt_frac < rhs.bt_frac ? -1
+            : lhs.bt_frac > rhs.bt_frac ? 1
+                                        : 0);
 }
 
 inline bool operator==(const bintime& lhs, const bintime& rhs)

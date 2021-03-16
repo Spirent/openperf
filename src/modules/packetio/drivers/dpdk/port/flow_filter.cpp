@@ -24,9 +24,9 @@ static void log_flow_error(enum flow_error_type type,
                            const rte_flow_error& error)
 {
     std::string_view action =
-        (type == flow_error_type::validation
-             ? "validation"
-             : type == flow_error_type::addition ? "addition" : "deletion");
+        (type == flow_error_type::validation ? "validation"
+         : type == flow_error_type::addition ? "addition"
+                                             : "deletion");
     if (error.message) {
         OP_LOG(OP_LOG_ERROR,
                "Flow %.*s failed: %s\n",
@@ -35,7 +35,7 @@ static void log_flow_error(enum flow_error_type type,
                error.message);
     } else if (error.cause) {
         OP_LOG(OP_LOG_ERROR,
-               "Flow %.*s failed: %s\n",
+               "Flow %.*s failed: %p\n",
                static_cast<int>(action.size()),
                action.data(),
                error.cause);

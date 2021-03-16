@@ -2,6 +2,7 @@
 #define _CPU_INSTRUCTION_SET_HPP_
 
 #include <array>
+#include <stdexcept>
 #include <string_view>
 #include <utility>
 

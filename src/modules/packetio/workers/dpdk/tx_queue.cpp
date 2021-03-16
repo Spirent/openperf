@@ -1,6 +1,7 @@
 #include <cerrno>
 #include <ctime>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <unistd.h>
 #include <vector>

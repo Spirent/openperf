@@ -214,10 +214,10 @@ get_matching_socket_pcb_stats(std::function<bool(const void*)>&& pcb_match_func)
                 stats_map.emplace(
                     pcb,
                     socket_pcb_stats{.pcb = pcb,
-                                     .pcb_stats = to_pcb_stats(sock.pcb()),
                                      .id = id,
                                      .channel_stats =
-                                         get_socket_channel_stats(sock)});
+                                         get_socket_channel_stats(sock),
+                                     .pcb_stats = to_pcb_stats(sock.pcb())});
             }
         } else {
             // Socket without a PCB (shouldn't happen)
