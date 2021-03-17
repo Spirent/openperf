@@ -664,9 +664,11 @@ int op_event_loop_run_timeout(struct op_event_loop* loop, int timeout)
                 _do_event_handling(loop, events, nb_events);
                 _do_event_removals(loop);
             } else if (nb_events < 0) {
-                /* epoll error */
-                op_event_loop_exit(loop);
-                return (-errno);
+                if (errno != EINTR) {
+                    /* epoll error */
+                    op_event_loop_exit(loop);
+                    return (-errno);
+                }
             } else if (SLIST_EMPTY(&loop->always_list)) {
                 /* no ready epoll events and empty always list; must be a
                  * timeout */
