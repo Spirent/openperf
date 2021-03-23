@@ -42,6 +42,7 @@ tags:
   - name: Modules
   - name: PacketGenerators
   - name: Ports
+  - name: Sockets
   - name: Stacks
   - name: TimeSync
   - name: BlockGenerator
@@ -112,6 +113,12 @@ paths:
 
   /stacks/{id}:
     $ref: ./modules/packetio.yaml#/paths/~1stacks~1{id}
+
+  ###
+  # Socket Paths
+  ###
+  /socket-stats:
+    $ref: ./modules/socket.yaml#/paths/~1socket-stats
 
   ###
   # Packet Analyzer Paths
@@ -559,6 +566,12 @@ definitions:
 
   StackStats:
     $ref: ./modules/packetio.yaml#/definitions/StackStats
+
+  ###
+  # Socket definitions
+  ###
+  SocketStats:
+    $ref: ./modules/socket.yaml#/definitions/SocketStats
 
   ###
   # Packet Module protocol definitions

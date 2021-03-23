@@ -99,6 +99,8 @@ public:
 
     void handle_io();
 
+    tcp_pcb* pcb() const { return m_pcb.get(); }
+
     /***
      * Socket state machine functions
      ***/

@@ -33,6 +33,11 @@ public:
 
     int handle_requests(int fd);
 
+    const std::unordered_map<api::socket_id, generic_socket>& sockets() const
+    {
+        return m_sockets;
+    }
+
 private:
     event_loop& m_loop;        /* event loop */
     const void* m_shm_base;    /* shared memory base address */

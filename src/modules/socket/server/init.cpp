@@ -68,3 +68,20 @@ REGISTER_MODULE(socket_server,
                 op_socket_server_start,
                 op_socket_server_stop);
 }
+
+namespace openperf::socket::api {
+
+static openperf::socket::server::service* get_socket_service()
+{
+    return reinterpret_cast<openperf::socket::server::service*>(
+        socket_server.state);
+}
+
+server* get_socket_server()
+{
+    auto svc = get_socket_service();
+    if (!svc) return nullptr;
+    return svc->m_server.get();
+}
+
+} // namespace openperf::socket::api

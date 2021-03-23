@@ -291,6 +291,13 @@ bool dgram_channel::send(pbuf* p, const dgram_sockaddr_ll* sll)
     return (channel_send(*this, p, *sll));
 }
 
+size_t dgram_channel::send_consumable() const
+{
+    /* e.g. the amount of consumable data in the producer's buffer */
+    // This also includes the descriptor data!
+    return (producer_len() - writable());
+}
+
 static dgram_channel_descriptor* to_dgram_descriptor(
     const circular_buffer_consumer<dgram_channel>::peek_data&& peek,
     struct dgram_channel_descriptor& storage)

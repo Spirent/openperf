@@ -16,10 +16,13 @@ class pool;
 }
 
 namespace openperf::socket::server {
+class generic_socket;
 class api_handler;
-}
+} // namespace openperf::socket::server
 
 namespace openperf::socket::api {
+
+union socket_id;
 
 class server
 {
@@ -51,7 +54,16 @@ public:
 
     int start();
     void stop();
+
+    void foreach_socket(
+        std::function<void(const api::socket_id& id,
+                           const socket::server::generic_socket&)>);
 };
+
+/**
+ * Get the socket server instance.
+ */
+server* get_socket_server();
 
 } // namespace openperf::socket::api
 

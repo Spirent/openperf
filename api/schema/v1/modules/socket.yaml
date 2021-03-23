@@ -1,0 +1,66 @@
+paths:
+  /socket-stats:
+    get:
+      operationId: ListSocketStats
+      tags:
+        - Sockets
+      summary: List network socket stats
+      description: >
+        The `sockets-stats` endpoint returns stats for all network sockets that are known by the stack.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/SocketStats"
+
+definitions:
+  SocketStats:
+    type: object
+    description: Socket statistics
+    properties:
+      pid:
+        type: integer
+        description: Process ID which created the socket
+        format: int32
+      sid:
+        type: integer
+        description: The socket ID (used by server)
+        format: int32
+      protocol:
+        type: string
+        description: The protocol type
+        enum:
+          - tcp
+          - udp
+          - raw
+      rxq_bytes:
+        type: integer
+        description: Number of bytes in the socket receive queue
+        format: int64
+      txq_bytes:
+        type: integer
+        description: Number of bytes in the socket transmit queue
+        format: int64
+      local_ip_address:
+        type: string
+        description: The local IP address
+      remote_ip_address:
+        type: string
+        description: The remote IP address
+      local_port:
+        type: integer
+        description: The local port number
+        format: int32
+      remote_port:
+        type: integer
+        description: The remote port number
+        format: int32
+      state:
+        type: string
+        description: The socket state
+      send_queue_length:
+        type: integer
+        description: The number of packets in the protocol send queue
+        format: int32

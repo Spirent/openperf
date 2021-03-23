@@ -72,6 +72,7 @@ public:
     bool send(pbuf* p);
     bool send(pbuf* p, const dgram_ip_addr* addr, in_port_t);
     bool send(pbuf* p, const dgram_sockaddr_ll* sll);
+    size_t send_consumable() const;
 
     bool recv_available() const;
 

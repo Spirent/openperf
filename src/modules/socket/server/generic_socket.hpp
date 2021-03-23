@@ -39,6 +39,8 @@ public:
 
     void handle_io() { m_self->handle_io(); }
 
+    void* pcb() const { return m_self->pcb(); }
+
 private:
     struct socket_concept
     {
@@ -47,6 +49,7 @@ private:
         virtual api::reply_msg handle_request(const api::request_msg&) = 0;
         virtual tl::expected<generic_socket, int> handle_accept(int) = 0;
         virtual void handle_io() = 0;
+        virtual void* pcb() const = 0;
     };
 
     template <typename Socket> struct socket_model final : socket_concept
@@ -71,6 +74,11 @@ private:
         }
 
         void handle_io() override { m_socket.handle_io(); }
+
+        void* pcb() const override
+        {
+            return static_cast<void*>(m_socket.pcb());
+        }
 
         Socket m_socket;
     };
