@@ -220,6 +220,11 @@ stream_channel::recv(iovec iov[],
 {
     if ((readable() == 0)
         && (socket_flags.load(std::memory_order_relaxed) & EFD_NONBLOCK)) {
+        if (auto error = socket_error.load(std::memory_order_acquire);
+            error != 0) {
+            if (error == EOF) return (0);
+            return (tl::make_unexpected(error));
+        }
         return (tl::make_unexpected(EAGAIN));
     }
 
@@ -256,7 +261,7 @@ stream_channel::recv(iovec iov[],
      * any notification we might have; otherwise make sure a notification
      * remains so we know to come back and read the rest.
      */
-    if (!readable()) {
+    if (!readable() && socket_error.load(std::memory_order_acquire) != EOF) {
         ack();
     } else {
         ack_undo();
