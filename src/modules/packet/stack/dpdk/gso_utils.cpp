@@ -261,7 +261,7 @@ uint16_t packet_stack_gso_max_segment_length(const struct tcp_pcb* pcb)
     if (!netif) return (TCP_MSS);
 
     auto ifp = reinterpret_cast<net_interface*>(netif->state);
-    return (std::max(tcp_max_segment(), ifp->max_gso_length()));
+    return (std::min(tcp_max_segment(), ifp->max_gso_length()));
 }
 
 uint16_t packet_stack_gso_segment_ack_partial(struct tcp_seg* seg,
