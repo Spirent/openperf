@@ -62,8 +62,6 @@ rte_mempool* acquire([[maybe_unused]] uint16_t port_id,
     }
 
     return (pool);
-
-    return (nullptr);
 }
 
 void release(const rte_mempool*)
