@@ -9,6 +9,8 @@
 #include "lwip/tcp.h"
 #include "utils/overloaded_visitor.hpp"
 
+#include "core/op_log.h"
+
 namespace openperf::socket::server {
 
 const char* to_string(const tcp_socket_state& state)
@@ -354,7 +356,24 @@ tl::expected<generic_socket, int> tcp_socket::handle_accept(int flags)
     if (!m_acceptq.empty()) { m_channel->notify(); }
 
     tcp_backlog_accepted(pcb);
-    return (generic_socket(tcp_socket(channel_allocator(), flags, pcb)));
+    try {
+        return (generic_socket(tcp_socket(channel_allocator(), flags, pcb)));
+    } catch (const std::bad_alloc&) {
+        // Unable to allocate a socket channel so close the connection
+        std::array<char, IPADDR_STRLEN_MAX> local_ip;
+        std::array<char, IPADDR_STRLEN_MAX> remote_ip;
+        ipaddr_ntoa_r(&pcb->local_ip, local_ip.data(), local_ip.size());
+        ipaddr_ntoa_r(&pcb->remote_ip, remote_ip.data(), remote_ip.size());
+        OP_LOG(OP_LOG_DEBUG,
+               "Failed to allocate socket.  Closing connection "
+               "(local=%s:%hu remote=%s:%hu)",
+               local_ip.data(),
+               pcb->local_port,
+               remote_ip.data(),
+               pcb->remote_port);
+        if (tcp_close(pcb) != ERR_OK) { tcp_abort(pcb); }
+        return tl::make_unexpected(ENOMEM);
+    }
 }
 
 void tcp_socket::handle_io()
