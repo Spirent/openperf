@@ -49,6 +49,13 @@ public:
     /// SocketStats members
 
     /// <summary>
+    /// Unique socket statistics identifier
+    /// </summary>
+    std::string getId() const;
+    void setId(std::string value);
+    bool idIsSet() const;
+    void unsetId();
+    /// <summary>
     /// Process ID which created the socket
     /// </summary>
     int32_t getPid() const;
@@ -63,12 +70,26 @@ public:
     bool sidIsSet() const;
     void unsetSid();
     /// <summary>
-    /// The protocol type
+    /// The interface index the socket is bound to
+    /// </summary>
+    int32_t getIfIndex() const;
+    void setIfIndex(int32_t value);
+    bool ifIndexIsSet() const;
+    void unsetIf_index();
+    /// <summary>
+    /// The socket protocol type
     /// </summary>
     std::string getProtocol() const;
     void setProtocol(std::string value);
     bool protocolIsSet() const;
     void unsetProtocol();
+    /// <summary>
+    /// The protocol ID used for raw and packet sockets
+    /// </summary>
+    int32_t getProtocolId() const;
+    void setProtocolId(int32_t value);
+    bool protocolIdIsSet() const;
+    void unsetProtocol_id();
     /// <summary>
     /// Number of bytes in the socket receive queue
     /// </summary>
@@ -127,12 +148,18 @@ public:
     void unsetSend_queue_length();
 
 protected:
+    std::string m_Id;
+    bool m_IdIsSet;
     int32_t m_Pid;
     bool m_PidIsSet;
     int32_t m_Sid;
     bool m_SidIsSet;
+    int32_t m_If_index;
+    bool m_If_indexIsSet;
     std::string m_Protocol;
     bool m_ProtocolIsSet;
+    int32_t m_Protocol_id;
+    bool m_Protocol_idIsSet;
     int64_t m_Rxq_bytes;
     bool m_Rxq_bytesIsSet;
     int64_t m_Txq_bytes;

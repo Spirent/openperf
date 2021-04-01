@@ -117,8 +117,11 @@ paths:
   ###
   # Socket Paths
   ###
-  /socket-stats:
-    $ref: ./modules/socket.yaml#/paths/~1socket-stats
+  /sockets:
+    $ref: ./modules/socket.yaml#/paths/~1sockets
+
+  /sockets/{id}:
+    $ref: ./modules/socket.yaml#/paths/~1sockets~1{id}
 
   ###
   # Packet Analyzer Paths

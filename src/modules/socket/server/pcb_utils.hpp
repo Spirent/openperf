@@ -32,7 +32,25 @@ struct udp_pcb_stats : ip_pcb_stats
     uint16_t remote_port;
 };
 
-typedef std::variant<std::monostate, tcp_pcb_stats, udp_pcb_stats> pcb_stats;
+struct raw_pcb_stats : ip_pcb_stats
+{
+    uint8_t protocol;
+};
+
+struct packet_pcb_stats
+{
+    uint32_t if_index;
+    int packet_type;
+    uint16_t protocol;
+};
+
+typedef std::variant<std::monostate,
+                     ip_pcb_stats,
+                     tcp_pcb_stats,
+                     udp_pcb_stats,
+                     raw_pcb_stats,
+                     packet_pcb_stats>
+    pcb_stats;
 
 struct socket_id
 {
@@ -57,7 +75,7 @@ struct socket_pcb_stats
 /**
  * Iterate over all TCP PCBs and call a function on each PCB.
  */
-void foreach_tcp_pcb(std::function<void(const tcp_pcb*)>);
+void foreach_tcp_pcb(std::function<void(const tcp_pcb*)>&&);
 
 /**
  * Get TCP PCB stats for the tcp_pcb.
@@ -67,14 +85,23 @@ tcp_pcb_stats get_tcp_pcb_stats(const tcp_pcb*);
 /**
  * Iterate over all UDP PCBs and call a function on each PCB.
  */
-void foreach_udp_pcb(std::function<void(const udp_pcb*)>);
+void foreach_udp_pcb(std::function<void(const udp_pcb*)>&&);
 
 /**
  * Get UDP PCB stats for the udp_pcb.
  */
 udp_pcb_stats get_udp_pcb_stats(const udp_pcb*);
 
-std::list<socket_pcb_stats> get_all_socket_pcb_stats();
+/**
+ * Get matching merged socket and PCB stats.
+ */
+std::vector<socket_pcb_stats> get_matching_socket_pcb_stats(
+    std::function<bool(const void*)>&& pcb_match_func);
+
+/**
+ * Get all merged socket and PCB stats.
+ */
+std::vector<socket_pcb_stats> get_all_socket_pcb_stats();
 
 void dump_socket_pcb_stats();
 

@@ -57,7 +57,7 @@ public:
 
     void foreach_socket(
         std::function<void(const api::socket_id& id,
-                           const socket::server::generic_socket&)>);
+                           const socket::server::generic_socket&)>&&);
 };
 
 /**

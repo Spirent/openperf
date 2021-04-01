@@ -204,7 +204,7 @@ void server::stop()
 
 void server::foreach_socket(
     std::function<void(const socket_id& id,
-                       const socket::server::generic_socket&)> func)
+                       const socket::server::generic_socket&)>&& func)
 {
     std::for_each(m_handlers.begin(), m_handlers.end(), [&](auto& hit) {
         auto& sockets = hit.second->sockets();

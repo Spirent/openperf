@@ -31,9 +31,12 @@ class SocketStats(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'id': 'str',
         'pid': 'int',
         'sid': 'int',
+        'if_index': 'int',
         'protocol': 'str',
+        'protocol_id': 'int',
         'rxq_bytes': 'int',
         'txq_bytes': 'int',
         'local_ip_address': 'str',
@@ -45,9 +48,12 @@ class SocketStats(object):
     }
 
     attribute_map = {
+        'id': 'id',
         'pid': 'pid',
         'sid': 'sid',
+        'if_index': 'if_index',
         'protocol': 'protocol',
+        'protocol_id': 'protocol_id',
         'rxq_bytes': 'rxq_bytes',
         'txq_bytes': 'txq_bytes',
         'local_ip_address': 'local_ip_address',
@@ -58,12 +64,15 @@ class SocketStats(object):
         'send_queue_length': 'send_queue_length'
     }
 
-    def __init__(self, pid=None, sid=None, protocol=None, rxq_bytes=None, txq_bytes=None, local_ip_address=None, remote_ip_address=None, local_port=None, remote_port=None, state=None, send_queue_length=None):  # noqa: E501
+    def __init__(self, id=None, pid=None, sid=None, if_index=None, protocol=None, protocol_id=None, rxq_bytes=None, txq_bytes=None, local_ip_address=None, remote_ip_address=None, local_port=None, remote_port=None, state=None, send_queue_length=None):  # noqa: E501
         """SocketStats - a model defined in Swagger"""  # noqa: E501
 
+        self._id = None
         self._pid = None
         self._sid = None
+        self._if_index = None
         self._protocol = None
+        self._protocol_id = None
         self._rxq_bytes = None
         self._txq_bytes = None
         self._local_ip_address = None
@@ -74,12 +83,18 @@ class SocketStats(object):
         self._send_queue_length = None
         self.discriminator = None
 
+        if id is not None:
+            self.id = id
         if pid is not None:
             self.pid = pid
         if sid is not None:
             self.sid = sid
+        if if_index is not None:
+            self.if_index = if_index
         if protocol is not None:
             self.protocol = protocol
+        if protocol_id is not None:
+            self.protocol_id = protocol_id
         if rxq_bytes is not None:
             self.rxq_bytes = rxq_bytes
         if txq_bytes is not None:
@@ -96,6 +111,28 @@ class SocketStats(object):
             self.state = state
         if send_queue_length is not None:
             self.send_queue_length = send_queue_length
+
+    @property
+    def id(self):
+        """Gets the id of this SocketStats.  # noqa: E501
+
+        Unique socket statistics identifier  # noqa: E501
+
+        :return: The id of this SocketStats.  # noqa: E501
+        :rtype: str
+        """
+        return self._id
+
+    @id.setter
+    def id(self, id):
+        """Sets the id of this SocketStats.
+
+        Unique socket statistics identifier  # noqa: E501
+
+        :param id: The id of this SocketStats.  # noqa: E501
+        :type: str
+        """
+        self._id = id
 
     @property
     def pid(self):
@@ -142,10 +179,32 @@ class SocketStats(object):
         self._sid = sid
 
     @property
+    def if_index(self):
+        """Gets the if_index of this SocketStats.  # noqa: E501
+
+        The interface index the socket is bound to  # noqa: E501
+
+        :return: The if_index of this SocketStats.  # noqa: E501
+        :rtype: int
+        """
+        return self._if_index
+
+    @if_index.setter
+    def if_index(self, if_index):
+        """Sets the if_index of this SocketStats.
+
+        The interface index the socket is bound to  # noqa: E501
+
+        :param if_index: The if_index of this SocketStats.  # noqa: E501
+        :type: int
+        """
+        self._if_index = if_index
+
+    @property
     def protocol(self):
         """Gets the protocol of this SocketStats.  # noqa: E501
 
-        The protocol type  # noqa: E501
+        The socket protocol type  # noqa: E501
 
         :return: The protocol of this SocketStats.  # noqa: E501
         :rtype: str
@@ -156,12 +215,34 @@ class SocketStats(object):
     def protocol(self, protocol):
         """Sets the protocol of this SocketStats.
 
-        The protocol type  # noqa: E501
+        The socket protocol type  # noqa: E501
 
         :param protocol: The protocol of this SocketStats.  # noqa: E501
         :type: str
         """
         self._protocol = protocol
+
+    @property
+    def protocol_id(self):
+        """Gets the protocol_id of this SocketStats.  # noqa: E501
+
+        The protocol ID used for raw and packet sockets  # noqa: E501
+
+        :return: The protocol_id of this SocketStats.  # noqa: E501
+        :rtype: int
+        """
+        return self._protocol_id
+
+    @protocol_id.setter
+    def protocol_id(self, protocol_id):
+        """Sets the protocol_id of this SocketStats.
+
+        The protocol ID used for raw and packet sockets  # noqa: E501
+
+        :param protocol_id: The protocol_id of this SocketStats.  # noqa: E501
+        :type: int
+        """
+        self._protocol_id = protocol_id
 
     @property
     def rxq_bytes(self):

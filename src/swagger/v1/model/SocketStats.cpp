@@ -19,12 +19,18 @@ namespace model {
 
 SocketStats::SocketStats()
 {
+    m_Id = "";
+    m_IdIsSet = false;
     m_Pid = 0;
     m_PidIsSet = false;
     m_Sid = 0;
     m_SidIsSet = false;
+    m_If_index = 0;
+    m_If_indexIsSet = false;
     m_Protocol = "";
     m_ProtocolIsSet = false;
+    m_Protocol_id = 0;
+    m_Protocol_idIsSet = false;
     m_Rxq_bytes = 0L;
     m_Rxq_bytesIsSet = false;
     m_Txq_bytes = 0L;
@@ -57,6 +63,10 @@ nlohmann::json SocketStats::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    if(m_IdIsSet)
+    {
+        val["id"] = ModelBase::toJson(m_Id);
+    }
     if(m_PidIsSet)
     {
         val["pid"] = m_Pid;
@@ -65,9 +75,17 @@ nlohmann::json SocketStats::toJson() const
     {
         val["sid"] = m_Sid;
     }
+    if(m_If_indexIsSet)
+    {
+        val["if_index"] = m_If_index;
+    }
     if(m_ProtocolIsSet)
     {
         val["protocol"] = ModelBase::toJson(m_Protocol);
+    }
+    if(m_Protocol_idIsSet)
+    {
+        val["protocol_id"] = m_Protocol_id;
     }
     if(m_Rxq_bytesIsSet)
     {
@@ -108,6 +126,11 @@ nlohmann::json SocketStats::toJson() const
 
 void SocketStats::fromJson(nlohmann::json& val)
 {
+    if(val.find("id") != val.end())
+    {
+        setId(val.at("id"));
+        
+    }
     if(val.find("pid") != val.end())
     {
         setPid(val.at("pid"));
@@ -116,10 +139,18 @@ void SocketStats::fromJson(nlohmann::json& val)
     {
         setSid(val.at("sid"));
     }
+    if(val.find("if_index") != val.end())
+    {
+        setIfIndex(val.at("if_index"));
+    }
     if(val.find("protocol") != val.end())
     {
         setProtocol(val.at("protocol"));
         
+    }
+    if(val.find("protocol_id") != val.end())
+    {
+        setProtocolId(val.at("protocol_id"));
     }
     if(val.find("rxq_bytes") != val.end())
     {
@@ -160,6 +191,23 @@ void SocketStats::fromJson(nlohmann::json& val)
 }
 
 
+std::string SocketStats::getId() const
+{
+    return m_Id;
+}
+void SocketStats::setId(std::string value)
+{
+    m_Id = value;
+    m_IdIsSet = true;
+}
+bool SocketStats::idIsSet() const
+{
+    return m_IdIsSet;
+}
+void SocketStats::unsetId()
+{
+    m_IdIsSet = false;
+}
 int32_t SocketStats::getPid() const
 {
     return m_Pid;
@@ -194,6 +242,23 @@ void SocketStats::unsetSid()
 {
     m_SidIsSet = false;
 }
+int32_t SocketStats::getIfIndex() const
+{
+    return m_If_index;
+}
+void SocketStats::setIfIndex(int32_t value)
+{
+    m_If_index = value;
+    m_If_indexIsSet = true;
+}
+bool SocketStats::ifIndexIsSet() const
+{
+    return m_If_indexIsSet;
+}
+void SocketStats::unsetIf_index()
+{
+    m_If_indexIsSet = false;
+}
 std::string SocketStats::getProtocol() const
 {
     return m_Protocol;
@@ -210,6 +275,23 @@ bool SocketStats::protocolIsSet() const
 void SocketStats::unsetProtocol()
 {
     m_ProtocolIsSet = false;
+}
+int32_t SocketStats::getProtocolId() const
+{
+    return m_Protocol_id;
+}
+void SocketStats::setProtocolId(int32_t value)
+{
+    m_Protocol_id = value;
+    m_Protocol_idIsSet = true;
+}
+bool SocketStats::protocolIdIsSet() const
+{
+    return m_Protocol_idIsSet;
+}
+void SocketStats::unsetProtocol_id()
+{
+    m_Protocol_idIsSet = false;
 }
 int64_t SocketStats::getRxqBytes() const
 {

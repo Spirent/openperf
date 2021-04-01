@@ -7,12 +7,21 @@
 #include "socket/api.hpp"
 #include "socket/server/allocator.hpp"
 
+struct ip_pcb;
+struct raw_pcb;
+struct tcp_pcb;
+struct udp_pcb;
+struct packet_pcb;
+
 namespace openperf::socket::server {
 
 class dgram_channel;
 class stream_channel;
 
 typedef std::variant<dgram_channel*, stream_channel*> channel_variant;
+
+typedef std::variant<ip_pcb*, tcp_pcb*, udp_pcb*, raw_pcb*, packet_pcb*>
+    pcb_variant;
 
 /**
  * A type erasing definition of a socket.
@@ -39,7 +48,7 @@ public:
 
     void handle_io() { m_self->handle_io(); }
 
-    void* pcb() const { return m_self->pcb(); }
+    pcb_variant pcb() const { return m_self->pcb(); }
 
 private:
     struct socket_concept
@@ -49,7 +58,7 @@ private:
         virtual api::reply_msg handle_request(const api::request_msg&) = 0;
         virtual tl::expected<generic_socket, int> handle_accept(int) = 0;
         virtual void handle_io() = 0;
-        virtual void* pcb() const = 0;
+        virtual pcb_variant pcb() const = 0;
     };
 
     template <typename Socket> struct socket_model final : socket_concept
@@ -75,10 +84,7 @@ private:
 
         void handle_io() override { m_socket.handle_io(); }
 
-        void* pcb() const override
-        {
-            return static_cast<void*>(m_socket.pcb());
-        }
+        pcb_variant pcb() const override { return m_socket.pcb(); }
 
         Socket m_socket;
     };
