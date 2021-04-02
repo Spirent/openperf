@@ -155,6 +155,7 @@ from client.models.port_config_dpdk_link import PortConfigDpdkLink
 from client.models.port_stats import PortStats
 from client.models.port_status import PortStatus
 from client.models.rx_flow import RxFlow
+from client.models.socket_stats import SocketStats
 from client.models.spirent_signature import SpirentSignature
 from client.models.spirent_signature_fill import SpirentSignatureFill
 from client.models.stack import Stack

@@ -1,0 +1,102 @@
+parameters:
+  id:
+    name: id
+    in: path
+    description: Unique resource identifier
+    type: string
+    format: string
+    required: true
+
+paths:
+  /sockets:
+    get:
+      operationId: ListSocketStats
+      tags:
+        - Sockets
+      summary: List network socket statistics
+      description: >
+        The `sockets` endpoint returns statistics for all network sockets that are known by the stack.
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/SocketStats"
+  /sockets/{id}:
+    get:
+      operationId: GetSocketStats
+      tags:
+        - Sockets
+      summary: Get a socket's statistics
+      description: Return a socket's statistics by id.
+      parameters:
+        - $ref: "#/parameters/id"
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: "#/definitions/SocketStats"
+
+definitions:
+  SocketStats:
+    type: object
+    description: Socket statistics
+    properties:
+      id:
+        type: string
+        description: Unique socket statistics identifier
+      pid:
+        type: integer
+        description: Process ID which created the socket
+        format: int32
+      sid:
+        type: integer
+        description: The socket ID (used by server)
+        format: int32
+      if_index:
+        type: integer
+        description: The interface index the socket is bound to
+        format: int32
+      protocol:
+        type: string
+        description: The socket protocol type
+        enum:
+          - ip
+          - tcp
+          - udp
+          - raw
+          - packet
+      protocol_id:
+        type: integer
+        description: The protocol ID used for raw and packet sockets
+        format: int32
+      rxq_bytes:
+        type: integer
+        description: Number of bytes in the socket receive queue
+        format: int64
+      txq_bytes:
+        type: integer
+        description: Number of bytes in the socket transmit queue
+        format: int64
+      local_ip_address:
+        type: string
+        description: The local IP address
+      remote_ip_address:
+        type: string
+        description: The remote IP address
+      local_port:
+        type: integer
+        description: The local port number
+        format: int32
+      remote_port:
+        type: integer
+        description: The remote port number
+        format: int32
+      state:
+        type: string
+        description: The socket state
+      send_queue_length:
+        type: integer
+        description: The number of packets in the protocol send queue
+        format: int32

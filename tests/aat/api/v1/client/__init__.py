@@ -27,6 +27,7 @@ from client.api.packet_analyzers_api import PacketAnalyzersApi
 from client.api.packet_captures_api import PacketCapturesApi
 from client.api.packet_generators_api import PacketGeneratorsApi
 from client.api.ports_api import PortsApi
+from client.api.sockets_api import SocketsApi
 from client.api.stacks_api import StacksApi
 from client.api.tvlp_api import TVLPApi
 from client.api.time_sync_api import TimeSyncApi
@@ -175,6 +176,7 @@ from client.models.port_config_dpdk_link import PortConfigDpdkLink
 from client.models.port_stats import PortStats
 from client.models.port_status import PortStatus
 from client.models.rx_flow import RxFlow
+from client.models.socket_stats import SocketStats
 from client.models.spirent_signature import SpirentSignature
 from client.models.spirent_signature_fill import SpirentSignatureFill
 from client.models.stack import Stack

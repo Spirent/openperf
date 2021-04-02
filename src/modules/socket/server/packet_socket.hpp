@@ -52,6 +52,8 @@ public:
 
     void handle_io();
 
+    packet_pcb* pcb() const { return m_pcb; }
+
     /***
      * Socket state machine functions
      ***/

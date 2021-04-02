@@ -63,6 +63,8 @@ public:
 
     void handle_io();
 
+    udp_pcb* pcb() const { return m_pcb.get(); }
+
     /***
      * Socket state machine functions
      ***/

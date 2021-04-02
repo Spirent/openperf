@@ -202,6 +202,20 @@ void server::stop()
     m_task.clear();
 }
 
+void server::foreach_socket(
+    std::function<void(const socket_id& id,
+                       const socket::server::generic_socket&)>&& func)
+{
+    std::for_each(m_handlers.begin(), m_handlers.end(), [&](auto& hit) {
+        auto& sockets = hit.second->sockets();
+        std::for_each(sockets.begin(), sockets.end(), [&](auto& sit) {
+            auto& id = sit.first;
+            auto& sock = sit.second;
+            func(id, sock);
+        });
+    });
+}
+
 int server::handle_api_accept(event_loop& loop, const std::any&)
 {
     /**

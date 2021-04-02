@@ -14,6 +14,7 @@ from client.api.packet_analyzers_api import PacketAnalyzersApi
 from client.api.packet_captures_api import PacketCapturesApi
 from client.api.packet_generators_api import PacketGeneratorsApi
 from client.api.ports_api import PortsApi
+from client.api.sockets_api import SocketsApi
 from client.api.stacks_api import StacksApi
 from client.api.tvlp_api import TVLPApi
 from client.api.time_sync_api import TimeSyncApi

@@ -38,7 +38,9 @@ err_t              packet_add_membership(struct packet_pcb* pcb, uint8_t ifindex
 void               packet_drop_membership(struct packet_pcb* pcb, uint8_t ifindex, const uint8_t addr[8]);
 unsigned           packet_stat_total(const struct packet_pcb* pcb);
 unsigned           packet_stat_drops(const struct packet_pcb* pcb);
-
+uint32_t           packet_get_ifindex(const struct packet_pcb *pcb);
+packet_type_t      packet_get_packet_type(const struct packet_pcb *pcb);
+uint16_t            packet_get_proto(const struct packet_pcb *pcb);
 /*
  * Matching packets are copied to sockets, so packets are never
  * consumed by this function.

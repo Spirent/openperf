@@ -323,6 +323,21 @@ unsigned packet_stat_drops(const struct packet_pcb* pcb)
     return (pcb->stats.nb_drops);
 }
 
+uint32_t packet_get_ifindex(const struct packet_pcb *pcb)
+{
+    return pcb->netif_idx;
+}
+
+packet_type_t packet_get_packet_type(const struct packet_pcb *pcb)
+{
+    return pcb->type;
+}
+
+uint16_t packet_get_proto(const struct packet_pcb *pcb)
+{
+    return pcb->proto;
+}
+
 }
 
 #endif /* LWIP_PACKET */
