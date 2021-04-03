@@ -35,7 +35,12 @@ parameters:
     required: true
 
   dynamic_results:
-    $ref: ./modules/dynamic.yaml#/parameters/dynamic_results
+    name: dynamic_results
+    in: body
+    description: Dynamic results configuration
+    required: false
+    schema:
+      $ref: "#/definitions/DynamicResultsConfig"
 
 tags:
   - name: Interfaces
@@ -626,6 +631,15 @@ definitions:
 
   RxFlow:
     $ref: ./modules/packet/analyzer.yaml#/definitions/RxFlow
+
+  ###
+  # Packet Capture definitions
+  ###
+  PacketCapture:
+    $ref: ./modules/packet/capture.yaml#/definitions/PacketCapture
+
+  PacketCaptureResult:
+    $ref: ./modules/packet/capture.yaml#/definitions/PacketCaptureResult
 
   ###
   # Packet Generator definitions

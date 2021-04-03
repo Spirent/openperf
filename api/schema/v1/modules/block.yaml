@@ -8,7 +8,7 @@ parameters:
     required: true
 
   dynamic_results:
-    $ref: "./dynamic.yaml#/parameters/dynamic_results"
+    $ref: "../openperf.yaml#/parameters/dynamic_results"
 
 paths:
   /block-devices:
