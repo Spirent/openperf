@@ -1,12 +1,3 @@
-parameters:
-  dynamic_results:
-    name: dynamic_results
-    in: body
-    description: Dynamic results configuration
-    required: false
-    schema:
-      $ref: "#/definitions/DynamicResultsConfig"
-
 definitions:
   DynamicResultsConfig:
     type: object

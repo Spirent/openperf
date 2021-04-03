@@ -1895,7 +1895,7 @@ class NetworkGeneratorApi(object):
     def toggle_network_generators(self, toggle, **kwargs):  # noqa: E501
         """Replace a running network generator with a stopped network generator  # noqa: E501
 
-        Swap a running network generator with an idle network generator. Upon success, the idle generator will be in the run state, the running generator will be in the stopped state and all active TCP/UDP sessions will be transferred to the newly running generator. If the original network generator had a read/write load and the new network generator does not have this type of load, these sessions will be immediately stopped.    # noqa: E501
+        Swap a running network generator with an idle network generator. Upon success, the idle generator will be in the run state, the running generator will be in the stopped state and all active TCP/UDP sessions will be transferred to the newly running generator. If the original network generator had a read/write load and the new network generator does not have this type of load, these sessions will be immediately stopped.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.toggle_network_generators(toggle, async_req=True)
@@ -1917,7 +1917,7 @@ class NetworkGeneratorApi(object):
     def toggle_network_generators_with_http_info(self, toggle, **kwargs):  # noqa: E501
         """Replace a running network generator with a stopped network generator  # noqa: E501
 
-        Swap a running network generator with an idle network generator. Upon success, the idle generator will be in the run state, the running generator will be in the stopped state and all active TCP/UDP sessions will be transferred to the newly running generator. If the original network generator had a read/write load and the new network generator does not have this type of load, these sessions will be immediately stopped.    # noqa: E501
+        Swap a running network generator with an idle network generator. Upon success, the idle generator will be in the run state, the running generator will be in the stopped state and all active TCP/UDP sessions will be transferred to the newly running generator. If the original network generator had a read/write load and the new network generator does not have this type of load, these sessions will be immediately stopped.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
         >>> thread = api.toggle_network_generators_with_http_info(toggle, async_req=True)

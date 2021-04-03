@@ -924,7 +924,7 @@ No authorization required
 
 Replace a running network generator with a stopped network generator
 
-Swap a running network generator with an idle network generator. Upon success, the idle generator will be in the run state, the running generator will be in the stopped state and all active TCP/UDP sessions will be transferred to the newly running generator. If the original network generator had a read/write load and the new network generator does not have this type of load, these sessions will be immediately stopped.  
+Swap a running network generator with an idle network generator. Upon success, the idle generator will be in the run state, the running generator will be in the stopped state and all active TCP/UDP sessions will be transferred to the newly running generator. If the original network generator had a read/write load and the new network generator does not have this type of load, these sessions will be immediately stopped. 
 
 ### Example
 ```python

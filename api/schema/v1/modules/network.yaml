@@ -8,7 +8,7 @@ parameters:
     required: true
 
   dynamic_results:
-    $ref: "./dynamic.yaml#/parameters/dynamic_results"
+    $ref: "../openperf.yaml#/parameters/dynamic_results"
 
 paths:
   /network/servers:
@@ -372,7 +372,7 @@ paths:
         will be in the stopped state and all active TCP/UDP sessions will be transferred
         to the newly running generator.
         If the original network generator had a read/write load and the new network generator
-        does not have this type of load, these sessions will be immediately stopped. 
+        does not have this type of load, these sessions will be immediately stopped.
       parameters:
         - name: toggle
           in: body
