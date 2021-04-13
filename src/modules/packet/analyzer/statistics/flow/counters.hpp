@@ -49,7 +49,7 @@ struct frame_counter : timestamp_clock<clock_t>
     {
         count += rhs.count;
         first_ = std::min(first_, rhs.first_);
-        last_ = std::max(first_, rhs.last_);
+        last_ = std::max(last_, rhs.last_);
         errors.fcs += rhs.errors.fcs;
         errors.ipv4_checksum += rhs.errors.ipv4_checksum;
         errors.tcp_checksum += rhs.errors.tcp_checksum;
