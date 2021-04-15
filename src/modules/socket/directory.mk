@@ -3,9 +3,11 @@ SOCK_COMMON_SOURCES += \
 	shared_segment.cpp \
 	unix_socket.cpp
 
-ifeq ($(PLATFORM),linux)
+ifeq ($(PLATFORM)-$(ARCH),linux-x86_64)
 	SOCK_COMMON_SOURCES += process_control_linux.cpp
 	SOCK_COMMON_LDLIBS += -lcap
+else
+	SOCK_COMMON_SOURCES += process_control_dummy.cpp
 endif
 
 SOCK_COMMON_LDLIBS += -lrt
