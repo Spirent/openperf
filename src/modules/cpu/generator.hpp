@@ -4,11 +4,11 @@
 #include <atomic>
 
 #include "framework/generator/controller.hpp"
-#include "modules/dynamic/spool.hpp"
+#include "dynamic/spool.hpp"
 
-#include "models/generator.hpp"
-#include "models/generator_result.hpp"
-#include "cpu.hpp"
+#include "cpu/cpu.hpp"
+#include "cpu/models/generator.hpp"
+#include "cpu/models/generator_result.hpp"
 
 namespace openperf::cpu::generator {
 
