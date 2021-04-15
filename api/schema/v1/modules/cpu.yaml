@@ -375,6 +375,7 @@ definitions:
                 - avx
                 - avx2
                 - avx512
+                - neon
             data_type:
               type: string
               description: CPU load target operation data type, actual for chosen instruction set

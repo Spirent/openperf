@@ -97,7 +97,8 @@ model::generator from_swagger(const swagger::CpuGenerator& generator)
                     std::back_inserter(task_conf.targets),
                     [](const auto& t) {
                         return target_config{
-                            .set = to_instruction_set(t->getInstructionSet()),
+                            .set = instruction_set::to_type(
+                                t->getInstructionSet()),
                             .data_type = to_data_type(t->getDataType()),
                             .weight = static_cast<uint>(t->getWeight()),
                         };

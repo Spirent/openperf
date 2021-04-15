@@ -1,8 +1,7 @@
-#include "task_cpu_system.hpp"
+#include <thread>
 
 #include "framework/core/op_log.h"
-
-#include <thread>
+#include "task_cpu_system.hpp"
 
 namespace openperf::cpu::internal {
 
@@ -27,7 +26,7 @@ task_cpu_system::task_cpu_system(uint16_t core,
             {
                 1,
                 target_config{
-                    .set = cpu::instruction_set::SCALAR,
+                    .set = instruction_set::type::SCALAR,
                     .data_type = cpu::data_type::INT32,
                     .weight = 1,
                 },

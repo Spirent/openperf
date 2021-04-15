@@ -4,7 +4,7 @@
 
 #include "instruction_set.hpp"
 
-namespace openperf::cpu {
+namespace openperf::cpu::instruction_set {
 
 /* This bit data comes from https://en.wikipedia.org/wiki/CPUID */
 
@@ -233,7 +233,7 @@ struct xcr0_bits
     xcr0_bits() { data = read_xcr(0); }
 };
 
-bool available(instruction_set t)
+bool available(type t)
 {
     auto features = cpuid_feature_bits();
     auto extended = cpuid_extended_bits();
@@ -251,22 +251,22 @@ bool available(instruction_set t)
      * See ispc/builtins/dispatch.ll for details.
      */
     switch (t) {
-    case instruction_set::SCALAR:
+    case type::SCALAR:
         /* No checks are needed for scalar or auto code */
         return (true);
-    case instruction_set::SSE2:
+    case type::SSE2:
         return (features.ecx.osxsave && xcr0.sse && features.edx.sse2);
-    case instruction_set::SSE4:
+    case type::SSE4:
         return (features.ecx.osxsave && xcr0.sse && features.ecx.sse41
                 && features.ecx.sse42);
-    case instruction_set::AVX:
+    case type::AVX:
         return (features.ecx.osxsave && xcr0.sse && xcr0.avx
                 && features.ecx.avx);
-    case instruction_set::AVX2:
+    case type::AVX2:
         return (features.ecx.osxsave && xcr0.sse && xcr0.avx && features.ecx.avx
                 && features.ecx.f16c && features.ecx.rdrnd
                 && extended.ebx.avx2);
-    case instruction_set::AVX512:
+    case type::AVX512SKX:
         return (features.ecx.osxsave && xcr0.sse && xcr0.avx && xcr0.opmask
                 && xcr0.zmm_hi256 && xcr0.hi16_zmm && extended.ebx.avx2
                 && extended.ebx.avx512f && extended.ebx.avx512dq
@@ -277,4 +277,8 @@ bool available(instruction_set t)
     }
 }
 
-} // namespace openperf::cpu
+std::string_view to_string(type t) { return (detail::to_string(t)); }
+
+type to_type(std::string_view value) { return (detail::to_type(value)); }
+
+} // namespace openperf::cpu::instruction_set

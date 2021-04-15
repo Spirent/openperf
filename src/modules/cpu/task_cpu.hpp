@@ -57,7 +57,7 @@ public:
 
 private:
     void config(const task_cpu_config&);
-    target_ptr make_target(cpu::instruction_set, cpu::data_type);
+    target_ptr make_target(cpu::instruction_set::type, cpu::data_type);
     template <typename Function> std::chrono::nanoseconds run_time(Function&&);
 };
 

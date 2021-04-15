@@ -8,11 +8,17 @@
 
 #include <tl/expected.hpp>
 
-#include "generator.hpp"
-
+#include "models/generator_result.hpp"
 #include "modules/dynamic/api.hpp"
 
-namespace openperf::cpu::generator {
+namespace openperf::cpu {
+
+namespace model {
+class generator;
+}
+
+namespace generator {
+class generator;
 
 class generator_stack
 {
@@ -46,6 +52,8 @@ public:
     bool stop_generator(const std::string& id);
 };
 
-} // namespace openperf::cpu::generator
+} // namespace generator
+
+} // namespace openperf::cpu
 
 #endif // _OP_CPU_GENERATOR_STACK_HPP_

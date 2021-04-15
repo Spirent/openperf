@@ -4,6 +4,7 @@
 #include <optional>
 #include <string_view>
 #include <variant>
+#include <vector>
 
 #include "instruction_set.hpp"
 
@@ -13,8 +14,8 @@ enum class data_type { INT32 = 1, INT64, FLOAT32, FLOAT64 };
 
 struct target_config
 {
-    cpu::instruction_set set;
-    cpu::data_type data_type;
+    instruction_set::type set;
+    data_type data_type;
     uint64_t weight;
 };
 
@@ -28,27 +29,27 @@ struct task_cpu_config
 using cores_config = std::vector<task_cpu_config>;
 using generator_config = std::variant<double, cores_config>;
 
-constexpr cpu::data_type to_data_type(std::string_view value)
+constexpr data_type to_data_type(std::string_view value)
 {
-    if (value == "int32") return cpu::data_type::INT32;
-    if (value == "int64") return cpu::data_type::INT64;
-    if (value == "float32") return cpu::data_type::FLOAT32;
-    if (value == "float64") return cpu::data_type::FLOAT64;
+    if (value == "int32") return data_type::INT32;
+    if (value == "int64") return data_type::INT64;
+    if (value == "float32") return data_type::FLOAT32;
+    if (value == "float64") return data_type::FLOAT64;
 
     throw std::runtime_error(
         "Error from string to data_type converting: Illegal string value");
 }
 
-constexpr std::string_view to_string(cpu::data_type value)
+constexpr std::string_view to_string(data_type value)
 {
     switch (value) {
-    case cpu::data_type::INT32:
+    case data_type::INT32:
         return "int32";
-    case cpu::data_type::INT64:
+    case data_type::INT64:
         return "int64";
-    case cpu::data_type::FLOAT32:
+    case data_type::FLOAT32:
         return "float32";
-    case cpu::data_type::FLOAT64:
+    case data_type::FLOAT64:
         return "float64";
     default:
         return "unknown";

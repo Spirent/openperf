@@ -2,8 +2,13 @@
 # Makefile component to specify cpu code
 #
 
-CPU_DEPENDS += api expected framework json pistache swagger_model \
-	timesync versions
+CPU_DEPENDS += \
+	api \
+	dynamic \
+	expected \
+	framework \
+	timesync \
+	versions
 
 CPU_SOURCES += \
 	api_converters.cpp \
@@ -21,8 +26,17 @@ CPU_SOURCES += \
 	ispc/matrix.ispc
 
 ifeq ($(ARCH),x86_64)
-	CPU_SOURCES += instruction_set_x86.cpp
+	CPU_SOURCES += \
+		task_cpu_x86.cpp \
+		instruction_set_x86.cpp
 	CPU_TEST_SOURCES += instruction_set_x86.cpp
+endif
+
+ifeq ($(ARCH),aarch64)
+	CPU_SOURCES += \
+		task_cpu_aarch64.cpp \
+		instruction_set_aarch64.cpp
+	CPU_TEST_SOURCES += instruction_set_aarch64.cpp
 endif
 
 ifeq ($(PLATFORM), linux)

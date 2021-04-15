@@ -145,40 +145,4 @@ void task_cpu::config(const task_cpu_config& conf)
     }
 }
 
-task_cpu::target_ptr task_cpu::make_target(cpu::instruction_set iset,
-                                           cpu::data_type dtype)
-{
-    switch (iset) {
-    case cpu::instruction_set::SCALAR:
-        switch (dtype) {
-        case cpu::data_type::INT32:
-            return std::make_unique<target_scalar<uint32_t>>();
-        case cpu::data_type::INT64:
-            return std::make_unique<target_scalar<uint64_t>>();
-        case cpu::data_type::FLOAT32:
-            return std::make_unique<target_scalar<float>>();
-        case cpu::data_type::FLOAT64:
-            return std::make_unique<target_scalar<double>>();
-        }
-    case cpu::instruction_set::SSE2:
-    case cpu::instruction_set::SSE4:
-    case cpu::instruction_set::AVX:
-    case cpu::instruction_set::AVX2:
-    case cpu::instruction_set::AVX512:
-        switch (dtype) {
-        case cpu::data_type::INT32:
-            return std::make_unique<target_ispc<uint32_t>>(iset);
-        case cpu::data_type::INT64:
-            return std::make_unique<target_ispc<uint64_t>>(iset);
-        case cpu::data_type::FLOAT32:
-            return std::make_unique<target_ispc<float>>(iset);
-        case cpu::data_type::FLOAT64:
-            return std::make_unique<target_ispc<double>>(iset);
-        }
-    default:
-        throw std::runtime_error("Unknown instruction set "
-                                 + std::string(to_string(iset)));
-    }
-}
-
 } // namespace openperf::cpu::internal
