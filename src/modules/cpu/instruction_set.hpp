@@ -6,18 +6,64 @@
 #include <string_view>
 #include <utility>
 
-#include "ispc/ispc.hpp"
+namespace openperf::cpu::instruction_set {
 
-namespace openperf::cpu {
+/* Scalar instructions are always available */
+constexpr bool scalar_enabled = true;
 
-enum class instruction_set : uint8_t {
+/* Turn our nasty ifdef's into nice boolean constants */
+#ifdef ISPC_TARGET_AUTOMATIC
+constexpr bool automatic_enabled = true;
+#else
+constexpr bool automatic_enabled = false;
+#endif
+
+#ifdef ISPC_TARGET_SSE2
+constexpr bool sse2_enabled = true;
+#else
+constexpr bool sse2_enabled = false;
+#endif
+
+#ifdef ISPC_TARGET_SSE4
+constexpr bool sse4_enabled = true;
+#else
+constexpr bool sse4_enabled = false;
+#endif
+
+#ifdef ISPC_TARGET_AVX
+constexpr bool avx_enabled = true;
+#else
+constexpr bool avx_enabled = false;
+#endif
+
+#ifdef ISPC_TARGET_AVX2
+constexpr bool avx2_enabled = true;
+#else
+constexpr bool avx2_enabled = false;
+#endif
+
+#ifdef ISPC_TARGET_AVX512SKX
+constexpr bool avx512skx_enabled = true;
+#else
+constexpr bool avx512skx_enabled = false;
+#endif
+
+#ifdef ISPC_TARGET_NEON
+constexpr bool neon_enabled = true;
+#else
+constexpr bool neon_enabled = false;
+#endif
+
+enum class type {
     NONE = 0,
     SCALAR,
+    AUTO, /* needed for NEON support */
     SSE2,
     SSE4,
     AVX,
     AVX2,
-    AVX512,
+    AVX512SKX,
+    NEON,
     MAX
 };
 
@@ -28,19 +74,22 @@ constexpr auto associative_array(Pairs&&... pairs)
     return {{std::forward<Pairs>(pairs)...}};
 }
 
-constexpr std::string_view to_string(instruction_set t)
-{
-    constexpr auto instruction_set_names =
-        associative_array<instruction_set, std::string_view>(
-            std::pair(instruction_set::SCALAR, "scalar"),
-            std::pair(instruction_set::SSE2, "sse2"),
-            std::pair(instruction_set::SSE4, "sse4"),
-            std::pair(instruction_set::AVX, "avx"),
-            std::pair(instruction_set::AVX2, "avx2"),
-            std::pair(instruction_set::AVX512, "avx512"));
+/* On x86 platforms, we have explicit algorithms to choose from */
+constexpr auto type_names = associative_array<type, std::string_view>(
+    std::pair(type::SCALAR, "scalar"),
+    std::pair(type::AUTO, "automatic"),
+    std::pair(type::SSE2, "SSE2"),
+    std::pair(type::SSE4, "SSE4"),
+    std::pair(type::AVX, "AVX"),
+    std::pair(type::AVX2, "AVX2"),
+    std::pair(type::AVX512SKX, "AVX512"),
+    std::pair(type::NEON, "NEON"));
 
-    auto cursor = std::begin(instruction_set_names),
-         end = std::end(instruction_set_names);
+namespace detail {
+
+constexpr std::string_view to_string(type t)
+{
+    auto cursor = std::begin(type_names), end = std::end(type_names);
     while (cursor != end) {
         if (cursor->first == t) return (cursor->second);
         cursor++;
@@ -49,39 +98,45 @@ constexpr std::string_view to_string(instruction_set t)
     return ("unknown");
 }
 
-constexpr cpu::instruction_set to_instruction_set(std::string_view value)
+constexpr type to_type(std::string_view value)
 {
-    if (value == "scalar") return cpu::instruction_set::SCALAR;
-    if (value == "sse2") return cpu::instruction_set::SSE2;
-    if (value == "sse4") return cpu::instruction_set::SSE4;
-    if (value == "avx") return cpu::instruction_set::AVX;
-    if (value == "avx2") return cpu::instruction_set::AVX2;
-    if (value == "avx512") return cpu::instruction_set::AVX512;
+    auto cursor = std::begin(type_names), end = std::end(type_names);
+    while (cursor != end) {
+        if (cursor->second == value) return (cursor->first);
+        cursor++;
+    }
 
-    throw std::runtime_error("Error from string to instruction_set converting: "
-                             "Illegal string value");
+    return (type::NONE);
 }
 
-constexpr bool enabled(instruction_set t)
+} // namespace detail
+
+constexpr bool enabled(type t)
 {
-    constexpr auto sets_enabled = associative_array<instruction_set, bool>(
-        std::pair(instruction_set::SCALAR, true),
-        std::pair(instruction_set::SSE2, ispc::sse2_enabled),
-        std::pair(instruction_set::SSE4, ispc::sse4_enabled),
-        std::pair(instruction_set::AVX, ispc::avx_enabled),
-        std::pair(instruction_set::AVX2, ispc::avx2_enabled),
-        std::pair(instruction_set::AVX512, ispc::avx512skx_enabled));
+    constexpr auto sets_enabled = associative_array<type, bool>(
+        std::pair(type::SCALAR, true),
+        std::pair(type::AUTO, automatic_enabled),
+        std::pair(type::SSE2, sse2_enabled),
+        std::pair(type::SSE4, sse4_enabled),
+        std::pair(type::AVX, avx_enabled),
+        std::pair(type::AVX2, avx2_enabled),
+        std::pair(type::AVX512SKX, avx512skx_enabled),
+        std::pair(type::NEON, neon_enabled));
 
     auto cursor = std::begin(sets_enabled), end = std::end(sets_enabled);
     while (cursor != end) {
         if (cursor->first == t) return (cursor->second);
         cursor++;
     }
+
     return (false);
 }
 
-bool available(instruction_set t);
+bool available(type t);
 
-} // namespace openperf::cpu
+std::string_view to_string(type t);
+type to_type(std::string_view value);
+
+} // namespace openperf::cpu::instruction_set
 
 #endif /* _CPU_INSTRUCTION_SET_HPP_ */
