@@ -1,8 +1,10 @@
-#include <zmq.h>
 #include <forward_list>
 
-#include "server.hpp"
-#include "cpu.hpp"
+#include <zmq.h>
+
+#include "cpu/cpu.hpp"
+#include "cpu/generator.hpp"
+#include "cpu/server.hpp"
 #include "framework/core/op_cpu.h"
 #include "framework/config/op_config_utils.hpp"
 #include "framework/message/serialized_message.hpp"

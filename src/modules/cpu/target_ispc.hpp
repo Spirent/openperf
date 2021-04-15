@@ -2,8 +2,9 @@
 #define _OP_CPU_TARGET_ISPC_HPP_
 
 #include <vector>
+
+#include "function_wrapper.hpp"
 #include "target.hpp"
-#include "matrix.hpp"
 
 namespace openperf::cpu::internal {
 
@@ -20,7 +21,7 @@ private:
     function_t m_operation;
 
 public:
-    target_ispc(cpu::instruction_set iset)
+    target_ispc(instruction_set::type iset)
     {
         matrix_a.resize(size * size);
         matrix_b.resize(size * size);

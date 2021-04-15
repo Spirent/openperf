@@ -1,5 +1,6 @@
-#include "generator_stack.hpp"
-
+#include "cpu/generator.hpp"
+#include "cpu/generator_stack.hpp"
+#include "cpu/models/generator.hpp"
 #include "framework/utils/overloaded_visitor.hpp"
 
 namespace openperf::cpu::generator {

@@ -4,8 +4,9 @@
 
 #include "catch.hpp"
 #include "cpu/matrix.hpp"
+#include "test_ispc_target.hpp"
 
-using openperf::cpu::instruction_set;
+using isa_type = openperf::cpu::instruction_set::type;
 using namespace openperf::cpu::internal;
 
 using function_t = void (*)(const uint32_t[],
@@ -19,8 +20,8 @@ TEST_CASE("CPU matrix multiplication", "[cpu]")
 {
     SECTION("SCALAR")
     {
-        REQUIRE(enabled(instruction_set::SCALAR));
-        REQUIRE(available(instruction_set::SCALAR));
+        REQUIRE(enabled(isa_type::SCALAR));
+        REQUIRE(available(isa_type::SCALAR));
 
         // Matrix A:
         // {12, 52, 49, 20},
@@ -61,7 +62,7 @@ TEST_CASE("CPU matrix multiplication", "[cpu]")
                                           4313};
 
         std::vector<uint32_t> matrix_c(16);
-        scalar::multiplicate_matrix_uint32(
+        scalar::multiply_matrix_uint32(
             matrix_a.data(), matrix_b.data(), matrix_c.data(), 4);
 
         REQUIRE(std::equal(matrix_c.begin(), matrix_c.end(), matrix_r.begin()));
@@ -88,24 +89,18 @@ TEST_CASE("CPU matrix multiplication", "[cpu]")
         std::generate(matrix_a.begin(), matrix_a.end(), get_random);
         std::generate(matrix_b.begin(), matrix_b.end(), get_random);
 
-        std::string benchmark_name = "Multiplicate matrix "
+        std::string benchmark_name = "Multiply matrix "
                                      + std::to_string(matrix_size) + "x"
                                      + std::to_string(matrix_size);
 
         BENCHMARK(benchmark_name + " SCALAR")
         {
-            scalar::multiplicate_matrix_uint32(
+            scalar::multiply_matrix_uint32(
                 matrix_a.data(), matrix_b.data(), matrix_r.data(), matrix_size);
         }
 
-        auto instruction_list = {instruction_set::SSE2,
-                                 instruction_set::SSE4,
-                                 instruction_set::AVX,
-                                 instruction_set::AVX2,
-                                 instruction_set::AVX512};
-
         bool vector_test_was_executed = false;
-        for (auto set : instruction_list) {
+        for (auto set : cpu::test::vector_instruction_sets()) {
             auto instruction = std::string(to_string(set));
             std::for_each(instruction.begin(), instruction.end(), [](auto& c) {
                 c = ::toupper(c);
