@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <optional>
 
+#include <unistd.h>
+
 namespace openperf::socket::process_control {
 
 /**
