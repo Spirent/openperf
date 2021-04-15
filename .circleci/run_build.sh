@@ -1,9 +1,11 @@
 set -xe
 
-# The container apparently sees the correct amount of memory, but not
-# not the correct number of cores.  If we use more than ~6 cores, we
-# seem to hit the memory limit and our build commands can get killed.
-CI_CORES=$(if [ $(nproc) -gt 6 ]; then echo 6; else echo $(nproc); fi)
+# If we build too many files in parallel, we'll hit the CircleCI
+# container's memory limit. Hence, we artificially limit the number
+# of parallel builds here.
+MAX_CORES=12
+
+CI_CORES=$(if [ $(nproc) -gt ${MAX_CORES} ]; then echo ${MAX_CORES}; else echo $(nproc); fi)
 
 # Force optimizations to target avx2; all of the CircleCI machines seem
 # to support it and we don't want to get illegal instruction errors when

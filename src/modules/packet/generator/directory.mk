@@ -46,6 +46,19 @@ $(PG_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 	-DBUILD_NUMBER="\"$(BUILD_NUMBER)\"" \
 	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\""
 
+#
+# XXX: Serialize building expand files as the template expansion
+# takes lots of memory that our CircleCI instance doesn't have.
+#
+PG_EXPAND_OBJ_DIR = $(PG_OBJ_DIR)/traffic/header/expand_impl
+$(PG_EXPAND_OBJ_DIR)/ethernet.o: $(PG_EXPAND_OBJ_DIR)/custom.o
+$(PG_EXPAND_OBJ_DIR)/mpls.o: $(PG_EXPAND_OBJ_DIR)/ethernet.o
+$(PG_EXPAND_OBJ_DIR)/vlan.o: $(PG_EXPAND_OBJ_DIR)/mpls.o
+$(PG_EXPAND_OBJ_DIR)/ipv4.o: $(PG_EXPAND_OBJ_DIR)/vlan.o
+$(PG_EXPAND_OBJ_DIR)/ipv6.o: $(PG_EXPAND_OBJ_DIR)/ipv4.o
+$(PG_EXPAND_OBJ_DIR)/tcp.o: $(PG_EXPAND_OBJ_DIR)/ipv6.o
+$(PG_EXPAND_OBJ_DIR)/udp.o: $(PG_EXPAND_OBJ_DIR)/udp.o
+
 PG_TEST_DEPENDS += expected framework json range_v3 packet_protocol
 
 PG_TEST_SOURCES += \
