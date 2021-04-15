@@ -32,7 +32,9 @@ class raise_api_exception(Matcher):
             expect(exc.status).to(equal(self._expected))
 
             if 'headers' in self._otherExpected:
-                expect(exc.headers).to(have_keys(self._otherExpected['headers']))
+                for key, value in exc.headers.items():
+                    if key in self._otherExpected['headers'].keys():
+                        expect(sorted(value)).to(equal(sorted(self._otherExpected['headers'][key])))
 
             return True, [
                 'returned HTTP status: {0} {1}'.format(exc.status, exc.reason),
