@@ -57,7 +57,7 @@ $(PG_EXPAND_OBJ_DIR)/vlan.o: $(PG_EXPAND_OBJ_DIR)/mpls.o
 $(PG_EXPAND_OBJ_DIR)/ipv4.o: $(PG_EXPAND_OBJ_DIR)/vlan.o
 $(PG_EXPAND_OBJ_DIR)/ipv6.o: $(PG_EXPAND_OBJ_DIR)/ipv4.o
 $(PG_EXPAND_OBJ_DIR)/tcp.o: $(PG_EXPAND_OBJ_DIR)/ipv6.o
-$(PG_EXPAND_OBJ_DIR)/udp.o: $(PG_EXPAND_OBJ_DIR)/udp.o
+$(PG_EXPAND_OBJ_DIR)/udp.o: $(PG_EXPAND_OBJ_DIR)/tcp.o
 
 PG_TEST_DEPENDS += expected framework json range_v3 packet_protocol
 
