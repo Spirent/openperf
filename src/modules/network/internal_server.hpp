@@ -1,14 +1,15 @@
 #ifndef _OP_NETWORK_INTERNAL_SERVER_HPP_
 #define _OP_NETWORK_INTERNAL_SERVER_HPP_
 
-#include <atomic>
-#include <thread>
+#include <memory>
 
-#include "modules/dynamic/spool.hpp"
-#include "firehose/server.hpp"
 #include "models/server.hpp"
 
 namespace openperf::network::internal {
+
+namespace firehose {
+class server;
+}
 
 class server : public model::server
 {

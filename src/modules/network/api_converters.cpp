@@ -3,6 +3,9 @@
 #include <iomanip>
 #include <sstream>
 
+#include "network/models/generator.hpp"
+#include "network/models/generator_result.hpp"
+#include "network/models/server.hpp"
 #include "swagger/v1/model/BulkCreateNetworkServersRequest.h"
 #include "swagger/v1/model/BulkDeleteNetworkServersRequest.h"
 #include "swagger/v1/model/BulkCreateNetworkGeneratorsRequest.h"

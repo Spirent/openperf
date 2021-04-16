@@ -4,14 +4,18 @@
 #include <atomic>
 
 #include "framework/generator/controller.hpp"
+#include "network/models/generator.hpp"
+#include "network/models/generator_result.hpp"
 #include "modules/dynamic/spool.hpp"
-
-#include "models/generator.hpp"
-#include "models/generator_result.hpp"
-
 #include "task.hpp"
 
-namespace openperf::network::internal {
+namespace openperf::network {
+
+namespace model {
+class generator_result;
+} // namespace model
+
+namespace internal {
 
 class generator;
 
@@ -67,6 +71,7 @@ public:
                              const dynamic::configuration& cfg);
 };
 
-} // namespace openperf::network::internal
+} // namespace internal
+} // namespace openperf::network
 
 #endif // _OP_CPU_GENERATOR_HPP_

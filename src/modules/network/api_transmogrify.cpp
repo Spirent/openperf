@@ -1,10 +1,12 @@
 #include <sstream>
 
-#include "api.hpp"
-
 #include "framework/message/serialized_message.hpp"
 #include "framework/utils/overloaded_visitor.hpp"
 #include "framework/utils/variant_index.hpp"
+#include "network/api.hpp"
+#include "network/models/generator.hpp"
+#include "network/models/generator_result.hpp"
+#include "network/models/server.hpp"
 
 namespace openperf::network::api {
 

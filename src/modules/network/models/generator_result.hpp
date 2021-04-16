@@ -1,6 +1,7 @@
 #ifndef _OP_NETWORK_GENERATOR_RESULT_MODEL_HPP_
 #define _OP_NETWORK_GENERATOR_RESULT_MODEL_HPP_
 
+#include <optional>
 #include <string_view>
 
 #include "modules/timesync/chrono.hpp"
