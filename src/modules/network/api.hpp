@@ -10,15 +10,16 @@
 #include <zmq.h>
 
 #include "modules/dynamic/api.hpp"
-#include "modules/timesync/chrono.hpp"
-
-#include "models/generator.hpp"
-#include "models/generator_result.hpp"
-#include "models/server.hpp"
 
 namespace openperf::message {
 struct serialized_message;
 }
+
+namespace openperf::network::model {
+class generator;
+class generator_result;
+class server;
+} // namespace openperf::network::model
 
 namespace openperf::network::api {
 

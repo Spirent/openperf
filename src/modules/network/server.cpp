@@ -1,9 +1,15 @@
-#include <zmq.h>
 #include <forward_list>
 
-#include "server.hpp"
-#include "framework/config/op_config_utils.hpp"
-#include "framework/message/serialized_message.hpp"
+#include <zmq.h>
+
+#include "config/op_config_utils.hpp"
+#include "core/op_event_loop.hpp"
+#include "network/generator.hpp"
+#include "network/models/generator.hpp"
+#include "network/models/server.hpp"
+#include "network/internal_server.hpp"
+#include "network/server.hpp"
+#include "message/serialized_message.hpp"
 
 namespace openperf::network::api {
 

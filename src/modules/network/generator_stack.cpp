@@ -1,6 +1,7 @@
-#include "generator_stack.hpp"
-
-#include "framework/utils/overloaded_visitor.hpp"
+#include "network/generator.hpp"
+#include "network/generator_stack.hpp"
+#include "network/models/generator.hpp"
+#include "utils/overloaded_visitor.hpp"
 
 namespace openperf::network::internal {
 
