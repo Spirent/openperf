@@ -1,17 +1,22 @@
 #ifndef _OP_BLOCK_GENERATOR_HPP_
 #define _OP_BLOCK_GENERATOR_HPP_
 
-#include "task.hpp"
-#include "virtual_device.hpp"
-#include "models/generator.hpp"
-#include "models/generator_result.hpp"
-
+#include "block/task.hpp"
 #include "framework/generator/controller.hpp"
-#include "modules/dynamic/spool.hpp"
+#include "dynamic/spool.hpp"
+#include "timesync/chrono.hpp"
 
-#include "modules/timesync/chrono.hpp"
+namespace openperf::block {
 
-namespace openperf::block::generator {
+class virtual_device;
+class virtual_device_stack;
+
+namespace model {
+class block_generator;
+class block_generator_result;
+} // namespace model
+
+namespace generator {
 
 using namespace openperf::block::worker;
 
@@ -69,6 +74,7 @@ private:
                                    task_operation);
 };
 
-} // namespace openperf::block::generator
+} // namespace generator
+} // namespace openperf::block
 
 #endif /* _OP_BLOCK_GENERATOR_HPP_ */

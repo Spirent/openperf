@@ -1,13 +1,18 @@
 #include <cstring>
 #include <stdexcept>
 
-#include "block_generator.hpp"
-#include "device_stack.hpp"
-#include "file_stack.hpp"
+#include "block/block_generator.hpp"
+#include "block/models/generator.hpp"
+#include "block/models/generator_result.hpp"
+#include "block/task.hpp"
+#include "block/virtual_device.hpp"
 
 namespace openperf::block::generator {
 
 using namespace std::chrono_literals;
+
+// using task_stat_t = worker::task_stat_t;
+using block_stat = ::openperf::block::generator::block_generator::block_stat;
 
 static uint16_t serial_counter = 0;
 
@@ -24,8 +29,7 @@ auto to_statistics_t(const task_stat_t& task_stat)
         .latency_max = task_stat.latency_max};
 };
 
-std::optional<double> get_field(const block_generator::block_stat& stat,
-                                std::string_view name)
+std::optional<double> get_field(const block_stat& stat, std::string_view name)
 {
     auto& read = stat.read;
     if (name == "read.ops_target") return read.ops_target;

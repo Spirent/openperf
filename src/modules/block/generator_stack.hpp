@@ -1,15 +1,30 @@
 #ifndef _OP_BLOCK_GENERATOR_STACK_HPP_
 #define _OP_BLOCK_GENERATOR_STACK_HPP_
 
+#include <memory>
+#include <string>
 #include <unordered_map>
 #include <variant>
+#include <vector>
 
 #include "tl/expected.hpp"
 
-#include "block_generator.hpp"
-#include "models/generator_result.hpp"
+namespace dynamic {
+class configuration;
+}
 
-namespace openperf::block::generator {
+namespace openperf::block {
+
+class virtual_device_stack;
+
+namespace model {
+class block_generator;
+class block_generator_result;
+} // namespace model
+
+namespace generator {
+
+class block_generator;
 
 class generator_stack
 {
@@ -45,6 +60,7 @@ public:
     block_generator_result_ptr statistics(const std::string& id) const;
 };
 
-} // namespace openperf::block::generator
+} // namespace generator
+} // namespace openperf::block
 
 #endif /* _OP_BLOCK_GENERATOR_STACK_HPP_ */
