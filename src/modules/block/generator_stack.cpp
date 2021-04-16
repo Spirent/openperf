@@ -1,5 +1,8 @@
-#include "generator_stack.hpp"
-
+#include "block/block_generator.hpp"
+#include "block/generator_stack.hpp"
+#include "block/models/generator.hpp"
+#include "block/models/generator_result.hpp"
+#include "block/virtual_device.hpp"
 #include "framework/utils/overloaded_visitor.hpp"
 #include "framework/utils/variant_index.hpp"
 
