@@ -1,11 +1,13 @@
-#include "api.hpp"
-#include "api_converters.hpp"
-
 #include "framework/config/op_config_utils.hpp"
 #include "framework/core/op_core.h"
 #include "framework/message/serialized_message.hpp"
 #include "modules/api/api_route_handler.hpp"
 #include "modules/dynamic/api.hpp"
+#include "network/api.hpp"
+#include "network/api_converters.hpp"
+#include "network/models/generator.hpp"
+#include "network/models/generator_result.hpp"
+#include "network/models/server.hpp"
 
 #include "swagger/converters/network.hpp"
 

@@ -3,11 +3,11 @@
 
 #include <memory>
 
-#include "framework/core/op_core.h"
+#include "framework/core/op_socket.h"
 
-#include "api.hpp"
-#include "generator_stack.hpp"
-#include "internal_server_stack.hpp"
+#include "network/api.hpp"
+#include "network/generator_stack.hpp"
+#include "network/internal_server_stack.hpp"
 
 namespace openperf::network::api {
 

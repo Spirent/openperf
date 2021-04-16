@@ -1,5 +1,8 @@
-#include "internal_server_stack.hpp"
+#include <stdexcept>
 
+#include "network/internal_server.hpp"
+#include "network/internal_server_stack.hpp"
+#include "network/models/server.hpp"
 #include "framework/utils/overloaded_visitor.hpp"
 
 namespace openperf::network::internal {

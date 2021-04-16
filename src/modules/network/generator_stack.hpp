@@ -8,11 +8,21 @@
 
 #include <tl/expected.hpp>
 
-#include "generator.hpp"
+#include "network/models/generator_result.hpp"
 
-#include "modules/dynamic/api.hpp"
+namespace dynamic {
+class configuration;
+}
 
-namespace openperf::network::internal {
+namespace openperf::network {
+
+namespace model {
+class generator;
+} // namespace model
+
+namespace internal {
+
+class generator;
 
 class generator_stack
 {
@@ -51,6 +61,7 @@ public:
                      const dynamic::configuration& cfg);
 };
 
-} // namespace openperf::network::internal
+} // namespace internal
+} // namespace openperf::network
 
 #endif // _OP_CPU_GENERATOR_STACK_HPP_
