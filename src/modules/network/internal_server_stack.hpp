@@ -8,11 +8,15 @@
 
 #include <tl/expected.hpp>
 
-#include "internal_server.hpp"
+namespace openperf::network {
 
-#include "modules/dynamic/api.hpp"
+namespace model {
+class server;
+}
 
-namespace openperf::network::internal {
+namespace internal {
+
+class server;
 
 class server_stack
 {
@@ -32,6 +36,7 @@ public:
     bool erase(const std::string&);
 };
 
-} // namespace openperf::network::internal
+} // namespace internal
+} // namespace openperf::network
 
 #endif // _OP_CPU_GENERATOR_STACK_HPP_
