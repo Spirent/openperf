@@ -2,19 +2,19 @@
 #define _OP_FRAMEWORK_GENERATOR_WORKER_HPP_
 
 #include <atomic>
+#include <cassert>
 #include <cstring>
 #include <memory>
 #include <optional>
 #include <string>
 #include <thread>
-#include <zmq.h>
 
 #include "framework/core/op_log.h"
 #include "framework/core/op_socket.h"
 #include "framework/core/op_thread.h"
 #include "framework/message/serialized_message.hpp"
 
-#include "task.hpp"
+#include "framework/generator/task.hpp"
 
 namespace openperf::framework::generator::internal {
 

@@ -1,23 +1,18 @@
 #ifndef _OP_FRAMEWORK_GENERATOR_CONTROLLER_HPP_
 #define _OP_FRAMEWORK_GENERATOR_CONTROLLER_HPP_
 
-#include <cassert>
+#include <atomic>
 #include <list>
 #include <memory>
 #include <optional>
 #include <string>
 #include <thread>
-#include <type_traits>
 
-#include <zmq.h>
-
-#include "framework/core/op_log.h"
-#include "framework/core/op_socket.h"
 #include "framework/core/op_thread.h"
 #include "framework/message/serialized_message.hpp"
 
-#include "worker.hpp"
-#include "feedback_tracker.hpp"
+#include "framework/generator/worker.hpp"
+#include "framework/generator/feedback_tracker.hpp"
 
 namespace openperf::framework::generator {
 
@@ -41,6 +36,8 @@ namespace openperf::framework::generator {
  *       READY
  */
 
+class task_base;
+
 // template <typename S> class controller
 class controller final
 {
@@ -55,7 +52,6 @@ private:
         }
     };
 
-private:
     // Attributes
     std::unique_ptr<void, zmq_ctx_deleter> m_context;
     std::string m_control_endpoint;
