@@ -2,8 +2,8 @@
 #define _OP_FRAMEWORK_GENERATOR_FEEDBACK_TRACKER_HPP_
 
 #include <atomic>
-#include <unordered_map>
 #include <condition_variable>
+#include <mutex>
 
 namespace openperf::framework::generator::internal {
 
@@ -21,7 +21,8 @@ class feedback_tracker
 {
 private:
     std::mutex m_mutex;
-    std::atomic_int m_counter = 0;
+    /* XXX: include/cross compile issue here with std::atomic_int. */
+    std::atomic<int> m_counter = 0;
     std::condition_variable m_condition;
 
 public:
