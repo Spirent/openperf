@@ -1,11 +1,12 @@
-#include "network.hpp"
 #include "api/api_internal_client.hpp"
+#include "network/api.hpp"
+#include "network/api_converters.hpp"
+#include "network/models/generator.hpp"
+#include "network/models/generator_result.hpp"
 #include "swagger/converters/network.hpp"
 #include "swagger/v1/model/NetworkGenerator.h"
-#include "modules/network/api.hpp"
-#include "modules/network/api_converters.hpp"
-
 #include "swagger/v1/model/NetworkGeneratorResult.h"
+#include "tvlp/workers/network.hpp"
 
 namespace openperf::tvlp::internal::worker {
 
