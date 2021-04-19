@@ -7,7 +7,6 @@
 #define OP_THREAD_NAME_MAX_LENGTH 16
 
 #ifdef __cplusplus
-#include <stdexcept>
 extern "C" {
 #endif
 
@@ -26,7 +25,10 @@ int op_thread_get_affinity_mask(op_cpuset_t cpuset);
 #endif
 
 #ifdef __cplusplus
+
+#include <stdexcept>
 #include <vector>
+
 inline std::vector<uint16_t> op_get_cpu_online()
 {
     auto current_cpuset = op_cpuset_create();
