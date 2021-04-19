@@ -137,7 +137,7 @@ endef
 
 define op_link_plugin
 	@mkdir -p $(dir $(1))
-	$(strip $(OP_CXX) -fPIC -shared -o $@ $(3) $(2))
+	$(strip $(OP_CXX) -fPIC -shared -o $@ $(OP_LDOPTS) $(OP_CROSSFLAGS) $(OD_LDFLAGS) $(3) $(2))
 endef
 
 define op_link_static_library
