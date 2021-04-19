@@ -18,7 +18,6 @@ OBJECTS := $(call op_generate_objects,$(SOURCES),$(BUILD_DIR))
 BUILD_DEPS := \
 	block \
 	cpu \
-	dynamic \
 	memory \
 	network \
 	packet_analyzer \
