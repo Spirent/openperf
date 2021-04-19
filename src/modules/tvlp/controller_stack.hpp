@@ -1,14 +1,30 @@
 #ifndef _OP_TVLP_CONTROLLER_STACK_HPP_
 #define _OP_TVLP_CONTROLLER_STACK_HPP_
 
+#include <string>
+#include <memory>
 #include <unordered_map>
+#include <vector>
 #include <variant>
-#include "controller.hpp"
-#include "models/tvlp_config.hpp"
-#include "models/tvlp_result.hpp"
+
 #include "tl/expected.hpp"
 
-namespace openperf::tvlp::internal {
+//#include "controller.hpp"
+//#include "models/tvlp_config.hpp"
+//#include "models/tvlp_result.hpp"
+//#include "tl/expected.hpp"
+
+namespace openperf::tvlp {
+
+namespace model {
+class tvlp_configuration_t;
+class tvlp_result_t;
+struct tvlp_start_t;
+} // namespace model
+
+namespace internal {
+
+class controller_t;
 
 class controller_stack
 {
@@ -44,6 +60,7 @@ public:
     tl::expected<void, std::string> erase_result(const std::string& id);
 };
 
-} // namespace openperf::tvlp::internal
+} // namespace internal
+} // namespace openperf::tvlp
 
 #endif /* _OP_TVLP_CONTROLLER_STACK_HPP_ */

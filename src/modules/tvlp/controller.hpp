@@ -1,15 +1,22 @@
 #ifndef _OP_TVLP_CONTROLLER_HPP_
 #define _OP_TVLP_CONTROLLER_HPP_
 
-#include <future>
 #include <atomic>
+#include <memory>
 
-#include "models/tvlp_config.hpp"
-#include "models/tvlp_result.hpp"
-#include "framework/generator/controller.hpp"
-#include "worker.hpp"
+#include "tvlp/models/tvlp_config.hpp"
 
-namespace openperf::tvlp::internal {
+namespace openperf::tvlp {
+
+namespace model {
+class tvlp_result_t;
+}
+
+namespace internal {
+
+namespace worker {
+class tvlp_worker_t;
+}
 
 class controller_t : public model::tvlp_configuration_t
 {
@@ -40,6 +47,7 @@ public:
     model::tvlp_configuration_t model();
 };
 
-} // namespace openperf::tvlp::internal
+} // namespace internal
+} // namespace openperf::tvlp
 
 #endif // _OP_MEMORY_GENERATOR_HPP_

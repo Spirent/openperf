@@ -1,4 +1,8 @@
-#include "controller_stack.hpp"
+#include "tvlp/controller.hpp"
+#include "tvlp/controller_stack.hpp"
+#include "tvlp/models/tvlp_config.hpp"
+#include "tvlp/models/tvlp_result.hpp"
+#include "tvlp/worker.hpp"
 
 namespace openperf::tvlp::internal {
 
