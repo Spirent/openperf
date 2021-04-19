@@ -6,11 +6,10 @@
 #include <variant>
 
 #include <tl/expected.hpp>
-#include <zmq.h>
 
-#include "generator.hpp"
-#include "info.hpp"
-#include "memory_stat.hpp"
+#include "dynamic/api.hpp"
+#include "memory/generator.hpp"
+#include "memory/info.hpp"
 
 namespace openperf::memory::api {
 

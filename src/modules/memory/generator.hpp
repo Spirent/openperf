@@ -4,14 +4,16 @@
 #include <atomic>
 #include <future>
 
-#include "buffer.hpp"
-#include "memory_stat.hpp"
-#include "task_memory.hpp"
+#include "memory/io_pattern.hpp"
+#include "memory/memory_stat.hpp"
+#include "memory/task_memory.hpp"
 
 #include "framework/generator/controller.hpp"
-#include "modules/dynamic/spool.hpp"
+#include "dynamic/spool.hpp"
 
 namespace openperf::memory::internal {
+
+class buffer;
 
 class generator
 {
