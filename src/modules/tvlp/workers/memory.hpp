@@ -1,8 +1,21 @@
 #ifndef _OP_TVLP_MEMORY_WORKER_HPP_
 #define _OP_TVLP_MEMORY_WORKER_HPP_
 
+#include <memory>
+#include <string>
+
+#include "tl/expected.hpp"
+
+#include "tvlp/models/tvlp_config.hpp"
 #include "tvlp/worker.hpp"
-#include "modules/memory/buffer.hpp"
+
+namespace openperf::dynamic {
+struct configuration;
+}
+
+namespace openperf::memory::internal {
+class buffer;
+}
 
 namespace openperf::tvlp::internal::worker {
 
