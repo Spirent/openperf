@@ -46,7 +46,7 @@ $(LIBPCAP_OBJ_DIR)/Makefile: $(LIBPCAP_SRC_DIR)/configure
 # Since this function appears to be included for compatibility reasons
 # and openperf doesn't need it, strip it to prevent conflicts with DPDK
 LIBPCAP_STRIP_CONFLICTING_SYMBOLS := \
-	objcopy --strip-symbol bpf_validate $(LIBPCAP_LIB_DIR)/libpcap.a
+	$(OP_OBJCOPY) --strip-symbol bpf_validate $(LIBPCAP_LIB_DIR)/libpcap.a
 
 $(LIBPCAP_LIB_DIR)/libpcap.a: $(LIBPCAP_OBJ_DIR)/Makefile
 	cd $(LIBPCAP_OBJ_DIR) && $(MAKE) install && \
