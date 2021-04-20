@@ -38,7 +38,7 @@ CONFIG_RTE_EXEC_ENV_LINUXAPP=y
 CONFIG_RTE_ARCH="arm64"
 CONFIG_RTE_ARCH_ARM64=y
 CONFIG_RTE_ARCH_64=y
-CONFIG_RTE_ARM_FEATURE_ATOMICS=y
+CONFIG_RTE_ARM_FEATURE_ATOMICS=n
 
 # Accelarate rte_memcpy. Be sure to run unit test (memcpy_perf_autotest)
 # to determine the best threshold in code. Refer to notes in source file
@@ -56,7 +56,7 @@ CONFIG_RTE_ARCH_ARM64_MEMCPY=n
 # machine can define specific variables or action for a specific board
 # RTE_MACHINE values are the directories in mk/machine/
 #
-CONFIG_RTE_MACHINE="octeontx2"
+CONFIG_RTE_MACHINE="armv8a"
 
 #
 # The compiler we use.
@@ -438,7 +438,7 @@ CONFIG_RTE_LIBRTE_OCTEONTX_PMD=n
 #
 # Compile burst-oriented Marvell OCTEON TX2 network PMD driver
 #
-CONFIG_RTE_LIBRTE_OCTEONTX2_PMD=y
+CONFIG_RTE_LIBRTE_OCTEONTX2_PMD=n
 
 #
 # Compile WRS accelerated virtual port (AVP) guest PMD driver
@@ -757,7 +757,7 @@ CONFIG_RTE_LIBRTE_PMD_OCTEONTX_SSOVF=n
 #
 # Compile PMD for octeontx2 sso event device
 #
-CONFIG_RTE_LIBRTE_PMD_OCTEONTX2_EVENTDEV=y
+CONFIG_RTE_LIBRTE_PMD_OCTEONTX2_EVENTDEV=n
 
 #
 # Compile PMD for OPDL event device
@@ -845,7 +845,7 @@ CONFIG_RTE_LIBRTE_OCTEONTX_MEMPOOL=n
 #
 # Compile PMD for octeontx2 npa mempool device
 #
-CONFIG_RTE_LIBRTE_OCTEONTX2_MEMPOOL=y
+CONFIG_RTE_LIBRTE_OCTEONTX2_MEMPOOL=n
 
 #
 # Compile librte_mbuf
