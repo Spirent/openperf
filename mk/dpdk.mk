@@ -62,6 +62,7 @@ OP_DEFINES += $(DPDK_DEFINES)
 # DPDK build rules
 ###
 
+# Note: The MLX variables are set in dpdk_ldlibs.mk
 $(DPDK_BLD_DIR)/.config: $(DPDK_DEFCONFIG)
 	cp $(DPDK_DEFCONFIG) $(DPDK_SRC_DIR)/config
 	sed -i -e 's/^CONFIG_RTE_MACHINE="default"/CONFIG_RTE_MACHINE="$(strip $(DPDK_MACHINE))"/' $(DPDK_SRC_DIR)/config/$(notdir $(DPDK_DEFCONFIG))

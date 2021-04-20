@@ -35,6 +35,15 @@ op_generate_objects = $(foreach ext,$(sort $(suffix $(1))),$(call op_objects_tem
 op_build_rule_src_path =\
 	$(if $(filter undefined,$(flavor $(1))),$(2),$(subst //,/,$$($(1))/$(2)))
 
+# Check if a system library is present
+# Evalulates to 1 if library is present or 0 if not present
+# XXX: Need to figure out the presence of libraries when cross compiling
+ifeq ($(ARCH), $(HOST_ARCH)) # e.g. native compile
+op_check_system_lib = $(if $(filter 0, $(shell ldconfig -p | grep $(1) 2>&1 > /dev/null; echo $$?)),1,0)
+else # cross compile
+op_check_system_lib = 0
+endif
+
 ###
 # Build functions
 ###
