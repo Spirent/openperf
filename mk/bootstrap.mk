@@ -25,11 +25,12 @@ OP_CXXFLAGS += -Wno-c11-extensions -Wno-nested-anon-types \
 	-Wno-c99-extensions $(OP_CXXSTD) $(OP_EXTRA_CXXFLAGS)
 OP_CROSSFLAGS :=
 OP_DEFINES :=
+OP_INC_DIRS := $(OP_ROOT)/src
 OP_LDFLAGS += $(OP_EXTRA_LDFLAGS)
 OP_LDLIBS :=
 OP_LDOPTS := -fuse-ld=lld
-OP_INC_DIRS := $(OP_ROOT)/src
 OP_LIB_DIRS :=
+OP_OBJCOPY := llvm-objcopy
 
 OP_CONFIG_OPTS ?=
 
