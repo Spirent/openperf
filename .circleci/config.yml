@@ -43,6 +43,19 @@ jobs:
           paths:
             - project
 
+  cross_compile_aarch64:
+    docker:
+      - image: spirentorion/openperf:latest
+    steps:
+      - checkout
+      - run:
+          name: Cross-compile for Aarch64
+          command: .circleci/run_cross_compile_aarch64.sh
+      - store_artifacts:
+          path: ~/project/build/openperf-linux-aarch64-testing/bin
+      - store_artifacts:
+          path: ~/project/build/libopenperf-shim-linux-aarch64-testing/lib
+
   static_analysis:
     docker:
       - image: spirentorion/openperf:latest
@@ -67,6 +80,7 @@ workflows:
   ci_build:
     jobs:
       - build
+      - cross_compile_aarch64
       - acceptance_tests:
           requires:
             - build
