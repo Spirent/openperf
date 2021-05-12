@@ -110,6 +110,8 @@ public:
 
     /* listen handlers */
     on_request_reply on_request(const api::request_listen&, const tcp_bound&);
+    on_request_reply on_request(const api::request_listen&,
+                                const tcp_listening&);
     on_request_reply on_request(const api::request_listen&, const tcp_error&);
 
     /* connection handlers */
