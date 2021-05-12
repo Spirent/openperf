@@ -13,6 +13,9 @@
 
 namespace openperf::socket::server {
 
+static constexpr auto tcp_backlog_max =
+    static_cast<int>(std::numeric_limits<uint8_t>::max());
+
 const char* to_string(const tcp_socket_state& state)
 {
     return (std::visit(
@@ -414,6 +417,16 @@ tcp_socket::on_request(const api::request_bind& bind, const tcp_init&)
 tcp_socket::on_request_reply
 tcp_socket::on_request(const api::request_listen& listen, const tcp_bound&)
 {
+    auto backlog = listen.backlog;
+    if (backlog > tcp_backlog_max) {
+        // Clip to max limit (same as Linux does)
+        OP_LOG(OP_LOG_INFO,
+               "TCP socket listen backlog %d is too large.  "
+               "Using maximum supported value %d.",
+               backlog,
+               tcp_backlog_max);
+        backlog = tcp_backlog_max;
+    }
     /*
      * The lwIP listen function deallocates the original pcb and replaces it
      * with a smaller one.  However, it can also fail to allocate the new pcb,
@@ -431,7 +444,7 @@ tcp_socket::on_request(const api::request_listen& listen, const tcp_bound&)
     ::tcp_arg(orig_pcb, nullptr);
     err_t error = ERR_OK;
     auto listen_pcb =
-        tcp_listen_with_backlog_and_err(orig_pcb, listen.backlog, &error);
+        tcp_listen_with_backlog_and_err(orig_pcb, backlog, &error);
 
     if (!listen_pcb) {
         m_pcb.reset(orig_pcb);
@@ -445,6 +458,29 @@ tcp_socket::on_request(const api::request_listen& listen, const tcp_bound&)
     ::tcp_arg(listen_pcb, this);
 
     return {api::reply_success(), tcp_listening()};
+}
+
+tcp_socket::on_request_reply
+tcp_socket::on_request(const api::request_listen& listen, const tcp_listening&)
+{
+    auto backlog = listen.backlog;
+    if (backlog > tcp_backlog_max) {
+        // Clip to max limit (same as Linux does)
+        OP_LOG(OP_LOG_INFO,
+               "TCP socket listen backlog %d is too large.  "
+               "Using maximum supported value %d.",
+               backlog,
+               tcp_backlog_max);
+        backlog = tcp_backlog_max;
+    }
+
+    if (m_pcb->state == LISTEN) {
+        // Allow changing backlog when already in listen state
+        auto lpcb = reinterpret_cast<struct tcp_pcb_listen*>(m_pcb.get());
+        tcp_backlog_set(lpcb, backlog);
+        return {api::reply_success(), tcp_listening()};
+    }
+    return {tl::make_unexpected(EINVAL), std::nullopt};
 }
 
 tcp_socket::on_request_reply tcp_socket::on_request(const api::request_listen&,
