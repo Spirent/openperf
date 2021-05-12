@@ -69,6 +69,10 @@ template <typename T> std::string to_hex_string(T x)
 /* Provide a pretty printing overload for sockaddr structures */
 std::ostream& operator<<(std::ostream& out, const sockaddr* sa)
 {
+    if (!sa) {
+        out << "NULL";
+        return (out);
+    }
     switch (sa->sa_family) {
     case AF_INET: {
         auto buffer = std::array<char, INET_ADDRSTRLEN>{"X.X.X.X"};
