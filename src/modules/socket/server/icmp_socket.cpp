@@ -141,19 +141,10 @@ icmp_socket::do_getsockopt(const raw_pcb* pcb,
         default:
             return (tl::make_unexpected(ENOPROTOOPT));
         }
-    case SOL_SOCKET:
-        return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb),
-                                   getsockopt));
-    case IPPROTO_IP:
-        return (
-            do_ip_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
-    case IPPROTO_IPV6:
-        return (do_ip6_getsockopt(reinterpret_cast<const ip_pcb*>(pcb),
-                                  getsockopt));
     case IPPROTO_ICMPV6:
         return (do_icmp6_getsockopt(pcb, getsockopt));
     default:
-        return (tl::make_unexpected(ENOPROTOOPT));
+        return raw_socket::do_getsockopt(pcb, getsockopt);
     }
 }
 

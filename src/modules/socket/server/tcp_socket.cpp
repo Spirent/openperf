@@ -681,6 +681,12 @@ tcp_socket::do_getsockopt(const tcp_pcb* pcb,
             if (!result) return (tl::make_unexpected(result.error()));
             return (sizeof(error));
         }
+        case SO_TYPE: {
+            int type = SOCK_STREAM;
+            auto result = copy_out(getsockopt.id.pid, getsockopt.optval, type);
+            if (!result) return (tl::make_unexpected(result.error()));
+            return (sizeof(type));
+        }
         default:
             return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb),
                                        getsockopt));

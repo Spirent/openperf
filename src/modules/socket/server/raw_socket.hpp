@@ -50,6 +50,8 @@ public:
     raw_socket& operator=(raw_socket&& other) noexcept;
     raw_socket(raw_socket&& other) noexcept;
 
+    int sock_type() const;
+
     /***
      * Generic socket functions
      ***/
@@ -142,6 +144,7 @@ protected:
     dgram_channel_ptr m_channel; /* shared memory io channel */
     std::unique_ptr<raw_pcb, raw_pcb_deleter> m_pcb; /* lwIP pcb */
     raw_recv_fn m_recv_callback;
+    uint8_t m_sock_type;
 };
 
 const char* to_string(const raw_socket_state&);
