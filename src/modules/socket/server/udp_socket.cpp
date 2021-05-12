@@ -193,8 +193,17 @@ udp_socket::do_getsockopt(const udp_pcb* pcb,
 {
     switch (getsockopt.level) {
     case SOL_SOCKET:
-        return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb),
-                                   getsockopt));
+        switch (getsockopt.optname) {
+        case SO_TYPE: {
+            int type = SOCK_DGRAM;
+            auto result = copy_out(getsockopt.id.pid, getsockopt.optval, type);
+            if (!result) return (tl::make_unexpected(result.error()));
+            return (sizeof(type));
+        }
+        default:
+            return (do_sock_getsockopt(reinterpret_cast<const ip_pcb*>(pcb),
+                                       getsockopt));
+        }
     case IPPROTO_IP:
         return (
             do_ip_getsockopt(reinterpret_cast<const ip_pcb*>(pcb), getsockopt));
