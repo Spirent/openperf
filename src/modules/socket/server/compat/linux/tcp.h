@@ -20,6 +20,7 @@ enum linux_tcp_state {
 /* Linux compatibility-isms */
 #define LINUX_TCP_NODELAY 1
 #define LINUX_TCP_MAXSEG 2
+#define LINUX_TCP_DEFER_ACCEPT 9
 #define LINUX_TCP_INFO 11
 #define LINUX_TCP_CONGESTION 13
 

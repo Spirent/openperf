@@ -693,6 +693,13 @@ do_tcp_getsockopt(const tcp_pcb* pcb, const api::request_getsockopt& getsockopt)
         slength = sizeof(cc.length());
         break;
     }
+    case LINUX_TCP_DEFER_ACCEPT: {
+        int defer = 0;
+        auto result = copy_out(getsockopt.id.pid, getsockopt.optval, defer);
+        if (!result) return (tl::make_unexpected(result.error()));
+        slength = sizeof(defer);
+        break;
+    }
     default:
         return (tl::make_unexpected(ENOPROTOOPT));
     }
@@ -762,6 +769,17 @@ do_tcp_setsockopt(tcp_pcb* pcb, const api::request_setsockopt& setsockopt)
         if (!mss) return (tl::make_unexpected(mss.error()));
         if (*mss < 536) return (tl::make_unexpected(EINVAL));
         tcp_mss(pcb) = *mss;
+        break;
+    }
+    case LINUX_TCP_DEFER_ACCEPT: {
+        auto defer = copy_in(setsockopt.id.pid,
+                             reinterpret_cast<const int*>(setsockopt.optval));
+        if (defer) {
+            // Some HTTP servers (h2o) enable this option and fail if not
+            // supported. Should be safe to just return OK and log message.
+            OP_LOG(OP_LOG_INFO,
+                   "TCP_DEFER_ACCEPT was enabled, but is not supported");
+        }
         break;
     }
     default:
