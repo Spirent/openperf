@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <numeric>
 #include <stdexcept>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -526,6 +527,15 @@ int client::ioctl(int s, unsigned long req, ...)
 
     va_list ap;
     va_start(ap, req);
+
+    if (req == FIONBIO) {
+        auto enable = va_arg(ap, int);
+        va_end(ap);
+        if (enable)
+            return channel.flags(channel.flags() | O_NONBLOCK);
+        else
+            return channel.flags(channel.flags() & ~O_NONBLOCK);
+    }
 
     api::request_msg request =
         api::request_ioctl{.id = id, .request = req, .argp = va_arg(ap, void*)};
