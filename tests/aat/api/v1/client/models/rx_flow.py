@@ -33,26 +33,30 @@ class RxFlow(object):
     swagger_types = {
         'id': 'str',
         'analyzer_result_id': 'str',
-        'counters': 'PacketAnalyzerFlowCounters'
+        'counters': 'PacketAnalyzerFlowCounters',
+        'digests': 'PacketAnalyzerFlowDigests'
     }
 
     attribute_map = {
         'id': 'id',
         'analyzer_result_id': 'analyzer_result_id',
-        'counters': 'counters'
+        'counters': 'counters',
+        'digests': 'digests'
     }
 
-    def __init__(self, id=None, analyzer_result_id=None, counters=None):  # noqa: E501
+    def __init__(self, id=None, analyzer_result_id=None, counters=None, digests=None):  # noqa: E501
         """RxFlow - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
         self._analyzer_result_id = None
         self._counters = None
+        self._digests = None
         self.discriminator = None
 
         self.id = id
         self.analyzer_result_id = analyzer_result_id
         self.counters = counters
+        self.digests = digests
 
     @property
     def id(self):
@@ -117,6 +121,26 @@ class RxFlow(object):
         :type: PacketAnalyzerFlowCounters
         """
         self._counters = counters
+
+    @property
+    def digests(self):
+        """Gets the digests of this RxFlow.  # noqa: E501
+
+
+        :return: The digests of this RxFlow.  # noqa: E501
+        :rtype: PacketAnalyzerFlowDigests
+        """
+        return self._digests
+
+    @digests.setter
+    def digests(self, digests):
+        """Sets the digests of this RxFlow.
+
+
+        :param digests: The digests of this RxFlow.  # noqa: E501
+        :type: PacketAnalyzerFlowDigests
+        """
+        self._digests = digests
 
     def to_dict(self):
         """Returns the model properties as a dict"""

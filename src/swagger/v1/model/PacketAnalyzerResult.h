@@ -21,6 +21,7 @@
 
 #include "ModelBase.h"
 
+#include "PacketAnalyzerFlowDigests.h"
 #include <string>
 #include "PacketAnalyzerFlowCounters.h"
 #include <vector>
@@ -79,6 +80,13 @@ public:
     std::shared_ptr<PacketAnalyzerFlowCounters> getFlowCounters() const;
     void setFlowCounters(std::shared_ptr<PacketAnalyzerFlowCounters> value);
         /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<PacketAnalyzerFlowDigests> getFlowDigests() const;
+    void setFlowDigests(std::shared_ptr<PacketAnalyzerFlowDigests> value);
+    bool flowDigestsIsSet() const;
+    void unsetFlow_digests();
+    /// <summary>
     /// List of unique flow ids included in stats. Individual flow statistics may be queried via the &#x60;rx-flows&#x60; endpoint. 
     /// </summary>
     std::vector<std::string>& getFlows();
@@ -96,6 +104,8 @@ protected:
 
     std::shared_ptr<PacketAnalyzerFlowCounters> m_Flow_counters;
 
+    std::shared_ptr<PacketAnalyzerFlowDigests> m_Flow_digests;
+    bool m_Flow_digestsIsSet;
     std::vector<std::string> m_Flows;
     bool m_FlowsIsSet;
 };

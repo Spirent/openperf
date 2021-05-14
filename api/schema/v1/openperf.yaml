@@ -626,6 +626,12 @@ definitions:
   PacketAnalyzerFlowCounters:
     $ref: ./modules/packet/analyzer.yaml#/definitions/PacketAnalyzerFlowCounters
 
+  PacketAnalyzerFlowDigestResult:
+    $ref: ./modules/packet/analyzer.yaml#/definitions/PacketAnalyzerFlowDigestResult
+
+  PacketAnalyzerFlowDigests:
+    $ref: ./modules/packet/analyzer.yaml#/definitions/PacketAnalyzerFlowDigests
+
   PacketAnalyzerFlowHeader:
     $ref: ./modules/packet/analyzer.yaml#/definitions/PacketAnalyzerFlowHeader
 

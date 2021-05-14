@@ -21,6 +21,7 @@
 
 #include "ModelBase.h"
 
+#include "PacketAnalyzerFlowDigests.h"
 #include <string>
 #include "PacketAnalyzerFlowCounters.h"
 
@@ -64,6 +65,11 @@ public:
     /// </summary>
     std::shared_ptr<PacketAnalyzerFlowCounters> getCounters() const;
     void setCounters(std::shared_ptr<PacketAnalyzerFlowCounters> value);
+        /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<PacketAnalyzerFlowDigests> getDigests() const;
+    void setDigests(std::shared_ptr<PacketAnalyzerFlowDigests> value);
     
 protected:
     std::string m_Id;
@@ -71,6 +77,8 @@ protected:
     std::string m_Analyzer_result_id;
 
     std::shared_ptr<PacketAnalyzerFlowCounters> m_Counters;
+
+    std::shared_ptr<PacketAnalyzerFlowDigests> m_Digests;
 
 };
 

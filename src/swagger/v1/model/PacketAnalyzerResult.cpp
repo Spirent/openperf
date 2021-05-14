@@ -23,6 +23,7 @@ PacketAnalyzerResult::PacketAnalyzerResult()
     m_Analyzer_id = "";
     m_Analyzer_idIsSet = false;
     m_Active = false;
+    m_Flow_digestsIsSet = false;
     m_FlowsIsSet = false;
     
 }
@@ -48,6 +49,10 @@ nlohmann::json PacketAnalyzerResult::toJson() const
     val["active"] = m_Active;
     val["protocol_counters"] = ModelBase::toJson(m_Protocol_counters);
     val["flow_counters"] = ModelBase::toJson(m_Flow_counters);
+    if(m_Flow_digestsIsSet)
+    {
+        val["flow_digests"] = ModelBase::toJson(m_Flow_digests);
+    }
     {
         nlohmann::json jsonArray;
         for( auto& item : m_Flows )
@@ -74,6 +79,16 @@ void PacketAnalyzerResult::fromJson(nlohmann::json& val)
         
     }
     setActive(val.at("active"));
+    if(val.find("flow_digests") != val.end())
+    {
+        if(!val["flow_digests"].is_null())
+        {
+            std::shared_ptr<PacketAnalyzerFlowDigests> newItem(new PacketAnalyzerFlowDigests());
+            newItem->fromJson(val["flow_digests"]);
+            setFlowDigests( newItem );
+        }
+        
+    }
     {
         m_Flows.clear();
         nlohmann::json jsonArray;
@@ -142,6 +157,23 @@ void PacketAnalyzerResult::setFlowCounters(std::shared_ptr<PacketAnalyzerFlowCou
 {
     m_Flow_counters = value;
     
+}
+std::shared_ptr<PacketAnalyzerFlowDigests> PacketAnalyzerResult::getFlowDigests() const
+{
+    return m_Flow_digests;
+}
+void PacketAnalyzerResult::setFlowDigests(std::shared_ptr<PacketAnalyzerFlowDigests> value)
+{
+    m_Flow_digests = value;
+    m_Flow_digestsIsSet = true;
+}
+bool PacketAnalyzerResult::flowDigestsIsSet() const
+{
+    return m_Flow_digestsIsSet;
+}
+void PacketAnalyzerResult::unsetFlow_digests()
+{
+    m_Flow_digestsIsSet = false;
 }
 std::vector<std::string>& PacketAnalyzerResult::getFlows()
 {

@@ -36,6 +36,7 @@ class PacketAnalyzerResult(object):
         'active': 'bool',
         'protocol_counters': 'PacketAnalyzerProtocolCounters',
         'flow_counters': 'PacketAnalyzerFlowCounters',
+        'flow_digests': 'PacketAnalyzerFlowDigests',
         'flows': 'list[str]'
     }
 
@@ -45,10 +46,11 @@ class PacketAnalyzerResult(object):
         'active': 'active',
         'protocol_counters': 'protocol_counters',
         'flow_counters': 'flow_counters',
+        'flow_digests': 'flow_digests',
         'flows': 'flows'
     }
 
-    def __init__(self, id=None, analyzer_id=None, active=None, protocol_counters=None, flow_counters=None, flows=None):  # noqa: E501
+    def __init__(self, id=None, analyzer_id=None, active=None, protocol_counters=None, flow_counters=None, flow_digests=None, flows=None):  # noqa: E501
         """PacketAnalyzerResult - a model defined in Swagger"""  # noqa: E501
 
         self._id = None
@@ -56,6 +58,7 @@ class PacketAnalyzerResult(object):
         self._active = None
         self._protocol_counters = None
         self._flow_counters = None
+        self._flow_digests = None
         self._flows = None
         self.discriminator = None
 
@@ -65,6 +68,8 @@ class PacketAnalyzerResult(object):
         self.active = active
         self.protocol_counters = protocol_counters
         self.flow_counters = flow_counters
+        if flow_digests is not None:
+            self.flow_digests = flow_digests
         if flows is not None:
             self.flows = flows
 
@@ -173,6 +178,26 @@ class PacketAnalyzerResult(object):
         :type: PacketAnalyzerFlowCounters
         """
         self._flow_counters = flow_counters
+
+    @property
+    def flow_digests(self):
+        """Gets the flow_digests of this PacketAnalyzerResult.  # noqa: E501
+
+
+        :return: The flow_digests of this PacketAnalyzerResult.  # noqa: E501
+        :rtype: PacketAnalyzerFlowDigests
+        """
+        return self._flow_digests
+
+    @flow_digests.setter
+    def flow_digests(self, flow_digests):
+        """Sets the flow_digests of this PacketAnalyzerResult.
+
+
+        :param flow_digests: The flow_digests of this PacketAnalyzerResult.  # noqa: E501
+        :type: PacketAnalyzerFlowDigests
+        """
+        self._flow_digests = flow_digests
 
     @property
     def flows(self):

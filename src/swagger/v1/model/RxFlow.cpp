@@ -40,6 +40,7 @@ nlohmann::json RxFlow::toJson() const
     val["id"] = ModelBase::toJson(m_Id);
     val["analyzer_result_id"] = ModelBase::toJson(m_Analyzer_result_id);
     val["counters"] = ModelBase::toJson(m_Counters);
+    val["digests"] = ModelBase::toJson(m_Digests);
     
 
     return val;
@@ -78,6 +79,15 @@ std::shared_ptr<PacketAnalyzerFlowCounters> RxFlow::getCounters() const
 void RxFlow::setCounters(std::shared_ptr<PacketAnalyzerFlowCounters> value)
 {
     m_Counters = value;
+    
+}
+std::shared_ptr<PacketAnalyzerFlowDigests> RxFlow::getDigests() const
+{
+    return m_Digests;
+}
+void RxFlow::setDigests(std::shared_ptr<PacketAnalyzerFlowDigests> value)
+{
+    m_Digests = value;
     
 }
 
