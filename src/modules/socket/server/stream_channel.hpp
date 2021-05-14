@@ -68,6 +68,9 @@ public:
     int client_fd() const;
     int server_fd() const;
 
+    int flags() const;
+    int socket_type() const;
+
     void error(int);
 
     size_t send_available() const;

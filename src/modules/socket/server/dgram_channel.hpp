@@ -65,8 +65,11 @@ public:
     dgram_channel(const dgram_channel&) = delete;
     dgram_channel& operator=(const dgram_channel&&) = delete;
 
-    int client_fd();
-    int server_fd();
+    int client_fd() const;
+    int server_fd() const;
+
+    int flags() const;
+    int socket_type() const;
 
     bool send_empty() const;
     bool send(pbuf* p);

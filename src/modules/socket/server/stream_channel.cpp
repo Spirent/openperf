@@ -151,6 +151,8 @@ stream_channel::stream_channel(int flags,
     /* make sure we can use these interchangeably */
     static_assert(O_NONBLOCK == EFD_NONBLOCK);
     static_assert(O_CLOEXEC == EFD_CLOEXEC);
+    static_assert(O_NONBLOCK == SOCK_NONBLOCK);
+    static_assert(O_CLOEXEC == SOCK_CLOEXEC);
 
     /* make sure structure is properly cache aligned */
     assert((reinterpret_cast<uintptr_t>(&tx_buffer)
@@ -170,7 +172,7 @@ stream_channel::stream_channel(int flags,
             errno, std::generic_category(), "Could not create eventfd");
     }
 
-    socket_flags.store(event_flags, std::memory_order_release);
+    socket_flags.store(flags, std::memory_order_release);
 }
 
 stream_channel::~stream_channel()
@@ -190,6 +192,13 @@ stream_channel::~stream_channel()
 int stream_channel::client_fd() const { return (server_fds.client_fd); }
 
 int stream_channel::server_fd() const { return (server_fds.server_fd); }
+
+int stream_channel::flags() const
+{
+    return socket_flags.load(std::memory_order_acquire);
+}
+
+int stream_channel::socket_type() const { return (flags() & 0xff); }
 
 void stream_channel::error(int error)
 {

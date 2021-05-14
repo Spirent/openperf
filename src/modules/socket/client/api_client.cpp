@@ -473,6 +473,7 @@ int client::socket(int domain, int type, int protocol)
 
 int client::fcntl(int s, int cmd, ...)
 {
+    constexpr auto supported_socket_flags = SOCK_NONBLOCK | SOCK_CLOEXEC;
     assert(*m_init_flag);
 
     auto result = m_channels.find(s);
@@ -490,10 +491,13 @@ int client::fcntl(int s, int cmd, ...)
 
     switch (cmd) {
     case F_GETFL:
-        to_return = channel.flags();
+        to_return = channel.flags() & supported_socket_flags;
         break;
     case F_SETFL:
-        to_return = channel.flags(va_arg(ap, int));
+        // Only allow changing the supported socket flag bits
+        to_return =
+            channel.flags((va_arg(ap, int) & supported_socket_flags)
+                          | (channel.flags() & ~supported_socket_flags));
         break;
     case F_GETFD:
     case F_GETOWN:
