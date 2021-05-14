@@ -420,7 +420,7 @@ tcp_socket::on_request(const api::request_listen& listen, const tcp_bound&)
     auto backlog = listen.backlog;
     if (backlog > tcp_backlog_max) {
         // Clip to max limit (same as Linux does)
-        OP_LOG(OP_LOG_INFO,
+        OP_LOG(OP_LOG_WARNING,
                "TCP socket listen backlog %d is too large.  "
                "Using maximum supported value %d.",
                backlog,
@@ -466,7 +466,7 @@ tcp_socket::on_request(const api::request_listen& listen, const tcp_listening&)
     auto backlog = listen.backlog;
     if (backlog > tcp_backlog_max) {
         // Clip to max limit (same as Linux does)
-        OP_LOG(OP_LOG_INFO,
+        OP_LOG(OP_LOG_WARNING,
                "TCP socket listen backlog %d is too large.  "
                "Using maximum supported value %d.",
                backlog,
@@ -474,13 +474,11 @@ tcp_socket::on_request(const api::request_listen& listen, const tcp_listening&)
         backlog = tcp_backlog_max;
     }
 
-    if (m_pcb->state == LISTEN) {
-        // Allow changing backlog when already in listen state
-        auto lpcb = reinterpret_cast<struct tcp_pcb_listen*>(m_pcb.get());
-        tcp_backlog_set(lpcb, backlog);
-        return {api::reply_success(), tcp_listening()};
-    }
-    return {tl::make_unexpected(EINVAL), std::nullopt};
+    // Allow changing backlog when already in listen state
+    auto lpcb = reinterpret_cast<struct tcp_pcb_listen*>(m_pcb.get());
+    tcp_backlog_set(lpcb, backlog);
+
+    return {api::reply_success(), tcp_listening()};
 }
 
 tcp_socket::on_request_reply tcp_socket::on_request(const api::request_listen&,
@@ -777,7 +775,7 @@ do_tcp_setsockopt(tcp_pcb* pcb, const api::request_setsockopt& setsockopt)
         if (defer) {
             // Some HTTP servers (h2o) enable this option and fail if not
             // supported. Should be safe to just return OK and log message.
-            OP_LOG(OP_LOG_INFO,
+            OP_LOG(OP_LOG_WARNING,
                    "TCP_DEFER_ACCEPT was enabled, but is not supported");
         }
         break;
