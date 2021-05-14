@@ -8,28 +8,12 @@
 /* Use the pclmulqdq instruction to crunch CRC values */
 #include "x86_64/crc.h"
 
-inline uint16_t calculate_crc16(const uint8_t data[], uint16_t length)
-{
-    static constexpr DECLARE_ALIGNED(
-        struct crc_pclmulqdq_ctx spirent_crc16_clmul, 16) = {
-        0x45630000, /**< remainder X^128 / P(X) */
-        0xd5f60000, /**< remainder X^192 / P(X) */
-        0xaa510000, /**< remainder  X^64 / P(X) */
-        0x11303471, /**< quotient   X^64 / P(X) */
-        0x10210000, /**< polynomial */
-        0ULL        /**< reserved */
-    };
-
-    return (~(crc32_calc_pclmulqdq(data, length, 0xffff, &spirent_crc16_clmul)
-              >> 16));
-}
-
 #else
 
 #include <algorithm>
 
 /* Just use a lookup table */
-inline uint16_t calculate_crc16(const uint8_t data[], uint16_t length)
+inline uint16_t calculate_signature_crc16(const uint8_t data[])
 {
     static constexpr uint16_t ccitt16[256] = {
         0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50A5, 0x60C6, 0x70E7, 0x8108,
@@ -63,7 +47,7 @@ inline uint16_t calculate_crc16(const uint8_t data[], uint16_t length)
         0x2E93, 0x3EB2, 0x0ED1, 0x1EF0};
 
     uint16_t crc16 = 0xffff;
-    std::for_each(data, data + length, [&](auto&& x) {
+    std::for_each(data, data + 16, [&](auto&& x) {
         crc16 = ccitt16[((crc16 >> 8) ^ x) & 0xff] ^ (crc16 << 8);
     });
 

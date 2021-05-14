@@ -28,18 +28,18 @@ crc_filter(const uint8_t* const payloads[], uint16_t count, int crc_matches[])
      */
     auto offset = std::min(static_cast<int>(count), prefetch_offset);
 
-    std::for_each(payloads, payloads + offset, [](const auto& payload) {
+    std::for_each(payloads, payloads + offset, [](const auto* payload) {
         __builtin_prefetch(payload);
     });
 
     std::transform(
-        payloads, payloads + count, crc_matches, [&](const auto& payload) {
+        payloads, payloads + count, crc_matches, [&](const auto* payload) {
             if (offset < count) { __builtin_prefetch(payloads[offset++]); }
 
             auto signature =
                 reinterpret_cast<const spirent_signature*>(payload);
             return (ntohs(signature->crc)
-                    == calculate_crc16(signature->data, 16));
+                    == calculate_signature_crc16(signature->data));
         });
 
     return (std::accumulate(crc_matches, crc_matches + count, 0));
@@ -157,7 +157,7 @@ void encode(uint8_t* destinations[],
      */
     std::for_each(destinations, destinations + count, [](auto& destination) {
         auto signature = reinterpret_cast<spirent_signature*>(destination);
-        signature->crc = htons(calculate_crc16(signature->data, 16));
+        signature->crc = htons(calculate_signature_crc16(signature->data));
         signature->cheater = 0;
     });
 }
