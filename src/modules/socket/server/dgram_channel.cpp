@@ -147,6 +147,8 @@ dgram_channel::dgram_channel(int flags,
     /* make sure we can use these interchangeably */
     static_assert(O_NONBLOCK == EFD_NONBLOCK);
     static_assert(O_CLOEXEC == EFD_CLOEXEC);
+    static_assert(O_NONBLOCK == SOCK_NONBLOCK);
+    static_assert(O_CLOEXEC == SOCK_CLOEXEC);
 
     /* make sure structure is properly cache aligned */
     assert((reinterpret_cast<uintptr_t>(std::addressof(tx_buffer))
@@ -159,13 +161,14 @@ dgram_channel::dgram_channel(int flags,
     int event_flags = 0;
     if (flags & SOCK_CLOEXEC) event_flags |= EFD_CLOEXEC;
     if (flags & SOCK_NONBLOCK) event_flags |= EFD_NONBLOCK;
-    socket_flags.store(event_flags, std::memory_order_release);
 
     if ((server_fds.client_fd = eventfd(0, event_flags)) == -1
         || (server_fds.server_fd = eventfd(0, 0)) == -1) {
         throw std::system_error(
             errno, std::generic_category(), "Could not create eventfd");
     }
+
+    socket_flags.store(flags, std::memory_order_release);
 }
 
 dgram_channel::~dgram_channel()
@@ -179,9 +182,16 @@ dgram_channel::~dgram_channel()
     alloc->deallocate(rx_buffer.ptr.get(), rx_buffer.len);
 }
 
-int dgram_channel::client_fd() { return (server_fds.client_fd); }
+int dgram_channel::client_fd() const { return (server_fds.client_fd); }
 
-int dgram_channel::server_fd() { return (server_fds.server_fd); }
+int dgram_channel::server_fd() const { return (server_fds.server_fd); }
+
+int dgram_channel::flags() const
+{
+    return socket_flags.load(std::memory_order_acquire);
+}
+
+int dgram_channel::socket_type() const { return (flags() & 0xff); }
 
 bool dgram_channel::send_empty() const { return (!readable()); }
 

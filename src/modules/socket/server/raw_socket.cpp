@@ -114,7 +114,6 @@ raw_socket::raw_socket(openperf::socket::server::allocator& allocator,
                     dgram_channel(flags, allocator))
     , m_pcb(raw_new_ip_type(ip_type, protocol))
     , m_recv_callback(recv_callback)
-    , m_sock_type(flags & 0xff)
 {
     if (!m_pcb) { throw std::runtime_error("Out of RAW pcb's!"); }
     if (m_recv_callback == nullptr) m_recv_callback = &raw_receive;
@@ -127,7 +126,6 @@ raw_socket& raw_socket::operator=(raw_socket&& other) noexcept
         m_channel = std::move(other.m_channel);
         m_pcb = std::move(other.m_pcb);
         m_recv_callback = other.m_recv_callback;
-        m_sock_type = other.m_sock_type;
         raw_recv(m_pcb.get(), m_recv_callback, this);
     }
     return (*this);
@@ -137,12 +135,9 @@ raw_socket::raw_socket(raw_socket&& other) noexcept
     : m_channel(std::move(other.m_channel))
     , m_pcb(std::move(other.m_pcb))
     , m_recv_callback(other.m_recv_callback)
-    , m_sock_type(other.m_sock_type)
 {
     raw_recv(m_pcb.get(), m_recv_callback, this);
 }
-
-int raw_socket::sock_type() const { return m_sock_type; }
 
 channel_variant raw_socket::channel() const { return (m_channel.get()); }
 
@@ -278,7 +273,7 @@ raw_socket::do_getsockopt(const raw_pcb* pcb,
     case SOL_SOCKET:
         switch (getsockopt.optname) {
         case SO_TYPE: {
-            int type = m_sock_type;
+            int type = m_channel->socket_type();
             auto result = copy_out(getsockopt.id.pid, getsockopt.optval, type);
             if (!result) return (tl::make_unexpected(result.error()));
             return (sizeof(type));
