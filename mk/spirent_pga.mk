@@ -13,7 +13,7 @@ $(call op_check_vars,$(PGA_REQ_VARS))
 PGA_COMMA := ,
 PGA_EMPTY :=
 PGA_SPACE := $(PGA_EMPTY) $(PGA_EMPTY)
-PGA_ISPC_FLAGS := --werror $(OP_ISPC_FLAGS)
+PGA_ISPC_FLAGS := $(OP_ISPC_FLAGS)
 
 ifeq ($(MODE),release)
 	PGA_ISPC_FLAGS += --opt=disable-assertions

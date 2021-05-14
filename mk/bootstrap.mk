@@ -37,7 +37,7 @@ OP_CONFIG_OPTS ?=
 # ISPC related build variables
 # See arch/*.mk for ISPC target instruction sets
 OP_ISPC := ispc
-OP_ISPC_FLAGS += $(OP_EXTRA_ISPC_FLAGS)
+OP_ISPC_FLAGS += --werror $(OP_EXTRA_ISPC_FLAGS)
 
 OP_BUILD_DEPENDENCIES :=
 
