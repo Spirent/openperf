@@ -45,8 +45,8 @@ sink_result::sink_result(const sink& parent)
      * now so that we can initialize it here instead of on the sink's fast path.
      */
     std::call_once(flow_counter_factory_init, []() {
-        [[maybe_unused]] auto flow_counters =
-            statistics::make_flow_counters(statistics::all_flow_counters);
+        [[maybe_unused]] auto flow_counters = statistics::make_flow_counters(
+            statistics::all_flow_counters, statistics::all_flow_digests);
     });
 }
 
@@ -128,14 +128,19 @@ std::string sink::id() const { return (m_config.id); }
 
 std::string sink::source() const { return (m_config.source); }
 
-api::protocol_counters_config sink::protocol_counters() const
+api::protocol_counter_flags sink::protocol_counters() const
 {
     return (m_config.protocol_counters);
 }
 
-api::flow_counters_config sink::flow_counters() const
+api::flow_counter_flags sink::flow_counters() const
 {
     return (m_config.flow_counters);
+}
+
+api::flow_digest_flags sink::flow_digests() const
+{
+    return (m_config.flow_digests);
 }
 
 size_t sink::worker_count() const { return (m_indexes.size()); }
@@ -183,11 +188,17 @@ bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
      * Intelligently determine what features we need based on our
      * flow statistics configuration.
      */
-    constexpr auto signature_stats =
-        (statistics::flow_counter_flags::sequencing
+    constexpr auto signature_counters =
+        (statistics::flow_counter_flags::jitter_ipdv
+         | statistics::flow_counter_flags::jitter_rfc
          | statistics::flow_counter_flags::latency
-         | statistics::flow_counter_flags::jitter_ipdv
-         | statistics::flow_counter_flags::jitter_rfc);
+         | statistics::flow_counter_flags::sequencing);
+
+    constexpr auto signature_digests =
+        (statistics::flow_digest_flags::jitter_ipdv
+         | statistics::flow_digest_flags::jitter_rfc
+         | statistics::flow_digest_flags::latency
+         | statistics::flow_digest_flags::sequence_run_length);
 
     /* We always need rx_timestamps and RSS hash values */
     auto needed =
@@ -197,7 +208,8 @@ bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
         needed |= sink_feature_flags::packet_type_decode;
     }
 
-    if (flow_counters() & signature_stats) {
+    if ((flow_counters() & signature_counters)
+        || (flow_digests() & signature_digests)) {
         needed |= sink_feature_flags::spirent_signature_decode;
     }
 
@@ -255,12 +267,13 @@ uint16_t sink::push_all(sink_result& results,
     std::for_each(packets, packets + packets_length, [&](const auto& packet) {
         auto hash = packetio::packet::rss_hash(packet);
         auto stream_id = packetio::packet::signature_stream_id(packet);
-        auto counters = cache(hash, stream_id);
+        auto* counters = cache(hash, stream_id);
         if (!counters) { /* New flow; create stats */
             auto to_delete = flows.second.insert(
                 hash,
                 stream_id,
-                statistics::make_flow_counters(m_config.flow_counters));
+                statistics::make_flow_counters(m_config.flow_counters,
+                                               m_config.flow_digests));
 
             counters = cache.retry(hash, stream_id);
             assert(counters);

@@ -232,27 +232,39 @@ reply_msg server::handle_request(const request_list_analyzers& request)
     return (reply);
 }
 
-protocol_counters_config to_protocol_counters(std::vector<std::string>& names)
+static protocol_counter_flags
+to_protocol_counters(const std::vector<std::string>& names)
 {
-    auto counters = protocol_counters_config{0};
+    auto flags = protocol_counter_flags{0};
 
     std::for_each(std::begin(names), std::end(names), [&](const auto& name) {
-        counters |= packet::statistics::to_protocol_flag(name);
+        flags |= packet::statistics::to_protocol_flag(name);
     });
 
-    return (counters);
+    return (flags);
 }
 
-flow_counters_config to_flow_counters(std::vector<std::string>& names)
+static flow_counter_flags
+to_flow_counters(const std::vector<std::string>& names)
 {
-    auto counters =
-        flow_counters_config{statistics::flow_counter_flags::frame_count};
+    auto flags =
+        flow_counter_flags{statistics::flow_counter_flags::frame_count};
 
     std::for_each(std::begin(names), std::end(names), [&](const auto& name) {
-        counters |= statistics::to_flow_counter_flag(name);
+        flags |= statistics::to_flow_counter_flag(name);
     });
 
-    return (counters);
+    return (flags);
+}
+
+static flow_digest_flags to_flow_digests(const std::vector<std::string>& names)
+{
+    auto flags = flow_digest_flags{0};
+
+    std::for_each(std::begin(names), std::end(names), [&](const auto& name) {
+        flags |= statistics::to_flow_digest_flag(name);
+    });
+    return (flags);
 }
 
 reply_msg server::handle_request(const request_create_analyzer& request)
@@ -267,6 +279,9 @@ reply_msg server::handle_request(const request_create_analyzer& request)
     }
     if (!user_config->getFlowCounters().empty()) {
         config.flow_counters = to_flow_counters(user_config->getFlowCounters());
+    }
+    if (!user_config->getFlowDigests().empty()) {
+        config.flow_digests = to_flow_digests(user_config->getFlowDigests());
     }
     if (!request.analyzer->getId().empty()) {
         config.id = request.analyzer->getId();

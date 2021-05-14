@@ -12,6 +12,7 @@
 #include "tl/expected.hpp"
 
 #include "packet/analyzer/statistics/generic_flow_counters.hpp"
+#include "packet/analyzer/statistics/generic_flow_digests.hpp"
 #include "packet/statistics/generic_protocol_counters.hpp"
 
 namespace swagger::v1::model {
@@ -56,10 +57,12 @@ inline constexpr auto result_reader_id = 0;
  * channel.
  */
 
-using protocol_counters_config =
+using protocol_counter_flags =
     openperf::utils::bit_flags<packet::statistics::protocol_flags>;
-using flow_counters_config =
+using flow_counter_flags =
     openperf::utils::bit_flags<statistics::flow_counter_flags>;
+using flow_digest_flags =
+    openperf::utils::bit_flags<statistics::flow_digest_flags>;
 
 using analyzer_type = swagger::v1::model::PacketAnalyzer;
 using analyzer_ptr = std::unique_ptr<analyzer_type>;

@@ -52,7 +52,7 @@ set_header(header& stat, header::packet_type_flags flags, const uint8_t pkt[])
 template <typename StatsTuple>
 void set_header(StatsTuple& tuple, const packetio::packet::packet_buffer* pkt)
 {
-    if constexpr (packet::statistics::has_type<header, StatsTuple>::value) {
+    if constexpr (packet::statistics::has_type_v<header, StatsTuple>) {
         set_header(packet::statistics::get_counter<header, StatsTuple>(tuple),
                    packetio::packet::packet_type_flags(pkt),
                    packetio::packet::to_data<const uint8_t>(pkt));

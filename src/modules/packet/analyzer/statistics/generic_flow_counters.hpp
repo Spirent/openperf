@@ -5,6 +5,8 @@
 
 #include "packet/analyzer/statistics/flow/counters.hpp"
 #include "packet/analyzer/statistics/flow/header.hpp"
+#include "packet/analyzer/statistics/flow/update.hpp"
+#include "packet/analyzer/statistics/generic_flow_digests.hpp"
 #include "utils/enum_flags.hpp"
 
 namespace openperf::packet::analyzer::statistics {
@@ -73,6 +75,8 @@ private:
         virtual void dump(std::ostream& os) const = 0;
 
     protected:
+        virtual const generic_flow_digests&
+        get(tag<generic_flow_digests>&&) const = 0;
         virtual const flow::counter::frame_counter&
         get(tag<flow::counter::frame_counter>&&) const = 0;
         virtual const flow::counter::frame_length&
@@ -91,6 +95,7 @@ private:
         virtual const flow::counter::sequencing&
         get(tag<flow::counter::sequencing>&&) const = 0;
 
+        virtual bool holds(tag<generic_flow_digests>&&) const = 0;
         virtual bool holds(tag<flow::counter::frame_counter>&&) const = 0;
         virtual bool holds(tag<flow::counter::frame_length>&&) const = 0;
         virtual bool holds(tag<flow::header>&&) const = 0;
@@ -107,6 +112,13 @@ private:
         stats_model(StatsTuple tuple)
             : m_data(std::move(tuple))
         {}
+
+        const generic_flow_digests&
+        get(tag<generic_flow_digests>&&) const override
+        {
+            return (
+                packet::statistics::get_counter<generic_flow_digests>(m_data));
+        }
 
         const flow::counter::frame_counter&
         get(tag<flow::counter::frame_counter>&&) const override
@@ -172,6 +184,12 @@ private:
                 m_data));
         }
 
+        bool holds(tag<generic_flow_digests>&&) const override
+        {
+            return (
+                packet::statistics::holds_stat<generic_flow_digests>(m_data));
+        }
+
         bool holds(tag<flow::counter::frame_counter>&&) const override
         {
             return (
@@ -234,7 +252,7 @@ private:
 
         void update(const packetio::packet::packet_buffer* pkt) const override
         {
-            flow::counter::update(m_data, pkt);
+            flow::update(m_data, pkt);
         }
 
         void dump(std::ostream& os) const override
@@ -259,10 +277,12 @@ enum class flow_counter_flags {
     jitter_rfc = (1 << 6),
     prbs = (1 << 7),
     header = (1 << 8),
+    digests = (1 << 9),
 };
 
 generic_flow_counters
-make_flow_counters(openperf::utils::bit_flags<flow_counter_flags> flags);
+make_flow_counters(openperf::utils::bit_flags<flow_counter_flags> counter_flags,
+                   openperf::utils::bit_flags<flow_digest_flags> digest_flags);
 
 enum flow_counter_flags to_flow_counter_flag(std::string_view name);
 std::string_view to_name(enum flow_counter_flags);
@@ -272,12 +292,14 @@ std::string_view to_name(enum flow_counter_flags);
 declare_enum_flags(openperf::packet::analyzer::statistics::flow_counter_flags);
 
 namespace openperf::packet::analyzer::statistics {
+
 inline constexpr auto all_flow_counters =
     (flow_counter_flags::frame_count | flow_counter_flags::frame_length
      | flow_counter_flags::latency | flow_counter_flags::sequencing
      | flow_counter_flags::interarrival | flow_counter_flags::jitter_ipdv
      | flow_counter_flags::jitter_rfc | flow_counter_flags::prbs
-     | flow_counter_flags::header);
-}
+     | flow_counter_flags::header | flow_counter_flags::digests);
+
+} // namespace openperf::packet::analyzer::statistics
 
 #endif /* _OP_ANALYZER_STATISTICS_GENERIC_FLOW_COUNTERS_HPP_ */

@@ -17,6 +17,9 @@ template <typename T, typename... Us>
 struct has_type<T, std::tuple<Us...>> : std::disjunction<std::is_same<T, Us>...>
 {};
 
+template <typename T, typename U>
+inline constexpr bool has_type_v = has_type<T, U>::value;
+
 template <typename StatsType, typename StatsTuple>
 constexpr std::enable_if_t<has_type<StatsType, StatsTuple>::value, StatsType&>
 get_counter(StatsTuple& tuple)

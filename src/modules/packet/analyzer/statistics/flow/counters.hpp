@@ -384,80 +384,6 @@ add_variance(stat_t x_count,
 }
 
 /**
- * Update function for arbitrary collection of statistics in a tuple.
- **/
-
-template <typename StatsTuple>
-void update(StatsTuple& tuple, const packetio::packet::packet_buffer* pkt)
-{
-    using namespace openperf::packet::statistics;
-
-    static_assert(has_type<frame_counter, StatsTuple>::value);
-
-    const auto rx = packetio::packet::rx_timestamp(pkt);
-
-    auto& frames = get_counter<frame_counter, StatsTuple>(tuple);
-    auto last_rx = frames.last();
-    update(frames, rx, pkt);
-    if constexpr (has_type<interarrival, StatsTuple>::value) {
-        if (last_rx) {
-            update(get_counter<interarrival, StatsTuple>(tuple),
-                   rx - *last_rx,
-                   frames.count - 1);
-        }
-    }
-
-    if constexpr (has_type<frame_length, StatsTuple>::value) {
-        update(get_counter<frame_length, StatsTuple>(tuple),
-               packetio::packet::frame_length(pkt),
-               frames.count);
-    }
-
-    if constexpr (has_type<sequencing, StatsTuple>::value) {
-        if (const auto seq_num =
-                packetio::packet::signature_sequence_number(pkt)) {
-            update(get_counter<sequencing, StatsTuple>(tuple), *seq_num, 1000);
-        }
-    }
-
-    if constexpr (has_type<latency, StatsTuple>::value) {
-        if (const auto tx = packetio::packet::signature_tx_timestamp(pkt)) {
-            auto& latency_stats = get_counter<latency, StatsTuple>(tuple);
-            auto last_delay = latency_stats.last();
-            auto delay = rx - *tx;
-            update(latency_stats, delay, frames.count);
-
-            if (last_delay) {
-                if constexpr (has_type<jitter_rfc, StatsTuple>::value) {
-                    auto jitter = std::chrono::abs(delay - *last_delay);
-                    update(get_counter<jitter_rfc, StatsTuple>(tuple),
-                           jitter,
-                           frames.count);
-                }
-
-                if constexpr (has_type<jitter_ipdv, StatsTuple>::value) {
-                    static_assert(has_type<sequencing, StatsTuple>::value);
-                    if (get_counter<sequencing, StatsTuple>(tuple).run_length
-                        > 1) {
-                        /* frame is in sequence */
-                        auto jitter =
-                            std::chrono::duration_cast<jitter_ipdv::pop_t>(
-                                delay - *last_delay);
-                        update(get_counter<jitter_ipdv, StatsTuple>(tuple),
-                               jitter,
-                               frames.count);
-                    }
-                }
-            }
-        }
-    }
-
-    if constexpr (has_type<prbs, StatsTuple>::value) {
-        update(get_counter<prbs, StatsTuple>(tuple), pkt);
-    }
-}
-
-/**
  * Debug methods
  **/
 
@@ -479,34 +405,34 @@ void dump(std::ostream& os, const StatsTuple& tuple)
 
     static_assert(has_type<frame_counter, StatsTuple>::value);
 
-    dump(os, get_counter<frame_counter, StatsTuple>(tuple));
+    dump(os, get_counter<frame_counter>(tuple));
 
     if constexpr (has_type<sequencing, StatsTuple>::value) {
-        dump(os, get_counter<sequencing, StatsTuple>(tuple));
+        dump(os, get_counter<sequencing>(tuple));
     }
 
     if constexpr (has_type<frame_length, StatsTuple>::value) {
-        dump(os, get_counter<frame_length, StatsTuple>(tuple));
+        dump(os, get_counter<frame_length>(tuple));
     }
 
     if constexpr (has_type<interarrival, StatsTuple>::value) {
-        dump(os, get_counter<interarrival, StatsTuple>(tuple));
+        dump(os, get_counter<interarrival>(tuple));
     }
 
     if constexpr (has_type<jitter_ipdv, StatsTuple>::value) {
-        dump(os, get_counter<jitter_ipdv, StatsTuple>(tuple));
+        dump(os, get_counter<jitter_ipdv>(tuple));
     }
 
     if constexpr (has_type<jitter_rfc, StatsTuple>::value) {
-        dump(os, get_counter<jitter_rfc, StatsTuple>(tuple));
+        dump(os, get_counter<jitter_rfc>(tuple));
     }
 
     if constexpr (has_type<latency, StatsTuple>::value) {
-        dump(os, get_counter<latency, StatsTuple>(tuple));
+        dump(os, get_counter<latency>(tuple));
     }
 
     if constexpr (has_type<prbs, StatsTuple>::value) {
-        dump(os, get_counter<prbs, StatsTuple>(tuple));
+        dump(os, get_counter<prbs>(tuple));
     }
 }
 
