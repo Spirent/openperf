@@ -8,6 +8,7 @@
 #include "packet/analyzer/api.hpp"
 #include "packet/analyzer/statistics/flow/map.hpp"
 #include "packet/analyzer/statistics/generic_flow_counters.hpp"
+#include "packet/analyzer/statistics/generic_flow_digests.hpp"
 #include "packet/statistics/generic_protocol_counters.hpp"
 #include "packetio/generic_sink.hpp"
 #include "utils/recycle.hpp"
@@ -28,22 +29,25 @@ struct sink_config
     std::string id = core::to_string(core::uuid::random());
     std::string source;
     std::string filter;
-    api::protocol_counters_config protocol_counters =
+    api::protocol_counter_flags protocol_counters =
         (packet::statistics::protocol_flags::ethernet
          | packet::statistics::protocol_flags::ip
          | packet::statistics::protocol_flags::transport);
-    api::flow_counters_config flow_counters =
+    api::flow_counter_flags flow_counters =
         statistics::flow_counter_flags::frame_count;
+    api::flow_digest_flags flow_digests = statistics::flow_digest_flags::none;
 };
 
 class sink_result
 {
 public:
     using recycler = utils::recycle::depot<1>;
+
     using flow_counters_container =
         statistics::flow::map<statistics::generic_flow_counters>;
-    using protocol_shard = packet::statistics::generic_protocol_counters;
     using flow_shard = std::pair<recycler, flow_counters_container>;
+
+    using protocol_shard = packet::statistics::generic_protocol_counters;
 
     sink_result(const sink& parent);
 
@@ -81,8 +85,9 @@ public:
     const sink_config& get_config() const { return m_config; }
 
     size_t worker_count() const;
-    api::protocol_counters_config protocol_counters() const;
-    api::flow_counters_config flow_counters() const;
+    api::protocol_counter_flags protocol_counters() const;
+    api::flow_counter_flags flow_counters() const;
+    api::flow_digest_flags flow_digests() const;
 
     sink_result* reset(sink_result* results);
     void start(sink_result* results);

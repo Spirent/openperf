@@ -9,6 +9,7 @@ PA_DEPENDS += \
 	packet_protocol \
 	packet_statistics \
 	packetio \
+	regurgitate \
 	spirent_pga \
 	timesync
 
@@ -21,6 +22,7 @@ PA_SOURCES += \
 	sink.cpp \
 	sink_transmogrify.cpp \
 	statistics/counter_factory.cpp \
+	statistics/digest_factory.cpp \
 	statistics/utils.cpp \
 	statistics/flow/counters.cpp \
 	statistics/flow/header.cpp \

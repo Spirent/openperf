@@ -17,26 +17,45 @@
 
 namespace openperf::packet::analyzer::api {
 
-static void to_swagger(api::protocol_counters_config src,
-                       std::vector<std::string>& dst)
+static std::vector<std::string> to_swagger(api::protocol_counter_flags flags)
 {
+    auto counters = std::vector<std::string>{};
     auto value = 1;
     while (value <= packet::statistics::all_protocol_counters.value) {
         auto flag = packet::statistics::protocol_flags{value};
-        if (src & flag) { dst.emplace_back(packet::statistics::to_name(flag)); }
+        if (flags & flag) {
+            counters.emplace_back(packet::statistics::to_name(flag));
+        }
         value <<= 1;
     }
+
+    return (counters);
 }
 
-static void to_swagger(api::flow_counters_config src,
-                       std::vector<std::string>& dst)
+static std::vector<std::string> to_swagger(api::flow_counter_flags flags)
 {
+    auto counters = std::vector<std::string>{};
     auto value = 1;
     while (value <= statistics::all_flow_counters.value) {
         auto flag = statistics::flow_counter_flags{value};
-        if (src & flag) { dst.emplace_back(statistics::to_name(flag)); }
+        if (flags & flag) { counters.emplace_back(statistics::to_name(flag)); }
         value <<= 1;
     }
+
+    return (counters);
+}
+
+static std::vector<std::string> to_swagger(api::flow_digest_flags flags)
+{
+    auto digests = std::vector<std::string>{};
+    auto value = 1;
+    while (value <= statistics::all_flow_digests.value) {
+        auto flag = statistics::flow_digest_flags{value};
+        if (flags & flag) { digests.emplace_back(statistics::to_name(flag)); }
+        value <<= 1;
+    }
+
+    return (digests);
 }
 
 analyzer_ptr to_swagger(const sink& src)
@@ -50,8 +69,10 @@ analyzer_ptr to_swagger(const sink& src)
 
     auto dst_config =
         std::make_shared<swagger::v1::model::PacketAnalyzerConfig>();
-    to_swagger(src_config.protocol_counters, dst_config->getProtocolCounters());
-    to_swagger(src_config.flow_counters, dst_config->getFlowCounters());
+    dst_config->getProtocolCounters() =
+        to_swagger(src_config.protocol_counters);
+    dst_config->getFlowCounters() = to_swagger(src_config.flow_counters);
+    dst_config->getFlowDigests() = to_swagger(src_config.flow_digests);
     if (!src_config.filter.empty()) {
         dst_config->setFilter(src_config.filter);
     }
@@ -108,13 +129,37 @@ inline void maybe_copy_counter_tuple(const GenericCounter& src,
     }
 }
 
+template <typename Digest>
+void maybe_add_flow_digest(statistics::generic_flow_digests& lhs,
+                           const statistics::generic_flow_digests& rhs)
+{
+    if (lhs.holds<Digest>() && rhs.holds<Digest>()) {
+        auto& ld = lhs.get<Digest>();
+        const auto& rd = rhs.get<Digest>();
+        ld += rd;
+    }
+}
+
+inline void add_flow_digests(statistics::generic_flow_digests& rhs,
+                             const statistics::generic_flow_digests& lhs)
+{
+    using namespace openperf::packet::analyzer::statistics::flow::digest;
+
+    maybe_add_flow_digest<frame_length>(rhs, lhs);
+    maybe_add_flow_digest<interarrival>(rhs, lhs);
+    maybe_add_flow_digest<jitter_ipdv>(rhs, lhs);
+    maybe_add_flow_digest<jitter_rfc>(rhs, lhs);
+    maybe_add_flow_digest<latency>(rhs, lhs);
+    maybe_add_flow_digest<sequence_run_length>(rhs, lhs);
+}
+
 inline packet::statistics::generic_protocol_counters
-sum_counters(protocol_counters_config config,
-             const std::vector<sink_result::protocol_shard>& src)
+sum_protocol_counters(protocol_counter_flags flags,
+                      const std::vector<sink_result::protocol_shard>& src)
 {
     using namespace openperf::packet::statistics::protocol;
 
-    auto sum = make_counters(config);
+    auto sum = make_counters(flags);
 
     std::for_each(std::begin(src), std::end(src), [&](const auto& shard) {
         maybe_add_counter_tuple<ethernet>(shard, sum);
@@ -132,23 +177,24 @@ sum_counters(protocol_counters_config config,
 inline void copy_flow_counters(const statistics::generic_flow_counters& src,
                                statistics::generic_flow_counters& dst)
 {
-    using namespace openperf::packet::analyzer::statistics::flow;
+    using namespace openperf::packet::analyzer::statistics;
 
     /* basic counters are always present */
-    const auto& src_frames = src.get<counter::frame_counter>();
+    const auto& src_frames = src.get<flow::counter::frame_counter>();
 
     do {
-        dst.get<counter::frame_counter>() = src_frames;
-        maybe_copy_counter_tuple<counter::frame_length>(src, dst);
-        maybe_copy_counter_tuple<counter::interarrival>(src, dst);
-        maybe_copy_counter_tuple<counter::jitter_ipdv>(src, dst);
-        maybe_copy_counter_tuple<counter::jitter_rfc>(src, dst);
-        maybe_copy_counter_tuple<counter::latency>(src, dst);
-        maybe_copy_counter_tuple<counter::prbs>(src, dst);
-        maybe_copy_counter_tuple<counter::sequencing>(src, dst);
-    } while (dst.get<counter::frame_counter>().count != src_frames.count);
+        dst.get<flow::counter::frame_counter>() = src_frames;
+        maybe_copy_counter_tuple<flow::counter::frame_length>(src, dst);
+        maybe_copy_counter_tuple<flow::counter::interarrival>(src, dst);
+        maybe_copy_counter_tuple<flow::counter::jitter_ipdv>(src, dst);
+        maybe_copy_counter_tuple<flow::counter::jitter_rfc>(src, dst);
+        maybe_copy_counter_tuple<flow::counter::latency>(src, dst);
+        maybe_copy_counter_tuple<flow::counter::prbs>(src, dst);
+        maybe_copy_counter_tuple<flow::counter::sequencing>(src, dst);
+        maybe_copy_counter_tuple<generic_flow_digests>(src, dst);
+    } while (dst.get<flow::counter::frame_counter>().count != src_frames.count);
 
-    maybe_copy_counter_tuple<header>(src, dst);
+    maybe_copy_counter_tuple<flow::header>(src, dst);
 }
 
 inline void add_flow_counters(const statistics::generic_flow_counters& x,
@@ -182,6 +228,12 @@ inline void add_flow_counters(const statistics::generic_flow_counters& x,
     maybe_add_summary_tuple<jitter_rfc>(x, sum);
     maybe_add_summary_tuple<latency>(x, sum);
 
+    if (x.holds<statistics::generic_flow_digests>()) {
+        auto& sum_digest = sum.get<statistics::generic_flow_digests>();
+        const auto& x_digest = x.get<statistics::generic_flow_digests>();
+        add_flow_digests(sum_digest, x_digest);
+    }
+
     /*
      * XXX: Sum the counter structure last.  "Adding" the summary tuples
      * together requires the frame count to be correct for each tuple.
@@ -190,11 +242,12 @@ inline void add_flow_counters(const statistics::generic_flow_counters& x,
 }
 
 inline statistics::generic_flow_counters
-sum_counters(flow_counters_config config,
-             const std::vector<sink_result::flow_shard>& src)
+sum_flow_counters(flow_counter_flags counter_flags,
+                  flow_digest_flags digest_flags,
+                  const std::vector<sink_result::flow_shard>& src)
 {
-    auto sum = make_flow_counters(config);
-    auto tmp = make_flow_counters(config);
+    auto sum = make_flow_counters(counter_flags, digest_flags);
+    auto tmp = make_flow_counters(counter_flags, digest_flags);
 
     std::for_each(std::begin(src), std::end(src), [&](const auto& shard) {
         auto guard = utils::recycle::guard(shard.first, api::result_reader_id);
@@ -355,7 +408,7 @@ to_swagger(const statistics::flow::header_view::header_variant& variant)
     return (dst);
 }
 
-static void populate_counters(
+static void populate_flow_counters(
     const statistics::generic_flow_counters& src,
     std::shared_ptr<swagger::v1::model::PacketAnalyzerFlowCounters>& dst)
 {
@@ -467,6 +520,70 @@ static void populate_counters(
     }
 }
 
+template <typename DigestType>
+std::shared_ptr<swagger::v1::model::PacketAnalyzerFlowDigestResult>
+to_swagger(const DigestType& digest)
+{
+    auto dst =
+        std::make_shared<swagger::v1::model::PacketAnalyzerFlowDigestResult>();
+
+    const auto centroids = digest.get();
+    std::transform(
+        std::begin(centroids),
+        std::end(centroids),
+        std::back_inserter(dst->getCentroids()),
+        [](const auto& pair) {
+            auto tmp = std::make_unique<swagger::v1::model::TDigestCentroid>();
+            if constexpr (is_duration<typename DigestType::mean_type>::value) {
+                tmp->setMean(
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(
+                        pair.first)
+                        .count());
+            } else {
+                tmp->setMean(pair.first);
+            }
+            tmp->setWeight(pair.second);
+            return (tmp);
+        });
+
+    return (dst);
+}
+
+static std::shared_ptr<swagger::v1::model::PacketAnalyzerFlowDigests>
+to_swagger(const statistics::generic_flow_digests& src)
+{
+    using namespace openperf::packet::analyzer::statistics::flow::digest;
+
+    auto dst =
+        std::make_shared<swagger::v1::model::PacketAnalyzerFlowDigests>();
+
+    if (src.holds<frame_length>()) {
+        dst->setFrameLength(to_swagger(src.get<frame_length>()));
+    }
+
+    if (src.holds<interarrival>()) {
+        dst->setInterarrivalTime(to_swagger(src.get<interarrival>()));
+    }
+
+    if (src.holds<jitter_ipdv>()) {
+        dst->setJitterIpdv(to_swagger(src.get<jitter_ipdv>()));
+    }
+
+    if (src.holds<jitter_rfc>()) {
+        dst->setJitterRfc(to_swagger(src.get<jitter_rfc>()));
+    }
+
+    if (src.holds<latency>()) {
+        dst->setLatency(to_swagger(src.get<latency>()));
+    }
+
+    if (src.holds<sequence_run_length>()) {
+        dst->setSequenceRunLength(to_swagger(src.get<sequence_run_length>()));
+    }
+
+    return (dst);
+}
+
 analyzer_result_ptr to_swagger(const core::uuid& id, const sink_result& src)
 {
     auto dst = std::make_unique<swagger::v1::model::PacketAnalyzerResult>();
@@ -478,19 +595,27 @@ analyzer_result_ptr to_swagger(const core::uuid& id, const sink_result& src)
     auto protocol_counters =
         std::make_shared<swagger::v1::model::PacketAnalyzerProtocolCounters>();
     packet::statistics::api::populate_counters(
-        sum_counters(src.parent().protocol_counters(), src.protocols()),
+        sum_protocol_counters(src.parent().protocol_counters(),
+                              src.protocols()),
         protocol_counters);
     dst->setProtocolCounters(protocol_counters);
 
     auto flow_counters =
         std::make_shared<swagger::v1::model::PacketAnalyzerFlowCounters>();
-    populate_counters(sum_counters(src.parent().flow_counters(), src.flows()),
-                      flow_counters);
+
+    auto sum = sum_flow_counters(
+        src.parent().flow_counters(), src.parent().flow_digests(), src.flows());
+    populate_flow_counters(sum, flow_counters);
 
     /* XXX: always remove headers from the top level result */
     flow_counters->getHeaders().clear();
 
     dst->setFlowCounters(flow_counters);
+
+    if (sum.holds<statistics::generic_flow_digests>()) {
+        dst->setFlowDigests(
+            to_swagger(sum.get<statistics::generic_flow_digests>()));
+    }
 
     to_swagger(id, src.flows(), dst->getFlows());
 
@@ -507,8 +632,13 @@ rx_flow_ptr to_swagger(const core::uuid& id,
     dst->setAnalyzerResultId(core::to_string(result_id));
     auto flow_counters =
         std::make_shared<swagger::v1::model::PacketAnalyzerFlowCounters>();
-    populate_counters(counters, flow_counters);
+    populate_flow_counters(counters, flow_counters);
     dst->setCounters(flow_counters);
+
+    if (counters.holds<statistics::generic_flow_digests>()) {
+        dst->setDigests(
+            to_swagger(counters.get<statistics::generic_flow_digests>()));
+    }
 
     return (dst);
 }
