@@ -21,6 +21,7 @@ PacketAnalyzerConfig::PacketAnalyzerConfig()
 {
     m_Filter = "";
     m_FilterIsSet = false;
+    m_Flow_digestsIsSet = false;
     
 }
 
@@ -57,6 +58,18 @@ nlohmann::json PacketAnalyzerConfig::toJson() const
         }
         val["flow_counters"] = jsonArray;
             }
+    {
+        nlohmann::json jsonArray;
+        for( auto& item : m_Flow_digests )
+        {
+            jsonArray.push_back(ModelBase::toJson(item));
+        }
+        
+        if(jsonArray.size() > 0)
+        {
+            val["flow_digests"] = jsonArray;
+        }
+    }
     
 
     return val;
@@ -87,6 +100,18 @@ void PacketAnalyzerConfig::fromJson(nlohmann::json& val)
             
         }
     }
+    {
+        m_Flow_digests.clear();
+        nlohmann::json jsonArray;
+        if(val.find("flow_digests") != val.end())
+        {
+        for( auto& item : val["flow_digests"] )
+        {
+            m_Flow_digests.push_back(item);
+            
+        }
+        }
+    }
     
 }
 
@@ -115,6 +140,18 @@ std::vector<std::string>& PacketAnalyzerConfig::getProtocolCounters()
 std::vector<std::string>& PacketAnalyzerConfig::getFlowCounters()
 {
     return m_Flow_counters;
+}
+std::vector<std::string>& PacketAnalyzerConfig::getFlowDigests()
+{
+    return m_Flow_digests;
+}
+bool PacketAnalyzerConfig::flowDigestsIsSet() const
+{
+    return m_Flow_digestsIsSet;
+}
+void PacketAnalyzerConfig::unsetFlow_digests()
+{
+    m_Flow_digestsIsSet = false;
 }
 
 }

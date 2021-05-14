@@ -460,22 +460,40 @@ definitions:
         type: array
         description: |
           List of results to generate per flow for received packets.
-          Sequencing, latency, and jitter results require Spirent signatures
-          in the received packets.
+          Sequencing, latency, and jitter results require Spirent
+          signatures in the received packets. Pseudo Random Bit
+          Sequence (PRBS) results require packet payloads to contain
+          compatible PRBS data.
         items:
           type: string
           enum:
+            - advanced_sequencing
             - frame_count
             - frame_length
-            - advanced_sequencing
             - interarrival_time
-            - latency
             - jitter_ipdv
             - jitter_rfc
+            - latency
             - prbs
             - header
         default:
           - frame_count
+        uniqueItems: true
+      flow_digests:
+        type: array
+        description: |
+          List of result digests to generate per flow for received packets.
+          Sequence run length, latency, and jitter digests require Spirent
+          signatures in the received packets.
+        items:
+          type: string
+          enum:
+            - frame_length
+            - interarrival_time
+            - jitter_ipdv
+            - jitter_rfc
+            - latency
+            - sequence_run_length
         uniqueItems: true
     required:
       - protocol_counters
@@ -498,6 +516,8 @@ definitions:
         $ref: "#/definitions/PacketAnalyzerProtocolCounters"
       flow_counters:
         $ref: "#/definitions/PacketAnalyzerFlowCounters"
+      flow_digests:
+        $ref: "#/definitions/PacketAnalyzerFlowDigests"
       flows:
         type: array
         description: |
@@ -743,6 +763,35 @@ definitions:
       - frame_count
       - errors
 
+  PacketAnalyzerFlowDigestResult:
+    type: object
+    description: Digest result for per-packet statistics
+    properties:
+      centroids:
+        type: array
+        description: An array of mean, weight pairs, aka centroids
+        items:
+          $ref: ../dynamic.yaml#/definitions/TDigestCentroid
+    required:
+      - centroids
+
+  PacketAnalyzerFlowDigests:
+    type: object
+    description: Result digests for flows
+    properties:
+      frame_length:
+        $ref: "#/definitions/PacketAnalyzerFlowDigestResult"
+      interarrival_time:
+        $ref: "#/definitions/PacketAnalyzerFlowDigestResult"
+      jitter_ipdv:
+        $ref: "#/definitions/PacketAnalyzerFlowDigestResult"
+      jitter_rfc:
+        $ref: "#/definitions/PacketAnalyzerFlowDigestResult"
+      latency:
+        $ref: "#/definitions/PacketAnalyzerFlowDigestResult"
+      sequence_run_length:
+        $ref: "#/definitions/PacketAnalyzerFlowDigestResult"
+
   PacketAnalyzerFlowHeader:
     type: object
     description: A decoded protocol header
@@ -777,7 +826,10 @@ definitions:
         description: Unique analyzer result identifier that observed this flow
       counters:
         $ref: "#/definitions/PacketAnalyzerFlowCounters"
+      digests:
+        $ref: "#/definitions/PacketAnalyzerFlowDigests"
     required:
       - id
       - analyzer_result_id
       - counters
+      - digests

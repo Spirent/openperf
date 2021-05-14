@@ -61,10 +61,16 @@ public:
     /// </summary>
     std::vector<std::string>& getProtocolCounters();
         /// <summary>
-    /// List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets. 
+    /// List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets. Pseudo Random Bit Sequence (PRBS) results require packet payloads to contain compatible PRBs data. 
     /// </summary>
     std::vector<std::string>& getFlowCounters();
-    
+        /// <summary>
+    /// List of result digests to generate per flow for received packets. Sequence run length, latency, and jitter digests require Spirent signatures in the received packets. 
+    /// </summary>
+    std::vector<std::string>& getFlowDigests();
+    bool flowDigestsIsSet() const;
+    void unsetFlow_digests();
+
 protected:
     std::string m_Filter;
     bool m_FilterIsSet;
@@ -72,6 +78,8 @@ protected:
 
     std::vector<std::string> m_Flow_counters;
 
+    std::vector<std::string> m_Flow_digests;
+    bool m_Flow_digestsIsSet;
 };
 
 }

@@ -33,27 +33,32 @@ class PacketAnalyzerConfig(object):
     swagger_types = {
         'filter': 'str',
         'protocol_counters': 'list[str]',
-        'flow_counters': 'list[str]'
+        'flow_counters': 'list[str]',
+        'flow_digests': 'list[str]'
     }
 
     attribute_map = {
         'filter': 'filter',
         'protocol_counters': 'protocol_counters',
-        'flow_counters': 'flow_counters'
+        'flow_counters': 'flow_counters',
+        'flow_digests': 'flow_digests'
     }
 
-    def __init__(self, filter=None, protocol_counters=None, flow_counters=None):  # noqa: E501
+    def __init__(self, filter=None, protocol_counters=None, flow_counters=None, flow_digests=None):  # noqa: E501
         """PacketAnalyzerConfig - a model defined in Swagger"""  # noqa: E501
 
         self._filter = None
         self._protocol_counters = None
         self._flow_counters = None
+        self._flow_digests = None
         self.discriminator = None
 
         if filter is not None:
             self.filter = filter
         self.protocol_counters = protocol_counters
         self.flow_counters = flow_counters
+        if flow_digests is not None:
+            self.flow_digests = flow_digests
 
     @property
     def filter(self):
@@ -103,7 +108,7 @@ class PacketAnalyzerConfig(object):
     def flow_counters(self):
         """Gets the flow_counters of this PacketAnalyzerConfig.  # noqa: E501
 
-        List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets.   # noqa: E501
+        List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets. Pseudo Random Bit Sequence (PRBS) results require packet payloads to contain compatible PRBs data.   # noqa: E501
 
         :return: The flow_counters of this PacketAnalyzerConfig.  # noqa: E501
         :rtype: list[str]
@@ -114,12 +119,34 @@ class PacketAnalyzerConfig(object):
     def flow_counters(self, flow_counters):
         """Sets the flow_counters of this PacketAnalyzerConfig.
 
-        List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets.   # noqa: E501
+        List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets. Pseudo Random Bit Sequence (PRBS) results require packet payloads to contain compatible PRBs data.   # noqa: E501
 
         :param flow_counters: The flow_counters of this PacketAnalyzerConfig.  # noqa: E501
         :type: list[str]
         """
         self._flow_counters = flow_counters
+
+    @property
+    def flow_digests(self):
+        """Gets the flow_digests of this PacketAnalyzerConfig.  # noqa: E501
+
+        List of result digests to generate per flow for received packets. Sequence run length, latency, and jitter digests require Spirent signatures in the received packets.   # noqa: E501
+
+        :return: The flow_digests of this PacketAnalyzerConfig.  # noqa: E501
+        :rtype: list[str]
+        """
+        return self._flow_digests
+
+    @flow_digests.setter
+    def flow_digests(self, flow_digests):
+        """Sets the flow_digests of this PacketAnalyzerConfig.
+
+        List of result digests to generate per flow for received packets. Sequence run length, latency, and jitter digests require Spirent signatures in the received packets.   # noqa: E501
+
+        :param flow_digests: The flow_digests of this PacketAnalyzerConfig.  # noqa: E501
+        :type: list[str]
+        """
+        self._flow_digests = flow_digests
 
     def to_dict(self):
         """Returns the model properties as a dict"""
