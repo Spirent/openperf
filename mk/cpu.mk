@@ -15,7 +15,6 @@ CPU_LIB_DIR := $(OP_BUILD_ROOT)/lib
 
 OP_INC_DIRS += $(OP_ROOT)/src/modules
 OP_LIB_DIRS += $(CPU_LIB_DIR)
-CPU_ISPC_FLAGS := $(OP_ISPC_FLAGS)
 
 CPU_SOURCES :=
 CPU_DEPENDS :=
@@ -97,7 +96,7 @@ $(eval $(call op_generate_clean_rules,cpu,CPU_TARGET,CPU_OBJECTS))
 CPU_COMMA := ,
 CPU_EMPTY :=
 CPU_SPACE := $(CPU_EMPTY) $(CPU_EMPTY)
-CPU_ISPC_FLAGS := --werror $(OP_ISPC_FLAGS)
+CPU_ISPC_FLAGS := $(OP_ISPC_FLAGS)
 
 ifeq ($(MODE),release)
 	CPU_ISPC_FLAGS += --opt=disable-assertions
