@@ -44,34 +44,33 @@ REGURGITATE_ISPC_OBJECTS := $(patsubst %, $(REGURGITATE_OBJ_DIR)/%, \
 # Adjust objects based on the number of ISPC target architectures
 # Since we don't have any x16 wide implementations, we filter those targets out
 REGURGITATE_DEFINES :=
-REGURGITATE_ISPC_TARGETS := $(filter-out %-i32x16,$(OP_ISPC_TARGETS))
 REGURGITATE_ISPC_TARGET_OBJECTS :=
 
-ifeq (,$(word 2,$(REGURGITATE_ISPC_TARGETS)))  # i.e. there is no 2nd target
+ifeq (,$(word 2,$(OP_ISPC_TARGETS)))  # i.e. there is no 2nd target
 	REGURGITATE_DEFINES += ISPC_TARGET_AUTOMATIC
 	REGURGITATE_ISPC_TARGET_OBJECTS += $(REGURGITATE_ISPC_OBJECTS)
 else
-	ifneq (,$(filter sse2-%,$(REGURGITATE_ISPC_TARGETS)))
+	ifneq (,$(filter sse2-%,$(OP_ISPC_TARGETS)))
 		REGURGITATE_DEFINES += ISPC_TARGET_SSE2
 		REGURGITATE_ISPC_TARGET_OBJECTS += $(addsuffix _sse2.o,$(basename $(REGURGITATE_ISPC_OBJECTS)))
 	endif
-	ifneq (,$(filter sse4-%,$(REGURGITATE_ISPC_TARGETS)))
+	ifneq (,$(filter sse4-%,$(OP_ISPC_TARGETS)))
 		REGURGITATE_DEFINES += ISPC_TARGET_SSE4
 		REGURGITATE_ISPC_TARGET_OBJECTS += $(addsuffix _sse4.o,$(basename $(REGURGITATE_ISPC_OBJECTS)))
 	endif
-	ifneq (,$(filter avx1-%,$(REGURGITATE_ISPC_TARGETS)))
+	ifneq (,$(filter avx1-%,$(OP_ISPC_TARGETS)))
 		REGURGITATE_DEFINES += ISPC_TARGET_AVX
 		REGURGITATE_ISPC_TARGET_OBJECTS += $(addsuffix _avx.o,$(basename $(REGURGITATE_ISPC_OBJECTS)))
 	endif
-	ifneq (,$(filter avx2-%,$(REGURGITATE_ISPC_TARGETS)))
+	ifneq (,$(filter avx2-%,$(OP_ISPC_TARGETS)))
 		REGURGITATE_DEFINES += ISPC_TARGET_AVX2
 		REGURGITATE_ISPC_TARGET_OBJECTS += $(addsuffix _avx2.o,$(basename $(REGURGITATE_ISPC_OBJECTS)))
 	endif
-	ifneq (,$(filter avx512skx-%,$(REGURGITATE_ISPC_TARGETS)))
+	ifneq (,$(filter avx512skx-%,$(OP_ISPC_TARGETS)))
 		REGURGITATE_DEFINES += ISPC_TARGET_AVX512SKX
 		REGURGITATE_ISPC_TARGET_OBJECTS += $(addsuffix _avx512skx.o,$(basename $(REGURGITATE_ISPC_OBJECTS)))
 	endif
-	ifneq (,$(filter neon-%,$(REGURGITATE_ISPC_TARGETS)))
+	ifneq (,$(filter neon-%,$(OP_ISPC_TARGETS)))
 		REGURGITATE_DEFINES += ISPC_TARGET_NEON
 		REGURGITATE_ISPC_TARGET_OBJECTS += $(addsuffix _neon.o,$(basename $(REGURGITATE_ISPC_OBJECTS)))
 	endif
@@ -107,7 +106,7 @@ $(REGURGITATE_OBJ_DIR)/%.o: $(REGURGITATE_SRC_DIR)/%.ispc
 	@mkdir -p $(dir $@)
 	$(strip $(OP_ISPC) -o $@ $(REGURGITATE_ISPC_FLAGS) \
 		-M -MF $(@:.o=.d) \
-		--target=$(subst $(REGURGITATE_SPACE),$(REGURGITATE_COMMA),$(REGURGITATE_ISPC_TARGETS)) \
+		--target=$(subst $(REGURGITATE_SPACE),$(REGURGITATE_COMMA),$(OP_ISPC_TARGETS)) \
 		--header-outfile=$(patsubst %,$(REGURGITATE_OBJ_DIR)/%,$(notdir $<.h)) $<)
 	@sed -i -e s,\(null\),$@, $(@:.o=.d)
 
