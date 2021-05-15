@@ -16,7 +16,7 @@ template <typename Iterator> void fill_random(Iterator first, Iterator last)
 template <typename KeyType, typename ValType, typename Wrapper>
 void initialize_sort(Wrapper& wrapper)
 {
-    static const size_t test_size = 64;
+    static const size_t test_size = 256;
     using key_array = std::array<KeyType, test_size>;
     using val_array = std::array<ValType, test_size>;
 
@@ -36,7 +36,7 @@ void initialize_sort(Wrapper& wrapper)
 template <typename KeyType, typename ValType, typename Wrapper>
 void initialize_merge(Wrapper& wrapper)
 {
-    static const size_t input_size = 64;
+    static const size_t input_size = 256;
     static const size_t output_size = 16;
 
     auto input_means = std::array<KeyType, input_size>{};

@@ -3,6 +3,7 @@
 
 #include "bitonic_centroid_sort_x4.h"
 #include "bitonic_centroid_sort_x8.h"
+#include "bitonic_centroid_sort_x16.h"
 
 static const uniform int chunk_size = programCount * programCount;
 

@@ -1,4 +1,5 @@
 #include <vector>
+#include <iostream>
 
 #include "catch.hpp"
 
@@ -53,10 +54,6 @@ void test_sort(const Container& test_sizes)
     }
 }
 
-/*
- * XXX: This test only verifies one of the implementations available for the
- * CPU, e.g. an 8-wide capable CPU won't test the 4-wide version.
- */
 TEST_CASE("sorting", "[regurgitate]")
 {
     /* Generate a vector of test sizes */
