@@ -19,13 +19,13 @@ namespace model {
 
 TimeKeeperStats::TimeKeeperStats()
 {
-    m_Frequency_accept = 0.0;
-    m_Frequency_reject = 0.0;
-    m_Local_frequency_accept = 0.0;
-    m_Local_frequency_reject = 0.0;
-    m_Theta_accept = 0.0;
-    m_Theta_reject = 0.0;
-    m_Timestamps = 0.0;
+    m_Frequency_accept = 0L;
+    m_Frequency_reject = 0L;
+    m_Local_frequency_accept = 0L;
+    m_Local_frequency_reject = 0L;
+    m_Theta_accept = 0L;
+    m_Theta_reject = 0L;
+    m_Timestamps = 0L;
     
 }
 
@@ -68,38 +68,38 @@ void TimeKeeperStats::fromJson(nlohmann::json& val)
 }
 
 
-double TimeKeeperStats::getFrequencyAccept() const
+int64_t TimeKeeperStats::getFrequencyAccept() const
 {
     return m_Frequency_accept;
 }
-void TimeKeeperStats::setFrequencyAccept(double value)
+void TimeKeeperStats::setFrequencyAccept(int64_t value)
 {
     m_Frequency_accept = value;
     
 }
-double TimeKeeperStats::getFrequencyReject() const
+int64_t TimeKeeperStats::getFrequencyReject() const
 {
     return m_Frequency_reject;
 }
-void TimeKeeperStats::setFrequencyReject(double value)
+void TimeKeeperStats::setFrequencyReject(int64_t value)
 {
     m_Frequency_reject = value;
     
 }
-double TimeKeeperStats::getLocalFrequencyAccept() const
+int64_t TimeKeeperStats::getLocalFrequencyAccept() const
 {
     return m_Local_frequency_accept;
 }
-void TimeKeeperStats::setLocalFrequencyAccept(double value)
+void TimeKeeperStats::setLocalFrequencyAccept(int64_t value)
 {
     m_Local_frequency_accept = value;
     
 }
-double TimeKeeperStats::getLocalFrequencyReject() const
+int64_t TimeKeeperStats::getLocalFrequencyReject() const
 {
     return m_Local_frequency_reject;
 }
-void TimeKeeperStats::setLocalFrequencyReject(double value)
+void TimeKeeperStats::setLocalFrequencyReject(int64_t value)
 {
     m_Local_frequency_reject = value;
     
@@ -113,29 +113,29 @@ void TimeKeeperStats::setRoundTripTimes(std::shared_ptr<TimeKeeperStats_round_tr
     m_Round_trip_times = value;
     
 }
-double TimeKeeperStats::getThetaAccept() const
+int64_t TimeKeeperStats::getThetaAccept() const
 {
     return m_Theta_accept;
 }
-void TimeKeeperStats::setThetaAccept(double value)
+void TimeKeeperStats::setThetaAccept(int64_t value)
 {
     m_Theta_accept = value;
     
 }
-double TimeKeeperStats::getThetaReject() const
+int64_t TimeKeeperStats::getThetaReject() const
 {
     return m_Theta_reject;
 }
-void TimeKeeperStats::setThetaReject(double value)
+void TimeKeeperStats::setThetaReject(int64_t value)
 {
     m_Theta_reject = value;
     
 }
-double TimeKeeperStats::getTimestamps() const
+int64_t TimeKeeperStats::getTimestamps() const
 {
     return m_Timestamps;
 }
-void TimeKeeperStats::setTimestamps(double value)
+void TimeKeeperStats::setTimestamps(int64_t value)
 {
     m_Timestamps = value;
     

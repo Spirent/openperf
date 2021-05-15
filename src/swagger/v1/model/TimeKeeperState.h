@@ -50,29 +50,29 @@ public:
     /// <summary>
     /// The time counter frequency as measured by the interval between the two best timestamp exchanges with the time source over the past two hours, in Hz. 
     /// </summary>
-    double getFrequency() const;
-    void setFrequency(double value);
+    int64_t getFrequency() const;
+    void setFrequency(int64_t value);
     bool frequencyIsSet() const;
     void unsetFrequency();
     /// <summary>
     /// The estimated error of the time counter frequency measurement, in Hz.
     /// </summary>
-    double getFrequencyError() const;
-    void setFrequencyError(double value);
+    int64_t getFrequencyError() const;
+    void setFrequencyError(int64_t value);
     bool frequencyErrorIsSet() const;
     void unsetFrequency_error();
     /// <summary>
     /// The time counter frequency as measured by the interval between the two best timestamp exchanges with the time source over the past hour, in Hz. This value is used to help determine time stamp error due to time counter frequency drift. 
     /// </summary>
-    double getLocalFrequency() const;
-    void setLocalFrequency(double value);
+    int64_t getLocalFrequency() const;
+    void setLocalFrequency(int64_t value);
     bool localFrequencyIsSet() const;
     void unsetLocal_frequency();
     /// <summary>
     /// The estimated error of the local time counter frequency measurement, in Hz.
     /// </summary>
-    double getLocalFrequencyError() const;
-    void setLocalFrequencyError(double value);
+    int64_t getLocalFrequencyError() const;
+    void setLocalFrequencyError(int64_t value);
     bool localFrequencyErrorIsSet() const;
     void unsetLocal_frequency_error();
     /// <summary>
@@ -94,13 +94,13 @@ public:
     void unsetTheta();
 
 protected:
-    double m_Frequency;
+    int64_t m_Frequency;
     bool m_FrequencyIsSet;
-    double m_Frequency_error;
+    int64_t m_Frequency_error;
     bool m_Frequency_errorIsSet;
-    double m_Local_frequency;
+    int64_t m_Local_frequency;
     bool m_Local_frequencyIsSet;
-    double m_Local_frequency_error;
+    int64_t m_Local_frequency_error;
     bool m_Local_frequency_errorIsSet;
     double m_Offset;
 

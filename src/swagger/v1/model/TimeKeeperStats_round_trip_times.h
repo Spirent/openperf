@@ -71,8 +71,8 @@ public:
     /// <summary>
     /// The number of round trip times in the data set.
     /// </summary>
-    double getSize() const;
-    void setSize(double value);
+    int64_t getSize() const;
+    void setSize(int64_t value);
     
 protected:
     double m_Avg;
@@ -81,7 +81,7 @@ protected:
     bool m_MaxIsSet;
     double m_Min;
     bool m_MinIsSet;
-    double m_Size;
+    int64_t m_Size;
 
 };
 

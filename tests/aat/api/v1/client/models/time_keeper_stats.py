@@ -31,14 +31,14 @@ class TimeKeeperStats(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'frequency_accept': 'float',
-        'frequency_reject': 'float',
-        'local_frequency_accept': 'float',
-        'local_frequency_reject': 'float',
+        'frequency_accept': 'int',
+        'frequency_reject': 'int',
+        'local_frequency_accept': 'int',
+        'local_frequency_reject': 'int',
         'round_trip_times': 'TimeKeeperStatsRoundTripTimes',
-        'theta_accept': 'float',
-        'theta_reject': 'float',
-        'timestamps': 'float'
+        'theta_accept': 'int',
+        'theta_reject': 'int',
+        'timestamps': 'int'
     }
 
     attribute_map = {
@@ -81,7 +81,7 @@ class TimeKeeperStats(object):
         The number of times the frequency calculation has been updated.  # noqa: E501
 
         :return: The frequency_accept of this TimeKeeperStats.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._frequency_accept
 
@@ -92,7 +92,7 @@ class TimeKeeperStats(object):
         The number of times the frequency calculation has been updated.  # noqa: E501
 
         :param frequency_accept: The frequency_accept of this TimeKeeperStats.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._frequency_accept = frequency_accept
 
@@ -103,7 +103,7 @@ class TimeKeeperStats(object):
         The number of times the frequency calculation has been rejected due to an excessive delta between old and new values.   # noqa: E501
 
         :return: The frequency_reject of this TimeKeeperStats.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._frequency_reject
 
@@ -114,7 +114,7 @@ class TimeKeeperStats(object):
         The number of times the frequency calculation has been rejected due to an excessive delta between old and new values.   # noqa: E501
 
         :param frequency_reject: The frequency_reject of this TimeKeeperStats.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._frequency_reject = frequency_reject
 
@@ -125,7 +125,7 @@ class TimeKeeperStats(object):
         The number of times the local frequency calculation has been updated.  # noqa: E501
 
         :return: The local_frequency_accept of this TimeKeeperStats.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._local_frequency_accept
 
@@ -136,7 +136,7 @@ class TimeKeeperStats(object):
         The number of times the local frequency calculation has been updated.  # noqa: E501
 
         :param local_frequency_accept: The local_frequency_accept of this TimeKeeperStats.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._local_frequency_accept = local_frequency_accept
 
@@ -147,7 +147,7 @@ class TimeKeeperStats(object):
         The number of times the local frequency calculation has been rejected due to an excessive delta between old and new values.   # noqa: E501
 
         :return: The local_frequency_reject of this TimeKeeperStats.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._local_frequency_reject
 
@@ -158,7 +158,7 @@ class TimeKeeperStats(object):
         The number of times the local frequency calculation has been rejected due to an excessive delta between old and new values.   # noqa: E501
 
         :param local_frequency_reject: The local_frequency_reject of this TimeKeeperStats.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._local_frequency_reject = local_frequency_reject
 
@@ -189,7 +189,7 @@ class TimeKeeperStats(object):
         The number of times the theta calculation has been updated.  # noqa: E501
 
         :return: The theta_accept of this TimeKeeperStats.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._theta_accept
 
@@ -200,7 +200,7 @@ class TimeKeeperStats(object):
         The number of times the theta calculation has been updated.  # noqa: E501
 
         :param theta_accept: The theta_accept of this TimeKeeperStats.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._theta_accept = theta_accept
 
@@ -211,7 +211,7 @@ class TimeKeeperStats(object):
         Then umber of times the theta calculation has been rejected due to excessive delta between old and new values.   # noqa: E501
 
         :return: The theta_reject of this TimeKeeperStats.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._theta_reject
 
@@ -222,7 +222,7 @@ class TimeKeeperStats(object):
         Then umber of times the theta calculation has been rejected due to excessive delta between old and new values.   # noqa: E501
 
         :param theta_reject: The theta_reject of this TimeKeeperStats.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._theta_reject = theta_reject
 
@@ -233,7 +233,7 @@ class TimeKeeperStats(object):
         The number of timestamps in the current working set of timestamps. Old timestamps are dropped from the history of timestamps as they become irrelevant.   # noqa: E501
 
         :return: The timestamps of this TimeKeeperStats.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._timestamps
 
@@ -244,7 +244,7 @@ class TimeKeeperStats(object):
         The number of timestamps in the current working set of timestamps. Old timestamps are dropped from the history of timestamps as they become irrelevant.   # noqa: E501
 
         :param timestamps: The timestamps of this TimeKeeperStats.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._timestamps = timestamps
 

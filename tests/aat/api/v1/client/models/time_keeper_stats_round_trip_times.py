@@ -34,7 +34,7 @@ class TimeKeeperStatsRoundTripTimes(object):
         'avg': 'float',
         'max': 'float',
         'min': 'float',
-        'size': 'float'
+        'size': 'int'
     }
 
     attribute_map = {
@@ -134,7 +134,7 @@ class TimeKeeperStatsRoundTripTimes(object):
         The number of round trip times in the data set.  # noqa: E501
 
         :return: The size of this TimeKeeperStatsRoundTripTimes.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._size
 
@@ -145,7 +145,7 @@ class TimeKeeperStatsRoundTripTimes(object):
         The number of round trip times in the data set.  # noqa: E501
 
         :param size: The size of this TimeKeeperStatsRoundTripTimes.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._size = size
 

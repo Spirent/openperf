@@ -51,23 +51,23 @@ public:
     /// <summary>
     /// The number of times the frequency calculation has been updated.
     /// </summary>
-    double getFrequencyAccept() const;
-    void setFrequencyAccept(double value);
+    int64_t getFrequencyAccept() const;
+    void setFrequencyAccept(int64_t value);
         /// <summary>
     /// The number of times the frequency calculation has been rejected due to an excessive delta between old and new values. 
     /// </summary>
-    double getFrequencyReject() const;
-    void setFrequencyReject(double value);
+    int64_t getFrequencyReject() const;
+    void setFrequencyReject(int64_t value);
         /// <summary>
     /// The number of times the local frequency calculation has been updated.
     /// </summary>
-    double getLocalFrequencyAccept() const;
-    void setLocalFrequencyAccept(double value);
+    int64_t getLocalFrequencyAccept() const;
+    void setLocalFrequencyAccept(int64_t value);
         /// <summary>
     /// The number of times the local frequency calculation has been rejected due to an excessive delta between old and new values. 
     /// </summary>
-    double getLocalFrequencyReject() const;
-    void setLocalFrequencyReject(double value);
+    int64_t getLocalFrequencyReject() const;
+    void setLocalFrequencyReject(int64_t value);
         /// <summary>
     /// 
     /// </summary>
@@ -76,35 +76,35 @@ public:
         /// <summary>
     /// The number of times the theta calculation has been updated.
     /// </summary>
-    double getThetaAccept() const;
-    void setThetaAccept(double value);
+    int64_t getThetaAccept() const;
+    void setThetaAccept(int64_t value);
         /// <summary>
     /// Then umber of times the theta calculation has been rejected due to excessive delta between old and new values. 
     /// </summary>
-    double getThetaReject() const;
-    void setThetaReject(double value);
+    int64_t getThetaReject() const;
+    void setThetaReject(int64_t value);
         /// <summary>
     /// The number of timestamps in the current working set of timestamps. Old timestamps are dropped from the history of timestamps as they become irrelevant. 
     /// </summary>
-    double getTimestamps() const;
-    void setTimestamps(double value);
+    int64_t getTimestamps() const;
+    void setTimestamps(int64_t value);
     
 protected:
-    double m_Frequency_accept;
+    int64_t m_Frequency_accept;
 
-    double m_Frequency_reject;
+    int64_t m_Frequency_reject;
 
-    double m_Local_frequency_accept;
+    int64_t m_Local_frequency_accept;
 
-    double m_Local_frequency_reject;
+    int64_t m_Local_frequency_reject;
 
     std::shared_ptr<TimeKeeperStats_round_trip_times> m_Round_trip_times;
 
-    double m_Theta_accept;
+    int64_t m_Theta_accept;
 
-    double m_Theta_reject;
+    int64_t m_Theta_reject;
 
-    double m_Timestamps;
+    int64_t m_Timestamps;
 
 };
 
