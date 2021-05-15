@@ -31,10 +31,10 @@ class TimeKeeperState(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'frequency': 'float',
-        'frequency_error': 'float',
-        'local_frequency': 'float',
-        'local_frequency_error': 'float',
+        'frequency': 'int',
+        'frequency_error': 'int',
+        'local_frequency': 'int',
+        'local_frequency_error': 'int',
         'offset': 'float',
         'synced': 'bool',
         'theta': 'float'
@@ -82,7 +82,7 @@ class TimeKeeperState(object):
         The time counter frequency as measured by the interval between the two best timestamp exchanges with the time source over the past two hours, in Hz.   # noqa: E501
 
         :return: The frequency of this TimeKeeperState.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._frequency
 
@@ -93,7 +93,7 @@ class TimeKeeperState(object):
         The time counter frequency as measured by the interval between the two best timestamp exchanges with the time source over the past two hours, in Hz.   # noqa: E501
 
         :param frequency: The frequency of this TimeKeeperState.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._frequency = frequency
 
@@ -104,7 +104,7 @@ class TimeKeeperState(object):
         The estimated error of the time counter frequency measurement, in Hz.  # noqa: E501
 
         :return: The frequency_error of this TimeKeeperState.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._frequency_error
 
@@ -115,7 +115,7 @@ class TimeKeeperState(object):
         The estimated error of the time counter frequency measurement, in Hz.  # noqa: E501
 
         :param frequency_error: The frequency_error of this TimeKeeperState.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._frequency_error = frequency_error
 
@@ -126,7 +126,7 @@ class TimeKeeperState(object):
         The time counter frequency as measured by the interval between the two best timestamp exchanges with the time source over the past hour, in Hz. This value is used to help determine time stamp error due to time counter frequency drift.   # noqa: E501
 
         :return: The local_frequency of this TimeKeeperState.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._local_frequency
 
@@ -137,7 +137,7 @@ class TimeKeeperState(object):
         The time counter frequency as measured by the interval between the two best timestamp exchanges with the time source over the past hour, in Hz. This value is used to help determine time stamp error due to time counter frequency drift.   # noqa: E501
 
         :param local_frequency: The local_frequency of this TimeKeeperState.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._local_frequency = local_frequency
 
@@ -148,7 +148,7 @@ class TimeKeeperState(object):
         The estimated error of the local time counter frequency measurement, in Hz.  # noqa: E501
 
         :return: The local_frequency_error of this TimeKeeperState.  # noqa: E501
-        :rtype: float
+        :rtype: int
         """
         return self._local_frequency_error
 
@@ -159,7 +159,7 @@ class TimeKeeperState(object):
         The estimated error of the local time counter frequency measurement, in Hz.  # noqa: E501
 
         :param local_frequency_error: The local_frequency_error of this TimeKeeperState.  # noqa: E501
-        :type: float
+        :type: int
         """
         self._local_frequency_error = local_frequency_error
 

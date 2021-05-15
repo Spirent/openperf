@@ -19,13 +19,13 @@ namespace model {
 
 TimeKeeperState::TimeKeeperState()
 {
-    m_Frequency = 0.0;
+    m_Frequency = 0L;
     m_FrequencyIsSet = false;
-    m_Frequency_error = 0.0;
+    m_Frequency_error = 0L;
     m_Frequency_errorIsSet = false;
-    m_Local_frequency = 0.0;
+    m_Local_frequency = 0L;
     m_Local_frequencyIsSet = false;
-    m_Local_frequency_error = 0.0;
+    m_Local_frequency_error = 0L;
     m_Local_frequency_errorIsSet = false;
     m_Offset = 0.0;
     m_Synced = false;
@@ -102,11 +102,11 @@ void TimeKeeperState::fromJson(nlohmann::json& val)
 }
 
 
-double TimeKeeperState::getFrequency() const
+int64_t TimeKeeperState::getFrequency() const
 {
     return m_Frequency;
 }
-void TimeKeeperState::setFrequency(double value)
+void TimeKeeperState::setFrequency(int64_t value)
 {
     m_Frequency = value;
     m_FrequencyIsSet = true;
@@ -119,11 +119,11 @@ void TimeKeeperState::unsetFrequency()
 {
     m_FrequencyIsSet = false;
 }
-double TimeKeeperState::getFrequencyError() const
+int64_t TimeKeeperState::getFrequencyError() const
 {
     return m_Frequency_error;
 }
-void TimeKeeperState::setFrequencyError(double value)
+void TimeKeeperState::setFrequencyError(int64_t value)
 {
     m_Frequency_error = value;
     m_Frequency_errorIsSet = true;
@@ -136,11 +136,11 @@ void TimeKeeperState::unsetFrequency_error()
 {
     m_Frequency_errorIsSet = false;
 }
-double TimeKeeperState::getLocalFrequency() const
+int64_t TimeKeeperState::getLocalFrequency() const
 {
     return m_Local_frequency;
 }
-void TimeKeeperState::setLocalFrequency(double value)
+void TimeKeeperState::setLocalFrequency(int64_t value)
 {
     m_Local_frequency = value;
     m_Local_frequencyIsSet = true;
@@ -153,11 +153,11 @@ void TimeKeeperState::unsetLocal_frequency()
 {
     m_Local_frequencyIsSet = false;
 }
-double TimeKeeperState::getLocalFrequencyError() const
+int64_t TimeKeeperState::getLocalFrequencyError() const
 {
     return m_Local_frequency_error;
 }
-void TimeKeeperState::setLocalFrequencyError(double value)
+void TimeKeeperState::setLocalFrequencyError(int64_t value)
 {
     m_Local_frequency_error = value;
     m_Local_frequency_errorIsSet = true;

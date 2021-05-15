@@ -25,7 +25,7 @@ TimeKeeperStats_round_trip_times::TimeKeeperStats_round_trip_times()
     m_MaxIsSet = false;
     m_Min = 0.0;
     m_MinIsSet = false;
-    m_Size = 0.0;
+    m_Size = 0L;
     
 }
 
@@ -130,11 +130,11 @@ void TimeKeeperStats_round_trip_times::unsetMin()
 {
     m_MinIsSet = false;
 }
-double TimeKeeperStats_round_trip_times::getSize() const
+int64_t TimeKeeperStats_round_trip_times::getSize() const
 {
     return m_Size;
 }
-void TimeKeeperStats_round_trip_times::setSize(double value)
+void TimeKeeperStats_round_trip_times::setSize(int64_t value)
 {
     m_Size = value;
     

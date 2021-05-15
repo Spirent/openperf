@@ -150,18 +150,18 @@ definitions:
     description: TimeKeeper internal state information
     properties:
       frequency:
-        type: number
+        type: integer
         description: |
           The time counter frequency as measured by the interval between the
           two best timestamp exchanges with the time source over the past two
           hours, in Hz.
         format: int64
       frequency_error:
-        type: number
+        type: integer
         description: The estimated error of the time counter frequency measurement, in Hz.
         format: int64
       local_frequency:
-        type: number
+        type: integer
         description: |
           The time counter frequency as measured by the interval between the
           two best timestamp exchanges with the time source over the past hour,
@@ -169,7 +169,7 @@ definitions:
           time counter frequency drift.
         format: int64
       local_frequency_error:
-        type: number
+        type: integer
         description: The estimated error of the local time counter frequency measurement, in Hz.
         format: int64
       offset:
@@ -198,21 +198,21 @@ definitions:
     description: TimeKeeper statistics
     properties:
       frequency_accept:
-        type: number
+        type: integer
         description: The number of times the frequency calculation has been updated.
         format: int64
       frequency_reject:
-        type: number
+        type: integer
         description: |
           The number of times the frequency calculation has been rejected due
           to an excessive delta between old and new values.
         format: int64
       local_frequency_accept:
-        type: number
+        type: integer
         description: The number of times the local frequency calculation has been updated.
         format: int64
       local_frequency_reject:
-        type: number
+        type: integer
         description: |
           The number of times the local frequency calculation has been rejected
           due to an excessive delta between old and new values.
@@ -238,23 +238,23 @@ definitions:
             description: The minimum round trip time, in seconds.
             format: double
           size:
-            type: number
+            type: integer
             description: The number of round trip times in the data set.
             format: int64
         required:
           - size
       theta_accept:
-        type: number
+        type: integer
         description: The number of times the theta calculation has been updated.
         format: int64
       theta_reject:
-        type: number
+        type: integer
         description: |
           Then umber of times the theta calculation has been rejected due to
           excessive delta between old and new values.
         format: int64
       timestamps:
-        type: number
+        type: integer
         description: |
           The number of timestamps in the current working set of timestamps.
           Old timestamps are dropped from the history of timestamps as they
