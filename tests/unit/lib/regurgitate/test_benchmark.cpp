@@ -26,7 +26,11 @@ template <typename Digest> void fill_random(Digest& digest, size_t count)
 
 TEST_CASE("benchmark", "[regurgitate]")
 {
-    constexpr size_t size = 1000000;
+    /*
+     * Using a multiple of the optimum length ensures that all data
+     * points will be merged.
+     */
+    constexpr size_t size = regurgitate_optimum_length * 1000;
 
     BENCHMARK("digestible<float, float>")
     {
@@ -55,7 +59,6 @@ TEST_CASE("benchmark", "[regurgitate]")
         {
             auto digest = regurgitate::digest<float, float, compression>();
             fill_random(digest, size);
-            digest.merge();
         }
     }
 
@@ -82,7 +85,6 @@ TEST_CASE("benchmark", "[regurgitate]")
         {
             auto digest = regurgitate::digest<float, double, compression>();
             fill_random(digest, size);
-            digest.merge();
         }
     }
 }

@@ -24,7 +24,6 @@ template <typename Container> void verify_test_data(const Container& c)
     std::for_each(std::begin(c), std::end(c), [&](const auto& pair) {
         digest.insert(pair.first, pair.second);
     });
-    digest.merge();
     verify_digest(digest);
 }
 

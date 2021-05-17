@@ -2,7 +2,7 @@
 
 #include "functions.hpp"
 
-namespace regurgitate::impl {
+namespace regurgitate {
 
 template <typename Iterator> void fill_random(Iterator first, Iterator last)
 {
@@ -16,9 +16,8 @@ template <typename Iterator> void fill_random(Iterator first, Iterator last)
 template <typename KeyType, typename ValType, typename Wrapper>
 void initialize_sort(Wrapper& wrapper)
 {
-    static const size_t test_size = 256;
-    using key_array = std::array<KeyType, test_size>;
-    using val_array = std::array<ValType, test_size>;
+    using key_array = std::array<KeyType, merge_sort_input_max>;
+    using val_array = std::array<ValType, merge_sort_input_max>;
 
     key_array means, scratch_m;
     val_array weights, scratch_w;
@@ -28,7 +27,7 @@ void initialize_sort(Wrapper& wrapper)
 
     wrapper.init(means.data(),
                  weights.data(),
-                 test_size,
+                 merge_sort_input_max,
                  scratch_m.data(),
                  scratch_w.data());
 }
@@ -36,13 +35,12 @@ void initialize_sort(Wrapper& wrapper)
 template <typename KeyType, typename ValType, typename Wrapper>
 void initialize_merge(Wrapper& wrapper)
 {
-    static const size_t input_size = 256;
     static const size_t output_size = 16;
 
-    auto input_means = std::array<KeyType, input_size>{};
+    auto input_means = std::array<KeyType, merge_sort_input_max>{};
     fill_random(std::begin(input_means), std::end(input_means));
 
-    auto input_weights = std::array<ValType, input_size>{};
+    auto input_weights = std::array<ValType, merge_sort_input_max>{};
     std::iota(std::begin(input_weights), std::end(input_weights), 1);
 
     auto output_means = std::array<KeyType, output_size>{};
@@ -50,7 +48,7 @@ void initialize_merge(Wrapper& wrapper)
 
     wrapper.init(input_means.data(),
                  input_weights.data(),
-                 input_size,
+                 merge_sort_input_max,
                  output_means.data(),
                  output_weights.data(),
                  output_size);
@@ -65,4 +63,4 @@ functions::functions()
     initialize_merge<float, double>(merge_float_double_impl);
 }
 
-} // namespace regurgitate::impl
+} // namespace regurgitate

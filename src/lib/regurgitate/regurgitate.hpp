@@ -3,12 +3,14 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
+#include <cassert>
 #include <numeric>
 
 #include <iterator>
 #include <iostream>
 
-#include "functions.hpp"
+#include "api.h"
 
 namespace ispc {
 
@@ -27,13 +29,12 @@ namespace ispc {
           V out_weights[],                                                     \
           unsigned out_length)                                                 \
     {                                                                          \
-        auto& functions = regurgitate::impl::functions::instance();            \
-        return (functions.merge_##key_type##_##val_type##_impl(in_means,       \
-                                                               in_weights,     \
-                                                               in_length,      \
-                                                               out_means,      \
-                                                               out_weights,    \
-                                                               out_length));   \
+        return (regurgitate_merge_##key_type##_##val_type(in_means,            \
+                                                          in_weights,          \
+                                                          in_length,           \
+                                                          out_means,           \
+                                                          out_weights,         \
+                                                          out_length));        \
     }                                                                          \
     template <typename K, typename V>                                          \
     inline std::enable_if_t<std::conjunction_v<std::is_same<K, key_type>,      \
@@ -42,8 +43,7 @@ namespace ispc {
     sort(                                                                      \
         K means[], V weights[], unsigned length, K scratch_m[], V scratch_w[]) \
     {                                                                          \
-        auto& functions = regurgitate::impl::functions::instance();            \
-        functions.sort_##key_type##_##val_type##_impl(                         \
+        regurgitate_sort_##key_type##_##val_type(                              \
             means, weights, length, scratch_m, scratch_w);                     \
     }
 
@@ -55,7 +55,6 @@ ISPC_MERGE_AND_SORT_WRAPPER(float, float)
 } // namespace ispc
 
 namespace regurgitate {
-
 namespace detail {
 
 template <typename Container> class centroid_container_iterator
@@ -77,7 +76,7 @@ public:
     {}
 
     centroid_container_iterator(const Container& container, size_t idx = 0)
-        : container_(const_cast<Container>(container))
+        : container_(const_cast<Container&>(container))
         , idx_(idx)
     {}
 
@@ -167,12 +166,6 @@ struct centroid_container
 
     void reset() { cursor_ = 0; }
 
-    WeightType total_weight() const
-    {
-        return (std::accumulate(
-            weights_.data(), weights_.data() + cursor_, WeightType{0}));
-    }
-
     ValueType* means() { return (means_.data()); }
 
     WeightType* weights() { return (weights_.data()); }
@@ -206,18 +199,15 @@ struct centroid_container
 
 } // namespace detail
 
+/*
+ * This digest class is designed to be used by a single reader and a single
+ * writer. Only writers should call the insert function. Readers may call
+ * anything else.
+ */
 template <typename ValueType, typename WeightType, size_t Size> class digest
 {
-    /*
-     * Larger buffer sizes mean we calculate logarithmic bucket values less
-     * often However, if the buffer is too large, then we'll spill out of the
-     * CPU cache when merging.
-     * Additionally, the 8-wide vector sorting implementation performs sorts
-     * of 64 item chunks, so a multiples of 64 is the most efficient size.
-     */
-    static constexpr size_t buffer_size = 128;
-    using buffer =
-        detail::centroid_container<ValueType, WeightType, buffer_size>;
+    using buffer = detail::
+        centroid_container<ValueType, WeightType, regurgitate_optimum_length>;
     buffer buffer_;
 
     using container = detail::centroid_container<ValueType, WeightType, Size>;
@@ -225,114 +215,7 @@ template <typename ValueType, typename WeightType, size_t Size> class digest
     container b_;
     container* active_ = &a_;
 
-    ValueType min_ = std::numeric_limits<ValueType>::max();
-    ValueType max_ = std::numeric_limits<ValueType>::lowest();
-
-public:
-    digest()
-    {
-        /* Initialize, i.e. benchmark, merge and sort functions */
-        [[maybe_unused]] auto& functions =
-            regurgitate::impl::functions::instance();
-    }
-
-    digest(const digest& other)
-        : buffer_(other.buffer_)
-        , a_(other.a_)
-        , b_(other.b_)
-        , active_(other.active_ == &other.a_ ? &a_ : &b_)
-        , min_(other.min_)
-        , max_(other.max_)
-    {}
-
-    digest& operator=(const digest& other)
-    {
-        if (this != &other) {
-            buffer_ = other.buffer_;
-            a_ = other.a_;
-            b_ = other.b_;
-            active_ = (other.active_ == other.a_ ? &a_ : &b_);
-            min_ = other.min_;
-            max_ = other.max_;
-        }
-        return (*this);
-    }
-
-    digest(digest&& other)
-        : buffer_(std::move(other.buffer_))
-        , a_(std::move(other.a_))
-        , b_(std::move(other.b_))
-        , active_(other.active_ == &other.a_ ? &a_ : &b_)
-        , min_(other.min_)
-        , max_(other.max_)
-    {}
-
-    digest& operator=(digest&& other)
-    {
-        if (this != &other) {
-            buffer_ = std::move(other.buffer_);
-            a_ = std::move(other.a_);
-            b_ = std::move(other.b_);
-            active_ = (other.active_ == other.a_ ? &a_ : &b_);
-            min_ = other.min_;
-            max_ = other.max_;
-        }
-        return (*this);
-    }
-
-    inline void insert(ValueType v) { insert(v, 1); }
-
-    inline void insert(ValueType v, WeightType w)
-    {
-        buffer_.push_back(v, w);
-        if (buffer_.size() >= buffer_size - Size) { merge(); }
-    }
-
-    void insert(const digest<ValueType, WeightType, Size>& src)
-    {
-        max_ = std::max(max_, src.max_);
-        min_ = std::min(min_, src.min_);
-
-        std::for_each(
-            src.active_->begin(), src.active_->end(), [&](const auto& pair) {
-                insert(pair.first, pair.second);
-            });
-        merge();
-    }
-
-    std::vector<typename container::centroid> get() const
-    {
-        std::vector<typename container::centroid> to_return;
-        container* src = nullptr;
-
-        do {
-            to_return.clear();
-            std::atomic_thread_fence(std::memory_order_consume);
-            src = active_;
-            std::copy(active_->begin(),
-                      active_->end(),
-                      std::back_inserter(to_return));
-        } while (src != active_);
-
-        return (to_return);
-    }
-
-    size_t centroid_count() const
-    {
-        assert(active_);
-        return (active_->size());
-    }
-
-    size_t total_weight() const
-    {
-        assert(active_);
-        return (active_->total_weight());
-    }
-
-    ValueType max() const { return (max_); }
-
-    ValueType min() const { return (min_); }
-
+    /* Merge the current digest with the incoming data in the buffer. */
     void merge()
     {
         if (buffer_.empty()) { return; }
@@ -351,13 +234,6 @@ public:
                    scratch.means(),
                    scratch.weights());
 
-        /*
-         * Min/max values are now at the ends of the buffer; compare against our
-         * current values.
-         */
-        min_ = std::min(min_, buffer_.front().first);
-        max_ = std::max(max_, buffer_.back().first);
-
         /* Merge buffer data and compress into the inactive container */
         inactive->cursor_ = ispc::merge(buffer_.means(),
                                         buffer_.weights(),
@@ -371,6 +247,125 @@ public:
         std::atomic_thread_fence(std::memory_order_release);
         buffer_.reset();
         inactive->reset();
+    }
+
+public:
+    digest()
+    {
+        /* Perform run-time benchmarking if we haven't already */
+        regurgitate_init();
+    }
+
+    digest(const digest& other)
+        : buffer_(other.buffer_)
+        , a_(other.a_)
+        , b_(other.b_)
+        , active_(other.active_ == &other.a_ ? &a_ : &b_)
+    {}
+
+    digest& operator=(const digest& other)
+    {
+        if (this != &other) {
+            buffer_ = other.buffer_;
+            a_ = other.a_;
+            b_ = other.b_;
+            active_ = (other.active_ == other.a_ ? &a_ : &b_);
+        }
+        return (*this);
+    }
+
+    digest(digest&& other) noexcept
+        : buffer_(std::move(other.buffer_))
+        , a_(std::move(other.a_))
+        , b_(std::move(other.b_))
+        , active_(other.active_ == &other.a_ ? &a_ : &b_)
+    {}
+
+    digest& operator=(digest&& other) noexcept
+    {
+        if (this != &other) {
+            buffer_ = std::move(other.buffer_);
+            a_ = std::move(other.a_);
+            b_ = std::move(other.b_);
+            active_ = (other.active_ == other.a_ ? &a_ : &b_);
+        }
+        return (*this);
+    }
+
+    inline void insert(ValueType v) { insert(v, 1); }
+
+    inline void insert(ValueType v, WeightType w)
+    {
+        buffer_.push_back(v, w);
+
+        /*
+         * We need to be able to add up to Size items to the buffer
+         * in order to merge.
+         */
+        if (buffer_.size() >= regurgitate_optimum_length - Size) { merge(); }
+    }
+
+    /* Retrieve an accurate view of the current data set. */
+    void get_snapshot(container& snapshot) const
+    {
+        assert(snapshot.empty());
+
+        auto data = buffer{};
+        auto scratch = buffer{};
+        container* src = nullptr;
+        bool need_merge;
+
+        /*
+         * We only need to perform a merge if the buffer contains
+         * unprocessed data points.
+         */
+        do {
+            need_merge = false;
+            std::atomic_thread_fence(std::memory_order_consume);
+            src = active_;
+            if (!buffer_.empty()) {
+                std::copy(std::begin(buffer_),
+                          std::end(buffer_),
+                          std::back_inserter(data));
+                need_merge = true;
+            }
+            std::copy(std::begin(*active_),
+                      std::end(*active_),
+                      std::back_inserter(data));
+        } while (src != active_);
+
+        if (need_merge) {
+            ispc::sort(data.means(),
+                       data.weights(),
+                       data.size(),
+                       scratch.means(),
+                       scratch.weights());
+
+            snapshot.cursor_ = ispc::merge(data.means(),
+                                           data.weights(),
+                                           data.size(),
+                                           snapshot.means(),
+                                           snapshot.weights(),
+                                           snapshot.capacity());
+
+        } else {
+            std::copy(
+                std::begin(data), std::end(data), std::back_inserter(snapshot));
+        }
+    }
+
+    std::vector<typename container::centroid> get() const
+    {
+        /* Get a snapshot... */
+        auto tmp = container{};
+        get_snapshot(tmp);
+
+        /* ... and copy it out */
+        auto to_return = std::vector<typename container::centroid>{};
+        to_return.reserve(tmp.size());
+        std::copy(
+            std::begin(tmp), std::end(tmp), std::back_inserter(to_return));
+        return (to_return);
     }
 
     void dump() const { active_->dump(); }
