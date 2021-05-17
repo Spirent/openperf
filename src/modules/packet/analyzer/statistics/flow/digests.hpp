@@ -24,7 +24,14 @@ struct digest_impl : public regurgitate::digest<T, float, digest_size>
 
     digest_impl& operator+=(const digest_impl& rhs)
     {
-        this->insert(rhs);
+        auto tmp = regurgitate::detail::
+            centroid_container<mean_type, weight_type, digest_size>{};
+        rhs.get_snapshot(tmp);
+
+        std::for_each(std::begin(tmp), std::end(tmp), [this](const auto& pair) {
+            this->insert(pair.first, pair.second);
+        });
+
         return (*this);
     }
 

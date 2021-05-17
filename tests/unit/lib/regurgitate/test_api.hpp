@@ -16,7 +16,7 @@ namespace regurgitate::test {
         regurgitate::function_wrapper<sort_##key_type##_##val_type##_fn>&>     \
     get_sort_wrapper()                                                         \
     {                                                                          \
-        auto& functions = regurgitate::impl::functions::instance();            \
+        auto& functions = regurgitate::functions::instance();                  \
         return (functions.sort_##key_type##_##val_type##_impl);                \
     }                                                                          \
     template <typename K, typename V>                                          \
@@ -26,7 +26,7 @@ namespace regurgitate::test {
         regurgitate::function_wrapper<merge_##key_type##_##val_type##_fn>&>    \
     get_merge_wrapper()                                                        \
     {                                                                          \
-        auto& functions = regurgitate::impl::functions::instance();            \
+        auto& functions = regurgitate::functions::instance();                  \
         return (functions.merge_##key_type##_##val_type##_impl);               \
     }
 

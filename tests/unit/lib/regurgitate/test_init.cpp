@@ -5,7 +5,7 @@ namespace test = regurgitate::test;
 
 TEST_CASE("initialization", "[regurgitate]")
 {
-    auto& functions = regurgitate::impl::functions::instance();
+    auto& functions = regurgitate::functions::instance();
 
     SECTION("functions")
     {

@@ -14,13 +14,6 @@ namespace regurgitate {
 
 constexpr std::string_view debug_var_name = "REGURGITATE_DEBUG";
 
-template <typename Key, typename Value, typename... Pairs>
-constexpr auto associative_array(Pairs&&... pairs)
-    -> std::array<std::pair<Key, Value>, sizeof...(pairs)>
-{
-    return {{std::forward<Pairs>(pairs)...}};
-}
-
 template <typename FunctionType>
 constexpr FunctionType get_function(
     const std::array<std::pair<instruction_set::type, FunctionType>,
@@ -29,7 +22,7 @@ constexpr FunctionType get_function(
 {
     auto cursor = std::begin(functions), end = std::end(functions);
     while (cursor != end) {
-        if (cursor->first == t) return (cursor->second);
+        if (cursor->first == t) { return (cursor->second); }
         cursor++;
     }
     return (nullptr);
@@ -49,9 +42,9 @@ constexpr instruction_set::type get_instruction_set(
     return (instruction_set::type::NONE);
 }
 
-template <typename FunctionType, typename Tag = void> struct function_wrapper
+template <typename FunctionType> struct function_wrapper
 {
-    static constexpr std::array<std::pair<instruction_set::type, FunctionType>,
+    constexpr static std::array<std::pair<instruction_set::type, FunctionType>,
                                 static_cast<int>(instruction_set::type::MAX)>
         functions;
     std::string_view name;
@@ -155,15 +148,15 @@ template <typename FunctionType, typename Tag = void> struct function_wrapper
     }
 };
 
-template <typename FunctionType, typename Tag = void>
+template <typename FunctionType>
 constexpr instruction_set::type
-get_instruction_set(const function_wrapper<FunctionType, Tag>& wrapper)
+get_instruction_set(const function_wrapper<FunctionType>& wrapper)
 {
     auto item = std::find_if(
-        std::begin(function_wrapper<FunctionType, Tag>::functions),
-        std::end(function_wrapper<FunctionType, Tag>::functions),
+        std::begin(function_wrapper<FunctionType>::functions),
+        std::end(function_wrapper<FunctionType>::functions),
         [&](const auto& pair) { return (pair.second == wrapper.best); });
-    return (item == std::end(function_wrapper<FunctionType, Tag>::functions)
+    return (item == std::end(function_wrapper<FunctionType>::functions)
                 ? instruction_set::type::NONE
                 : (*item).first);
 }
@@ -171,20 +164,25 @@ get_instruction_set(const function_wrapper<FunctionType, Tag>& wrapper)
 } // namespace regurgitate
 
 #define ISPC_FUNCTION_WRAPPER_INIT_FUNCTION_DATA(f)                            \
-    {instruction_set::type::AUTO,                                              \
-     (instruction_set::automatic_enabled ? ispc::f : nullptr)},                \
-        {instruction_set::type::SSE2,                                          \
-         (instruction_set::sse2_enabled ? ispc::f##_sse2 : nullptr)},          \
-        {instruction_set::type::SSE4,                                          \
-         (instruction_set::sse4_enabled ? ispc::f##_sse4 : nullptr)},          \
-        {instruction_set::type::AVX,                                           \
-         (instruction_set::avx_enabled ? ispc::f##_avx : nullptr)},            \
-        {instruction_set::type::AVX2,                                          \
-         (instruction_set::avx2_enabled ? ispc::f##_avx2 : nullptr)},          \
+    {regurgitate::instruction_set::type::AUTO,                                 \
+     (regurgitate::instruction_set::automatic_enabled ? ispc::f : nullptr)},   \
+        {regurgitate::instruction_set::type::SSE2,                             \
+         (regurgitate::instruction_set::sse2_enabled ? ispc::f##_sse2          \
+                                                     : nullptr)},              \
+        {regurgitate::instruction_set::type::SSE4,                             \
+         (regurgitate::instruction_set::sse4_enabled ? ispc::f##_sse4          \
+                                                     : nullptr)},              \
+        {regurgitate::instruction_set::type::AVX,                              \
+         (regurgitate::instruction_set::avx_enabled ? ispc::f##_avx            \
+                                                    : nullptr)},               \
+        {regurgitate::instruction_set::type::AVX2,                             \
+         (regurgitate::instruction_set::avx2_enabled ? ispc::f##_avx2          \
+                                                     : nullptr)},              \
     {                                                                          \
-        instruction_set::type::AVX512SKX,                                      \
-            (instruction_set::avx512skx_enabled ? ispc::f##_avx512skx          \
-                                                : nullptr)                     \
+        regurgitate::instruction_set::type::AVX512SKX,                         \
+            (regurgitate::instruction_set::avx512skx_enabled                   \
+                 ? ispc::f##_avx512skx                                         \
+                 : nullptr)                                                    \
     }
 
 #define ISPC_FUNCTION_WRAPPER_INIT(ret, f, ...)                                \

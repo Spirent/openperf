@@ -3,6 +3,17 @@
 
 #include "function_wrapper.hpp"
 
+/*
+ * This value determines the temporary buffer size for the digest and the size
+ * of the arrays used for benchmarking the vectorized implementations at run
+ * time. The various SIMD implementations can sort 4, 8, or 16 items in
+ * parallel, resulting in sort "chunks" of 16, 64, of 256, respectively. This
+ * means that we need to use a multiple of 256 for efficient sorting for all
+ * implementations. Larger values also have the benefit of requiring less calls
+ * to exp() and log() to generate k-means bucket ranges.
+ */
+constexpr unsigned merge_sort_input_max = 256;
+
 #define ISPC_MERGE_AND_SORT(key_type, val_type)                                \
     using merge_##key_type##_##val_type##_fn =                                 \
         unsigned (*)(key_type in_means[],                                      \
@@ -32,12 +43,12 @@
                                key_type[],                                     \
                                val_type[]);
 
-ISPC_MERGE_AND_SORT(float, double);
-ISPC_MERGE_AND_SORT(float, float);
+ISPC_MERGE_AND_SORT(float, double)
+ISPC_MERGE_AND_SORT(float, float)
 
 #undef ISPC_MERGE_AND_SORT
 
-namespace regurgitate::impl {
+namespace regurgitate {
 
 template <typename T> class singleton
 {
@@ -70,6 +81,6 @@ struct functions : singleton<functions>
         "sort<float, float>", nullptr};
 };
 
-} // namespace regurgitate::impl
+} // namespace regurgitate
 
 #endif /* _LIB_REGURGITATE_FUNCTIONS_HPP */

@@ -1,4 +1,5 @@
 REGURGITATE_SOURCES += \
+	api.cpp \
 	benchmark.cpp \
 	functions.cpp
 

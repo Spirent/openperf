@@ -11,37 +11,6 @@ namespace test = regurgitate::test;
 static constexpr unsigned compression = 16;
 using test_digest = regurgitate::digest<float, float, compression>;
 
-template <typename Digest> void verify_digest(const Digest& digest)
-{
-    auto centroids = digest.get();
-
-    REQUIRE(std::is_sorted(std::begin(centroids),
-                           std::end(centroids),
-                           [](const auto& lhs, const auto& rhs) {
-                               return (lhs.first < rhs.first);
-                           }));
-}
-
-template <typename InputIt> void dump(InputIt cursor, InputIt end)
-{
-    std::cout << '[';
-    while (cursor != end) {
-        fprintf(stdout, "%.12f, ", *cursor);
-        cursor++;
-    }
-    std::cout << "\b\b]" << std::endl;
-}
-
-template <typename Container> void verify_test_data(const Container& c)
-{
-    auto digest = test_digest();
-    std::for_each(std::begin(c), std::end(c), [&](const auto& pair) {
-        digest.insert(pair.first, pair.second);
-    });
-    digest.merge();
-    verify_digest(digest);
-}
-
 template <typename KeyType,
           typename ValType,
           size_t Compression,
