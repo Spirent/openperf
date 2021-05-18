@@ -200,6 +200,15 @@ struct centroid_container
 } // namespace detail
 
 /*
+ * fetch_add(1, std::memory_order_anything) compiles to a `lock inc` on x86.
+ * This is just an `inc`.
+ */
+template <typename T> void fast_inc(std::atomic<T>& t)
+{
+    t.store(t.load(std::memory_order_relaxed) + 1, std::memory_order_release);
+}
+
+/*
  * This digest class is designed to be used by a single reader and a single
  * writer. Only writers should call the insert function. Readers may call
  * anything else.
@@ -214,6 +223,7 @@ template <typename ValueType, typename WeightType, size_t Size> class digest
     container a_;
     container b_;
     container* active_ = &a_;
+    std::atomic<unsigned> generation_ = 0;
 
     /* Merge the current digest with the incoming data in the buffer. */
     void merge()
@@ -222,6 +232,8 @@ template <typename ValueType, typename WeightType, size_t Size> class digest
 
         auto scratch = buffer{};
         auto* inactive = (&a_ == active_ ? &b_ : &a_);
+
+        fast_inc(generation_);
 
         /* Add all active data to the end of the buffer */
         std::copy(
@@ -244,9 +256,10 @@ template <typename ValueType, typename WeightType, size_t Size> class digest
 
         /* Swap the containers and clean up */
         std::swap(active_, inactive);
-        std::atomic_thread_fence(std::memory_order_release);
         buffer_.reset();
         inactive->reset();
+
+        fast_inc(generation_);
     }
 
 public:
@@ -310,18 +323,26 @@ public:
     {
         assert(snapshot.empty());
 
-        auto data = buffer{};
-        auto scratch = buffer{};
+        using snapshot_buffer =
+            detail::centroid_container<ValueType,
+                                       WeightType,
+                                       regurgitate_optimum_length + Size>;
+        auto data = snapshot_buffer{};
+        auto gen = 0U;
         container* src = nullptr;
         bool need_merge;
 
         /*
-         * We only need to perform a merge if the buffer contains
-         * unprocessed data points.
+         * Copy data points using the generation value as a key.
+         * If the generation value is odd, then we read the data during a merge.
+         * If the generation value from the beginning doesn't match the
+         * generation at the end, then we read data across a merge. In either
+         * case, we need to restart.
          */
         do {
             need_merge = false;
-            std::atomic_thread_fence(std::memory_order_consume);
+            data.reset();
+            gen = generation_.load(std::memory_order_acquire);
             src = active_;
             if (!buffer_.empty()) {
                 std::copy(std::begin(buffer_),
@@ -332,9 +353,15 @@ public:
             std::copy(std::begin(*active_),
                       std::end(*active_),
                       std::back_inserter(data));
-        } while (src != active_);
+        } while (gen % 2 || gen != generation_.load(std::memory_order_acquire));
 
+        /*
+         * If we read data from both the buffer and the active container,
+         * then we need to manually merge the data.
+         */
         if (need_merge) {
+            auto scratch = buffer{};
+
             ispc::sort(data.means(),
                        data.weights(),
                        data.size(),
@@ -349,6 +376,7 @@ public:
                                            snapshot.capacity());
 
         } else {
+            /* We can just copy the data out */
             std::copy(
                 std::begin(data), std::end(data), std::back_inserter(snapshot));
         }
