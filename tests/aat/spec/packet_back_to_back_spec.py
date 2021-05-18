@@ -188,31 +188,34 @@ CUSTOM_PROTOCOL_WITH_MODIFIERS = [
 ###
 ANALYZER_CONFIG_NO_SIGS = {
     'protocol': ['ethernet', 'ip', 'transport'],
-    'flow': ['frame_count', 'frame_length', 'interarrival_time']
+    'counters': ['frame_count', 'frame_length', 'interarrival_time']
 }
 
 ANALYZER_CONFIG_SIGS = {
     'protocol': ['ethernet', 'ip', 'transport'],
-    'flow': ['frame_count', 'frame_length', 'interarrival_time',
-             'jitter_ipdv', 'jitter_rfc', 'latency', 'advanced_sequencing']
+    'counters': ['frame_count', 'frame_length', 'interarrival_time',
+                 'jitter_ipdv', 'jitter_rfc', 'latency', 'advanced_sequencing'],
+    'digests': ['frame_length', 'interarrival_time', 'jitter_ipdv',
+                'jitter_rfc', 'latency', 'sequence_run_length']
 }
 
 ANALYZER_CONFIG_NO_SIGS_FILTER_UDP = {
     'protocol': ['ethernet', 'ip', 'transport'],
-    'flow': ['frame_count', 'frame_length', 'interarrival_time'],
+    'counters': ['frame_count', 'frame_length', 'interarrival_time'],
     # This filter acepts both non-VLAN and VLAN UDP packet
     'filter': 'udp or (vlan and udp)'
 }
 
 ANALYZER_CONFIG_NO_SIGS_FILTER_NOT_SIG = {
     'protocol': ['ethernet', 'ip', 'transport'],
-    'flow': ['frame_count', 'frame_length', 'interarrival_time'],
+    'counters': ['frame_count', 'frame_length', 'interarrival_time'],
     'filter': 'not signature'
 }
 
 ANALYZER_CONFIG_SIGS_PRBS = {
     'protocol': ['ethernet', 'ip', 'transport'],
-    'flow': ['frame_count', 'frame_length', 'prbs' ]
+    'counters': ['frame_count', 'frame_length', 'prbs' ],
+    'digests': ['frame_length']
 }
 
 ###
@@ -437,8 +440,10 @@ def get_analyzer_model(api_client, analyzer_config):
     config = client.models.PacketAnalyzerConfig()
     if 'protocol' in analyzer_config:
         config.protocol_counters = analyzer_config['protocol']
-    if 'flow' in analyzer_config:
-        config.flow_counters = analyzer_config['flow']
+    if 'counters' in analyzer_config:
+        config.flow_counters = analyzer_config['counters']
+    if 'digests' in analyzer_config:
+        config.flow_digests = analyzer_config['digests']
     if 'filter' in analyzer_config:
         config.filter = analyzer_config['filter']
 
@@ -681,6 +686,9 @@ with description('Packet back to back', 'packet_b2b') as self:
                     expect(ana_result.flow_counters.latency).to(be_none)
                     expect(ana_result.flow_counters.sequence).to(be_none)
 
+                    # Check analyzer flow digests
+                    expect(ana_result.flow_digests).to(be_none)
+
                     # Check generator flow counters
                     expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))
 
@@ -725,6 +733,14 @@ with description('Packet back to back', 'packet_b2b') as self:
                     expect(ana_result.flow_counters.jitter_rfc).not_to(be_none)
                     expect(ana_result.flow_counters.latency).not_to(be_none)
                     expect(ana_result.flow_counters.sequence).not_to(be_none)
+
+                    # Check analyzer flow digests; all stats should be present
+                    expect(ana_result.flow_digests.frame_length).not_to(be_none)
+                    expect(ana_result.flow_digests.interarrival_time).not_to(be_none)
+                    expect(ana_result.flow_digests.jitter_ipdv).not_to(be_none)
+                    expect(ana_result.flow_digests.jitter_rfc).not_to(be_none)
+                    expect(ana_result.flow_digests.latency).not_to(be_none)
+                    expect(ana_result.flow_digests.sequence_run_length).not_to(be_none)
 
                     # Check generator flow counters
                     expect(gen_result.flow_counters.packets_actual).to(equal(exp_frame_count))

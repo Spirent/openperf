@@ -24,6 +24,8 @@ class _be_valid_packet_analyzer_result(Matcher):
         expect(result.analyzer_id).not_to(be_empty)
         expect(result.active).not_to(be_none)
         expect(result.flow_counters).to(be_valid_packet_analyzer_flow_counter)
+        if (result.flow_digests):
+            expect(result.flow_digests).to(be_valid_packet_analyzer_flow_digest)
         expect(result.protocol_counters).to(be_a(client.models.PacketAnalyzerProtocolCounters))
         return True, ['is valid packet analyzer result']
 
@@ -79,6 +81,36 @@ class _be_valid_packet_analyzer_flow_counter(Matcher):
         return True, ['is valid packet analyzer flow counter']
 
 
+class _be_valid_packet_analyzer_flow_digest_result(Matcher):
+    def _match(self, result):
+        expect(result).to(be_a(client.models.PacketAnalyzerFlowDigestResult))
+        if result.centroids:
+            for i in range(len(result.centroids) - 1):
+                left = result.centroids[i];
+                right = result.centroids[i + 1]
+                expect(right.mean).to(be_above_or_equal(left.mean))
+        return True, ['is valid packet analyzer flow digest result']
+
+
+class _be_valid_packet_analyzer_flow_digest(Matcher):
+    def _match(self, digest):
+        expect(digest).to(be_a(client.models.PacketAnalyzerFlowDigests))
+        # All properties are optional
+        if digest.frame_length:
+            expect(digest.frame_length).to(be_valid_packet_analyzer_flow_digest_result)
+        if digest.interarrival_time:
+            expect(digest.interarrival_time).to(be_valid_packet_analyzer_flow_digest_result)
+        if digest.jitter_ipdv:
+            expect(digest.jitter_ipdv).to(be_valid_packet_analyzer_flow_digest_result)
+        if digest.jitter_rfc:
+            expect(digest.jitter_rfc).to(be_valid_packet_analyzer_flow_digest_result)
+        if digest.latency:
+            expect(digest.latency).to(be_valid_packet_analyzer_flow_digest_result)
+        if digest.sequence_run_length:
+            expect(digest.sequence_run_length).to(be_valid_packet_analyzer_flow_digest_result)
+        return True, ['is valid packet analyzer flow digest']
+
+
 class _be_valid_receive_flow(Matcher):
     def _match(self, flow):
         expect(flow.id).not_to(be_none)
@@ -90,5 +122,7 @@ class _be_valid_receive_flow(Matcher):
 be_valid_packet_analyzer = _be_valid_packet_analyzer()
 be_valid_packet_analyzer_result = _be_valid_packet_analyzer_result()
 be_valid_packet_analyzer_flow_counter = _be_valid_packet_analyzer_flow_counter()
+be_valid_packet_analyzer_flow_digest = _be_valid_packet_analyzer_flow_digest()
+be_valid_packet_analyzer_flow_digest_result = _be_valid_packet_analyzer_flow_digest_result()
 be_valid_non_zero_summary_statistic = _be_valid_non_zero_summary_statistic()
 be_valid_receive_flow = _be_valid_receive_flow()
