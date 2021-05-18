@@ -32,7 +32,7 @@ class PacketAnalyzerFlowDigests(object):
     """
     swagger_types = {
         'frame_length': 'PacketAnalyzerFlowDigestResult',
-        'interarrival_time': 'PacketAnalyzerFlowDigestResult',
+        'interarrival': 'PacketAnalyzerFlowDigestResult',
         'jitter_ipdv': 'PacketAnalyzerFlowDigestResult',
         'jitter_rfc': 'PacketAnalyzerFlowDigestResult',
         'latency': 'PacketAnalyzerFlowDigestResult',
@@ -41,18 +41,18 @@ class PacketAnalyzerFlowDigests(object):
 
     attribute_map = {
         'frame_length': 'frame_length',
-        'interarrival_time': 'interarrival_time',
+        'interarrival': 'interarrival',
         'jitter_ipdv': 'jitter_ipdv',
         'jitter_rfc': 'jitter_rfc',
         'latency': 'latency',
         'sequence_run_length': 'sequence_run_length'
     }
 
-    def __init__(self, frame_length=None, interarrival_time=None, jitter_ipdv=None, jitter_rfc=None, latency=None, sequence_run_length=None):  # noqa: E501
+    def __init__(self, frame_length=None, interarrival=None, jitter_ipdv=None, jitter_rfc=None, latency=None, sequence_run_length=None):  # noqa: E501
         """PacketAnalyzerFlowDigests - a model defined in Swagger"""  # noqa: E501
 
         self._frame_length = None
-        self._interarrival_time = None
+        self._interarrival = None
         self._jitter_ipdv = None
         self._jitter_rfc = None
         self._latency = None
@@ -61,8 +61,8 @@ class PacketAnalyzerFlowDigests(object):
 
         if frame_length is not None:
             self.frame_length = frame_length
-        if interarrival_time is not None:
-            self.interarrival_time = interarrival_time
+        if interarrival is not None:
+            self.interarrival = interarrival
         if jitter_ipdv is not None:
             self.jitter_ipdv = jitter_ipdv
         if jitter_rfc is not None:
@@ -93,24 +93,24 @@ class PacketAnalyzerFlowDigests(object):
         self._frame_length = frame_length
 
     @property
-    def interarrival_time(self):
-        """Gets the interarrival_time of this PacketAnalyzerFlowDigests.  # noqa: E501
+    def interarrival(self):
+        """Gets the interarrival of this PacketAnalyzerFlowDigests.  # noqa: E501
 
 
-        :return: The interarrival_time of this PacketAnalyzerFlowDigests.  # noqa: E501
+        :return: The interarrival of this PacketAnalyzerFlowDigests.  # noqa: E501
         :rtype: PacketAnalyzerFlowDigestResult
         """
-        return self._interarrival_time
+        return self._interarrival
 
-    @interarrival_time.setter
-    def interarrival_time(self, interarrival_time):
-        """Sets the interarrival_time of this PacketAnalyzerFlowDigests.
+    @interarrival.setter
+    def interarrival(self, interarrival):
+        """Sets the interarrival of this PacketAnalyzerFlowDigests.
 
 
-        :param interarrival_time: The interarrival_time of this PacketAnalyzerFlowDigests.  # noqa: E501
+        :param interarrival: The interarrival of this PacketAnalyzerFlowDigests.  # noqa: E501
         :type: PacketAnalyzerFlowDigestResult
         """
-        self._interarrival_time = interarrival_time
+        self._interarrival = interarrival
 
     @property
     def jitter_ipdv(self):

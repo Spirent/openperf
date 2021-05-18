@@ -98,8 +98,8 @@ class _be_valid_packet_analyzer_flow_digest(Matcher):
         # All properties are optional
         if digest.frame_length:
             expect(digest.frame_length).to(be_valid_packet_analyzer_flow_digest_result)
-        if digest.interarrival_time:
-            expect(digest.interarrival_time).to(be_valid_packet_analyzer_flow_digest_result)
+        if digest.interarrival:
+            expect(digest.interarrival).to(be_valid_packet_analyzer_flow_digest_result)
         if digest.jitter_ipdv:
             expect(digest.jitter_ipdv).to(be_valid_packet_analyzer_flow_digest_result)
         if digest.jitter_rfc:

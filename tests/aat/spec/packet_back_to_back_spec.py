@@ -736,7 +736,7 @@ with description('Packet back to back', 'packet_b2b') as self:
 
                     # Check analyzer flow digests; all stats should be present
                     expect(ana_result.flow_digests.frame_length).not_to(be_none)
-                    expect(ana_result.flow_digests.interarrival_time).not_to(be_none)
+                    expect(ana_result.flow_digests.interarrival).not_to(be_none)
                     expect(ana_result.flow_digests.jitter_ipdv).not_to(be_none)
                     expect(ana_result.flow_digests.jitter_rfc).not_to(be_none)
                     expect(ana_result.flow_digests.latency).not_to(be_none)

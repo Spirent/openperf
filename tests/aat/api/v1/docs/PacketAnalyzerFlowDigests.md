@@ -4,7 +4,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **frame_length** | [**PacketAnalyzerFlowDigestResult**](PacketAnalyzerFlowDigestResult.md) |  | [optional] 
-**interarrival_time** | [**PacketAnalyzerFlowDigestResult**](PacketAnalyzerFlowDigestResult.md) |  | [optional] 
+**interarrival** | [**PacketAnalyzerFlowDigestResult**](PacketAnalyzerFlowDigestResult.md) |  | [optional] 
 **jitter_ipdv** | [**PacketAnalyzerFlowDigestResult**](PacketAnalyzerFlowDigestResult.md) |  | [optional] 
 **jitter_rfc** | [**PacketAnalyzerFlowDigestResult**](PacketAnalyzerFlowDigestResult.md) |  | [optional] 
 **latency** | [**PacketAnalyzerFlowDigestResult**](PacketAnalyzerFlowDigestResult.md) |  | [optional] 

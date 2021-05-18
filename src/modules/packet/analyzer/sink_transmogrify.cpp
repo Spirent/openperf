@@ -562,7 +562,7 @@ to_swagger(const statistics::generic_flow_digests& src)
     }
 
     if (src.holds<interarrival>()) {
-        dst->setInterarrivalTime(to_swagger(src.get<interarrival>()));
+        dst->setInterarrival(to_swagger(src.get<interarrival>()));
     }
 
     if (src.holds<jitter_ipdv>()) {

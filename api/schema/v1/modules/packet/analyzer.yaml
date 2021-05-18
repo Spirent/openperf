@@ -781,7 +781,7 @@ definitions:
     properties:
       frame_length:
         $ref: "#/definitions/PacketAnalyzerFlowDigestResult"
-      interarrival_time:
+      interarrival:
         $ref: "#/definitions/PacketAnalyzerFlowDigestResult"
       jitter_ipdv:
         $ref: "#/definitions/PacketAnalyzerFlowDigestResult"
