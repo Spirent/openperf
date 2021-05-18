@@ -20,7 +20,7 @@ namespace model {
 PacketAnalyzerFlowDigests::PacketAnalyzerFlowDigests()
 {
     m_Frame_lengthIsSet = false;
-    m_Interarrival_timeIsSet = false;
+    m_InterarrivalIsSet = false;
     m_Jitter_ipdvIsSet = false;
     m_Jitter_rfcIsSet = false;
     m_LatencyIsSet = false;
@@ -45,9 +45,9 @@ nlohmann::json PacketAnalyzerFlowDigests::toJson() const
     {
         val["frame_length"] = ModelBase::toJson(m_Frame_length);
     }
-    if(m_Interarrival_timeIsSet)
+    if(m_InterarrivalIsSet)
     {
-        val["interarrival_time"] = ModelBase::toJson(m_Interarrival_time);
+        val["interarrival"] = ModelBase::toJson(m_Interarrival);
     }
     if(m_Jitter_ipdvIsSet)
     {
@@ -82,13 +82,13 @@ void PacketAnalyzerFlowDigests::fromJson(nlohmann::json& val)
         }
         
     }
-    if(val.find("interarrival_time") != val.end())
+    if(val.find("interarrival") != val.end())
     {
-        if(!val["interarrival_time"].is_null())
+        if(!val["interarrival"].is_null())
         {
             std::shared_ptr<PacketAnalyzerFlowDigestResult> newItem(new PacketAnalyzerFlowDigestResult());
-            newItem->fromJson(val["interarrival_time"]);
-            setInterarrivalTime( newItem );
+            newItem->fromJson(val["interarrival"]);
+            setInterarrival( newItem );
         }
         
     }
@@ -153,22 +153,22 @@ void PacketAnalyzerFlowDigests::unsetFrame_length()
 {
     m_Frame_lengthIsSet = false;
 }
-std::shared_ptr<PacketAnalyzerFlowDigestResult> PacketAnalyzerFlowDigests::getInterarrivalTime() const
+std::shared_ptr<PacketAnalyzerFlowDigestResult> PacketAnalyzerFlowDigests::getInterarrival() const
 {
-    return m_Interarrival_time;
+    return m_Interarrival;
 }
-void PacketAnalyzerFlowDigests::setInterarrivalTime(std::shared_ptr<PacketAnalyzerFlowDigestResult> value)
+void PacketAnalyzerFlowDigests::setInterarrival(std::shared_ptr<PacketAnalyzerFlowDigestResult> value)
 {
-    m_Interarrival_time = value;
-    m_Interarrival_timeIsSet = true;
+    m_Interarrival = value;
+    m_InterarrivalIsSet = true;
 }
-bool PacketAnalyzerFlowDigests::interarrivalTimeIsSet() const
+bool PacketAnalyzerFlowDigests::interarrivalIsSet() const
 {
-    return m_Interarrival_timeIsSet;
+    return m_InterarrivalIsSet;
 }
-void PacketAnalyzerFlowDigests::unsetInterarrival_time()
+void PacketAnalyzerFlowDigests::unsetInterarrival()
 {
-    m_Interarrival_timeIsSet = false;
+    m_InterarrivalIsSet = false;
 }
 std::shared_ptr<PacketAnalyzerFlowDigestResult> PacketAnalyzerFlowDigests::getJitterIpdv() const
 {

@@ -108,7 +108,7 @@ class PacketAnalyzerConfig(object):
     def flow_counters(self):
         """Gets the flow_counters of this PacketAnalyzerConfig.  # noqa: E501
 
-        List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets. Pseudo Random Bit Sequence (PRBS) results require packet payloads to contain compatible PRBs data.   # noqa: E501
+        List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets. Pseudo Random Bit Sequence (PRBS) results require packet payloads to contain compatible PRBS data.   # noqa: E501
 
         :return: The flow_counters of this PacketAnalyzerConfig.  # noqa: E501
         :rtype: list[str]
@@ -119,7 +119,7 @@ class PacketAnalyzerConfig(object):
     def flow_counters(self, flow_counters):
         """Sets the flow_counters of this PacketAnalyzerConfig.
 
-        List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets. Pseudo Random Bit Sequence (PRBS) results require packet payloads to contain compatible PRBs data.   # noqa: E501
+        List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets. Pseudo Random Bit Sequence (PRBS) results require packet payloads to contain compatible PRBS data.   # noqa: E501
 
         :param flow_counters: The flow_counters of this PacketAnalyzerConfig.  # noqa: E501
         :type: list[str]

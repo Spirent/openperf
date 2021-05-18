@@ -61,7 +61,7 @@ public:
     /// </summary>
     std::vector<std::string>& getProtocolCounters();
         /// <summary>
-    /// List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets. Pseudo Random Bit Sequence (PRBS) results require packet payloads to contain compatible PRBs data. 
+    /// List of results to generate per flow for received packets. Sequencing, latency, and jitter results require Spirent signatures in the received packets. Pseudo Random Bit Sequence (PRBS) results require packet payloads to contain compatible PRBS data. 
     /// </summary>
     std::vector<std::string>& getFlowCounters();
         /// <summary>

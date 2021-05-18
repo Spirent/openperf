@@ -58,10 +58,10 @@ public:
     /// <summary>
     /// 
     /// </summary>
-    std::shared_ptr<PacketAnalyzerFlowDigestResult> getInterarrivalTime() const;
-    void setInterarrivalTime(std::shared_ptr<PacketAnalyzerFlowDigestResult> value);
-    bool interarrivalTimeIsSet() const;
-    void unsetInterarrival_time();
+    std::shared_ptr<PacketAnalyzerFlowDigestResult> getInterarrival() const;
+    void setInterarrival(std::shared_ptr<PacketAnalyzerFlowDigestResult> value);
+    bool interarrivalIsSet() const;
+    void unsetInterarrival();
     /// <summary>
     /// 
     /// </summary>
@@ -94,8 +94,8 @@ public:
 protected:
     std::shared_ptr<PacketAnalyzerFlowDigestResult> m_Frame_length;
     bool m_Frame_lengthIsSet;
-    std::shared_ptr<PacketAnalyzerFlowDigestResult> m_Interarrival_time;
-    bool m_Interarrival_timeIsSet;
+    std::shared_ptr<PacketAnalyzerFlowDigestResult> m_Interarrival;
+    bool m_InterarrivalIsSet;
     std::shared_ptr<PacketAnalyzerFlowDigestResult> m_Jitter_ipdv;
     bool m_Jitter_ipdvIsSet;
     std::shared_ptr<PacketAnalyzerFlowDigestResult> m_Jitter_rfc;
