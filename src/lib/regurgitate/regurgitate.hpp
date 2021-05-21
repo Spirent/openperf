@@ -186,7 +186,7 @@ struct centroid_container
     iterator end() { return (iterator(*this, size())); }
     const_iterator end() const { return (iterator(*this, size())); }
 
-    void dump()
+    void dump() const
     {
         std::cout << "length = " << size() << std::endl;
         std::cout << '[';

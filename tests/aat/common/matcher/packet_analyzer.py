@@ -88,7 +88,7 @@ class _be_valid_packet_analyzer_flow_digest_result(Matcher):
             for i in range(len(result.centroids) - 1):
                 left = result.centroids[i];
                 right = result.centroids[i + 1]
-                expect(right.mean).to(be_above_or_equal(left.mean))
+                expect(int(right.mean)).to(be_above_or_equal(int(left.mean)))
         return True, ['is valid packet analyzer flow digest result']
 
 
