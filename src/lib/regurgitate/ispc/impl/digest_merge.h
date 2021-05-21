@@ -1,42 +1,21 @@
 #ifndef _REGURGITATE_DIGEST_MERGE_IMPL_H_
 #define _REGURGITATE_DIGEST_MERGE_IMPL_H_
 
-#include "math_approximations.h"
-
 /*
- * The next two functions are used to map input weights, e.g. quantiles, to
- * output buckets and they are magic. As the data set increases, the quantile
- * scaling adjusts to ensure that the lower and upper buckets contain the most
- * resolution, while sacrificing resolution in the middle buckets. Additionally,
- * the normalizer ensures that we don't go over our fixed output bucket count.
- *
- * Because of this dynamicism, the `log()` and `exp()` functions are necessary.
- * However, we don't particularly care about accuracy, just the general shape of
- * the resulting scaling curve. As a result, we use the fastest approximations
- * we can find.
- *
- * The `log_approx()` and `exp_approx()` used here are slightly faster than
- * `ispc`'s builtin versions and slightly less accurate.
+ * Map bucket index to a specific quantile.
+ * Use the Folly t-digest approach that uses a quadratic distribution
+ * instead of the original implementation's logarithmic one. This
+ * has the benefit of being easier to map to traditional TestCenter
+ * histograms as well as being faster.
  */
-static inline uniform scale_type scale_normalizer(uniform unsigned int c,
-                                                  uniform weight_type n)
+static inline uniform scale_type quantile(uniform int bucket,
+                                          uniform int nb_buckets)
 {
-    uniform scale_type z = 2 * log_approx(n / c) + 8;
-    return (c / z);
-}
+    uniform scale_type pct = bucket * rcp((float)nb_buckets);
+    if (pct < 0.5) { return (2 * pct * pct); }
 
-static inline uniform scale_type scale_q(uniform scale_type q,
-                                         uniform scale_type n)
-{
-    /* Provide bounds for min/max q values */
-    const uniform scale_type epsilon = 3e-7;
-
-    if (q > 1 - epsilon) { return (1.0); }
-
-    q = max(q, epsilon);
-    uniform scale_type k = log_approx(q / (1 - q)) * n;
-    uniform scale_type w = exp_approx((k + 1) / n);
-    return (w / (1 + w));
+    uniform scale_type cmp = 1 - pct;
+    return (1 - 2 * cmp * cmp);
 }
 
 static inline uniform weight_type accumulate(uniform val_type values[],
@@ -80,11 +59,9 @@ static inline uniform unsigned int32 merge(uniform key_type in_means[],
     const uniform weight_type total_weight = accumulate(in_weights, in_length);
     const uniform weight_type total_weight_inv = rcp(total_weight);
 
-    const uniform scale_type normalizer =
-        scale_normalizer(out_length, total_weight);
-
+    uniform int k = 1;
     uniform weight_type q_limit_weight =
-        ceil(total_weight * scale_q(0, normalizer));
+        total_weight * quantile(k++, out_length);
     uniform weight_type sum_weight = 0;
     uniform int bucket = 0, cursor = 0;
 
@@ -176,8 +153,7 @@ static inline uniform unsigned int32 merge(uniform key_type in_means[],
 
                 /* And update the loop variables for the next go round */
                 sum_weight += current.weight;
-                uniform scale_type q = sum_weight * total_weight_inv;
-                q_limit_weight = total_weight * scale_q(q, normalizer);
+                q_limit_weight = total_weight * quantile(k++, out_length);
 
                 /* Clear our temporary container */
                 current.sum = 0;
