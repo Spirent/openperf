@@ -35,12 +35,14 @@ private:
         tdigest tdigest;
     };
 
+    // Constants
+    static constexpr std::chrono::nanoseconds m_computation_period = 1s;
+
     // Attributes
     std::map<std::string, threshold_arg> m_thresholds;
     std::map<std::string, tdigest_arg> m_tdigests;
     extractor m_extractor;
     T m_last_stat;
-    std::chrono::nanoseconds m_computation_period = 1s;
 
 public:
     explicit spool(extractor&& f);
