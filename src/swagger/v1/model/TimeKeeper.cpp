@@ -19,6 +19,7 @@ namespace model {
 
 TimeKeeper::TimeKeeper()
 {
+    m_Maximum_error = 0.0;
     m_Time = "";
     m_Time_counter_id = "";
     m_Time_source_id = "";
@@ -38,6 +39,7 @@ nlohmann::json TimeKeeper::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    val["maximum_error"] = m_Maximum_error;
     val["state"] = ModelBase::toJson(m_State);
     val["stats"] = ModelBase::toJson(m_Stats);
     val["time"] = ModelBase::toJson(m_Time);
@@ -50,6 +52,7 @@ nlohmann::json TimeKeeper::toJson() const
 
 void TimeKeeper::fromJson(nlohmann::json& val)
 {
+    setMaximumError(val.at("maximum_error"));
     setTime(val.at("time"));
     setTimeCounterId(val.at("time_counter_id"));
     setTimeSourceId(val.at("time_source_id"));
@@ -57,6 +60,15 @@ void TimeKeeper::fromJson(nlohmann::json& val)
 }
 
 
+double TimeKeeper::getMaximumError() const
+{
+    return m_Maximum_error;
+}
+void TimeKeeper::setMaximumError(double value)
+{
+    m_Maximum_error = value;
+    
+}
 std::shared_ptr<TimeKeeperState> TimeKeeper::getState() const
 {
     return m_State;

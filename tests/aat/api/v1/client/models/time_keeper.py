@@ -31,6 +31,7 @@ class TimeKeeper(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'maximum_error': 'float',
         'state': 'TimeKeeperState',
         'stats': 'TimeKeeperStats',
         'time': 'datetime',
@@ -39,6 +40,7 @@ class TimeKeeper(object):
     }
 
     attribute_map = {
+        'maximum_error': 'maximum_error',
         'state': 'state',
         'stats': 'stats',
         'time': 'time',
@@ -46,9 +48,10 @@ class TimeKeeper(object):
         'time_source_id': 'time_source_id'
     }
 
-    def __init__(self, state=None, stats=None, time=None, time_counter_id=None, time_source_id=None):  # noqa: E501
+    def __init__(self, maximum_error=None, state=None, stats=None, time=None, time_counter_id=None, time_source_id=None):  # noqa: E501
         """TimeKeeper - a model defined in Swagger"""  # noqa: E501
 
+        self._maximum_error = None
         self._state = None
         self._stats = None
         self._time = None
@@ -56,11 +59,34 @@ class TimeKeeper(object):
         self._time_source_id = None
         self.discriminator = None
 
+        self.maximum_error = maximum_error
         self.state = state
         self.stats = stats
         self.time = time
         self.time_counter_id = time_counter_id
         self.time_source_id = time_source_id
+
+    @property
+    def maximum_error(self):
+        """Gets the maximum_error of this TimeKeeper.  # noqa: E501
+
+        The current maximum error in the time calculation  # noqa: E501
+
+        :return: The maximum_error of this TimeKeeper.  # noqa: E501
+        :rtype: float
+        """
+        return self._maximum_error
+
+    @maximum_error.setter
+    def maximum_error(self, maximum_error):
+        """Sets the maximum_error of this TimeKeeper.
+
+        The current maximum error in the time calculation  # noqa: E501
+
+        :param maximum_error: The maximum_error of this TimeKeeper.  # noqa: E501
+        :type: float
+        """
+        self._maximum_error = maximum_error
 
     @property
     def state(self):

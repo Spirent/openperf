@@ -101,7 +101,7 @@ class TimeKeeperState(object):
     def frequency_error(self):
         """Gets the frequency_error of this TimeKeeperState.  # noqa: E501
 
-        The estimated error of the time counter frequency measurement, in Hz.  # noqa: E501
+        The estimated error of the time counter frequency measurement, in Parts Per Billion (PPB).   # noqa: E501
 
         :return: The frequency_error of this TimeKeeperState.  # noqa: E501
         :rtype: int
@@ -112,7 +112,7 @@ class TimeKeeperState(object):
     def frequency_error(self, frequency_error):
         """Sets the frequency_error of this TimeKeeperState.
 
-        The estimated error of the time counter frequency measurement, in Hz.  # noqa: E501
+        The estimated error of the time counter frequency measurement, in Parts Per Billion (PPB).   # noqa: E501
 
         :param frequency_error: The frequency_error of this TimeKeeperState.  # noqa: E501
         :type: int
@@ -145,7 +145,7 @@ class TimeKeeperState(object):
     def local_frequency_error(self):
         """Gets the local_frequency_error of this TimeKeeperState.  # noqa: E501
 
-        The estimated error of the local time counter frequency measurement, in Hz.  # noqa: E501
+        The estimated error of the local time counter frequency measurement, int Parts Per Billion (PPB).   # noqa: E501
 
         :return: The local_frequency_error of this TimeKeeperState.  # noqa: E501
         :rtype: int
@@ -156,7 +156,7 @@ class TimeKeeperState(object):
     def local_frequency_error(self, local_frequency_error):
         """Sets the local_frequency_error of this TimeKeeperState.
 
-        The estimated error of the local time counter frequency measurement, in Hz.  # noqa: E501
+        The estimated error of the local time counter frequency measurement, int Parts Per Billion (PPB).   # noqa: E501
 
         :param local_frequency_error: The local_frequency_error of this TimeKeeperState.  # noqa: E501
         :type: int
