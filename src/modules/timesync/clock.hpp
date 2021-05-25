@@ -27,14 +27,14 @@ public:
                                    const bintime& Te,
                                    counter::ticks Tf);
 
-    /* Frequency calculations always involve a result and an error */
-    using freq_result = std::pair<counter::hz, counter::hz>;
+    /* Frequency calculations always involve a result and a ppb error */
+    using freq_result = std::pair<counter::hz, uint64_t>;
     using rtt_container = digestible::tdigest<counter::ticks, unsigned>;
 
     std::optional<counter::hz> frequency() const;
-    std::optional<counter::hz> frequency_error() const;
+    std::optional<uint64_t> frequency_error() const; /* ppb */
     std::optional<counter::hz> local_frequency() const;
-    std::optional<counter::hz> local_frequency_error() const;
+    std::optional<uint64_t> local_frequency_error() const; /* ppb */
     bintime offset() const;
     std::optional<bintime> theta() const;
 
@@ -64,12 +64,12 @@ private:
     {
         struct
         {
-            freq_result current = {counter::hz{0}, counter::hz{0}};
+            freq_result current = {counter::hz{0}, 0};
             counter::ticks last_update = 0;
         } f_hat;
         struct
         {
-            freq_result current = {counter::hz{0}, counter::hz{0}};
+            freq_result current = {counter::hz{0}, 0};
             counter::ticks last_update = 0;
         } f_local;
         struct

@@ -45,6 +45,26 @@ double get_clock_slew(std::chrono::duration<Rep, Period> d)
 
 } // namespace detail
 
+std::chrono::nanoseconds maximum_clock_error(uint64_t ppb_freq_error)
+{
+    timehands* th = nullptr;
+    auto ticks = counter::ticks{0};
+    auto gen = 0U;
+
+    do {
+        th = keeper::instance().timehands_now();
+        gen = th->generation.load(std::memory_order_consume);
+        ticks = th->counter->now();
+    } while (gen == 0 || gen != th->generation.load(std::memory_order_consume));
+
+    assert(th);
+
+    auto delta_ticks = (ticks - th->t_zero);
+
+    return (std::chrono::nanoseconds(delta_ticks * ppb_freq_error
+                                     / th->ref.freq.count()));
+}
+
 void keeper::setup(counter::timecounter* tc)
 {
     auto& th = m_timehands[0];

@@ -55,9 +55,9 @@ struct request_time_keeper
 struct time_keeper_info
 {
     std::optional<counter::hz> freq;
-    std::optional<counter::hz> freq_error;
+    std::optional<uint64_t> freq_error;
     std::optional<counter::hz> local_freq;
-    std::optional<counter::hz> local_freq_error;
+    std::optional<uint64_t> local_freq_error;
     bintime offset;
     std::optional<bintime> theta;
     bool synced;
@@ -89,6 +89,7 @@ struct time_keeper
     char counter_id[id_max_length];
     char source_id[id_max_length];
     time_point ts;
+    std::chrono::nanoseconds ts_error;
     time_keeper_info info;
     time_keeper_stats stats;
 };
