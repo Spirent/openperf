@@ -155,11 +155,9 @@ to_swagger(const time_keeper_info& src)
     auto dst = std::make_shared<TimeKeeperState>();
 
     if (src.freq) { dst->setFrequency(src.freq->count()); }
-    if (src.freq_error) { dst->setFrequencyError(src.freq_error->count()); }
+    if (src.freq_error) { dst->setFrequencyError(*src.freq_error); }
     if (src.local_freq) { dst->setLocalFrequency(src.local_freq->count()); }
-    if (src.local_freq) {
-        dst->setLocalFrequencyError(src.local_freq_error->count());
-    }
+    if (src.local_freq) { dst->setLocalFrequencyError(*src.local_freq_error); }
     dst->setOffset(to_double(src.offset));
     dst->setSynced(src.synced);
     if (src.theta) { dst->setTheta(to_double(*src.theta)); }
@@ -199,6 +197,9 @@ to_swagger(const time_keeper& src)
     using TimeKeeper = swagger::v1::model::TimeKeeper;
     auto dst = std::make_shared<TimeKeeper>();
 
+    dst->setMaximumError(
+        std::chrono::duration_cast<std::chrono::duration<double>>(src.ts_error)
+            .count());
     dst->setState(to_swagger(src.info));
     dst->setStats(to_swagger(src.stats));
     dst->setTime(to_rfc3339(src.ts.time_since_epoch()));

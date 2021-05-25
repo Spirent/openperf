@@ -56,6 +56,12 @@ inline std::pair<bintime, counter::ticks> monotime_ticks()
     return {now, ticks};
 }
 
+/*
+ * Calculate the maximum clock error given the specified frequency error.
+ * Error should be in Parts Per Billion (PPB).
+ */
+std::chrono::nanoseconds maximum_clock_error(uint64_t ppb_freq_error);
+
 struct realtime
 {
     using duration = std::chrono::nanoseconds;

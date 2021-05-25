@@ -191,11 +191,9 @@ static void accumulate_theta_hat(const timestamp& ts,
     }
 }
 
-static counter::hz calculate_tick_error(counter::ticks error,
-                                        counter::ticks delta,
-                                        counter::hz freq)
+static uint64_t calculate_tick_error(counter::ticks error, counter::ticks delta)
 {
-    return ((error * freq) / delta);
+    return (error * 1000000000 / delta);
 }
 
 static counter::hz to_hz(double d)
@@ -279,8 +277,8 @@ static clock::freq_result calculate_tick_freq(const timestamp& i,
                     .count());
     auto e_i = to_rtt(i) - min_rtt;
     auto e_j = to_rtt(j) - min_rtt;
-    auto e_up = calculate_tick_error(e_i + e_j, i.Ta - j.Ta, freq_up);
-    auto e_down = calculate_tick_error(e_i + e_j, i.Tf - j.Tf, freq_down);
+    auto e_up = calculate_tick_error(e_i + e_j, i.Ta - j.Ta);
+    auto e_down = calculate_tick_error(e_i + e_j, i.Tf - j.Tf);
 
     return (clock::freq_result((freq_up + freq_down) / 2, (e_up + e_down) / 2));
 }
@@ -552,7 +550,7 @@ std::optional<counter::hz> clock::frequency() const
     return (get_value(m_data.f_hat.current));
 }
 
-std::optional<counter::hz> clock::frequency_error() const
+std::optional<uint64_t> clock::frequency_error() const
 {
     if (!m_stats.f_hat_accept) { return (std::nullopt); }
 
@@ -566,7 +564,7 @@ std::optional<counter::hz> clock::local_frequency() const
     return (get_value(m_data.f_local.current));
 }
 
-std::optional<counter::hz> clock::local_frequency_error() const
+std::optional<uint64_t> clock::local_frequency_error() const
 {
     if (!m_stats.f_local_accept) { return (std::nullopt); }
 

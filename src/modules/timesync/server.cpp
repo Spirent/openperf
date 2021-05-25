@@ -133,10 +133,19 @@ reply_msg server::handle_request(const request_time_counters& request)
     return (reply);
 }
 
+static std::chrono::nanoseconds get_clock_error(const clock& c)
+{
+    auto error = c.local_frequency_error();
+    if (!error) { error = c.frequency_error(); }
+
+    return (chrono::maximum_clock_error(error.value_or(0)));
+}
+
 reply_msg server::handle_request(const request_time_keeper&)
 {
     auto keeper = time_keeper{
         .ts = chrono::realtime::now(),
+        .ts_error = get_clock_error(*m_clock),
         .info = {.freq = m_clock->frequency(),
                  .freq_error = m_clock->frequency_error(),
                  .local_freq = m_clock->local_frequency(),
