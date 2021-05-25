@@ -55,7 +55,7 @@ public:
     bool frequencyIsSet() const;
     void unsetFrequency();
     /// <summary>
-    /// The estimated error of the time counter frequency measurement, in Hz.
+    /// The estimated error of the time counter frequency measurement, in Parts Per Billion (PPB). 
     /// </summary>
     int64_t getFrequencyError() const;
     void setFrequencyError(int64_t value);
@@ -69,7 +69,7 @@ public:
     bool localFrequencyIsSet() const;
     void unsetLocal_frequency();
     /// <summary>
-    /// The estimated error of the local time counter frequency measurement, in Hz.
+    /// The estimated error of the local time counter frequency measurement, int Parts Per Billion (PPB). 
     /// </summary>
     int64_t getLocalFrequencyError() const;
     void setLocalFrequencyError(int64_t value);

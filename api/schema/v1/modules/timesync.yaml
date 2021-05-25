@@ -158,7 +158,9 @@ definitions:
         format: int64
       frequency_error:
         type: integer
-        description: The estimated error of the time counter frequency measurement, in Hz.
+        description: |
+          The estimated error of the time counter frequency measurement, in
+          Parts Per Billion (PPB).
         format: int64
       local_frequency:
         type: integer
@@ -170,7 +172,9 @@ definitions:
         format: int64
       local_frequency_error:
         type: integer
-        description: The estimated error of the local time counter frequency measurement, in Hz.
+        description: |
+          The estimated error of the local time counter frequency measurement,
+          int Parts Per Billion (PPB).
         format: int64
       offset:
         type: number
@@ -276,6 +280,10 @@ definitions:
       A combination of a time source and a time counter used to measure
       the passage of time, aka a clock
     properties:
+      maximum_error:
+        type: number
+        description: The current maximum error in the time calculation
+        format: double
       state:
         $ref: "#/definitions/TimeKeeperState"
       stats:
@@ -291,6 +299,7 @@ definitions:
         type: string
         description: time source used for wall-clock synchronization
     required:
+      - maximum_error
       - state
       - stats
       - time

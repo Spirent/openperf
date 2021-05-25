@@ -51,6 +51,11 @@ public:
     /// TimeKeeper members
 
     /// <summary>
+    /// The current maximum error in the time calculation
+    /// </summary>
+    double getMaximumError() const;
+    void setMaximumError(double value);
+        /// <summary>
     /// 
     /// </summary>
     std::shared_ptr<TimeKeeperState> getState() const;
@@ -77,6 +82,8 @@ public:
     void setTimeSourceId(std::string value);
     
 protected:
+    double m_Maximum_error;
+
     std::shared_ptr<TimeKeeperState> m_State;
 
     std::shared_ptr<TimeKeeperStats> m_Stats;
