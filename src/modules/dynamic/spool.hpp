@@ -234,11 +234,8 @@ template <typename T> double spool<T>::elapsed_periods(const T& stat) const
 {
     auto t = m_extractor(stat, "timestamp").value();
     auto last_t = m_extractor(m_last_stat, "timestamp").value();
-    auto period = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                      m_computation_period)
-                      .count();
 
-    return (t - last_t) / period;
+    return (t - last_t) / m_computation_period.count();
 }
 
 template <typename T>
