@@ -230,14 +230,17 @@ struct xcr0_bits
         uint64_t data;
     };
 
-    xcr0_bits() { data = read_xcr(0); }
+    xcr0_bits(const cpuid_feature_bits& features)
+    {
+        data = features.ecx.osxsave ? read_xcr(0) : 0;
+    }
 };
 
 bool available(type t)
 {
     auto features = cpuid_feature_bits();
     auto extended = cpuid_extended_bits();
-    auto xcr0 = xcr0_bits();
+    auto xcr0 = xcr0_bits(features);
 
     /*
      * In addition to verifying that the CPU has the necessary instructions,
@@ -256,10 +259,9 @@ bool available(type t)
         /* No checks are needed for scalar or auto code */
         return (true);
     case type::SSE2:
-        return (features.ecx.osxsave && xcr0.sse && features.edx.sse2);
+        return (features.edx.sse2);
     case type::SSE4:
-        return (features.ecx.osxsave && xcr0.sse && features.ecx.sse41
-                && features.ecx.sse42);
+        return (features.ecx.sse42);
     case type::AVX:
         return (features.ecx.osxsave && xcr0.sse && xcr0.avx
                 && features.ecx.avx);
