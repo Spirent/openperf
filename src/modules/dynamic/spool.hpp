@@ -12,6 +12,8 @@
 
 namespace openperf::dynamic {
 
+using namespace std::chrono_literals;
+
 template <typename T> class spool
 {
 public:
@@ -33,6 +35,9 @@ private:
         tdigest tdigest;
     };
 
+    // Constants
+    static constexpr std::chrono::nanoseconds m_computation_period = 1s;
+
     // Attributes
     std::map<std::string, threshold_arg> m_thresholds;
     std::map<std::string, tdigest_arg> m_tdigests;
@@ -53,6 +58,7 @@ private:
     uint64_t weight(const argument_t&, const T&) const;
     double delta(const argument_t&, const T&) const;
     void argument_check(const argument_t&) const;
+    double elapsed_periods(const T&) const;
 };
 
 //
@@ -158,6 +164,8 @@ template <typename T> void spool<T>::reset()
 
 template <typename T> void spool<T>::add(const T& stat)
 {
+    if (elapsed_periods(stat) < 1) return;
+
     for (auto& th : m_thresholds) {
         auto& data = th.second;
         data.threshold.append(delta(data.argument, stat));
@@ -224,6 +232,14 @@ uint64_t spool<T>::weight(const argument_t& arg, const T& stat) const
     return weight;
 }
 
+template <typename T> double spool<T>::elapsed_periods(const T& stat) const
+{
+    auto t = m_extractor(stat, "timestamp").value();
+    auto last_t = m_extractor(m_last_stat, "timestamp").value();
+
+    return (t - last_t) / m_computation_period.count();
+}
+
 template <typename T>
 double spool<T>::delta(const argument_t& arg, const T& stat) const
 {
@@ -238,9 +254,7 @@ double spool<T>::delta(const argument_t& arg, const T& stat) const
         break;
     }
     case argument_t::DXDT: {
-        auto t = m_extractor(stat, "timestamp").value();
-        auto last_t = m_extractor(m_last_stat, "timestamp").value();
-        auto delta_t = t - last_t;
+        auto delta_t = elapsed_periods(stat);
         delta = (delta_t != 0.0) ? delta_x / delta_t : 0.0;
         break;
     }
