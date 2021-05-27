@@ -275,6 +275,9 @@ static clock::freq_result calculate_tick_freq(const timestamp& i,
         to_hz(static_cast<double>(i.Tf - j.Tf)
               / std::chrono::duration_cast<seconds>(to_duration(i.Te - j.Te))
                     .count());
+
+    assert(min_rtt <= to_rtt(i));
+    assert(min_rtt <= to_rtt(j));
     auto e_i = to_rtt(i) - min_rtt;
     auto e_j = to_rtt(j) - min_rtt;
     auto e_up = calculate_tick_error(e_i + e_j, i.Ta - j.Ta);
@@ -380,6 +383,7 @@ counter::ticks clock::do_level_shift_detection(const timestamp& ts)
          * clock sync estimates.
          */
         filter_rtt_values(m_stats.rtts, r_hat_s);
+        m_history.prune_rtts(r_hat_s);
         return (r_hat_s);
     }
 
@@ -532,7 +536,7 @@ clock::update(uint64_t Ta, const bintime& Tb, const bintime& Te, uint64_t Tf)
     m_history.insert(stamp, get_value(m_data.f_local.current));
 
     /* Drop old timestamps */
-    m_history.prune(to_time(stamp) - max_history.count());
+    m_history.prune_before(to_time(stamp) - max_history.count());
 
     /*
      * If we have a f_hat value, then we should be able to calculate

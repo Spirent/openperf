@@ -83,7 +83,8 @@ public:
     history_container::iterator lower_bound(time_t time) const;
     history_container::iterator upper_bound(time_t time) const;
 
-    void prune(time_t time);
+    void prune_before(time_t time);
+    void prune_rtts(counter::ticks min_rtt);
 
     using history_range =
         std::pair<history_container::iterator, history_container::iterator>;
