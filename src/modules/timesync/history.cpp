@@ -39,9 +39,22 @@ bool history::contains(const timestamp& ts) const noexcept
         [&ntp_ts](const auto& item) { return (ntp_ts == item.Tb); }));
 }
 
-void history::prune(time_t time)
+void history::prune_before(time_t time)
 {
     m_history.erase(std::begin(m_history), lower_bound(time));
+}
+
+void history::prune_rtts(counter::ticks min_rtt)
+{
+    auto cursor = std::begin(m_history);
+    while (cursor != std::end(m_history)) {
+        /*
+         * Conveniently, offset_Tf is the delta between Ta and Tf,
+         * which is the round trip time (rtt).
+         */
+        cursor =
+            cursor->offset_Tf < min_rtt ? m_history.erase(cursor) : ++cursor;
+    }
 }
 
 void history::insert(const timestamp& ts, counter::hz f_local)
