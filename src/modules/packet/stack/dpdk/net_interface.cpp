@@ -39,16 +39,15 @@ constexpr static uint16_t netif_tx_chksum_mask = 0x00FF;
  * Retrieve the first instance of a protocol in the configuration vector.
  */
 template <typename T>
-static std::optional<T>
-get_protocol_config(const packetio::interface::config_data& config)
+const T* get_protocol_config(const packetio::interface::config_data& config)
 {
     for (auto& p : config.protocols) {
         if (std::holds_alternative<T>(p)) {
-            return std::make_optional(std::get<T>(p));
+            return std::addressof(std::get<T>(p));
         }
     }
 
-    return std::nullopt;
+    return nullptr;
 }
 
 static uint32_t to_netmask(int prefix_length)
@@ -210,7 +209,7 @@ static err_t net_interface_dpdk_init(netif* netif)
 
     netif->hwaddr_len = ETH_HWADDR_LEN;
     auto config = ifp->config();
-    auto eth_config =
+    const auto* eth_config =
         get_protocol_config<packetio::interface::eth_protocol_config>(config);
     for (size_t i = 0; i < ETH_HWADDR_LEN; i++) {
         netif->hwaddr[i] = eth_config->address[i];
@@ -269,8 +268,7 @@ static int net_interface_link_status_change(uint16_t port_id,
 }
 
 static err_t configure_ipv4_interface(
-    const std::optional<packetio::interface::ipv4_protocol_config>& ipv4_config,
-    netif& netif)
+    const packetio::interface::ipv4_protocol_config* ipv4_config, netif& netif)
 {
     err_t netif_error = ERR_OK;
 
@@ -301,9 +299,9 @@ static err_t configure_ipv4_interface(
     return (netif_error);
 }
 
-static err_t start_ipv4_interface(
-    const std::optional<packetio::interface::ipv4_protocol_config>& ipv4,
-    netif& netif)
+static err_t
+start_ipv4_interface(const packetio::interface::ipv4_protocol_config* ipv4,
+                     netif& netif)
 {
     err_t netif_error = ERR_OK;
 
@@ -322,9 +320,9 @@ static err_t start_ipv4_interface(
     return (netif_error);
 }
 
-static void stop_ipv4_interface(
-    const std::optional<packetio::interface::ipv4_protocol_config>& ipv4,
-    netif& netif)
+static void
+stop_ipv4_interface(const packetio::interface::ipv4_protocol_config* ipv4,
+                    netif& netif)
 {
     if (ipv4) {
         std::visit(
@@ -360,8 +358,7 @@ static err_t configure_ipv6_interface_link_local_address(
 }
 
 static err_t configure_ipv6_interface(
-    const std::optional<packetio::interface::ipv6_protocol_config>& ipv6_config,
-    netif& netif)
+    const packetio::interface::ipv6_protocol_config* ipv6_config, netif& netif)
 {
     err_t netif_error = ERR_OK;
 
@@ -410,9 +407,9 @@ static err_t configure_ipv6_interface(
     return (netif_error);
 }
 
-static err_t start_ipv6_interface(
-    const std::optional<packetio::interface::ipv6_protocol_config>& ipv6,
-    netif& netif)
+static err_t
+start_ipv6_interface(const packetio::interface::ipv6_protocol_config* ipv6,
+                     netif& netif)
 {
     err_t netif_error = ERR_OK;
 
@@ -433,9 +430,9 @@ static err_t start_ipv6_interface(
     return (netif_error);
 }
 
-static void stop_ipv6_interface(
-    const std::optional<packetio::interface::ipv6_protocol_config>& ipv6,
-    netif& netif)
+static void
+stop_ipv6_interface(const packetio::interface::ipv6_protocol_config* ipv6,
+                    netif& netif)
 {
     if (ipv6) {
         std::visit(
