@@ -10,10 +10,10 @@
 
 #include "core/op_core.h"
 #include "core/op_uuid.hpp"
-#include "net/net_types.hpp"
-#include "units/rate.hpp"
+#include "packet/type/net_types.hpp"
 #include "packetio/internal_client.hpp"
 #include "packetio/packet_buffer.hpp"
+#include "units/rate.hpp"
 
 #include "rte_ether.h"
 #include "rte_ip.h"
@@ -29,7 +29,8 @@ struct test_packet
     struct rte_udp_hdr udp;
 } __attribute__((packed));
 
-using namespace openperf::net;
+using ipv4_address = libpacket::type::ipv4_address;
+using mac_address = libpacket::type::mac_address;
 
 static void initialize_eth_header(rte_ether_hdr& eth_hdr,
                                   mac_address& src_mac,
@@ -60,8 +61,8 @@ static void initialize_ipv4_header(rte_ipv4_hdr& ip_hdr,
     ip_hdr.hdr_checksum = 0;
     ip_hdr.packet_id = 0;
     ip_hdr.total_length = htons(pkt_len);
-    ip_hdr.src_addr = htonl(src_addr.data());
-    ip_hdr.dst_addr = htonl(dst_addr.data());
+    ip_hdr.src_addr = htonl(src_addr.load<in_addr_t>());
+    ip_hdr.dst_addr = htonl(dst_addr.load<in_addr_t>());
 
     /*
      * Compute IP header checksum.
@@ -117,9 +118,9 @@ public:
 
     packets_per_hour packet_rate() const { return (m_rate); }
 
-    uint16_t transform(openperf::packetio::packets::packet_buffer* input[],
+    uint16_t transform(openperf::packetio::packet::packet_buffer* input[],
                        uint16_t input_length,
-                       openperf::packetio::packets::packet_buffer* output[])
+                       openperf::packetio::packet::packet_buffer* output[])
     {
         using namespace openperf::packetio;
 
@@ -129,14 +130,14 @@ public:
         auto dst_ip = ipv4_address("198.19.25.1");
 
         std::for_each(input, input + input_length, [&](auto packet) {
-            auto tmp = packets::to_data<test_packet>(packet);
+            auto tmp = packet::to_data<test_packet>(packet);
 
             initialize_eth_header(
                 tmp->ether, src_mac, dst_mac, RTE_ETHER_TYPE_IPV4);
             initialize_ipv4_header(tmp->ipv4, src_ip, dst_ip, 26);
             initialize_udp_header(tmp->udp, 3357, 3357, 18);
 
-            packets::length(packet, 60);
+            packet::length(packet, 60);
 
             // rte_pktmbuf_dump(stderr, reinterpret_cast<rte_mbuf*>(packet),
             // 60);
@@ -151,7 +152,7 @@ void test_sources(void* context)
     using namespace std::chrono_literals;
     auto client = openperf::packetio::internal::api::client(context);
 
-    auto source0 = openperf::packetio::packets::generic_source(
+    auto source0 = openperf::packetio::packet::generic_source(
         test_source(30)); /* packet/2 sec */
     auto success = client.add_source("port0", source0);
     if (!success) {
