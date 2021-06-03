@@ -79,7 +79,7 @@ using ntp64 = std::array<std::byte, 8>;
 static ntp32 to_ntp32(const bintime& from)
 {
     auto to = ntp32();
-    auto secs = from.bt_sec + ntp_fudge;
+    auto secs = from.bt_sec ? from.bt_sec + ntp_fudge : 0;
 
     to[0] = static_cast<std::byte>((secs >> 8) & 0xff);
     to[1] = static_cast<std::byte>(secs & 0xff);
@@ -92,7 +92,7 @@ static ntp32 to_ntp32(const bintime& from)
 static ntp64 to_ntp64(const bintime& from)
 {
     auto to = ntp64();
-    auto secs = from.bt_sec + ntp_fudge;
+    auto secs = from.bt_sec ? from.bt_sec + ntp_fudge : 0;
 
     to[0] = static_cast<std::byte>((secs >> 24) & 0xff);
     to[1] = static_cast<std::byte>((secs >> 16) & 0xff);
