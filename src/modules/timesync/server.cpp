@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cinttypes>
 #include <cmath>
 
 #include <arpa/inet.h>
@@ -50,15 +51,45 @@ std::chrono::nanoseconds ntp_poll_delay(unsigned i)
 
 static int handle_ntp_reply(const struct op_event_data*, void* arg)
 {
-    auto state = reinterpret_cast<ntp_server_state*>(arg);
+    auto* state = reinterpret_cast<ntp_server_state*>(arg);
 
     auto buffer = std::array<std::byte, ntp::packet_size>();
     auto length = buffer.size();
     while (auto rx_time = state->socket.recv(buffer.data(), length)) {
         assert(length <= buffer.size());
         auto reply = ntp::deserialize(buffer.data(), length);
-        if (!reply) continue;
+
+        /* Skip replies we can't decode. */
+        if (!reply) { continue; }
+
+        /*
+         * A reply with a 0 valued stratum is invalid. According
+         * to RFC 5905, the refid might have a relevant code, so
+         * log it.
+         */
+        if (!reply->stratum) {
+            OP_LOG(OP_LOG_WARNING,
+                   "Received invalid reply from NTP server; refid = 0x%08x\n",
+                   reply->refid);
+            continue;
+        }
+
+        /*
+         * Finally, verify that this is a reply to a request we sent
+         * by confirming that it contains an origin that matches what
+         * we expect.
+         */
+        if (reply->origin != state->expected_origin) {
+            OP_LOG(OP_LOG_WARNING,
+                   "Ignoring NTP reply with unrecognized origin timestamp, "
+                   "%016" PRIx64 ".%016" PRIx64 "\n",
+                   reply->origin.bt_sec,
+                   reply->origin.bt_frac);
+            continue;
+        }
+
         // ntp::dump(stderr, *reply);
+
         state->stats.rx++;
         state->stats.stratum = reply->stratum;
         state->clock->update(
@@ -68,19 +99,32 @@ static int handle_ntp_reply(const struct op_event_data*, void* arg)
     return (-1);
 }
 
+/*
+ * Since NTP only uses 64 bits for the timestamp, we need to
+ * trim our bintime values accordingly.
+ */
+static bintime to_ntp_bintime(const bintime& from)
+{
+    static constexpr int64_t lo_mask = 0xffffffff;
+    static constexpr int64_t hi_mask = lo_mask << 32;
+    return (bintime{.bt_sec = from.bt_sec & lo_mask,
+                    .bt_frac = from.bt_frac & hi_mask});
+}
+
 static int handle_ntp_poll(const struct op_event_data* data, void* arg)
 {
-    auto state = reinterpret_cast<ntp_server_state*>(arg);
+    auto* state = reinterpret_cast<ntp_server_state*>(arg);
 
-    auto request = ntp::packet{.leap = ntp::leap_status::LEAP_UNKNOWN,
-                               .mode = ntp::mode::MODE_CLIENT,
-                               .stratum = 0,
-                               .poll = 4,
-                               .precision = -6,
-                               .root = {
-                                   .delay = {.bt_sec = 1, .bt_frac = 0},
-                                   .dispersion = {.bt_sec = 1, .bt_frac = 0},
-                               }};
+    auto now = to_bintime(chrono::realtime::now().time_since_epoch());
+
+    /*
+     * Record this timestamp so we can verify replies. The server
+     * should use our transmit timestamp for the origin timestamp.
+     */
+    state->expected_origin = to_ntp_bintime(now);
+
+    /* Only need the mode and transmit timestamps for a client request */
+    auto request = ntp::packet{.mode = ntp::mode::MODE_CLIENT, .transmit = now};
 
     auto buffer = ntp::serialize(request);
 

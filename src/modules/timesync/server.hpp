@@ -1,7 +1,6 @@
 #ifndef _OP_TIMESYNC_SERVER_HPP_
 #define _OP_TIMESYNC_SERVER_HPP_
 
-//#include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 
@@ -32,6 +31,7 @@ struct ntp_server_state
         std::optional<uint8_t> stratum = std::nullopt; /* unsynchronized */
     } stats;
     counter::ticks last_tx = 0;
+    bintime expected_origin = bintime::zero();
 
     ntp_server_state(struct addrinfo* ai_, class clock* clock_)
         : addrinfo(ai_)
