@@ -332,6 +332,10 @@ definitions:
         type: object
         description: NTP statistics
         properties:
+          poll_period:
+            type: integer
+            description: Current NTP server poll period, in seconds
+            format: int64
           rx_packets:
             type: integer
             description: Received packets

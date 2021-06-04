@@ -26,6 +26,7 @@ struct ntp_server_state
     unsigned poll_loop_id = 0;
     struct
     {
+        std::chrono::seconds poll_period = 64s;
         unsigned rx = 0;
         unsigned tx = 0;
         std::optional<uint8_t> stratum = std::nullopt; /* unsynchronized */

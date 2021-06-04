@@ -230,6 +230,7 @@ to_swagger(const time_source_stats_ntp& src)
     using TimeSourceStats_ntp = swagger::v1::model::TimeSourceStats_ntp;
     auto ntp_stats = std::make_shared<TimeSourceStats_ntp>();
 
+    ntp_stats->setPollPeriod(src.poll_period.count());
     ntp_stats->setRxPackets(src.rx_packets);
     ntp_stats->setTxPackets(src.tx_packets);
     if (src.stratum) { ntp_stats->setStratum(*src.stratum); }

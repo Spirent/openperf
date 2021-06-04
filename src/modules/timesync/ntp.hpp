@@ -28,6 +28,12 @@ enum class mode {
     MODE_MODE7 = 7,
 };
 
+enum class kiss_code {
+    KISS_DENY = 0x44454e59,
+    KISS_RATE = 0x52415445,
+    KISS_RSTR = 0x52535452,
+};
+
 struct packet
 {
     leap_status leap;
