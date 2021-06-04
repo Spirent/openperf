@@ -14,5 +14,6 @@ CI_CORES=$(if [ $(nproc) -gt ${MAX_CORES} ]; then echo ${MAX_CORES}; else echo $
 # compile options will use, if available.
 CI_BUILD_OPTS='-Os -gline-tables-only -march=core-avx2'
 
-# Use bear to generate the compilation database
-bear make -j${CI_CORES} OP_COPTS="${CI_BUILD_OPTS}" all
+# Use bear to generate the compilation database.
+# Treat first CLI argument to this script as additional parameter(s) to make.
+bear make -j${CI_CORES} OP_COPTS="${CI_BUILD_OPTS}" $1 all
