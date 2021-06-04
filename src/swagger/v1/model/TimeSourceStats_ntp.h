@@ -48,6 +48,13 @@ public:
     /// TimeSourceStats_ntp members
 
     /// <summary>
+    /// Current NTP server poll period, in seconds
+    /// </summary>
+    int64_t getPollPeriod() const;
+    void setPollPeriod(int64_t value);
+    bool pollPeriodIsSet() const;
+    void unsetPoll_period();
+    /// <summary>
     /// Received packets
     /// </summary>
     int64_t getRxPackets() const;
@@ -66,6 +73,8 @@ public:
     void unsetStratum();
 
 protected:
+    int64_t m_Poll_period;
+    bool m_Poll_periodIsSet;
     int64_t m_Rx_packets;
 
     int64_t m_Tx_packets;

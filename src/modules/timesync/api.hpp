@@ -107,6 +107,7 @@ struct time_source_config_ntp
 
 struct time_source_stats_ntp
 {
+    std::chrono::seconds poll_period;
     int64_t rx_packets;
     int64_t tx_packets;
     std::optional<uint8_t> stratum;

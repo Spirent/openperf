@@ -17,6 +17,8 @@ std::atomic<timecounter*> timecounter_now = nullptr;
 
 namespace openperf::timesync::api {
 
+static constexpr auto poll_period_adjust = 4s;
+
 static time_counter to_timecounter(const counter::timecounter& tc)
 {
     auto counter = time_counter{.frequency = tc.frequency().count(),
@@ -27,6 +29,58 @@ static time_counter to_timecounter(const counter::timecounter& tc)
     return (counter);
 }
 
+static void* get_address(const struct addrinfo* ai)
+{
+    return (ai->ai_family == AF_INET
+                ? static_cast<void*>(std::addressof(
+                    reinterpret_cast<sockaddr_in*>(ai->ai_addr)->sin_addr))
+                : static_cast<void*>(std::addressof(
+                    reinterpret_cast<sockaddr_in6*>(ai->ai_addr)->sin6_addr)));
+}
+
+static in_port_t get_port(const struct addrinfo* ai)
+{
+    return (
+        ntohs(ai->ai_family == AF_INET
+                  ? reinterpret_cast<sockaddr_in*>(ai->ai_addr)->sin_port
+                  : reinterpret_cast<sockaddr_in6*>(ai->ai_addr)->sin6_port));
+}
+
+std::pair<std::string, std::string> get_name_and_port(const struct addrinfo* ai)
+{
+    auto name = std::string{};
+    auto port = std::string{};
+
+    name.resize(name_max_length);
+    port.resize(port_max_length);
+
+    if (getnameinfo(ai->ai_addr,
+                    ai->ai_addrlen,
+                    name.data(),
+                    name.size(),
+                    port.data(),
+                    port.size(),
+                    NI_NAMEREQD)
+        == 0) {
+        name.resize(strnlen(name.data(), name.capacity()));
+        port.resize(strnlen(port.data(), port.capacity()));
+
+        return (std::make_pair(name, port));
+    }
+
+    /* Resolution failed for some reason; return the raw socket data */
+    static_assert(name_max_length > INET6_ADDRSTRLEN);
+
+    if (inet_ntop(
+            ai->ai_family, get_address(ai), name.data(), ai->ai_addrlen)) {
+        name.resize(strnlen(name.data(), name.capacity()));
+        return (std::make_pair(name, std::to_string(get_port(ai))));
+    }
+
+    /* All forms of resolution failed */
+    return (std::make_pair("unknown", "unknown"));
+}
+
 /**
  * Get the poll delay for the i'th packet.
  * This formula gives us a nice exponential back-off for
@@ -34,19 +88,51 @@ static time_counter to_timecounter(const counter::timecounter& tc)
  * lots of NTP timestamps when we start while slowing our polling
  * rate down afterwards.
  */
-std::chrono::nanoseconds ntp_poll_delay(unsigned i)
+std::chrono::nanoseconds ntp_poll_delay(unsigned i,
+                                        std::chrono::seconds max_period)
 {
     using seconds = std::chrono::duration<double>;
     static constexpr int ntp_startup_packets = 8;
-    static constexpr auto ntp_poll_period = seconds(64);
 
     auto period = seconds(
         i < ntp_startup_packets ? std::pow(
-            std::exp(std::log(ntp_poll_period.count()) / ntp_startup_packets),
-            i)
-                                : ntp_poll_period.count());
+            std::exp(std::log(max_period.count()) / ntp_startup_packets), i)
+                                : max_period.count());
 
     return (std::chrono::duration_cast<std::chrono::nanoseconds>(period));
+}
+
+static void handle_invalid_ntp_reply(ntp_server_state* state,
+                                     ntp::packet& reply)
+{
+    auto np = get_name_and_port(state->addrinfo.get());
+    switch (static_cast<ntp::kiss_code>(reply.refid)) {
+    case ntp::kiss_code::KISS_DENY:
+    case ntp::kiss_code::KISS_RSTR:
+        OP_LOG(OP_LOG_WARNING,
+               "NTP server %s has denied access; ceasing to poll\n",
+               np.first.c_str());
+        state->stats.poll_period =
+            std::numeric_limits<std::chrono::seconds>::max();
+        break;
+    case ntp::kiss_code::KISS_RATE:
+        OP_LOG(OP_LOG_WARNING,
+               "Received RATE notification from NTP server %s; "
+               "increasing poll period %ld -> %ld\n",
+               np.first.c_str(),
+               state->stats.poll_period.count(),
+               (state->stats.poll_period + poll_period_adjust).count());
+        state->stats.poll_period += poll_period_adjust;
+        break;
+    default: {
+        /* refid contains a 4 octet ASCII string in network order; ugh */
+        auto refid = ntohl(reply.refid);
+        OP_LOG(OP_LOG_WARNING,
+               "Received invalid reply from NTP server %s; kiss code = %.4s\n",
+               np.first.c_str(),
+               reinterpret_cast<const char*>(&refid));
+    }
+    }
 }
 
 static int handle_ntp_reply(const struct op_event_data*, void* arg)
@@ -63,14 +149,12 @@ static int handle_ntp_reply(const struct op_event_data*, void* arg)
         if (!reply) { continue; }
 
         /*
-         * A reply with a 0 valued stratum is invalid. According
-         * to RFC 5905, the refid might have a relevant code, so
-         * log it.
+         * According to RFC 5905, if the stratum is 0, then the
+         * reply is invalid and the server might be trying to tell
+         * us something.
          */
         if (!reply->stratum) {
-            OP_LOG(OP_LOG_WARNING,
-                   "Received invalid reply from NTP server; refid = 0x%08x\n",
-                   reply->refid);
+            handle_invalid_ntp_reply(state, *reply);
             continue;
         }
 
@@ -146,7 +230,8 @@ static int handle_ntp_poll(const struct op_event_data* data, void* arg)
     op_event_loop_update(
         data->loop,
         state->poll_loop_id,
-        static_cast<uint64_t>(ntp_poll_delay(state->stats.tx).count()));
+        static_cast<uint64_t>(
+            ntp_poll_delay(state->stats.tx, state->stats.poll_period).count()));
 
     return (0);
 }
@@ -225,67 +310,22 @@ reply_msg server::handle_request(const request_time_keeper&)
     return (reply_time_keeper{keeper});
 }
 
-static void* get_address(const struct addrinfo* ai)
-{
-    return (ai->ai_family == AF_INET
-                ? static_cast<void*>(std::addressof(
-                    reinterpret_cast<sockaddr_in*>(ai->ai_addr)->sin_addr))
-                : static_cast<void*>(std::addressof(
-                    reinterpret_cast<sockaddr_in6*>(ai->ai_addr)->sin6_addr)));
-}
-
-static in_port_t get_port(const struct addrinfo* ai)
-{
-    return (
-        ntohs(ai->ai_family == AF_INET
-                  ? reinterpret_cast<sockaddr_in*>(ai->ai_addr)->sin_port
-                  : reinterpret_cast<sockaddr_in6*>(ai->ai_addr)->sin6_port));
-}
-
 tl::expected<time_source, int> to_time_source(std::string_view id,
                                               const ntp_server_state* state)
 {
     auto config = time_source_config_ntp{};
+    auto np = get_name_and_port(state->addrinfo.get());
+    std::copy_n(np.first.data(), np.first.size(), config.node);
+    std::copy_n(np.second.data(), np.second.size(), config.port);
 
-    std::array<char, name_max_length> node;
-    std::array<char, port_max_length> port;
-
-    auto ai = state->addrinfo.get();
-    if (getnameinfo(ai->ai_addr,
-                    ai->ai_addrlen,
-                    node.data(),
-                    node.size(),
-                    port.data(),
-                    port.size(),
-                    NI_NAMEREQD)
-        == 0) {
-        std::copy_n(node.data(),
-                    std::min(std::strlen(node.data()), node.size()),
-                    config.node);
-
-        std::copy_n(port.data(),
-                    std::min(std::strlen(port.data()), port.size()),
-                    config.port);
-    } else {
-        /* Resolution failed for some reason; return the raw socket data */
-        std::array<char, INET6_ADDRSTRLEN> buffer;
-        if (inet_ntop(
-                ai->ai_family, get_address(ai), buffer.data(), ai->ai_addrlen)
-            == nullptr) {
-            return (tl::make_unexpected(errno));
-        }
-        std::copy_n(buffer.data(),
-                    std::min(std::strlen(buffer.data()), buffer.size()),
-                    config.node);
-
-        auto port_num = std::to_string(get_port(ai));
-        std::copy_n(port_num.data(), port_num.length(), config.port);
-    }
-
-    auto ts = time_source{.config = config,
-                          .stats = {.rx_packets = state->stats.rx,
-                                    .tx_packets = state->stats.tx,
-                                    .stratum = state->stats.stratum}};
+    auto ts = time_source{
+        .config = config,
+        .stats = {
+            .poll_period = std::chrono::duration_cast<std::chrono::seconds>(
+                ntp_poll_delay(state->stats.tx, state->stats.poll_period)),
+            .rx_packets = state->stats.rx,
+            .tx_packets = state->stats.tx,
+            .stratum = state->stats.stratum}};
     id.copy(ts.id, id_max_length);
 
     return (ts);

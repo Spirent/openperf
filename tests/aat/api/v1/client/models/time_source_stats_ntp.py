@@ -31,29 +31,56 @@ class TimeSourceStatsNtp(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'poll_period': 'int',
         'rx_packets': 'int',
         'tx_packets': 'int',
         'stratum': 'int'
     }
 
     attribute_map = {
+        'poll_period': 'poll_period',
         'rx_packets': 'rx_packets',
         'tx_packets': 'tx_packets',
         'stratum': 'stratum'
     }
 
-    def __init__(self, rx_packets=None, tx_packets=None, stratum=None):  # noqa: E501
+    def __init__(self, poll_period=None, rx_packets=None, tx_packets=None, stratum=None):  # noqa: E501
         """TimeSourceStatsNtp - a model defined in Swagger"""  # noqa: E501
 
+        self._poll_period = None
         self._rx_packets = None
         self._tx_packets = None
         self._stratum = None
         self.discriminator = None
 
+        if poll_period is not None:
+            self.poll_period = poll_period
         self.rx_packets = rx_packets
         self.tx_packets = tx_packets
         if stratum is not None:
             self.stratum = stratum
+
+    @property
+    def poll_period(self):
+        """Gets the poll_period of this TimeSourceStatsNtp.  # noqa: E501
+
+        Current NTP server poll period, in seconds  # noqa: E501
+
+        :return: The poll_period of this TimeSourceStatsNtp.  # noqa: E501
+        :rtype: int
+        """
+        return self._poll_period
+
+    @poll_period.setter
+    def poll_period(self, poll_period):
+        """Sets the poll_period of this TimeSourceStatsNtp.
+
+        Current NTP server poll period, in seconds  # noqa: E501
+
+        :param poll_period: The poll_period of this TimeSourceStatsNtp.  # noqa: E501
+        :type: int
+        """
+        self._poll_period = poll_period
 
     @property
     def rx_packets(self):
