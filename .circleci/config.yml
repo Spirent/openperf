@@ -43,6 +43,23 @@ jobs:
           paths:
             - project
 
+  build_secondary:
+    docker:
+      - image: spirentorion/openperf:latest
+    steps:
+      - checkout
+      - run:
+          name: Build and generate compilation database
+          command: .circleci/run_build.sh OP_PACKETIO_DPDK_PROCESS_TYPE=secondary
+      - store_artifacts:
+          path: ~/project/build/openperf-linux-x86_64-testing/bin
+      - store_artifacts:
+          path: ~/project/build/libopenperf-shim-linux-x86_64-testing/lib
+      - persist_to_workspace:
+          root: "~"
+          paths:
+            - project
+
   cross_compile_aarch64:
     docker:
       - image: spirentorion/openperf:latest
@@ -80,6 +97,7 @@ workflows:
   ci_build:
     jobs:
       - build
+      - build_secondary
       - cross_compile_aarch64
       - acceptance_tests:
           requires:
