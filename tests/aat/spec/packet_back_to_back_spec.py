@@ -193,7 +193,7 @@ ANALYZER_CONFIG_NO_SIGS = {
 
 ANALYZER_CONFIG_SIGS = {
     'protocol': ['ethernet', 'ip', 'transport'],
-    'counters': ['frame_count', 'frame_length', 'interarrival_time',
+    'counters': ['frame_count', 'frame_length', 'header', 'interarrival_time',
                  'jitter_ipdv', 'jitter_rfc', 'latency', 'advanced_sequencing'],
     'digests': ['frame_length', 'interarrival_time', 'jitter_ipdv',
                 'jitter_rfc', 'latency', 'sequence_run_length']

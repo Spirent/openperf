@@ -42,6 +42,7 @@ static constexpr auto flow_counter_pairs =
     associative_array<flow_counter_flags, std::string_view>(
         std::pair(flow_counter_flags::frame_count, "frame_count"),
         std::pair(flow_counter_flags::frame_length, "frame_length"),
+        std::pair(flow_counter_flags::header, "header"),
         std::pair(flow_counter_flags::interarrival, "interarrival_time"),
         std::pair(flow_counter_flags::jitter_ipdv, "jitter_ipdv"),
         std::pair(flow_counter_flags::jitter_rfc, "jitter_rfc"),

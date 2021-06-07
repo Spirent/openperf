@@ -64,6 +64,10 @@ class _be_valid_packet_analyzer_flow_counter(Matcher):
                          + counters.sequence.reordered
                          + counters.sequence.in_order)
                 expect(total).to(equal(counters.frame_count))
+            if counters.headers:
+                expect(counters.headers).not_to(be_empty)
+                for header in counters.headers:
+                    expect(header).to(be_a(client.models.PacketAnalyzerFlowHeader))
 
         if counters.frame_count > 1:
             if counters.interarrival:
