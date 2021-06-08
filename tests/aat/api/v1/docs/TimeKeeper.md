@@ -3,7 +3,7 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**maximum_error** | **float** | The current maximum error in the time calculation | 
+**maximum_error** | **float** | The current maximum error in the time calculation, in seconds. | 
 **state** | [**TimeKeeperState**](TimeKeeperState.md) |  | 
 **stats** | [**TimeKeeperStats**](TimeKeeperStats.md) |  | 
 **time** | **datetime** | The current time and date in ISO8601 format | 

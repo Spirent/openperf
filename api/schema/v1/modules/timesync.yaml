@@ -282,7 +282,7 @@ definitions:
     properties:
       maximum_error:
         type: number
-        description: The current maximum error in the time calculation
+        description: The current maximum error in the time calculation, in seconds.
         format: double
       state:
         $ref: "#/definitions/TimeKeeperState"

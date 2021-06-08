@@ -51,7 +51,7 @@ public:
     /// TimeKeeper members
 
     /// <summary>
-    /// The current maximum error in the time calculation
+    /// The current maximum error in the time calculation, in seconds.
     /// </summary>
     double getMaximumError() const;
     void setMaximumError(double value);
