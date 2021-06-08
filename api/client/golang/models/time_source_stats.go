@@ -105,6 +105,9 @@ func (m *TimeSourceStats) UnmarshalBinary(b []byte) error {
 // swagger:model TimeSourceStatsNtp
 type TimeSourceStatsNtp struct {
 
+	// Current NTP server poll period, in seconds
+	PollPeriod int64 `json:"poll_period,omitempty"`
+
 	// Received packets
 	// Required: true
 	RxPackets *int64 `json:"rx_packets"`

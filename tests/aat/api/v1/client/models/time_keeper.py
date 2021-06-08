@@ -70,7 +70,7 @@ class TimeKeeper(object):
     def maximum_error(self):
         """Gets the maximum_error of this TimeKeeper.  # noqa: E501
 
-        The current maximum error in the time calculation  # noqa: E501
+        The current maximum error in the time calculation, in seconds.  # noqa: E501
 
         :return: The maximum_error of this TimeKeeper.  # noqa: E501
         :rtype: float
@@ -81,7 +81,7 @@ class TimeKeeper(object):
     def maximum_error(self, maximum_error):
         """Sets the maximum_error of this TimeKeeper.
 
-        The current maximum error in the time calculation  # noqa: E501
+        The current maximum error in the time calculation, in seconds.  # noqa: E501
 
         :param maximum_error: The maximum_error of this TimeKeeper.  # noqa: E501
         :type: float

@@ -21,7 +21,7 @@ import (
 // swagger:model TimeKeeper
 type TimeKeeper struct {
 
-	// The current maximum error in the time calculation
+	// The current maximum error in the time calculation, in seconds.
 	// Required: true
 	MaximumError *float64 `json:"maximum_error"`
 
