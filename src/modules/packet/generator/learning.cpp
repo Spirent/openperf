@@ -73,7 +73,7 @@ static err_t send_ipv4_learning_requests(start_learning_params& slp)
                 OP_LOG(OP_LOG_ERROR,
                        "Error (%s) encountered while requesting ARP for "
                        "address: %s",
-                       lwip_strerr(result),
+                       strerror(err_to_errno(result)),
                        to_string(addr_pair.first).c_str());
                 overall_result = result;
             }
