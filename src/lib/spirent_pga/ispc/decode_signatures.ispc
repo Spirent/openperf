@@ -10,11 +10,11 @@ static const int is_valid = (1 << 2);
  * because the signature fits in one SIMD register. Here we use all lanes
  * to copy signature data to the scratch area.
  */
-void read_signatures(const uniform unsigned int8* const uniform signatures[],
-                     varying unsigned int* uniform v0,
-                     varying unsigned int* uniform v1,
-                     varying unsigned int* uniform v2,
-                     varying unsigned int* uniform v3)
+inline void read_signatures(const uniform unsigned int8* const uniform signatures[],
+                            varying unsigned int* uniform v0,
+                            varying unsigned int* uniform v1,
+                            varying unsigned int* uniform v2,
+                            varying unsigned int* uniform v3)
 {
     uniform int scratch[4 * programCount];
 
@@ -36,11 +36,11 @@ void read_signatures(const uniform unsigned int8* const uniform signatures[],
 
 #else
 
-void read_signatures(const uniform unsigned int8* const uniform signatures[],
-                     varying unsigned int* uniform v0,
-                     varying unsigned int* uniform v1,
-                     varying unsigned int* uniform v2,
-                     varying unsigned int* uniform v3)
+inline void read_signatures(const uniform unsigned int8* const uniform signatures[],
+                            varying unsigned int* uniform v0,
+                            varying unsigned int* uniform v1,
+                            varying unsigned int* uniform v2,
+                            varying unsigned int* uniform v3)
 {
     uniform int32 scratch[4 * programCount];
 
@@ -69,8 +69,6 @@ decode_signatures(const unsigned int8* const uniform payloads[],
                   unsigned int32 uniform timestamps_lo[],
                   int32 uniform flags[])
 {
-    uniform int scratch[4 * programCount];
-
     /* We treat the signature as 4 x 32 bit integers */
     unsigned int<4> data;
     unsigned int<4> mask;
