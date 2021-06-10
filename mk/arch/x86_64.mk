@@ -27,7 +27,9 @@ OP_ISPC_TARGETS := \
 
 # At a minimum, we need the following x86 CPU flags to compile.
 # mcx16: Enable compare-and-exchange for 16-byte aligned 128 bit objects
-# mssse3: SSSE3 instructions are needed for some included DPDK headers, e.g. rte_memcpy.h
+# msse4.1/msse4.2: SSE4 instructions are required for some DPDK code
+# mpclmul: PCLMUL isn't strictly necessary, but it drastically speeds up the signature CRC
+# calculation, so we default it to "on" here. It's available on anything from the past decade.
 #
 # Check if the current optimizations give us those features.  If the don't, then we
 # need to add them
@@ -39,9 +41,18 @@ ifeq ($(filter $(OP_COMPILER_DEFINES),__GCC_HAVE_SYNC_COMPARE_AND_SWAP_16),)
 override OP_COPTS += -mcx16
 endif
 
-ifeq ($(filter $(OP_COMPILER_DEFINES),__SSSE3__),)
-override OP_COPTS += -mssse3
+ifeq ($(filter $(OP_COMPILER_DEFINES),__SSE4_1__),)
+override OP_COPTS += -msse4.1
 endif
+
+ifeq ($(filter $(OP_COMPILER_DEFINES),__SSE4_2__),)
+override OP_COPTS += -msse4.2
+endif
+
+ifeq ($(filter $(OP_COMPILER_DEFINES),__PCLMUL__),)
+override OP_COPTS += -mpclmul
+endif
+
 
 undefine OP_COMPILER_DEFINES
 
