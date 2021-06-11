@@ -51,6 +51,14 @@ buffer& buffer::operator=(const buffer& other)
     return *this;
 }
 
+static inline size_t round_up(size_t x, size_t multiple)
+{
+    /* multiple must be non-zero and a power of 2 */
+    assert(multiple && ((multiple & (multiple - 1)) == 0));
+    const size_t mask = multiple - 1;
+    return ((x + mask) & ~mask);
+}
+
 // Methods : public
 void buffer::allocate(std::size_t size)
 {
@@ -115,12 +123,14 @@ void buffer::allocate(std::size_t size, std::size_t alignment)
     assert(alignment > 0);
     assert(m_ptr == nullptr);
 
+    size = round_up(size, alignment);
+
     OP_LOG(OP_LOG_TRACE,
            "Allocating buffer of %zu with alignment %zu\n",
            size,
            alignment);
 
-    auto ptr = std::aligned_alloc(alignment, size);
+    auto ptr = aligned_alloc(alignment, size);
     if (ptr == nullptr) {
         OP_LOG(
             OP_LOG_ERROR,
@@ -137,7 +147,10 @@ void buffer::allocate(std::size_t size, std::size_t alignment)
 void buffer::resize(std::size_t size, std::size_t alignment)
 {
     assert(alignment > 0);
+
     if (size == m_size) return;
+
+    size = round_up(size, alignment);
 
     OP_LOG(OP_LOG_TRACE,
            "Resizing buffer (%zu => %zu) with alignment %zu\n",
@@ -145,7 +158,7 @@ void buffer::resize(std::size_t size, std::size_t alignment)
            size,
            alignment);
 
-    auto ptr = std::aligned_alloc(alignment, size);
+    auto ptr = aligned_alloc(alignment, size);
     if (ptr == nullptr) {
         OP_LOG(OP_LOG_ERROR,
                "Failed to resize (%zu => %zu) buffer with alignment %zu\n",
