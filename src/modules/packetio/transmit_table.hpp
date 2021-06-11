@@ -22,7 +22,7 @@ public:
     static constexpr auto key_id_idx = 2;
 
     using key_type = std::tuple<uint16_t, uint16_t, std::string>;
-    using noalloc_key_type = std::tuple<uint16_t, uint16_t, std::string_view>;
+    using safe_key_type = std::tuple<uint16_t, uint16_t, size_t>;
     using mapped_type = Source;
     using value_type = std::pair<key_type, mapped_type>;
     using source_entry = immer::box<value_type>;
@@ -41,7 +41,9 @@ public:
     get_sources(uint16_t port_idx, uint16_t queue_idx) const;
 
     const Source* get_source(const key_type&) const;
-    const Source* get_source(const noalloc_key_type&) const;
+    const Source* get_source(const safe_key_type&) const;
+
+    static safe_key_type to_safe_key(const key_type&);
 
 private:
     std::atomic<source_map*> m_sources;

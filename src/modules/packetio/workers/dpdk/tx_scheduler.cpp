@@ -151,7 +151,7 @@ void tx_scheduler::do_reschedule(const schedule::time_point& now)
     const auto& priority_vec = get_container(m_schedule);
 
     for (const auto& key_source : m_tib.get_sources(port_id(), queue_id())) {
-        const auto& key = key_source->first;
+        const auto key = worker::tib::to_safe_key(key_source->first);
         const auto& source = key_source->second;
         if (source.active()
             && std::none_of(
@@ -460,10 +460,10 @@ void tx_scheduler::on_transition(const schedule::state_running& state)
     if (m_schedule.empty()) {
         /* Generate a schedule for all available entities */
         for (auto&& pair : m_tib.get_sources(port_id(), queue_id())) {
-            const auto& key = pair->first;
             const auto& source = pair->second;
             if (source.active()) {
-                m_schedule.push({now + next_deadline(source), key});
+                m_schedule.push({now + next_deadline(source),
+                                 worker::tib::to_safe_key(pair->first)});
             }
         }
 

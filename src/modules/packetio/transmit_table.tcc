@@ -21,6 +21,16 @@ typename transmit_table<Source>::key_type transmit_table<Source>::to_key(
     return {port_idx, queue_idx, std::string(source_id)};
 }
 
+template <typename Source>
+typename transmit_table<Source>::safe_key_type
+transmit_table<Source>::to_safe_key(
+    const typename transmit_table<Source>::key_type& key)
+{
+    return {std::get<key_port_idx>(key),
+            std::get<key_queue_idx>(key),
+            std::hash<std::string>{}(std::get<key_id_idx>(key))};
+}
+
 /*
  * The various binary search algorithms, e.g. equal_range, lower_bound, etc.,
  * need to make the "less than" comparison between keys and values in any order.
@@ -42,20 +52,18 @@ template <typename Source> struct key_comparator
     }
 };
 
-template <typename Source> struct noalloc_key_comparator
+template <typename Source> struct safe_key_comparator
 {
-    bool
-    operator()(const typename transmit_table<Source>::noalloc_key_type& left,
-               const typename transmit_table<Source>::value_type& right)
+    bool operator()(const typename transmit_table<Source>::safe_key_type& left,
+                    const typename transmit_table<Source>::value_type& right)
     {
-        return (left < right.first);
+        return (left < transmit_table<Source>::to_safe_key(right.first));
     }
 
-    bool
-    operator()(const typename transmit_table<Source>::value_type& left,
-               const typename transmit_table<Source>::noalloc_key_type& right)
+    bool operator()(const typename transmit_table<Source>::value_type& left,
+                    const typename transmit_table<Source>::safe_key_type& right)
     {
-        return (left.first < right);
+        return (transmit_table<Source>::to_safe_key(left.first) < right);
     }
 };
 
@@ -171,11 +179,11 @@ const Source* transmit_table<Source>::get_source(
 
 template <typename Source>
 const Source* transmit_table<Source>::get_source(
-    const transmit_table<Source>::noalloc_key_type& key) const
+    const transmit_table<Source>::safe_key_type& key) const
 {
     auto map = m_sources.load(std::memory_order_consume);
     auto range = std::equal_range(
-        map->begin(), map->end(), key, noalloc_key_comparator<Source>{});
+        map->begin(), map->end(), key, safe_key_comparator<Source>{});
     assert(std::distance(range.first, range.second) <= 1);
     return (std::distance(range.first, range.second) == 1
                 ? std::addressof(range.first->get().second)
