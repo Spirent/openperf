@@ -246,15 +246,15 @@ static void* get_thread_log_socket(void)
 }
 
 /**
- * Explicit close the logging socket of the calling thread.
+ * Delete the logging socket of the calling thread from our list and
+ * immediately close it. You should only call this if your thread
+ * is terminating!
  */
 void op_log_close(void)
 {
     if (_log_socket == NULL) return;
-    if (op_list_delete_head(_thread_log_sockets, _log_socket)) {
-        zmq_close(_log_socket);
-        _log_socket = NULL;
-    }
+
+    if (op_list_clear(_thread_log_sockets, _log_socket)) { _log_socket = NULL; }
 }
 
 /**
