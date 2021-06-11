@@ -80,7 +80,8 @@ void sink_result::stop() { m_active = false; }
 
 std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)
 {
-    std::vector<uint8_t> indexes(*max_element(std::begin(ids), std::end(ids)));
+    std::vector<uint8_t> indexes(*max_element(std::begin(ids), std::end(ids))
+                                 + 1);
     assert(indexes.size() < std::numeric_limits<uint8_t>::max());
     uint8_t idx = 0;
     for (auto& id : ids) { indexes[id] = idx++; }

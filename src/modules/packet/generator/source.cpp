@@ -175,6 +175,7 @@ bool source::active() const
     if (m_tx_limit && m_tx_limit.value() == m_tx_idx) {
         if (auto* results = m_results.load(std::memory_order_relaxed)) {
             results->stop();
+            m_results.store(nullptr, std::memory_order_relaxed);
         }
         return (false);
     }

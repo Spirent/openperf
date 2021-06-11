@@ -123,8 +123,8 @@ uint16_t capture_buffer_mem::write_packets(
 
     // Write all packets or until the buffer is full
     for (uint16_t i = 0; i < packets_length; ++i) {
-        auto& packet = packets[i];
-        auto data = openperf::packetio::packet::to_data(packet);
+        auto* packet = packets[i];
+        assert(packet);
 
         fill_capture_packet_hdr(hdr, packet, m_max_packet_size);
         auto padded_data_len = pad_capture_data_len(hdr.captured_len);
@@ -133,9 +133,11 @@ uint16_t capture_buffer_mem::write_packets(
             m_full = true;
             return i;
         }
+
         *reinterpret_cast<capture_packet_hdr*>(m_write_addr) = hdr;
         m_write_addr += sizeof(hdr);
-        std::copy_n(reinterpret_cast<const uint8_t*>(data),
+
+        std::copy_n(openperf::packetio::packet::to_data<const uint8_t>(packet),
                     hdr.captured_len,
                     m_write_addr);
         m_write_addr += padded_data_len;

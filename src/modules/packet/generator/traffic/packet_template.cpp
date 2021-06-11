@@ -95,7 +95,7 @@ maybe_set_pseudoheader_checksum(uint8_t header[],
             set_udp_checksum(*udp, get_pseudoheader_checksum(*ipv4));
         } else {
             auto ipv6 = reinterpret_cast<libpacket::protocol::ipv6*>(
-                header + hdr_lens.layer3);
+                header + hdr_lens.layer2);
             set_udp_checksum(*udp, get_pseudoheader_checksum(*ipv6));
         }
     } else if (hdr_flags & packet_type::protocol::tcp) {
@@ -107,7 +107,7 @@ maybe_set_pseudoheader_checksum(uint8_t header[],
             set_tcp_checksum(*tcp, get_pseudoheader_checksum(*ipv4));
         } else {
             auto ipv6 = reinterpret_cast<libpacket::protocol::ipv6*>(
-                header + hdr_lens.layer3);
+                header + hdr_lens.layer2);
             set_tcp_checksum(*tcp, get_pseudoheader_checksum(*ipv6));
         }
     }

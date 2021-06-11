@@ -135,7 +135,7 @@ size_t circular_buffer_producer<Derived>::write(const iovec iov[],
     size_t iov_idx = 0, written1 = 0;
 
     /* Copy full iovs before the buffer wrap */
-    while (written1 + iov[iov_idx].iov_len <= chunk1 && iov_idx < iovcnt) {
+    while (iov_idx < iovcnt && written1 + iov[iov_idx].iov_len <= chunk1) {
         openperf::utils::memcpy(base() + mask(cursor) + written1,
                                 iov[iov_idx].iov_base,
                                 iov[iov_idx].iov_len);
@@ -179,7 +179,7 @@ size_t circular_buffer_producer<Derived>::write(const iovec iov[],
     iov_idx++;
 
     /* Now finish writing iovs to the front of the buffer */
-    while (written2 + iov[iov_idx].iov_len <= chunk2 && iov_idx < iovcnt) {
+    while (iov_idx < iovcnt && written2 + iov[iov_idx].iov_len <= chunk2) {
         openperf::utils::memcpy(
             base() + written2, iov[iov_idx].iov_base, iov[iov_idx].iov_len);
         written2 += iov[iov_idx].iov_len;

@@ -91,7 +91,8 @@ capture_buffer_stats sink_result::get_stats() const
 
 std::vector<uint8_t> sink::make_indexes(std::vector<unsigned>& ids)
 {
-    std::vector<uint8_t> indexes(*max_element(std::begin(ids), std::end(ids)));
+    std::vector<uint8_t> indexes(*max_element(std::begin(ids), std::end(ids))
+                                 + 1);
     assert(indexes.size() < std::numeric_limits<uint8_t>::max());
     uint8_t idx = 0;
     for (auto& id : ids) { indexes[id] = idx++; }
@@ -130,6 +131,7 @@ sink::sink(sink&& other) noexcept
     , m_indexes(std::move(other.m_indexes))
     , m_results(other.m_results.load())
     , m_stop_time(other.m_stop_time)
+    , m_packet_count(other.m_packet_count.load(std::memory_order_relaxed))
 {}
 
 sink& sink::operator=(sink&& other) noexcept
@@ -142,6 +144,7 @@ sink& sink::operator=(sink&& other) noexcept
         m_indexes = std::move(other.m_indexes);
         m_results.store(other.m_results);
         m_stop_time = other.m_stop_time;
+        m_packet_count = other.m_packet_count.load(std::memory_order_relaxed);
     }
 
     return (*this);
@@ -281,14 +284,17 @@ uint16_t sink::check_duration_condition(
 static uint16_t
 increment_counter(std::atomic<uint64_t>& counter, uint16_t count, uint64_t lim)
 {
-    uint64_t value = counter.load(std::memory_order_consume);
-    while (value != lim) {
-        uint64_t new_value = std::min(value + count, lim);
-        if (counter.compare_exchange_strong(value, new_value)) {
-            return (new_value - value);
-        }
-    }
-    return 0;
+    auto value = counter.load(std::memory_order_acquire);
+    decltype(value) next_value;
+
+    do {
+        next_value = std::min(value + count, lim);
+    } while (!counter.compare_exchange_weak(value,
+                                            next_value,
+                                            std::memory_order_release,
+                                            std::memory_order_acquire));
+
+    return (next_value - value);
 }
 
 uint16_t sink::write_packets(
@@ -307,6 +313,7 @@ uint16_t sink::write_packets(
         // limit is used.
         auto packets_added = increment_counter(
             m_packet_count, packets_length, m_config.packet_count);
+        assert(packets_added <= packets_length);
         return buffer.write_packets(packets, packets_added);
     }
 }

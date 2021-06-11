@@ -264,10 +264,10 @@ reply_msg server::handle_request(const request_time_counters& request)
 
 static std::chrono::nanoseconds get_clock_error(const clock& c)
 {
-    auto error = c.local_frequency_error();
-    if (!error) { error = c.frequency_error(); }
+    auto error =
+        c.local_frequency_error().value_or(c.frequency_error().value_or(0));
 
-    return (chrono::maximum_clock_error(error.value_or(0)));
+    return (chrono::maximum_clock_error(error));
 }
 
 reply_msg server::handle_request(const request_time_keeper&)

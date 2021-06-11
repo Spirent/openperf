@@ -13,11 +13,7 @@ using namespace std::chrono_literals;
 constexpr auto QUANTA = 100ms;
 
 // Constructors & Destructor
-task_cpu::task_cpu(const task_cpu_config& conf)
-    : m_utilization(0.0)
-{
-    config(conf);
-}
+task_cpu::task_cpu(const task_cpu_config& conf) { config(conf); }
 
 task_cpu::task_cpu(task_cpu&& other) noexcept
     : m_config(std::move(other.m_config))
@@ -119,6 +115,7 @@ void task_cpu::config(const task_cpu_config& conf)
     OP_LOG(OP_LOG_DEBUG, "CPU Task configuring");
 
     m_time = 0ns;
+    m_error = 0ns;
     m_weights = 0;
     m_weight_min = std::numeric_limits<uint64_t>::max();
     m_utilization = conf.utilization / 100.0;
