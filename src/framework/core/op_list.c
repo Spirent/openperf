@@ -14,7 +14,8 @@ const void* op_dummy_list_value = (void*)0x0ddba11;
  * Internal flags, structures, and defines
  */
 enum op_list_entry_flags {
-    LIST_ENTRY_DELETED = (1 << 0),
+    LIST_ENTRY_DELETED = (1 << 0), /**< list entry is deleted */
+    LIST_ENTRY_CLEARED = (1 << 1), /**< list entry no longer has valid data */
 };
 
 struct op_list_item;
@@ -59,12 +60,19 @@ static bool _is_deleted(struct op_list_entry* p)
     return (p->flags & LIST_ENTRY_DELETED ? true : false);
 }
 
+static bool _is_cleared(struct op_list_entry* p)
+{
+    return (p->flags & LIST_ENTRY_CLEARED ? true : false);
+}
+
 static void _list_item_destroy(struct op_list_item** itemp,
                                op_destructor destructor)
 {
     struct op_list_item* item = *itemp;
+    struct op_list_entry entry =
+        atomic_load_explicit(&item->entry, memory_order_relaxed);
 
-    if (destructor) { destructor(item->data); }
+    if (!_is_cleared(&entry) && destructor) { destructor(item->data); }
 
     op_list_item_free(itemp);
 }
@@ -92,9 +100,10 @@ void _initialize_head_item(struct op_list_item* head)
  */
 void _op_list_collect_deleted(struct op_list* list)
 {
-    /* op_list_next moves deleted items to the free list, so just need to iterate through the list */
+    /* op_list_next moves deleted items to the free list, so just need to
+     * iterate through the list */
     struct op_list_item* cursor = op_list_head(list);
-    while(op_list_next(list, &cursor)){}
+    while (op_list_next(list, &cursor)) {}
 }
 
 struct op_list* op_list_allocate()
@@ -462,6 +471,50 @@ bool op_list_delete_node(struct op_list* list,
                                                     memory_order_relaxed));
 
     atomic_fetch_sub_explicit(&list->length, 1, memory_order_relaxed);
+    return (true);
+}
+
+bool op_list_clear_head(struct op_list* list, const void* key)
+{
+    return (op_list_clear_node(list, &list->head, key));
+}
+
+bool op_list_clear_node(struct op_list* list,
+                        struct op_list_item* start,
+                        const void* key)
+{
+    assert(list);
+    assert(start);
+    assert(key);
+
+    struct op_list_item* prev = NULL;
+    struct op_list_entry prev_entry = OP_LIST_ENTRY_INIT;
+    struct op_list_item* to_delete = NULL;
+    struct op_list_entry to_delete_now = OP_LIST_ENTRY_INIT;
+    struct op_list_entry to_delete_update = OP_LIST_ENTRY_INIT;
+
+    do {
+        if (!_op_list_pfind(list, start, key, &prev, &prev_entry)) {
+            return (false); /* no matching key */
+        }
+
+        to_delete = prev_entry.next;
+        to_delete_now =
+            atomic_load_explicit(&to_delete->entry, memory_order_acquire);
+        to_delete_update = to_delete_now;
+        to_delete_update.version = to_delete_now.version + 1;
+        to_delete_update.flags |= LIST_ENTRY_DELETED | LIST_ENTRY_CLEARED;
+    } while (!atomic_compare_exchange_weak_explicit(&to_delete->entry,
+                                                    &to_delete_now,
+                                                    to_delete_update,
+                                                    memory_order_release,
+                                                    memory_order_relaxed));
+
+    atomic_fetch_sub_explicit(&list->length, 1, memory_order_relaxed);
+
+    /* Destroy the item now */
+    if (list->destructor) { list->destructor(to_delete->data); }
+
     return (true);
 }
 

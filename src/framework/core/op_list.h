@@ -32,12 +32,12 @@ struct op_list_item;
  * typedef for function to compare list entries
  * This function should match the semantics of memcmp/strcmp.
  */
-typedef int  (op_comparator)(const void *thing1, const void *thing2);
+typedef int(op_comparator)(const void* thing1, const void* thing2);
 
 /**
  * typedef for function to destroy list items
  */
-typedef void (op_destructor)(void *thing);
+typedef void(op_destructor)(void* thing);
 
 /**
  * Allocate a new list.
@@ -45,7 +45,7 @@ typedef void (op_destructor)(void *thing);
  * @return
  *   pointer to new allocated list or NULL on error
  */
-struct op_list *op_list_allocate();
+struct op_list* op_list_allocate();
 
 /**
  * Set the list compare function.
@@ -55,7 +55,7 @@ struct op_list *op_list_allocate();
  * @param[in] comparator
  *   item comparing function
  */
-void op_list_set_comparator(struct op_list *list, op_comparator comparator);
+void op_list_set_comparator(struct op_list* list, op_comparator comparator);
 
 /**
  * Set the list destroy function.
@@ -65,7 +65,7 @@ void op_list_set_comparator(struct op_list *list, op_comparator comparator);
  * @param[in] destructor
  *   value destructor; may be free for simple heap allocated items
  */
-void op_list_set_destructor(struct op_list *list, op_destructor destructor);
+void op_list_set_destructor(struct op_list* list, op_destructor destructor);
 
 /**
  * Destroy a list and free all memory
@@ -74,7 +74,7 @@ void op_list_set_destructor(struct op_list *list, op_destructor destructor);
  * @param[in,out] listp
  *  address of pointer to list
  */
-void op_list_free(struct op_list **listp);
+void op_list_free(struct op_list** listp);
 
 /**
  * Delete all current items in the list.
@@ -86,7 +86,7 @@ void op_list_free(struct op_list **listp);
  *   -  0: Success
  *   - !0: Error
  */
-int op_list_purge(struct op_list *list);
+int op_list_purge(struct op_list* list);
 
 /**
  * Destroy all items previously marked for delete.  If a destructor was
@@ -97,7 +97,7 @@ int op_list_purge(struct op_list *list);
  * @param[in] list
  *   pointer to list
  */
-void op_list_garbage_collect(struct op_list *list);
+void op_list_garbage_collect(struct op_list* list);
 
 /**
  * Retrieve the current length of the list
@@ -108,7 +108,7 @@ void op_list_garbage_collect(struct op_list *list);
  * @return
  *   number of non-deleted items in the list
  */
-size_t op_list_length(struct op_list *list);
+size_t op_list_length(struct op_list* list);
 
 /**
  * Retrieve the head of the list
@@ -120,7 +120,7 @@ size_t op_list_length(struct op_list *list);
  * @return
  *   pointer to first item in the list
  */
-struct op_list_item *op_list_head(struct op_list *list);
+struct op_list_item* op_list_head(struct op_list* list);
 
 /**
  * Retrieve the next item in the list
@@ -133,8 +133,7 @@ struct op_list_item *op_list_head(struct op_list *list);
  * @return
  *   pointer to value of next item or NULL on error
  */
-void *op_list_next(struct op_list *list,
-                   struct op_list_item **prevp);
+void* op_list_next(struct op_list* list, struct op_list_item** prevp);
 
 /**
  * Allocate a new list item
@@ -145,7 +144,7 @@ void *op_list_next(struct op_list *list,
  * @return
  *   pointer to new allocated list item or NULL on error
  */
-struct op_list_item *op_list_item_allocate(void *item);
+struct op_list_item* op_list_item_allocate(void* item);
 
 /**
  * Free a list item structure.
@@ -154,7 +153,7 @@ struct op_list_item *op_list_item_allocate(void *item);
  * @param[in,out] itemp
  *   address of pointer to list item
  */
-void op_list_item_free(struct op_list_item **itemp);
+void op_list_item_free(struct op_list_item** itemp);
 
 /**
  * Retrieve the data from an op_list_item
@@ -162,7 +161,7 @@ void op_list_item_free(struct op_list_item **itemp);
  * @param[in] item
  *   pointer to list item
  */
-void *op_list_item_data(const struct op_list_item *item);
+void* op_list_item_data(const struct op_list_item* item);
 
 /**
  * Insert items into the list
@@ -176,8 +175,7 @@ void *op_list_item_data(const struct op_list_item *item);
  *   -  true: item was successfully inserted
  *   - false: item was not inserted
  */
-bool op_list_insert_head_item(struct op_list *list,
-                              struct op_list_item *item);
+bool op_list_insert_head_item(struct op_list* list, struct op_list_item* item);
 
 /**
  * Insert items into the list after the specified node.
@@ -193,9 +191,9 @@ bool op_list_insert_head_item(struct op_list *list,
  *   -  true: item was successfully inserted
  *   - false: item was not inserted
  */
-bool op_list_insert_node_item(struct op_list *list,
-                              struct op_list_item *start,
-                              struct op_list_item *item);
+bool op_list_insert_node_item(struct op_list* list,
+                              struct op_list_item* start,
+                              struct op_list_item* item);
 
 /**
  * Insert items into the list
@@ -209,8 +207,7 @@ bool op_list_insert_node_item(struct op_list *list,
  *   -  true: item was successfully inserted
  *   - false: item was not inserted
  */
-bool op_list_insert_head_value(struct op_list *list,
-                               void *item);
+bool op_list_insert_head_value(struct op_list* list, void* item);
 
 /**
  * Insert items into the list
@@ -226,27 +223,25 @@ bool op_list_insert_head_value(struct op_list *list,
  *   -  true: item was successfully inserted
  *   - false: item was not inserted
  */
-bool op_list_insert_node_value(struct op_list *list,
-                               struct op_list_item *start,
-                               void *item);
+bool op_list_insert_node_value(struct op_list* list,
+                               struct op_list_item* start,
+                               void* item);
 
-#define op_list_insert_head(list, item)                         \
-    _Generic((item),                                            \
-             struct op_list_item *: op_list_insert_head_item,   \
-             default: op_list_insert_head_value                 \
-        )(list, item)
+#define op_list_insert_head(list, item)                                        \
+    _Generic((item), struct op_list_item *                                     \
+             : op_list_insert_head_item, default                               \
+             : op_list_insert_head_value)(list, item)
 
-#define op_list_insert_node(list, start, item)                  \
-    _Generic((item),                                            \
-             struct op_list_item *: op_list_insert_node_item,   \
-             default: op_list_insert_node_value                 \
-        )(list, start, item)
+#define op_list_insert_node(list, start, item)                                 \
+    _Generic((item), struct op_list_item *                                     \
+             : op_list_insert_node_item, default                               \
+             : op_list_insert_node_value)(list, start, item)
 
 #define GET_LIST_INSERT_MACRO(_1, _2, _3, NAME, ...) NAME
-#define op_list_insert(...)                                 \
-    GET_LIST_INSERT_MACRO(__VA_ARGS__,                      \
-                          op_list_insert_node,              \
-                          op_list_insert_head)(__VA_ARGS__)
+#define op_list_insert(...)                                                    \
+    GET_LIST_INSERT_MACRO(                                                     \
+        __VA_ARGS__, op_list_insert_node, op_list_insert_head)                 \
+    (__VA_ARGS__)
 
 /**
  * Look for key in the list.  Return the value if found.
@@ -259,8 +254,7 @@ bool op_list_insert_node_value(struct op_list *list,
  * @return
  *   item value if found, otherwise NULL
  */
-void *op_list_find_head(struct op_list *list,
-                        const void *key);
+void* op_list_find_head(struct op_list* list, const void* key);
 
 /**
  * Look for key in the list starting at the specified node.
@@ -276,15 +270,14 @@ void *op_list_find_head(struct op_list *list,
  * @return
  *   item value if found, otherwise NULL
  */
-void *op_list_find_node(struct op_list *list,
-                        struct op_list_item *start,
-                        const void *key);
+void* op_list_find_node(struct op_list* list,
+                        struct op_list_item* start,
+                        const void* key);
 
 #define GET_LIST_FIND_MACRO(_1, _2, _3, NAME, ...) NAME
-#define op_list_find(...)                               \
-    GET_LIST_FIND_MACRO(__VA_ARGS__,                    \
-                        op_list_find_node,              \
-                        op_list_find_head)(__VA_ARGS__)
+#define op_list_find(...)                                                      \
+    GET_LIST_FIND_MACRO(__VA_ARGS__, op_list_find_node, op_list_find_head)     \
+    (__VA_ARGS__)
 
 /**
  * Look for key in the list.  Mark it deleted if found.
@@ -298,8 +291,7 @@ void *op_list_find_node(struct op_list *list,
  *   -  true: item marked for delete
  *   - false: item not found
  */
-bool op_list_delete_head(struct op_list *list,
-                         const void *key);
+bool op_list_delete_head(struct op_list* list, const void* key);
 
 /**
  * Look for key in the list starting at the specified node.
@@ -316,15 +308,58 @@ bool op_list_delete_head(struct op_list *list,
  *   -  true: item marked for delete
  *   - false: item not found
  */
-bool op_list_delete_node(struct op_list *list,
-                         struct op_list_item *start,
-                         const void *key);
+bool op_list_delete_node(struct op_list* list,
+                         struct op_list_item* start,
+                         const void* key);
 
 #define GET_LIST_DELETE_MACRO(_1, _2, _3, NAME, ...) NAME
-#define op_list_delete(...)                                 \
-    GET_LIST_DELETE_MACRO(__VA_ARGS__,                      \
-                          op_list_delete_node,              \
-                          op_list_delete_head)(__VA_ARGS__)
+#define op_list_delete(...)                                                    \
+    GET_LIST_DELETE_MACRO(                                                     \
+        __VA_ARGS__, op_list_delete_node, op_list_delete_head)                 \
+    (__VA_ARGS__)
+
+/**
+ * Look for key in the list. Delete it and call the destructor
+ * immediately if found.
+ * XXX: Clients are responsible for ensuring that this item cannot
+ * be used by other threads.
+ *
+ * @param[in] list
+ *  pointer to list
+ * @param[in] key
+ *  item to delete
+ *
+ * @return
+ *   - true: item deleted
+ *   - false: item not found
+ */
+bool op_list_clear_head(struct op_list* list, const void* key);
+
+/**
+ * Look for key in the list starting at the specified node.
+ * Delete it and call the destructor immediately if found.
+ * XXX: Clients are responsible for ensuring that this item
+ * cannot be used by other threads.
+ *
+ * @param[in] list
+ *   pointer to list
+ * @param[in] start
+ *   pointer to existing list item from which to begin the search;
+ * @param[in] key
+ *   item to delete
+ *
+ * @return
+ *   -  true: item deleted
+ *   - false: item not found
+ */
+bool op_list_clear_node(struct op_list* list,
+                        struct op_list_item* start,
+                        const void* key);
+
+#define GET_LIST_CLEAR_MACRO(_1, _2, _3, NAME, ...) NAME
+#define op_list_clear(...)                                                     \
+    GET_LIST_CLEAR_MACRO(__VA_ARGS__, op_list_clear_node, op_list_clear_head)  \
+    (__VA_ARGS__)
 
 /**
  * Retrieve an array of item pointers.  Caller is responsible
@@ -341,7 +376,7 @@ bool op_list_delete_node(struct op_list *list,
  *   -  0: Success
  *   - !0: Error
  */
-int op_list_snapshot(struct op_list *list, void **itemsp[], size_t *nb_items);
+int op_list_snapshot(struct op_list* list, void** itemsp[], size_t* nb_items);
 
 #ifdef __cplusplus
 }
