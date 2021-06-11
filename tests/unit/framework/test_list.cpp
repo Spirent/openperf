@@ -21,6 +21,9 @@ void test_thing_destroyer(void* thing)
     _destroyer_run_count++;
 }
 
+static size_t _clearer_run_count = 0;
+void test_thing_clearer(void*) { _clearer_run_count++; }
+
 TEST_CASE("op_list functionality checks", "[list]")
 {
     std::unique_ptr<op_list, op_list_deleter> list(op_list_allocate());
@@ -48,6 +51,21 @@ TEST_CASE("op_list functionality checks", "[list]")
             REQUIRE(op_list_delete(list.get(), (void*)i) == true);
             REQUIRE(op_list_find(list.get(), (void*)i) == nullptr);
         }
+    }
+
+    SECTION("items can be inserted and then cleared")
+    {
+        op_list_set_destructor(list.get(), test_thing_clearer);
+
+        for (size_t i = 1; i < 10; i++) {
+            op_list_item* item = op_list_item_allocate((void*)i);
+            REQUIRE(item);
+            REQUIRE(op_list_insert(list.get(), item) == true);
+            REQUIRE(op_list_clear(list.get(), (void*)i) == true);
+            REQUIRE(op_list_find(list.get(), (void*)i) == nullptr);
+        }
+
+        REQUIRE(_clearer_run_count == 9);
     }
 
     SECTION("verify garbage collection works")
