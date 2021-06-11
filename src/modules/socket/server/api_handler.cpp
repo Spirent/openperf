@@ -42,13 +42,14 @@ send_reply(int sockfd, const sockaddr_un& client, const api::reply_msg& reply)
         .msg_iovlen = 1,
     };
 
+    /* Create a properly aligned data buffer for our cmsg data */
+    union
+    {
+        char data[CMSG_SPACE(sizeof(struct api::socket_fd_pair))];
+        struct cmsghdr align;
+    } control;
+
     if (auto fd_pair = api::get_message_fds(reply)) {
-        /* Create a properly aligned data buffer for our cmsg data */
-        union
-        {
-            char data[CMSG_SPACE(sizeof(*fd_pair))];
-            struct cmsghdr align;
-        } control;
 
         msg.msg_control = control.data;
         msg.msg_controllen = sizeof(control.data);

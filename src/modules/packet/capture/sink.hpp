@@ -142,7 +142,7 @@ private:
     std::vector<uint8_t> m_indexes;
     mutable std::atomic<sink_result*> m_results = nullptr;
     mutable std::optional<timesync::chrono::realtime::time_point> m_stop_time;
-    mutable std::atomic<uint64_t> m_packet_count;
+    mutable std::atomic<uint64_t> m_packet_count = 0;
 };
 
 } // namespace openperf::packet::capture
