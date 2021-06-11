@@ -41,7 +41,7 @@ else
 endif
 
 ifeq (,$(wildcard $(DPDK_SRC_DIR)/mk/machine/$(OP_MACHINE_ARCH)))
-	DPDK_MACHINE := default # No explicit match
+	DPDK_MACHINE := $(shell $(OP_ROOT)/mk/dpdk_cpu.sh $(OP_MACHINE_ARCH))
 else
 	DPDK_MACHINE := $(OP_MACHINE_ARCH)
 endif
