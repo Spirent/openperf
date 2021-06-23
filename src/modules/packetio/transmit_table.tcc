@@ -52,52 +52,48 @@ template <typename Source> struct key_comparator
     }
 };
 
+template <typename Source, typename T>
+static inline std::pair<uint16_t, uint16_t>
+to_port_queue_pair(const std::tuple<uint16_t, uint16_t, T>& key)
+{
+    static constexpr auto key_port_idx = transmit_table<Source>::key_port_idx;
+    static constexpr auto key_queue_idx = transmit_table<Source>::key_queue_idx;
+
+    return (std::make_pair(std::get<key_port_idx>(key),
+                           std::get<key_queue_idx>(key)));
+}
+
 template <typename Source> struct safe_key_comparator
 {
     bool operator()(const typename transmit_table<Source>::safe_key_type& left,
                     const typename transmit_table<Source>::value_type& right)
     {
-        return (left < transmit_table<Source>::to_safe_key(right.first));
+        return (to_port_queue_pair<Source>(left)
+                < to_port_queue_pair<Source>(right.first));
     }
 
     bool operator()(const typename transmit_table<Source>::value_type& left,
                     const typename transmit_table<Source>::safe_key_type& right)
     {
-        return (transmit_table<Source>::to_safe_key(left.first) < right);
+        return (to_port_queue_pair<Source>(left.first)
+                < to_port_queue_pair<Source>(right));
     }
 };
 
 template <typename Source> struct port_queue_comparator
 {
-    static constexpr auto key_port_idx = transmit_table<Source>::key_port_idx;
-    static constexpr auto key_queue_idx = transmit_table<Source>::key_queue_idx;
-
     bool operator()(const typename transmit_table<Source>::key_type& left,
                     const typename transmit_table<Source>::value_type& right)
     {
-        /* Turn port/queue indexes into a number and compare them */
-        auto left_id =
-            (static_cast<uint32_t>(std::get<key_port_idx>(left)) << 16
-             | std::get<key_queue_idx>(left));
-        auto right_id =
-            (static_cast<uint32_t>(std::get<key_port_idx>(right.first)) << 16
-             | std::get<key_queue_idx>(right.first));
-
-        return (left_id < right_id);
+        return (to_port_queue_pair<Source>(left)
+                < to_port_queue_pair<Source>(right.first));
     }
 
     bool operator()(const typename transmit_table<Source>::value_type& left,
                     const typename transmit_table<Source>::key_type& right)
     {
-        /* Turn port/queue indexes into a number and compare them */
-        auto left_id =
-            (static_cast<uint32_t>(std::get<key_port_idx>(left.first)) << 16
-             | std::get<key_queue_idx>(left.first));
-        auto right_id =
-            (static_cast<uint32_t>(std::get<key_port_idx>(right)) << 16
-             | std::get<key_queue_idx>(right));
-
-        return (left_id < right_id);
+        return (to_port_queue_pair<Source>(left.first)
+                < to_port_queue_pair<Source>(right));
     }
 };
 
@@ -182,12 +178,20 @@ const Source* transmit_table<Source>::get_source(
     const transmit_table<Source>::safe_key_type& key) const
 {
     auto map = m_sources.load(std::memory_order_consume);
+    /*
+     * XXX: safe_key_comparator only compares port/queue indexes.
+     * We still need to explicitly find the matching hash value.
+     */
     auto range = std::equal_range(
         map->begin(), map->end(), key, safe_key_comparator<Source>{});
-    assert(std::distance(range.first, range.second) <= 1);
-    return (std::distance(range.first, range.second) == 1
-                ? std::addressof(range.first->get().second)
-                : nullptr);
+    const auto hash = std::get<key_id_idx>(key);
+    auto cursor =
+        std::find_if(range.first, range.second, [&](const auto& item) {
+            return (std::hash<std::string>{}(std::get<key_id_idx>(item->first))
+                    == hash);
+        });
+    return (cursor == range.second ? nullptr
+                                   : std::addressof(cursor->get().second));
 }
 
 } // namespace openperf::packetio
