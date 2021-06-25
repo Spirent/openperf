@@ -32,12 +32,22 @@ class _be_valid_keeper(Matcher):
 class _be_valid_source(Matcher):
     def _match(self, source):
         expect(source).to(be_a(client.models.TimeSource))
-        expect(source.kind).to(equal('ntp'))
-        expect(source.config).to(be_a(client.models.TimeSourceConfig))
-        ntp = source.config.ntp
-        expect(ntp).to(be_a(client.models.TimeSourceConfigNtp))
-        expect(ntp.hostname).not_to(be_empty)
-        return True, ['is valid source']
+        expect(source.id).not_to(be_empty)
+        expect(source.stats).to(be_a(client.models.TimeSourceStats))
+        if source.kind == 'ntp':
+            expect(source.config).to(be_a(client.models.TimeSourceConfig))
+            ntp = source.config.ntp
+            expect(ntp).to(be_a(client.models.TimeSourceConfigNtp))
+            expect(ntp.hostname).not_to(be_empty)
+
+            expect(source.stats.ntp).to(be_a(client.models.TimeSourceStatsNtp))
+
+            return True, ['is valid ntp source']
+        elif source.kind == 'system':
+            expect(source.stats.system).to(be_a(client.models.TimeSourceStatsSystem))
+            return True, ['is valid system source']
+        else:
+            return False, ['is invalid source']
 
 
 be_valid_counter = _be_valid_counter()

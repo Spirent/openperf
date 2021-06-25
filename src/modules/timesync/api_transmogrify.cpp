@@ -14,6 +14,9 @@
 
 namespace openperf::timesync::api {
 
+static constexpr std::string_view kind_ntp = "ntp";
+static constexpr std::string_view kind_sys = "system";
+
 serialized_msg serialize_request(request_msg&& msg)
 {
     serialized_msg serialized;
@@ -241,6 +244,19 @@ to_swagger(const time_source_stats_ntp& src)
     return (dst);
 }
 
+std::shared_ptr<swagger::v1::model::TimeSourceStats>
+to_swagger(const time_source_stats_system& src)
+{
+    auto sys_stats =
+        std::make_shared<swagger::v1::model::TimeSourceStats_system>();
+    sys_stats->setPollCount(src.poll_count);
+    sys_stats->setPollPeriod(src.poll_period.count());
+
+    auto dst = std::make_shared<swagger::v1::model::TimeSourceStats>();
+    dst->setSystem(sys_stats);
+    return (dst);
+}
+
 std::shared_ptr<swagger::v1::model::TimeSource>
 to_swagger(const time_source& src)
 {
@@ -248,9 +264,20 @@ to_swagger(const time_source& src)
     auto dst = std::make_shared<TimeSource>();
 
     dst->setId(std::string(src.id));
-    dst->setKind("ntp");
-    dst->setConfig(to_swagger(src.config));
-    dst->setStats(to_swagger(src.stats));
+    std::visit(
+        utils::overloaded_visitor(
+            [&](const time_source_ntp& ntp) {
+                dst->setKind(std::string{kind_ntp});
+                dst->setConfig(to_swagger(ntp.config));
+                dst->setStats(to_swagger(ntp.stats));
+            },
+            [&](const time_source_system& sys) {
+                dst->setKind(std::string{kind_sys});
+                dst->setConfig(
+                    std::make_shared<swagger::v1::model::TimeSourceConfig>());
+                dst->setStats(to_swagger(sys.stats));
+            }),
+        src.info);
 
     return (dst);
 }
@@ -264,8 +291,7 @@ from_swagger(const swagger::v1::model::TimeSourceConfig_ntp& src)
     if (src.portIsSet()) {
         src.getPort().copy(to_return.port, port_max_length);
     } else {
-        static constexpr std::string_view port = "ntp";
-        port.copy(to_return.port, port_max_length);
+        kind_ntp.copy(to_return.port, port_max_length);
     }
 
     return (to_return);
@@ -273,13 +299,16 @@ from_swagger(const swagger::v1::model::TimeSourceConfig_ntp& src)
 
 time_source from_swagger(const swagger::v1::model::TimeSource& src)
 {
-    auto to_return = time_source{};
-    if (src.getKind() != "ntp") { return (to_return); }
+    auto to_return = time_source{.info = time_source_system{}};
 
     src.getId().copy(to_return.id, id_max_length);
 
-    auto config = src.getConfig();
-    if (config) { to_return.config = from_swagger(*config->getNtp()); }
+    if (src.getKind() == kind_ntp) {
+        if (auto config = src.getConfig()) {
+            to_return.info =
+                time_source_ntp{.config = from_swagger(*config->getNtp())};
+        }
+    }
 
     return (to_return);
 }

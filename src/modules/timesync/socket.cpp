@@ -21,35 +21,52 @@ socket::socket(const addrinfo* ai)
 
     /* Try to enable socket time stamping */
     int enable = 1;
-    if (setsockopt(m_fd, SOL_SOCKET, SO_TIMESTAMP, &enable, sizeof(enable))
+    if (setsockopt(*m_fd, SOL_SOCKET, SO_TIMESTAMP, &enable, sizeof(enable))
         == -1) {
-        close(m_fd);
+        close(*m_fd);
         throw std::runtime_error("Could not enable socket time stamping: "
                                  + std::string(strerror(errno)));
     }
 
     /* Finally, connect the socket */
-    if (connect(m_fd, ai->ai_addr, ai->ai_addrlen) == -1) {
-        close(m_fd);
+    if (connect(*m_fd, ai->ai_addr, ai->ai_addrlen) == -1) {
+        close(*m_fd);
         throw std::runtime_error("Could not connect socket: "
                                  + std::string(strerror(errno)));
     }
 }
 
-socket::~socket() { close(m_fd); }
+socket::~socket()
+{
+    if (m_fd) { close(*m_fd); }
+}
 
-int socket::fd() const { return (m_fd); }
+socket::socket(socket&& other) noexcept
+    : m_fd(other.m_fd)
+{
+    other.m_fd.reset();
+}
+
+socket& socket::operator=(socket&& other) noexcept
+{
+    if (this != &other) { m_fd.swap(other.m_fd); }
+    return (*this);
+}
+
+int socket::fd() const { return (m_fd.value_or(-1)); }
 
 tl::expected<counter::ticks, int> socket::send(const std::byte buffer[],
                                                size_t length)
 {
+    assert(m_fd.has_value());
+
     int flags = 0;
 #if defined(MSG_NOSIGNAL)
     flags |= MSG_NOSIGNAL;
 #endif
 
     auto now = counter::now();
-    if (::send(m_fd, buffer, length, flags) == -1) {
+    if (::send(*m_fd, buffer, length, flags) == -1) {
         return (tl::make_unexpected(errno));
     }
     return (now);
@@ -132,6 +149,8 @@ static counter::ticks to_ticks(const timeval& tv)
 tl::expected<counter::ticks, int> socket::recv(std::byte buffer[],
                                                size_t& length)
 {
+    assert(m_fd.has_value());
+
     auto storage = sockaddr_storage{};
     auto iov = iovec{.iov_base = buffer, .iov_len = length};
     std::array<std::byte, 1024> ctrl;
@@ -149,7 +168,7 @@ tl::expected<counter::ticks, int> socket::recv(std::byte buffer[],
      * receive a timestamp from the socket.
      */
     auto timestamp = counter::now();
-    auto recv_or_err = recvmsg(m_fd, &msg, 0);
+    auto recv_or_err = recvmsg(*m_fd, &msg, 0);
     if (recv_or_err == -1) { return (tl::make_unexpected(errno)); }
     length = recv_or_err;
 
