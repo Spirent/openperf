@@ -2,6 +2,7 @@
 #define _OP_TIMESYNC_SOCKET_HPP_
 
 #include <cstddef>
+#include <optional>
 
 #include "tl/expected.hpp"
 
@@ -14,7 +15,7 @@ namespace openperf::timesync::ntp {
 
 class socket
 {
-    int m_fd;
+    std::optional<int> m_fd = std::nullopt;
 
 public:
     socket(const addrinfo* ai);
@@ -22,6 +23,9 @@ public:
 
     socket(const socket&) = delete;
     socket& operator=(const socket&) = delete;
+
+    socket(socket&&) noexcept;
+    socket& operator=(socket&&) noexcept;
 
     int fd() const;
 

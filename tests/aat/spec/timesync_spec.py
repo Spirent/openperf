@@ -1,6 +1,7 @@
 from expects import expect, be_empty, equal
 import os
 import sys
+import time
 
 import client.api
 import client.models
@@ -35,6 +36,14 @@ def get_ntp_timesource(hostname, id=None):
     s.kind = 'ntp'
     s.id = 'test-source-' + str(id)
     s.config = config
+
+    return s
+
+
+def get_system_timesource(id=None):
+    s = client.models.TimeSource()
+    s.kind = 'system'
+    s.id = 'test-source-' + str(id)
 
     return s
 
@@ -152,13 +161,42 @@ with description('Timesync,', 'timesync') as self:
                     expect(lambda: self.api.get_time_source(source0.id)).to(raise_api_exception(404))
 
             with description('keeper acquires source id,'):
-                with it('succeeds'):
-                    source = get_ntp_timesource(DUMMY_NTP_HOST, 'check0')
-                    self.api.create_time_source(source)
-                    expect(self.api.get_time_source(source.id)).to(be_valid_source)
-                    keeper = self.api.get_time_keeper()
-                    expect(keeper).to(be_valid_keeper)
-                    expect(keeper.time_source_id).to(equal(source.id))
+                with description('ntp,'):
+                    with it('succeeds'):
+                        source = get_ntp_timesource(DUMMY_NTP_HOST, 'check0')
+                        self.api.create_time_source(source)
+                        expect(self.api.get_time_source(source.id)).to(be_valid_source)
+                        keeper = self.api.get_time_keeper()
+                        expect(keeper).to(be_valid_keeper)
+                        expect(keeper.time_source_id).to(equal(source.id))
+
+                with description('system,'):
+                    with it('succeeds'):
+                        source = get_system_timesource('check0')
+                        self.api.create_time_source(source)
+                        expect(self.api.get_time_source(source.id)).to(be_valid_source)
+                        keeper = self.api.get_time_keeper()
+                        expect(keeper).to(be_valid_keeper)
+                        expect(keeper.time_source_id).to(equal(source.id))
+
+            with description('system,'):
+                with description('can poll,'):
+                    with it('succeeds'):
+                        source = get_system_timesource('system')
+                        self.api.create_time_source(source)
+
+                        # Wait until we have polled the system a few times...
+                        done = False
+                        stop = time.time() + 10
+                        while not done and time.time() <= stop:
+                            s = self.api.get_time_source(source.id)
+                            expect(s).to(be_valid_source)
+                            expect(s.kind).to(equal('system'))
+                            if s.stats.system.poll_count > 1:
+                                done = True
+
+                        # Otherwise we timed out
+                        expect(done).to(equal(True))
 
         with after.each:
             for src in self.cleanup:

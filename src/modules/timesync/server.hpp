@@ -1,58 +1,28 @@
 #ifndef _OP_TIMESYNC_SERVER_HPP_
 #define _OP_TIMESYNC_SERVER_HPP_
 
-#include <sys/socket.h>
-#include <netdb.h>
+#include <memory>
+#include <variant>
 
 #include "core/op_core.h"
 #include "timesync/api.hpp"
 #include "timesync/clock.hpp"
-#include "timesync/counter.hpp"
-#include "timesync/socket.hpp"
+#include "timesync/source_ntp.hpp"
+#include "timesync/source_system.hpp"
 
 namespace openperf::timesync::api {
 
-struct ntp_server_state
-{
-    struct addrinfo_deleter
-    {
-        void operator()(addrinfo* ai) { freeaddrinfo(ai); }
-    };
-
-    using addrinfo_ptr = std::unique_ptr<addrinfo, addrinfo_deleter>;
-    addrinfo_ptr addrinfo;
-    ntp::socket socket;
-    clock* clock;
-    unsigned poll_loop_id = 0;
-    struct
-    {
-        std::chrono::seconds poll_period = 64s;
-        unsigned rx = 0;
-        unsigned tx = 0;
-        std::optional<uint8_t> stratum = std::nullopt; /* unsynchronized */
-    } stats;
-    counter::ticks last_tx = 0;
-    bintime expected_origin = bintime::zero();
-
-    ntp_server_state(struct addrinfo* ai_, class clock* clock_)
-        : addrinfo(ai_)
-        , socket(ai_)
-        , clock(clock_)
-    {}
-};
-
 class server
 {
-    core::event_loop& m_loop;
-    std::unique_ptr<clock> m_clock;
-    std::unique_ptr<void, op_socket_deleter> m_socket;
-
-    using ntp_server_ptr = std::unique_ptr<ntp_server_state>;
-    std::unordered_map<std::string, ntp_server_ptr> m_sources;
-
-    std::vector<std::unique_ptr<counter::timecounter>> m_timecounters;
-
 public:
+    /*
+     * Since time sources hook into the event loop, they are
+     * neither movable nor copyable. Hence, we have to store
+     * them as pointers.
+     */
+    using time_source = std::variant<std::unique_ptr<source::system>,
+                                     std::unique_ptr<source::ntp>>;
+
     server(void* context, core::event_loop& loop);
 
     reply_msg handle_request(const request_time_counters&);
@@ -60,6 +30,15 @@ public:
     reply_msg handle_request(const request_time_sources&);
     reply_msg handle_request(const request_time_source_add&);
     reply_msg handle_request(const request_time_source_del&);
+
+private:
+    core::event_loop& m_loop;
+    std::unique_ptr<clock> m_clock;
+    std::unique_ptr<void, op_socket_deleter> m_socket;
+
+    std::map<std::string, time_source> m_sources;
+
+    std::vector<std::unique_ptr<counter::timecounter>> m_timecounters;
 };
 
 } // namespace openperf::timesync::api

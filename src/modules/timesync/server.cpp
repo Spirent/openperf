@@ -17,8 +17,6 @@ std::atomic<timecounter*> timecounter_now = nullptr;
 
 namespace openperf::timesync::api {
 
-static constexpr auto poll_period_adjust = 4s;
-
 static time_counter to_timecounter(const counter::timecounter& tc)
 {
     auto counter = time_counter{.frequency = tc.frequency().count(),
@@ -27,213 +25,6 @@ static time_counter to_timecounter(const counter::timecounter& tc)
     core::to_string(tc.id).copy(counter.id, id_max_length);
     tc.name().copy(counter.name, name_max_length);
     return (counter);
-}
-
-static void* get_address(const struct addrinfo* ai)
-{
-    return (ai->ai_family == AF_INET
-                ? static_cast<void*>(std::addressof(
-                    reinterpret_cast<sockaddr_in*>(ai->ai_addr)->sin_addr))
-                : static_cast<void*>(std::addressof(
-                    reinterpret_cast<sockaddr_in6*>(ai->ai_addr)->sin6_addr)));
-}
-
-static in_port_t get_port(const struct addrinfo* ai)
-{
-    return (
-        ntohs(ai->ai_family == AF_INET
-                  ? reinterpret_cast<sockaddr_in*>(ai->ai_addr)->sin_port
-                  : reinterpret_cast<sockaddr_in6*>(ai->ai_addr)->sin6_port));
-}
-
-std::pair<std::string, std::string> get_name_and_port(const struct addrinfo* ai)
-{
-    auto name = std::string{};
-    auto port = std::string{};
-
-    name.resize(name_max_length);
-    port.resize(port_max_length);
-
-    if (getnameinfo(ai->ai_addr,
-                    ai->ai_addrlen,
-                    name.data(),
-                    name.size(),
-                    port.data(),
-                    port.size(),
-                    NI_NAMEREQD)
-        == 0) {
-        name.resize(strnlen(name.data(), name.capacity()));
-        port.resize(strnlen(port.data(), port.capacity()));
-
-        return (std::make_pair(name, port));
-    }
-
-    /* Resolution failed for some reason; return the raw socket data */
-    static_assert(name_max_length > INET6_ADDRSTRLEN);
-
-    if (inet_ntop(
-            ai->ai_family, get_address(ai), name.data(), ai->ai_addrlen)) {
-        name.resize(strnlen(name.data(), name.capacity()));
-        return (std::make_pair(name, std::to_string(get_port(ai))));
-    }
-
-    /* All forms of resolution failed */
-    return (std::make_pair("unknown", "unknown"));
-}
-
-/**
- * Get the poll delay for the i'th packet.
- * This formula gives us a nice exponential back-off for
- * i = [0, ntp_startup_packets] which allows us to quickly get
- * lots of NTP timestamps when we start while slowing our polling
- * rate down afterwards.
- */
-std::chrono::nanoseconds ntp_poll_delay(unsigned i,
-                                        std::chrono::seconds max_period)
-{
-    using seconds = std::chrono::duration<double>;
-    static constexpr int ntp_startup_packets = 8;
-
-    auto period = seconds(
-        i < ntp_startup_packets ? std::pow(
-            std::exp(std::log(max_period.count()) / ntp_startup_packets), i)
-                                : max_period.count());
-
-    return (std::chrono::duration_cast<std::chrono::nanoseconds>(period));
-}
-
-static void handle_invalid_ntp_reply(ntp_server_state* state,
-                                     ntp::packet& reply)
-{
-    auto np = get_name_and_port(state->addrinfo.get());
-    switch (static_cast<ntp::kiss_code>(reply.refid)) {
-    case ntp::kiss_code::KISS_DENY:
-    case ntp::kiss_code::KISS_RSTR:
-        OP_LOG(OP_LOG_WARNING,
-               "NTP server %s has denied access; ceasing to poll\n",
-               np.first.c_str());
-        state->stats.poll_period =
-            std::numeric_limits<std::chrono::seconds>::max();
-        break;
-    case ntp::kiss_code::KISS_RATE:
-        OP_LOG(OP_LOG_WARNING,
-               "Received RATE notification from NTP server %s; "
-               "increasing poll period %ld -> %ld\n",
-               np.first.c_str(),
-               state->stats.poll_period.count(),
-               (state->stats.poll_period + poll_period_adjust).count());
-        state->stats.poll_period += poll_period_adjust;
-        break;
-    default: {
-        /* refid contains a 4 octet ASCII string in network order; ugh */
-        auto refid = ntohl(reply.refid);
-        OP_LOG(OP_LOG_WARNING,
-               "Received invalid reply from NTP server %s; kiss code = %.4s\n",
-               np.first.c_str(),
-               reinterpret_cast<const char*>(&refid));
-    }
-    }
-}
-
-static int handle_ntp_reply(const struct op_event_data*, void* arg)
-{
-    auto* state = reinterpret_cast<ntp_server_state*>(arg);
-
-    auto buffer = std::array<std::byte, ntp::packet_size>();
-    auto length = buffer.size();
-    while (auto rx_time = state->socket.recv(buffer.data(), length)) {
-        assert(length <= buffer.size());
-        auto reply = ntp::deserialize(buffer.data(), length);
-
-        /* Skip replies we can't decode. */
-        if (!reply) { continue; }
-
-        /*
-         * According to RFC 5905, if the stratum is 0, then the
-         * reply is invalid and the server might be trying to tell
-         * us something.
-         */
-        if (!reply->stratum) {
-            handle_invalid_ntp_reply(state, *reply);
-            continue;
-        }
-
-        /*
-         * Finally, verify that this is a reply to a request we sent
-         * by confirming that it contains an origin that matches what
-         * we expect.
-         */
-        if (reply->origin != state->expected_origin) {
-            OP_LOG(OP_LOG_WARNING,
-                   "Ignoring NTP reply with unrecognized origin timestamp, "
-                   "%016" PRIx64 ".%016" PRIx64 "\n",
-                   reply->origin.bt_sec,
-                   reply->origin.bt_frac);
-            continue;
-        }
-
-        // ntp::dump(stderr, *reply);
-
-        state->stats.rx++;
-        state->stats.stratum = reply->stratum;
-        state->clock->update(
-            state->last_tx, reply->receive, reply->transmit, *rx_time);
-    }
-
-    return (-1);
-}
-
-/*
- * Since NTP only uses 64 bits for the timestamp, we need to
- * trim our bintime values accordingly.
- */
-static bintime to_ntp_bintime(const bintime& from)
-{
-    static constexpr int64_t lo_mask = 0xffffffff;
-    static constexpr int64_t hi_mask = lo_mask << 32;
-    return (bintime{.bt_sec = from.bt_sec & lo_mask,
-                    .bt_frac = from.bt_frac & hi_mask});
-}
-
-static int handle_ntp_poll(const struct op_event_data* data, void* arg)
-{
-    auto* state = reinterpret_cast<ntp_server_state*>(arg);
-
-    auto now = to_bintime(chrono::realtime::now().time_since_epoch());
-
-    /*
-     * Record this timestamp so we can verify replies. The server
-     * should use our transmit timestamp for the origin timestamp.
-     */
-    state->expected_origin = to_ntp_bintime(now);
-
-    /* Only need the mode and transmit timestamps for a client request */
-    auto request = ntp::packet{.mode = ntp::mode::MODE_CLIENT, .transmit = now};
-
-    auto buffer = ntp::serialize(request);
-
-    auto reply_callbacks = op_event_callbacks{.on_read = handle_ntp_reply};
-    op_event_loop_add(data->loop, state->socket.fd(), &reply_callbacks, arg);
-
-    auto tx_time = state->socket.send(buffer.data(), buffer.size());
-    if (!tx_time) {
-        OP_LOG(OP_LOG_ERROR,
-               "Failed to send NTP request: %s\n",
-               strerror(tx_time.error()));
-        op_event_loop_del(data->loop, state->socket.fd());
-        return (-1);
-    }
-
-    state->last_tx = *tx_time;
-    state->stats.tx++;
-
-    op_event_loop_update(
-        data->loop,
-        state->poll_loop_id,
-        static_cast<uint64_t>(
-            ntp_poll_delay(state->stats.tx, state->stats.poll_period).count()));
-
-    return (0);
 }
 
 reply_msg server::handle_request(const request_time_counters& request)
@@ -310,23 +101,14 @@ reply_msg server::handle_request(const request_time_keeper&)
     return (reply_time_keeper{keeper});
 }
 
-tl::expected<time_source, int> to_time_source(std::string_view id,
-                                              const ntp_server_state* state)
+static time_source to_time_source(std::string_view id,
+                                  const server::time_source& source)
 {
-    auto config = time_source_config_ntp{};
-    auto np = get_name_and_port(state->addrinfo.get());
-    std::copy_n(np.first.data(), np.first.size(), config.node);
-    std::copy_n(np.second.data(), np.second.size(), config.port);
-
-    auto ts = time_source{
-        .config = config,
-        .stats = {
-            .poll_period = std::chrono::duration_cast<std::chrono::seconds>(
-                ntp_poll_delay(state->stats.tx, state->stats.poll_period)),
-            .rx_packets = state->stats.rx,
-            .tx_packets = state->stats.tx,
-            .stratum = state->stats.stratum}};
+    auto ts = time_source{};
     id.copy(ts.id, id_max_length);
+    std::visit(
+        [&](const auto& source) { ts.info = source::to_time_source(*source); },
+        source);
 
     return (ts);
 }
@@ -339,72 +121,69 @@ reply_msg server::handle_request(const request_time_sources& request)
             return (to_error(error_type::NOT_FOUND));
         }
 
-        auto ts = to_time_source(item->first, item->second.get());
-        if (!ts) { return (to_error(error_type::EAI_ERROR, ts.error())); }
-
         auto reply = reply_time_sources{};
-        reply.sources.emplace_back(*ts);
+        reply.sources.emplace_back(to_time_source(item->first, item->second));
         return (reply);
     }
 
     auto reply = reply_time_sources{};
-    int error = 0;
-    for (const auto& item : m_sources) {
-        auto ts = to_time_source(item.first, item.second.get());
-        if (ts) {
-            reply.sources.emplace_back(*ts);
-        } else {
-            error = ts.error();
-        }
-    }
-
-    if (error) { return (to_error(error_type::EAI_ERROR, error)); }
+    std::transform(std::begin(m_sources),
+                   std::end(m_sources),
+                   std::back_inserter(reply.sources),
+                   [](const auto& item) {
+                       return (to_time_source(item.first, item.second));
+                   });
 
     return (reply);
 }
 
+static tl::expected<server::time_source, reply_error> make_time_source(
+    const request_time_source_add& add, core::event_loop& loop, clock* clock)
+{
+    auto result = std::visit(
+        utils::overloaded_visitor(
+            [&](const time_source_ntp& ntp)
+                -> tl::expected<server::time_source, reply_error> {
+                addrinfo* ai = nullptr;
+                if (auto error = getaddrinfo(
+                        ntp.config.node, ntp.config.port, nullptr, &ai);
+                    error != 0) {
+                    return (tl::make_unexpected(
+                        to_error(error_type::EAI_ERROR, error)));
+                }
+
+                return (std::make_unique<source::ntp>(loop, clock, ai));
+            },
+            [&](const time_source_system& sys)
+                -> tl::expected<server::time_source, reply_error> {
+                return (std::make_unique<source::system>(loop, clock));
+            }),
+        add.source.info);
+
+    return (result);
+}
+
 reply_msg server::handle_request(const request_time_source_add& add)
 {
-    using namespace std::chrono_literals;
-
-    addrinfo* ai = nullptr;
-    if (auto error = getaddrinfo(
-            add.source.config.node, add.source.config.port, nullptr, &ai);
-        error != 0) {
-        return (to_error(error_type::EAI_ERROR, error));
-    }
-
     /* Since there "can be only one", delete all pre-existing sources */
-    for (auto& item : m_sources) {
-        auto state = item.second.get();
-        m_loop.del(state->poll_loop_id);
-        m_loop.del(state->socket.fd());
-    }
     m_sources.clear();
 
     /* Clear any pre-existing clock data */
     m_clock->reset();
 
-    auto item = m_sources.emplace(
-        add.source.id, std::make_unique<ntp_server_state>(ai, m_clock.get()));
-    auto state = item.first->second.get();
+    auto source = make_time_source(add, m_loop, m_clock.get());
+    if (!source) { return (source.error()); }
 
-    auto callbacks = op_event_callbacks{.on_timeout = handle_ntp_poll};
-
-    m_loop.add((100ns).count(), &callbacks, state, &(state->poll_loop_id));
+    auto [item, success] =
+        m_sources.emplace(std::string{add.source.id}, std::move(*source));
+    if (!success) { throw std::runtime_error("Could not create time source!"); }
 
     return (handle_request(request_time_sources{.id = add.source.id}));
 }
 
 reply_msg server::handle_request(const request_time_source_del& del)
 {
-    if (auto item = m_sources.find(del.id); item != m_sources.end()) {
-        auto state = item->second.get();
-        m_loop.del(state->poll_loop_id);
-        m_loop.del(state->socket.fd());
-        m_sources.erase(item);
-    }
-
+    m_sources.erase(del.id);
     return (reply_ok{});
 }
 

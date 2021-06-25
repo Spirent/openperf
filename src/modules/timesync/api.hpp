@@ -113,11 +113,27 @@ struct time_source_stats_ntp
     std::optional<uint8_t> stratum;
 };
 
+struct time_source_ntp
+{
+    time_source_config_ntp config;
+    time_source_stats_ntp stats;
+};
+
+struct time_source_stats_system
+{
+    int64_t poll_count;
+    std::chrono::seconds poll_period;
+};
+
+struct time_source_system
+{
+    time_source_stats_system stats;
+};
+
 struct time_source
 {
     char id[id_max_length];
-    time_source_config_ntp config;
-    time_source_stats_ntp stats;
+    std::variant<time_source_ntp, time_source_system> info;
 };
 
 struct request_time_sources
