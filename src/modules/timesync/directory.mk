@@ -14,7 +14,9 @@ TS_SOURCES += \
 	history.cpp \
 	ntp.cpp \
 	server.cpp \
-	socket.cpp
+	socket.cpp \
+	source_ntp.cpp \
+	source_system.cpp
 
 ifeq ($(ARCH), x86_64)
 	TS_SOURCES += counter_tsc.cpp
