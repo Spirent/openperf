@@ -22,6 +22,7 @@
 #include "ModelBase.h"
 
 #include "TimeSourceStats_ntp.h"
+#include "TimeSourceStats_system.h"
 
 namespace swagger {
 namespace v1 {
@@ -55,10 +56,19 @@ public:
     void setNtp(std::shared_ptr<TimeSourceStats_ntp> value);
     bool ntpIsSet() const;
     void unsetNtp();
+    /// <summary>
+    /// 
+    /// </summary>
+    std::shared_ptr<TimeSourceStats_system> getSystem() const;
+    void setSystem(std::shared_ptr<TimeSourceStats_system> value);
+    bool systemIsSet() const;
+    void unsetSystem();
 
 protected:
     std::shared_ptr<TimeSourceStats_ntp> m_Ntp;
     bool m_NtpIsSet;
+    std::shared_ptr<TimeSourceStats_system> m_System;
+    bool m_SystemIsSet;
 };
 
 }

@@ -21,6 +21,9 @@ type TimeSourceStats struct {
 
 	// ntp
 	Ntp *TimeSourceStatsNtp `json:"ntp,omitempty"`
+
+	// system
+	System *TimeSourceStatsSystem `json:"system,omitempty"`
 }
 
 // Validate validates this time source stats
@@ -28,6 +31,10 @@ func (m *TimeSourceStats) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateNtp(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateSystem(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -54,11 +61,32 @@ func (m *TimeSourceStats) validateNtp(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *TimeSourceStats) validateSystem(formats strfmt.Registry) error {
+	if swag.IsZero(m.System) { // not required
+		return nil
+	}
+
+	if m.System != nil {
+		if err := m.System.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("system")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
 // ContextValidate validate this time source stats based on the context it is used
 func (m *TimeSourceStats) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.contextValidateNtp(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.contextValidateSystem(ctx, formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -74,6 +102,20 @@ func (m *TimeSourceStats) contextValidateNtp(ctx context.Context, formats strfmt
 		if err := m.Ntp.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("ntp")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *TimeSourceStats) contextValidateSystem(ctx context.Context, formats strfmt.Registry) error {
+
+	if m.System != nil {
+		if err := m.System.ContextValidate(ctx, formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("system")
 			}
 			return err
 		}
@@ -173,6 +215,79 @@ func (m *TimeSourceStatsNtp) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (m *TimeSourceStatsNtp) UnmarshalBinary(b []byte) error {
 	var res TimeSourceStatsNtp
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*m = res
+	return nil
+}
+
+// TimeSourceStatsSystem System statistics
+//
+// swagger:model TimeSourceStatsSystem
+type TimeSourceStatsSystem struct {
+
+	// Number of times the system clock has been polled
+	// Required: true
+	PollCount *int64 `json:"poll_count"`
+
+	// Current system poll period, in seconds
+	// Required: true
+	PollPeriod *int64 `json:"poll_period"`
+}
+
+// Validate validates this time source stats system
+func (m *TimeSourceStatsSystem) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.validatePollCount(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validatePollPeriod(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *TimeSourceStatsSystem) validatePollCount(formats strfmt.Registry) error {
+
+	if err := validate.Required("system"+"."+"poll_count", "body", m.PollCount); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *TimeSourceStatsSystem) validatePollPeriod(formats strfmt.Registry) error {
+
+	if err := validate.Required("system"+"."+"poll_period", "body", m.PollPeriod); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ContextValidate validates this time source stats system based on context it is used
+func (m *TimeSourceStatsSystem) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (m *TimeSourceStatsSystem) MarshalBinary() ([]byte, error) {
+	if m == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(m)
+}
+
+// UnmarshalBinary interface implementation
+func (m *TimeSourceStatsSystem) UnmarshalBinary(b []byte) error {
+	var res TimeSourceStatsSystem
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

@@ -30,7 +30,7 @@ type TimeSource struct {
 
 	// time source kind
 	// Required: true
-	// Enum: [ntp]
+	// Enum: [ntp system]
 	Kind *string `json:"kind"`
 
 	// stats
@@ -95,7 +95,7 @@ var timeSourceTypeKindPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["ntp"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["ntp","system"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -107,6 +107,9 @@ const (
 
 	// TimeSourceKindNtp captures enum value "ntp"
 	TimeSourceKindNtp string = "ntp"
+
+	// TimeSourceKindSystem captures enum value "system"
+	TimeSourceKindSystem string = "system"
 )
 
 // prop value enum
