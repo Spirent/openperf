@@ -180,6 +180,7 @@ from client.models.time_source_config import TimeSourceConfig
 from client.models.time_source_config_ntp import TimeSourceConfigNtp
 from client.models.time_source_stats import TimeSourceStats
 from client.models.time_source_stats_ntp import TimeSourceStatsNtp
+from client.models.time_source_stats_system import TimeSourceStatsSystem
 from client.models.toggle_network_generators_request import ToggleNetworkGeneratorsRequest
 from client.models.toggle_packet_generators_request import TogglePacketGeneratorsRequest
 from client.models.traffic_definition import TrafficDefinition

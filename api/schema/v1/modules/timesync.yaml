@@ -327,6 +327,7 @@ definitions:
   TimeSourceStats:
     type: object
     description: time source statistics
+    readOnly: true
     properties:
       ntp:
         type: object
@@ -352,6 +353,21 @@ definitions:
         required:
           - rx_packets
           - tx_packets
+      system:
+        type: object
+        description: System statistics
+        properties:
+          poll_count:
+            type: integer
+            description: Number of times the system clock has been polled
+            format: int64
+          poll_period:
+            type: integer
+            description: Current system poll period, in seconds
+            format: int64
+        required:
+          - poll_count
+          - poll_period
 
   TimeSource:
     type: object
@@ -365,6 +381,7 @@ definitions:
         description: time source kind
         enum:
           - ntp
+          - system
       config:
         $ref: "#/definitions/TimeSourceConfig"
       stats:

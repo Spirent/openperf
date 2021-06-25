@@ -20,6 +20,7 @@ namespace model {
 TimeSourceStats::TimeSourceStats()
 {
     m_NtpIsSet = false;
+    m_SystemIsSet = false;
     
 }
 
@@ -40,6 +41,10 @@ nlohmann::json TimeSourceStats::toJson() const
     {
         val["ntp"] = ModelBase::toJson(m_Ntp);
     }
+    if(m_SystemIsSet)
+    {
+        val["system"] = ModelBase::toJson(m_System);
+    }
     
 
     return val;
@@ -54,6 +59,16 @@ void TimeSourceStats::fromJson(nlohmann::json& val)
             std::shared_ptr<TimeSourceStats_ntp> newItem(new TimeSourceStats_ntp());
             newItem->fromJson(val["ntp"]);
             setNtp( newItem );
+        }
+        
+    }
+    if(val.find("system") != val.end())
+    {
+        if(!val["system"].is_null())
+        {
+            std::shared_ptr<TimeSourceStats_system> newItem(new TimeSourceStats_system());
+            newItem->fromJson(val["system"]);
+            setSystem( newItem );
         }
         
     }
@@ -77,6 +92,23 @@ bool TimeSourceStats::ntpIsSet() const
 void TimeSourceStats::unsetNtp()
 {
     m_NtpIsSet = false;
+}
+std::shared_ptr<TimeSourceStats_system> TimeSourceStats::getSystem() const
+{
+    return m_System;
+}
+void TimeSourceStats::setSystem(std::shared_ptr<TimeSourceStats_system> value)
+{
+    m_System = value;
+    m_SystemIsSet = true;
+}
+bool TimeSourceStats::systemIsSet() const
+{
+    return m_SystemIsSet;
+}
+void TimeSourceStats::unsetSystem()
+{
+    m_SystemIsSet = false;
 }
 
 }
