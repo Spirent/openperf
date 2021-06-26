@@ -211,7 +211,7 @@ static counter::hz to_hz(double d)
  */
 static bintime get_host_offset()
 {
-    using clock = std::chrono::high_resolution_clock;
+    using clock = std::chrono::system_clock;
     auto B_limit = counter::frequency().count() / 1000000;
     auto B_step = B_limit / 100;
 

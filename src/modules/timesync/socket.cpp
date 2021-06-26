@@ -93,7 +93,7 @@ static bintime get_clock_offset()
     std::array<std::chrono::nanoseconds, offset_calc_trials> offsets;
 
     std::generate_n(offsets.data(), offset_calc_trials, []() {
-        using sys_clock = std::chrono::high_resolution_clock;
+        using sys_clock = std::chrono::system_clock;
         using ref_clock = timesync::chrono::monotime;
         auto x1 = sys_clock::now();
         auto x2 = ref_clock::now();
