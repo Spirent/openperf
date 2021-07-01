@@ -250,7 +250,6 @@ void handler::create_interface(const request_type& request,
     /* Verify interface configuration */
     auto errors = std::vector<std::string>{};
     if (!packetio::interface::is_valid(*api_request.interface, errors)) {
-        fprintf(stderr, "request: 4a\n");
         response.send(Http::Code::Bad_Request, concatenate(errors));
         return;
     }

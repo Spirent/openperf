@@ -95,7 +95,6 @@ err_t tcpip_input_queue::inject(netif* ifp, rte_mbuf* packet)
     if (!m_notify.test_and_set(std::memory_order_acq_rel)) {
         /* We really can't lose this notification, so keep trying! */
         while (tcpip_try_callback(process_input_packets, this) != ERR_OK) {
-            fprintf(stderr, "notification failed\n");
             rte_pause();
         }
     }
