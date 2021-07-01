@@ -174,6 +174,6 @@
 
 /* Local implementation options */
 #define LWIP_PACKET 1
-//#define PACKET_DEBUG     LWIP_DBG_ON
+#define PACKET_DEBUG       LWIP_DBG_OFF
 
 #endif /* _OP_PACKETIO_STACK_LWIPOPTS_H_ */
