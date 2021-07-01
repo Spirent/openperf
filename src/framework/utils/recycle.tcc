@@ -1,3 +1,5 @@
+#include <vector>
+
 #include "core/op_log.h"
 #include "utils/recycle.hpp"
 
@@ -24,7 +26,7 @@ void depot<NumReaders>::writer_del_reader(size_t reader_id)
 
 template <int NumReaders>
 void depot<NumReaders>::writer_add_gc_callback(
-    const std::function<void()>& callback)
+    const std::function<gc_callback_result()>& callback)
 {
     auto v = m_writer_version.load(std::memory_order_relaxed);
     auto [it, success] = m_callbacks.emplace(v, std::move(callback));
@@ -38,7 +40,8 @@ void depot<NumReaders>::writer_add_gc_callback(
 }
 
 template <int NumReaders>
-void depot<NumReaders>::writer_add_gc_callback(std::function<void()>&& callback)
+void depot<NumReaders>::writer_add_gc_callback(
+    std::function<gc_callback_result()>&& callback)
 {
     auto v = m_writer_version.load(std::memory_order_relaxed);
     auto [it, success] =
@@ -71,20 +74,32 @@ template <int NumReaders> void depot<NumReaders>::writer_process_gc_callbacks()
         }
     }
 
-    /* Find and run all callbacks between [0, min_version) */
+    /*
+     * Find and run all callbacks between [0, min_version).
+     * If the callback is successful remove it from the map,
+     * otherwise leave it there so we can run it again later.
+     */
+    auto success = std::vector<size_t>{};
     std::for_each(
         std::begin(m_callbacks),
         m_callbacks.lower_bound(min_version),
-        [](auto& pair) {
+        [&](auto& pair) {
+            auto result = pair.second();
             OP_LOG(OP_LOG_DEBUG,
-                   "Running garbage collection callback for version %zu\n",
-                   pair.first);
-            pair.second();
+                   "Garbage collection callback for version %zu returned %s\n",
+                   pair.first,
+                   result == gc_callback_result::ok
+                       ? "ok"
+                       : "retry; will try again later");
+            if (result == gc_callback_result::ok) {
+                success.emplace_back(pair.first);
+            }
         });
 
     /* And delete them */
-    m_callbacks.erase(std::begin(m_callbacks),
-                      m_callbacks.lower_bound(min_version));
+    std::for_each(std::begin(success),
+                  std::end(success),
+                  [&](const auto& value) { m_callbacks.erase(value); });
 }
 
 template <int NumReaders>

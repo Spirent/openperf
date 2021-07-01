@@ -281,8 +281,10 @@ uint16_t sink::push_all(sink_result& results,
 
             counters->set_header(packet);
 
-            flows.first.writer_add_gc_callback(
-                [to_delete]() { delete to_delete; });
+            flows.first.writer_add_gc_callback([to_delete]() {
+                delete to_delete;
+                return (sink_result::recycler::gc_callback_result::ok);
+            });
         }
         counters->update(packet);
     });

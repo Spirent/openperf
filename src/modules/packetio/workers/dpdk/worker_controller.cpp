@@ -280,8 +280,8 @@ worker_controller::worker_controller(worker_controller&& other) noexcept
     , m_source_features(std::move(other.m_source_features))
 {}
 
-worker_controller& worker_controller::
-operator=(worker_controller&& other) noexcept
+worker_controller&
+worker_controller::operator=(worker_controller&& other) noexcept
 {
     if (this != &other) {
         m_context = other.m_context;
@@ -376,10 +376,9 @@ std::vector<unsigned>
 worker_controller::get_worker_ids(packet::traffic_direction direction,
                                   std::optional<std::string_view> obj_id) const
 {
-    return (obj_id
-                ? get_queue_worker_ids(
-                      direction, get_port_index(*obj_id, m_driver, m_fib.get()))
-                : get_queue_worker_ids(direction));
+    return (obj_id ? get_queue_worker_ids(
+                direction, get_port_index(*obj_id, m_driver, m_fib.get()))
+                   : get_queue_worker_ids(direction));
 }
 
 template <typename T>
@@ -449,7 +448,10 @@ worker_controller::add_interface(std::string_view port_id,
                            [&]() { maybe_disable_rxq_tag_detection(filter); });
 
     auto to_delete = m_fib->insert_interface(*port_idx, mac, interface);
-    m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+    m_recycler->writer_add_gc_callback([to_delete]() {
+        delete to_delete;
+        return (worker::recycler::gc_callback_result::ok);
+    });
 
     OP_LOG(OP_LOG_DEBUG,
            "Added interface with mac = %s to port %.*s (idx = %u)\n",
@@ -469,7 +471,10 @@ void worker_controller::del_interface(
 
     auto mac = mac_address(interface.mac_address());
     auto to_delete = m_fib->remove_interface(*port_idx, mac);
-    m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+    m_recycler->writer_add_gc_callback([to_delete]() {
+        delete to_delete;
+        return (worker::recycler::gc_callback_result::ok);
+    });
 
     auto& filter = m_sink_features.get<port::filter>(*port_idx);
     filter.del_mac_address(mac,
@@ -521,8 +526,10 @@ worker_controller::add_sink(packet::traffic_direction direction,
 
             auto to_delete =
                 m_fib->insert_sink(*port_idx, worker::fib::direction::RX, sink);
-            m_recycler->writer_add_gc_callback(
-                [to_delete]() { delete to_delete; });
+            m_recycler->writer_add_gc_callback([to_delete]() {
+                delete to_delete;
+                return (worker::recycler::gc_callback_result::ok);
+            });
         }
         if (direction == packet::traffic_direction::TX
             || direction == packet::traffic_direction::RXTX) {
@@ -543,8 +550,10 @@ worker_controller::add_sink(packet::traffic_direction direction,
 
             auto to_delete =
                 m_fib->insert_sink(*port_idx, worker::fib::direction::TX, sink);
-            m_recycler->writer_add_gc_callback(
-                [to_delete]() { delete to_delete; });
+            m_recycler->writer_add_gc_callback([to_delete]() {
+                delete to_delete;
+                return (worker::recycler::gc_callback_result::ok);
+            });
         }
 
         m_sink_features.update(*m_fib, *port_idx);
@@ -573,8 +582,10 @@ worker_controller::add_sink(packet::traffic_direction direction,
             auto to_delete = m_fib->insert_interface_sink(
                 port_idx, mac, worker::fib::direction::RX, sink);
 
-            m_recycler->writer_add_gc_callback(
-                [to_delete]() { delete to_delete; });
+            m_recycler->writer_add_gc_callback([to_delete]() {
+                delete to_delete;
+                return (worker::recycler::gc_callback_result::ok);
+            });
         }
         if (direction == packet::traffic_direction::TX
             || direction == packet::traffic_direction::RXTX) {
@@ -602,8 +613,10 @@ worker_controller::add_sink(packet::traffic_direction direction,
 
             auto to_delete = m_fib->insert_interface_sink(
                 port_idx, mac, worker::fib::direction::TX, sink);
-            m_recycler->writer_add_gc_callback(
-                [to_delete]() { delete to_delete; });
+            m_recycler->writer_add_gc_callback([to_delete]() {
+                delete to_delete;
+                return (worker::recycler::gc_callback_result::ok);
+            });
         }
 
         m_sink_features.update(*m_fib, port_idx);
@@ -630,8 +643,10 @@ void worker_controller::del_sink(packet::traffic_direction direction,
 
             auto to_delete =
                 m_fib->remove_sink(*port_idx, worker::fib::direction::RX, sink);
-            m_recycler->writer_add_gc_callback(
-                [to_delete]() { delete to_delete; });
+            m_recycler->writer_add_gc_callback([to_delete]() {
+                delete to_delete;
+                return (worker::recycler::gc_callback_result::ok);
+            });
 
             m_sink_features.update(*m_fib, *port_idx);
         }
@@ -646,8 +661,10 @@ void worker_controller::del_sink(packet::traffic_direction direction,
 
             auto to_delete =
                 m_fib->remove_sink(*port_idx, worker::fib::direction::TX, sink);
-            m_recycler->writer_add_gc_callback(
-                [to_delete]() { delete to_delete; });
+            m_recycler->writer_add_gc_callback([to_delete]() {
+                delete to_delete;
+                return (worker::recycler::gc_callback_result::ok);
+            });
         }
         return;
     }
@@ -669,8 +686,10 @@ void worker_controller::del_sink(packet::traffic_direction direction,
 
                 auto to_delete = m_fib->remove_interface_sink(
                     port_idx, mac, worker::fib::direction::RX, sink);
-                m_recycler->writer_add_gc_callback(
-                    [to_delete]() { delete to_delete; });
+                m_recycler->writer_add_gc_callback([to_delete]() {
+                    delete to_delete;
+                    return (worker::recycler::gc_callback_result::ok);
+                });
 
                 m_sink_features.update(*m_fib, port_idx);
             }
@@ -690,8 +709,10 @@ void worker_controller::del_sink(packet::traffic_direction direction,
                 auto to_delete = m_fib->remove_interface_sink(
                     port_idx, mac, worker::fib::direction::TX, sink);
 
-                m_recycler->writer_add_gc_callback(
-                    [to_delete]() { delete to_delete; });
+                m_recycler->writer_add_gc_callback([to_delete]() {
+                    delete to_delete;
+                    return (worker::recycler::gc_callback_result::ok);
+                });
             }
         }
 
@@ -820,7 +841,10 @@ worker_controller::add_source(std::string_view dst_id,
         *port_idx,
         queue_idx,
         tx_source(*port_idx, queue_idx, std::move(source)));
-    m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+    m_recycler->writer_add_gc_callback([to_delete]() {
+        delete to_delete;
+        return (worker::recycler::gc_callback_result::ok);
+    });
 
     m_source_features.update(*m_tib, *port_idx);
 
@@ -857,7 +881,10 @@ void worker_controller::del_source(std::string_view dst_id,
            worker_idx);
 
     auto to_delete = m_tib->remove_source(*port_idx, *queue_idx, source.id());
-    m_recycler->writer_add_gc_callback([to_delete]() { delete to_delete; });
+    m_recycler->writer_add_gc_callback([to_delete]() {
+        delete to_delete;
+        return (worker::recycler::gc_callback_result::ok);
+    });
 
     m_source_features.update(*m_tib, *port_idx);
 }
@@ -890,7 +917,7 @@ tl::expected<void, int> worker_controller::swap_source(
         m_tx_workers[std::make_pair(*port_idx, *out_queue_idx)];
     auto& worker_load = m_tx_loads[out_worker_idx];
     const auto load = get_source_load(outgoing);
-    if (worker_load > load) worker_load -= load;
+    if (worker_load > load) worker_load = -load;
 
     const auto [in_queue_idx, in_worker_idx] =
         get_queue_and_worker_idx(m_tx_workers, m_tx_loads, *port_idx);
@@ -917,9 +944,11 @@ tl::expected<void, int> worker_controller::swap_source(
         *port_idx,
         in_queue_idx,
         tx_source(*port_idx, in_queue_idx, std::move(incoming)));
+
     m_recycler->writer_add_gc_callback([to_delete1, to_delete2]() {
         delete to_delete1;
         delete to_delete2;
+        return (worker::recycler::gc_callback_result::ok);
     });
 
     m_source_features.update(*m_tib, *port_idx);
@@ -980,7 +1009,10 @@ void worker_controller::del_task(std::string_view task_id)
         std::vector<worker::descriptor> tasks{
             worker::descriptor(*stack_lcore_id, std::addressof(item->second))};
         m_workers->del_descriptors(tasks);
-        m_recycler->writer_add_gc_callback([id, this]() { m_tasks.erase(id); });
+        m_recycler->writer_add_gc_callback([id, this]() {
+            m_tasks.erase(id);
+            return (worker::recycler::gc_callback_result::ok);
+        });
     }
 }
 
