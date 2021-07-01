@@ -1,118 +1,11 @@
-#include <mutex>
-
-#include "core/op_core.h"
+#include "core/op_log.h"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/memory/dpdk/mempool.hpp"
 #include "packetio/memory/dpdk/primary/pool_allocator.hpp"
 
 namespace openperf::packetio::dpdk::mempool {
 
-struct mempool_entry
-{
-    rte_mempool* pool;
-    op_reference ref;
-    uint16_t port_id;
-    uint16_t queue_id;
-};
-
-/*
- * Note: This is a lock-free list and is safe for multiple threads
- * to use.
- */
-using mempool_list_type = openperf::list<mempool_entry>;
-static mempool_list_type mempool_list;
 static std::atomic_uint mempool_idx = 0;
-
-/*
- * Note: container_of is defined in DPDK's rte_common.h file. Unfortunately,
- * clang-tidy hates that macro, so we create a simpler, saner one here.
- */
-#define local_container_of(ptr, type, member)                                  \
-    ((type*)((char*)(ptr)-offsetof(type, member)))
-
-static void free_mempool(const rte_mempool* pool)
-{
-    OP_LOG(OP_LOG_DEBUG, "Freeing memory pool %s\n", pool->name);
-    rte_mempool_free(const_cast<rte_mempool*>(pool));
-}
-
-static void drop_mempool_entry(const struct op_reference* ref)
-{
-    auto* entry = local_container_of(ref, mempool_entry, ref);
-    mempool_list.remove(entry);
-    free_mempool(entry->pool);
-    entry->pool = nullptr;
-}
-
-static auto tie_entry(const mempool_entry* entry)
-{
-    /* XXX: the list implementation makes some questionable comparisons */
-    if (!entry || !entry->pool) {
-        const auto zero16 = uint16_t{0};
-        auto zero32 = uint32_t{0}; /* intentionally not const */
-        return (std::tie(zero16, zero16, zero32));
-    }
-
-    return (std::tie(entry->port_id, entry->queue_id, entry->pool->elt_size));
-}
-
-class mempool_entry_guard
-{
-    mempool_entry& m_entry;
-
-public:
-    mempool_entry_guard(mempool_entry& entry)
-        : m_entry(entry)
-    {
-        op_reference_retain(&m_entry.ref);
-    }
-
-    ~mempool_entry_guard() { op_reference_release(&m_entry.ref); }
-};
-
-static int mempool_entry_comparator(const void* thing1, const void* thing2)
-{
-    assert(thing1);
-    assert(thing2);
-
-    const auto lhs = tie_entry(static_cast<const mempool_entry*>(thing1));
-    const auto rhs = tie_entry(static_cast<const mempool_entry*>(thing2));
-
-    if (lhs < rhs) { return (-1); }
-    if (lhs > rhs) { return (1); }
-    return (0);
-}
-
-static void mempool_entry_destructor(void* thing)
-{
-    auto* entry = static_cast<mempool_entry*>(thing);
-    delete entry;
-}
-
-/*
- * We want to sort our list by port, queue, and packet size respectively.
- * That way, acquire calls will always find the memory pool with the smallest
- * packet size that works with the request.
- */
-static void maybe_mempool_list_init()
-{
-    static std::once_flag mempool_list_init_flag;
-    std::call_once(mempool_list_init_flag, [&]() {
-        mempool_list.set_comparator(mempool_entry_comparator);
-        mempool_list.set_destructor(mempool_entry_destructor);
-    });
-}
-
-/*
- * Convert nb_mbufs to a Mersenne number, as those are the
- * most efficient size for mempools.  If our input is already a
- * power of 2, return input - 1 instead of doubling the size.
- */
-__attribute__((const)) static uint32_t pool_size_adjust(uint32_t nb_mbufs)
-{
-    return (rte_is_power_of_2(nb_mbufs) ? nb_mbufs - 1
-                                        : rte_align32pow2(nb_mbufs) - 1);
-}
 
 template <typename T, typename S>
 __attribute__((const)) static T align_up(T x, S align)
@@ -166,21 +59,20 @@ static void log_mempool(const struct rte_mempool* mpool)
            mpool->socket_id);
 }
 
-static rte_mempool* create_mempool(unsigned numa_node,
-                                   uint16_t packet_length,
-                                   uint16_t packet_count,
-                                   uint16_t cache_size)
+rte_mempool* acquire(unsigned numa_node,
+                     uint16_t packet_length,
+                     uint16_t packet_count,
+                     uint16_t cache_size)
 {
+    /* packet_count must be a Mersenne prime */
+    assert(!((packet_count + 1) & packet_count));
+
     auto name =
         "pool-"
         + std::to_string(mempool_idx.fetch_add(1, std::memory_order_acq_rel));
 
-    auto* pool = create_spsc_pktmbuf_mempool(name.c_str(),
-                                             pool_size_adjust(packet_count),
-                                             cache_size,
-                                             0,
-                                             packet_length,
-                                             numa_node);
+    auto* pool = create_spsc_pktmbuf_mempool(
+        name.c_str(), packet_count, cache_size, 0, packet_length, numa_node);
     if (!pool) {
         OP_LOG(OP_LOG_ERROR, "Could not create packet pool %s\n", name.c_str());
         return (nullptr);
@@ -191,137 +83,12 @@ static rte_mempool* create_mempool(unsigned numa_node,
     return (pool);
 }
 
-/*
- * XXX: We are forced to use new/delete pairs for our entry objects
- * because the c-based list implementation only accepts pointers.
- */
-static rte_mempool* acquire_shared(uint16_t port_id,
-                                   uint16_t queue_id,
-                                   unsigned numa_node,
-                                   uint16_t packet_length,
-                                   uint16_t packet_count,
-                                   uint16_t cache_size)
-{
-    /* See if we can find a matching pool in our list of pools */
-    auto snapshot = mempool_list.snapshot();
-    auto cursor = std::find_if(
-        std::begin(snapshot), std::end(snapshot), [&](auto& entry) {
-            auto guard = mempool_entry_guard(entry);
-
-            /*
-             * Note: need to compare the adjusted pool size, as that is what
-             * is used when creating the pool.
-             */
-            auto match =
-                (entry.pool != nullptr && port_id == entry.port_id
-                 && queue_id == entry.queue_id
-                 && numa_node == static_cast<unsigned>(entry.pool->socket_id)
-                 && packet_length <= entry.pool->elt_size
-                 && pool_size_adjust(packet_count) <= entry.pool->size
-                 && cache_size <= entry.pool->cache_size);
-
-            if (match) {
-                /* We want to keep this mempool; bump the reference count */
-                op_reference_retain(&entry.ref);
-            }
-
-            return (match);
-        });
-
-    if (cursor != std::end(snapshot)) {
-        assert(cursor->pool);
-
-        OP_LOG(OP_LOG_DEBUG,
-               "Reusing packet pool %s (refcount = %u)\n",
-               cursor->pool->name,
-               atomic_load_explicit(&(cursor->ref.count),
-                                    std::memory_order_relaxed));
-        return (cursor->pool);
-    }
-
-    /* No matching mempool found; create one */
-    auto* pool =
-        create_mempool(numa_node, packet_length, packet_count, cache_size);
-    if (!pool) { return (nullptr); }
-
-    auto* entry = new mempool_entry{
-        .pool = pool, .port_id = port_id, .queue_id = queue_id};
-    if (!entry) { throw std::bad_alloc(); }
-
-    op_reference_init(&entry->ref, drop_mempool_entry);
-
-    if (!mempool_list.insert(entry)) {
-        OP_LOG(OP_LOG_ERROR,
-               "Could not insert packet pool %s into packet pool list\n",
-               entry->pool->name);
-        op_reference_release(&entry->ref);
-        return (nullptr);
-    }
-
-    return (entry->pool);
-}
-
-/*
- * Acquire a memory pool from somewheres. We have two types: shared and unique.
- * Shared pools get added to a list so that they can be reused. Unique pools
- * are only handed back to their callers. Hopefully they will release them
- * later!
- */
-rte_mempool* acquire(uint16_t port_id,
-                     uint16_t queue_id,
-                     unsigned numa_node,
-                     uint16_t packet_length,
-                     uint16_t packet_count,
-                     uint16_t cache_size,
-                     mempool_type pool_type)
-{
-    maybe_mempool_list_init();
-
-    switch (pool_type) {
-    case mempool_type::shared:
-        return (acquire_shared(port_id,
-                               queue_id,
-                               numa_node,
-                               packet_length,
-                               packet_count,
-                               cache_size));
-    case mempool_type::unique:
-        return (
-            create_mempool(numa_node, packet_length, packet_count, cache_size));
-    default:
-        /* mempool_type::none?  Ok... */
-        OP_LOG(OP_LOG_WARNING, "Unrecognized mempool type: %d\n", pool_type);
-        return (nullptr);
-    }
-}
-
 void release(const rte_mempool* pool)
 {
     if (!pool) { return; }
 
-    /*
-     * At this point, we don't know if this is a shared pool or not.
-     * Look for it in the shared pool list.
-     */
-    auto snapshot = mempool_list.snapshot();
-    auto cursor = std::find_if(
-        std::begin(snapshot), std::end(snapshot), [&](auto& entry) {
-            auto guard = mempool_entry_guard(entry);
-            /*
-             * If the pool matches the one we are releasing, then
-             * the ref count can't possibly drop to 0 when we
-             * drop our guard.
-             */
-            return (entry.pool == pool);
-        });
-
-    if (cursor != std::end(snapshot)) {
-        /* Definitely shared, drop the ref count */
-        op_reference_release(&(cursor->ref));
-    } else {
-        /* Presume this is a unique pool; free it */
-        free_mempool(pool);
-    }
+    OP_LOG(OP_LOG_DEBUG, "Freeing memory pool %s\n", pool->name);
+    rte_mempool_free(const_cast<rte_mempool*>(pool));
 }
 
 rte_mempool* get_default(unsigned numa_node)

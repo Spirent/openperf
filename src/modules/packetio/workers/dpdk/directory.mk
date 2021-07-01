@@ -9,6 +9,7 @@ PIO_WORKER_SOURCES += \
 	recycle_impl.cpp \
 	rx_queue.cpp \
 	transmit_table_impl.cpp \
+	tx_mempool_allocator.cpp \
 	tx_queue.cpp \
 	tx_scheduler.cpp \
 	tx_source.cpp \

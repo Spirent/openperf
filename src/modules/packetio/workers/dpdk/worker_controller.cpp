@@ -199,6 +199,7 @@ worker_controller::worker_controller(void* context,
     , m_fib(std::make_unique<worker::fib>())
     , m_tib(std::make_unique<worker::tib>())
     , m_recycler(std::make_unique<worker::recycler>())
+    , m_tx_mempools(std::make_unique<tx_mempool_allocator>(*m_recycler))
 {
     launch_workers(context, m_recycler.get(), m_fib.get());
 
@@ -272,6 +273,7 @@ worker_controller::worker_controller(worker_controller&& other) noexcept
     , m_fib(std::move(other.m_fib))
     , m_tib(std::move(other.m_tib))
     , m_recycler(std::move(other.m_recycler))
+    , m_tx_mempools(std::move(other.m_tx_mempools))
     , m_tasks(std::move(other.m_tasks))
     , m_tx_schedulers(std::move(other.m_tx_schedulers))
     , m_tx_loads(std::move(other.m_tx_loads))
@@ -290,6 +292,7 @@ worker_controller::operator=(worker_controller&& other) noexcept
         m_fib = std::move(other.m_fib);
         m_tib = std::move(other.m_tib);
         m_recycler = std::move(other.m_recycler);
+        m_tx_mempools = std::move(other.m_tx_mempools);
         m_tasks = std::move(other.m_tasks);
         m_tx_schedulers = std::move(other.m_tx_schedulers);
         m_tx_loads = std::move(other.m_tx_loads);
@@ -825,6 +828,11 @@ worker_controller::add_source(std::string_view dst_id,
 
     auto [queue_idx, worker_idx] =
         get_queue_and_worker_idx(m_tx_workers, m_tx_loads, *port_idx);
+
+    /* Find a memory pool for this source */
+    auto* pool = m_tx_mempools->acquire(*port_idx, queue_idx, source);
+    if (!pool) { return (tl::make_unexpected(ENOMEM)); }
+
     m_tx_loads[worker_idx] += get_source_load(source);
 
     OP_LOG(OP_LOG_DEBUG,
@@ -838,9 +846,7 @@ worker_controller::add_source(std::string_view dst_id,
            worker_idx);
 
     auto to_delete = m_tib->insert_source(
-        *port_idx,
-        queue_idx,
-        tx_source(*port_idx, queue_idx, std::move(source)));
+        *port_idx, queue_idx, tx_source(std::move(source), pool));
     m_recycler->writer_add_gc_callback([to_delete]() {
         delete to_delete;
         return (worker::recycler::gc_callback_result::ok);
@@ -867,7 +873,7 @@ void worker_controller::del_source(std::string_view dst_id,
     auto worker_idx = m_tx_workers[std::make_pair(*port_idx, *queue_idx)];
     auto& worker_load = m_tx_loads[worker_idx];
     auto source_load = get_source_load(source);
-    if (worker_load > source_load) worker_load -= source_load;
+    worker_load = source_load <= worker_load ? worker_load - source_load : 0;
 
     OP_LOG(OP_LOG_DEBUG,
            "Deleting source %s from port %.*s (idx = %u, queue = %u) on "
@@ -881,6 +887,8 @@ void worker_controller::del_source(std::string_view dst_id,
            worker_idx);
 
     auto to_delete = m_tib->remove_source(*port_idx, *queue_idx, source.id());
+
+    m_tx_mempools->release(source.id());
     m_recycler->writer_add_gc_callback([to_delete]() {
         delete to_delete;
         return (worker::recycler::gc_callback_result::ok);
@@ -917,10 +925,17 @@ tl::expected<void, int> worker_controller::swap_source(
         m_tx_workers[std::make_pair(*port_idx, *out_queue_idx)];
     auto& worker_load = m_tx_loads[out_worker_idx];
     const auto load = get_source_load(outgoing);
-    if (worker_load > load) worker_load = -load;
+    worker_load = load <= worker_load ? worker_load - load : 0;
 
     const auto [in_queue_idx, in_worker_idx] =
         get_queue_and_worker_idx(m_tx_workers, m_tx_loads, *port_idx);
+
+    auto* pool = m_tx_mempools->acquire(*port_idx, in_queue_idx, incoming);
+    if (!pool) {
+        worker_load += load; /* undo load adjustment */
+        return (tl::make_unexpected(ENOMEM));
+    }
+
     m_tx_loads[in_worker_idx] += get_source_load(incoming);
 
     OP_LOG(OP_LOG_DEBUG,
@@ -941,10 +956,9 @@ tl::expected<void, int> worker_controller::swap_source(
         m_tib->remove_source(*port_idx, *out_queue_idx, outgoing.id());
     if (swap_action) { (*swap_action)(outgoing, incoming); }
     auto to_delete2 = m_tib->insert_source(
-        *port_idx,
-        in_queue_idx,
-        tx_source(*port_idx, in_queue_idx, std::move(incoming)));
+        *port_idx, in_queue_idx, tx_source(std::move(incoming), pool));
 
+    m_tx_mempools->release(outgoing.id());
     m_recycler->writer_add_gc_callback([to_delete1, to_delete2]() {
         delete to_delete1;
         delete to_delete2;

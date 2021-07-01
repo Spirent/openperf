@@ -20,9 +20,7 @@ class tx_source
     packet::generic_source m_source;
 
 public:
-    tx_source(uint16_t port_idx,
-              uint16_t queue_idx,
-              packet::generic_source source);
+    tx_source(packet::generic_source source, struct rte_mempool* pool);
 
     tx_source(tx_source&& other) noexcept;
     tx_source& operator=(tx_source&& other) noexcept;
@@ -30,7 +28,7 @@ public:
     tx_source(const tx_source&) = delete;
     tx_source& operator=(const tx_source&&) = delete;
 
-    ~tx_source();
+    ~tx_source() = default;
 
     std::string id() const;
     bool active() const;
