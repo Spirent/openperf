@@ -38,19 +38,19 @@ OP_COMPILER_DEFINES := $(shell $(OP_CC) $(OP_COPTS) -dM -E - < /dev/null)
 
 # Note: override is needed to change user defined variables
 ifeq ($(filter $(OP_COMPILER_DEFINES),__GCC_HAVE_SYNC_COMPARE_AND_SWAP_16),)
-override OP_COPTS += -mcx16
+OP_COPTS += -mcx16
 endif
 
 ifeq ($(filter $(OP_COMPILER_DEFINES),__SSE4_1__),)
-override OP_COPTS += -msse4.1
+OP_COPTS += -msse4.1
 endif
 
 ifeq ($(filter $(OP_COMPILER_DEFINES),__SSE4_2__),)
-override OP_COPTS += -msse4.2
+OP_COPTS += -msse4.2
 endif
 
 ifeq ($(filter $(OP_COMPILER_DEFINES),__PCLMUL__),)
-override OP_COPTS += -mpclmul
+OP_COPTS += -mpclmul
 endif
 
 

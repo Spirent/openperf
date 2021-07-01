@@ -23,6 +23,7 @@ OP_CPPFLAGS := -Wall -Werror -Wextra -Wshadow -Wno-gnu \
 	-MMD -MP -fstack-protector-strong $(OP_EXTRA_CPPFLAGS)
 OP_CXXFLAGS += -Wno-c11-extensions -Wno-nested-anon-types \
 	-Wno-c99-extensions $(OP_CXXSTD) $(OP_EXTRA_CXXFLAGS)
+OP_COPTS :=
 OP_CROSSFLAGS :=
 OP_DEFINES :=
 OP_INC_DIRS := $(OP_ROOT)/src
