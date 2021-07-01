@@ -16,7 +16,31 @@ namespace openperf::utils::recycle {
  **/
 template <int NumReaders> class depot
 {
-    using gc_callback = std::function<void()>;
+public:
+    depot();
+    ~depot() = default;
+
+    /**
+     * Non-thread safe functions; for writer use only!
+     **/
+    void writer_add_reader(size_t reader_id);
+    void writer_del_reader(size_t reader_id);
+
+    enum class gc_callback_result { ok, retry };
+    using gc_callback = std::function<gc_callback_result()>;
+
+    void writer_add_gc_callback(const gc_callback& callback);
+    void writer_add_gc_callback(gc_callback&& callback);
+
+    void writer_process_gc_callbacks();
+
+    /**
+     * Thread safe reader functions
+     **/
+    void reader_checkpoint(size_t reader_id) const;
+    void reader_idle(size_t reader_id) const;
+
+private:
     static constexpr size_t cache_line_size = 64;
     static constexpr size_t base_version = 1;
     static constexpr size_t idle_version = 0;
@@ -37,27 +61,6 @@ template <int NumReaders> class depot
     };
     alignas(
         cache_line_size) std::array<reader_state, NumReaders> m_reader_states;
-
-public:
-    depot();
-    ~depot() = default;
-
-    /**
-     * Non-thread safe functions; for writer use only!
-     **/
-    void writer_add_reader(size_t reader_id);
-    void writer_del_reader(size_t reader_id);
-
-    void writer_add_gc_callback(const gc_callback& callback);
-    void writer_add_gc_callback(gc_callback&& callback);
-
-    void writer_process_gc_callbacks();
-
-    /**
-     * Thread safe reader functions
-     **/
-    void reader_checkpoint(size_t reader_id) const;
-    void reader_idle(size_t reader_id) const;
 };
 
 /**

@@ -15,7 +15,10 @@ TEST_CASE("recycler functionality", "[recycler]")
         depot.writer_add_reader(0);
 
         bool gc_fired = false;
-        depot.writer_add_gc_callback([&]() { gc_fired = true; });
+        depot.writer_add_gc_callback([&]() {
+            gc_fired = true;
+            return (recycler::gc_callback_result::ok);
+        });
 
         depot.writer_process_gc_callbacks();
 
@@ -30,7 +33,10 @@ TEST_CASE("recycler functionality", "[recycler]")
         bool gc_fired = false;
         {
             openperf::utils::recycle::guard guard(depot, 0);
-            depot.writer_add_gc_callback([&]() { gc_fired = true; });
+            depot.writer_add_gc_callback([&]() {
+                gc_fired = true;
+                return (recycler::gc_callback_result::ok);
+            });
             depot.writer_process_gc_callbacks();
 
             /* GC can't run because reader is guarded */
@@ -55,7 +61,10 @@ TEST_CASE("recycler functionality", "[recycler]")
         depot.reader_checkpoint(1);
 
         /* send writer to version 2 */
-        depot.writer_add_gc_callback([&]() { gc_one_fired = true; });
+        depot.writer_add_gc_callback([&]() {
+            gc_one_fired = true;
+            return (recycler::gc_callback_result::ok);
+        });
 
         /* Verify callback can't fire with both readers at version 1 */
         depot.writer_process_gc_callbacks();
@@ -69,7 +78,10 @@ TEST_CASE("recycler functionality", "[recycler]")
         REQUIRE(gc_one_fired == false);
 
         /* Add a new callback and make sure it can't fire either */
-        depot.writer_add_gc_callback([&]() { gc_two_fired = true; });
+        depot.writer_add_gc_callback([&]() {
+            gc_two_fired = true;
+            return (recycler::gc_callback_result::ok);
+        });
 
         depot.writer_process_gc_callbacks();
         REQUIRE(gc_one_fired == false);
@@ -83,5 +95,25 @@ TEST_CASE("recycler functionality", "[recycler]")
         depot.writer_process_gc_callbacks();
         REQUIRE(gc_one_fired == true);
         REQUIRE(gc_two_fired == true);
+    }
+
+    SECTION("test retry, ")
+    {
+        depot.writer_add_reader(0);
+
+        unsigned nb_calls = 0;
+
+        depot.writer_add_gc_callback([&]() {
+            nb_calls++;
+            return (nb_calls == 2 ? recycler::gc_callback_result::ok
+                                  : recycler::gc_callback_result::retry);
+        });
+
+        depot.writer_process_gc_callbacks();
+        depot.writer_process_gc_callbacks();
+        depot.writer_process_gc_callbacks();
+
+        /* GC should only run twice */
+        REQUIRE(nb_calls == 2);
     }
 }
