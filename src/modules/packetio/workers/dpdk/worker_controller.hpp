@@ -22,6 +22,7 @@
 #include "packetio/drivers/dpdk/port/signature_payload_filler.hpp"
 #include "packetio/drivers/dpdk/port/timestamper.hpp"
 #include "packetio/workers/dpdk/port_feature_controller.hpp"
+#include "packetio/workers/dpdk/tx_mempool_allocator.hpp"
 #include "packetio/workers/dpdk/tx_scheduler.hpp"
 #include "packetio/workers/dpdk/worker_api.hpp"
 #include "utils/hash_combine.hpp"
@@ -124,6 +125,8 @@ private:
     std::unique_ptr<worker::fib> m_fib;           /* rx distpatch table */
     std::unique_ptr<worker::tib> m_tib;           /* transmit source table */
     std::unique_ptr<worker::recycler> m_recycler; /* RCU based deleter */
+    std::unique_ptr<tx_mempool_allocator>
+        m_tx_mempools; /* handles tx mempool ownenrship */
 
     task_map m_tasks; /* map from task id --> task object */
 

@@ -7,43 +7,8 @@
 
 namespace openperf::packetio::dpdk {
 
-static rte_mempool* get_packet_pool(uint16_t port_idx,
-                                    uint16_t queue_idx,
-                                    const packet::generic_source& source)
-{
-    /*
-     * Mmempools may be unique or shared. It's really only safe to share
-     * pools when using signatures, since any stale signature data will be
-     * overwritten.
-     */
-    auto pool_type =
-        (source.uses_feature(
-             packet::source_feature_flags::spirent_signature_encode)
-             ? mempool::mempool_type::shared
-             : mempool::mempool_type::unique);
-
-    /*
-     * A note about pool and cache sizing: we want to make sure we have
-     * packets available if the NIC's transmit ring is completely full, so we
-     * need our pool size to be a little larger than the ring size.  Similarly,
-     * we need the cache to be larger than the worker's standard transaction
-     * size, otherwise every call to retrieve buffers from the pool will bypass
-     * the CPU cache and go straight to the pool.
-     */
-    return (mempool::acquire(port_idx,
-                             queue_idx,
-                             port_info::socket_id(port_idx),
-                             source.max_packet_length() + RTE_PKTMBUF_HEADROOM,
-                             port_info::tx_desc_count(port_idx)
-                                 + 2 * worker::pkt_burst_size,
-                             2 * worker::pkt_burst_size,
-                             pool_type));
-}
-
-tx_source::tx_source(uint16_t port_idx,
-                     uint16_t queue_idx,
-                     packet::generic_source source)
-    : m_pool(get_packet_pool(port_idx, queue_idx, source))
+tx_source::tx_source(packet::generic_source source, struct rte_mempool* pool)
+    : m_pool(pool)
     , m_source(std::move(source))
 {
     if (!m_pool) {
@@ -55,25 +20,16 @@ tx_source::tx_source(uint16_t port_idx,
 tx_source::tx_source(tx_source&& other) noexcept
     : m_pool(other.m_pool)
     , m_source(std::move(other.m_source))
-{
-    /*
-     * We need to explicitly clear the other's pointer, otherwise other's
-     * destructor will release the pool for us.
-     */
-    other.m_pool = nullptr;
-}
+{}
 
 tx_source& tx_source::operator=(tx_source&& other) noexcept
 {
     if (this != &other) {
         m_pool = other.m_pool;
-        other.m_pool = nullptr;
         m_source = std::move(other.m_source);
     }
     return (*this);
 }
-
-tx_source::~tx_source() { mempool::release(m_pool); }
 
 std::string tx_source::id() const { return (m_source.id()); }
 
