@@ -416,7 +416,7 @@ source_load to_load(const swagger::v1::model::TrafficLoad& load,
 
     if (api::to_load_type(load.getUnits()) == api::load_type::octets) {
         /* Divide rate value by average frame size to get frames/hour */
-        rate = rate * sequence.sum_packet_lengths() / sequence.size();
+        rate = rate * sequence.size() / sequence.sum_packet_lengths();
     }
 
     using burst_type = decltype(std::declval<source_load>().burst_size);
