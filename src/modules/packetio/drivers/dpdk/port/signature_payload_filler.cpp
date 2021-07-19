@@ -81,14 +81,14 @@ unsigned set_container_args(
 }
 
 static uint16_t fill_signature_payloads([[maybe_unused]] uint16_t port_id,
-                                        [[maybe_unused]] uint16_t queue_id,
+                                        uint16_t queue_id,
                                         rte_mbuf* packets[],
                                         uint16_t nb_packets,
                                         void* user_param)
 {
-    auto* scratch =
+    auto& scratch =
         reinterpret_cast<callback_signature_payload_filler::scratch_t*>(
-            user_param);
+            user_param)[queue_id];
 
     auto start = 0U;
     while (start < nb_packets) {
@@ -110,7 +110,7 @@ static uint16_t fill_signature_payloads([[maybe_unused]] uint16_t port_id,
             switch (mbuf_signature_tx_get_fill_type(mbuf)) {
             case mbuf_signature::fill_type::constant:
                 const_segs =
-                    set_container_args(scratch->const_args,
+                    set_container_args(scratch.const_args,
                                        const_segs,
                                        mbuf,
                                        offset,
@@ -118,7 +118,7 @@ static uint16_t fill_signature_payloads([[maybe_unused]] uint16_t port_id,
                 break;
             case mbuf_signature::fill_type::increment:
                 incr_segs =
-                    set_container_args(scratch->incr_args,
+                    set_container_args(scratch.incr_args,
                                        incr_segs,
                                        mbuf,
                                        offset,
@@ -126,23 +126,23 @@ static uint16_t fill_signature_payloads([[maybe_unused]] uint16_t port_id,
                 break;
             case mbuf_signature::fill_type::decrement:
                 decr_segs =
-                    set_container_args(scratch->decr_args,
+                    set_container_args(scratch.decr_args,
                                        decr_segs,
                                        mbuf,
                                        offset,
                                        mbuf_signature_tx_get_fill_decr(mbuf));
                 break;
             case mbuf_signature::fill_type::prbs:
-                scratch->prbs_args.set(
+                scratch.prbs_args.set(
                     prbs_segs++,
                     {rte_pktmbuf_mtod_offset(mbuf, uint8_t*, offset),
                      get_payload_length(mbuf, offset)});
 
                 while (mbuf->next != nullptr) {
                     mbuf = mbuf->next;
-                    scratch->prbs_args.set(prbs_segs++,
-                                           {rte_pktmbuf_mtod(mbuf, uint8_t*),
-                                            get_payload_length(mbuf)});
+                    scratch.prbs_args.set(prbs_segs++,
+                                          {rte_pktmbuf_mtod(mbuf, uint8_t*),
+                                           get_payload_length(mbuf)});
                 }
                 break;
             default:
@@ -152,31 +152,31 @@ static uint16_t fill_signature_payloads([[maybe_unused]] uint16_t port_id,
         });
 
         if (const_segs) {
-            pga_fill_const(scratch->const_args.data<0>(),
-                           scratch->const_args.data<1>(),
+            pga_fill_const(scratch.const_args.data<0>(),
+                           scratch.const_args.data<1>(),
                            const_segs,
-                           scratch->const_args.data<2>());
+                           scratch.const_args.data<2>());
         }
 
         if (incr_segs) {
-            pga_fill_incr(scratch->incr_args.data<0>(),
-                          scratch->incr_args.data<1>(),
+            pga_fill_incr(scratch.incr_args.data<0>(),
+                          scratch.incr_args.data<1>(),
                           incr_segs,
-                          scratch->incr_args.data<2>());
+                          scratch.incr_args.data<2>());
         }
 
         if (decr_segs) {
-            pga_fill_decr(scratch->decr_args.data<0>(),
-                          scratch->decr_args.data<1>(),
+            pga_fill_decr(scratch.decr_args.data<0>(),
+                          scratch.decr_args.data<1>(),
                           decr_segs,
-                          scratch->decr_args.data<2>());
+                          scratch.decr_args.data<2>());
         }
 
         if (prbs_segs) {
-            scratch->prbs_seed = pga_fill_prbs(scratch->prbs_args.data<0>(),
-                                               scratch->prbs_args.data<1>(),
-                                               prbs_segs,
-                                               scratch->prbs_seed);
+            scratch.prbs_seed = pga_fill_prbs(scratch.prbs_args.data<0>(),
+                                              scratch.prbs_args.data<1>(),
+                                              prbs_segs,
+                                              scratch.prbs_seed);
         }
 
         start = end;
@@ -198,7 +198,10 @@ callback_signature_payload_filler::callback()
 
 void* callback_signature_payload_filler::callback_arg() const
 {
-    return (std::addressof(scratch));
+    if (scratch.size() != port_info::tx_queue_count(port_id())) {
+        scratch.resize(port_info::tx_queue_count(port_id()));
+    }
+    return (scratch.data());
 }
 
 static signature_payload_filler::variant_type

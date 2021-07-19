@@ -34,7 +34,7 @@ struct callback_signature_payload_filler
         openperf::utils::soa_container<utils::chunk_array,
                                        std::tuple<uint8_t*, uint16_t>>;
 
-    struct scratch_t
+    struct alignas(RTE_CACHE_LINE_SIZE) scratch_t
     {
         const_fill_args const_args;
         incr_fill_args incr_args;
@@ -43,7 +43,7 @@ struct callback_signature_payload_filler
         uint32_t prbs_seed = std::numeric_limits<uint32_t>::max();
     };
 
-    mutable scratch_t scratch;
+    mutable std::vector<scratch_t> scratch;
 };
 
 struct signature_payload_filler

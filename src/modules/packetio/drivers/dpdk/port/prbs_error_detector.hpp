@@ -26,13 +26,13 @@ struct callback_prbs_error_detector
         utils::chunk_array,
         std::tuple<const uint8_t*, uint16_t, uint32_t>>;
 
-    struct scratch_t
+    struct alignas(RTE_CACHE_LINE_SIZE) scratch_t
     {
         prbs_packets packets;
         prbs_segments segments;
     };
 
-    mutable scratch_t scratch;
+    mutable std::vector<scratch_t> scratch;
 };
 
 struct prbs_error_detector

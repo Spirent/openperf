@@ -30,7 +30,7 @@ template <typename T> T get_l4_header(struct rte_mbuf* m)
 }
 
 static uint16_t calculate_checksums([[maybe_unused]] uint16_t port_id,
-                                    [[maybe_unused]] uint16_t queue_id,
+                                    uint16_t queue_id,
                                     rte_mbuf* packets[],
                                     uint16_t nb_packets,
                                     void* user_param)
@@ -39,8 +39,8 @@ static uint16_t calculate_checksums([[maybe_unused]] uint16_t port_id,
 
     constexpr auto PKT_TX_L4_CKSUM = PKT_TX_TCP_CKSUM | PKT_TX_UDP_CKSUM;
 
-    auto* scratch =
-        reinterpret_cast<callback_checksum_calculator::scratch_t*>(user_param);
+    auto& scratch = reinterpret_cast<callback_checksum_calculator::scratch_t*>(
+        user_param)[queue_id];
 
     auto start = 0U;
 
@@ -57,11 +57,11 @@ static uint16_t calculate_checksums([[maybe_unused]] uint16_t port_id,
         std::for_each(packets + start, packets + end, [&](auto* mbuf) {
             if (mbuf->ol_flags & PKT_TX_IPV4) {
                 auto* ipv4 = get_l3_header<struct ipv4*>(mbuf);
-                scratch->ipv4_cksums.set(nb_ipv4_headers++, {ipv4, 0});
+                scratch.ipv4_cksums.set(nb_ipv4_headers++, {ipv4, 0});
 
                 if (mbuf->ol_flags & PKT_TX_L4_CKSUM) {
-                    scratch->ipv4_tcpudp_cksums.set(nb_ipv4_tcpudp_headers++,
-                                                    {ipv4, 0});
+                    scratch.ipv4_tcpudp_cksums.set(nb_ipv4_tcpudp_headers++,
+                                                   {ipv4, 0});
 
                     /*
                      * Note: the generator helpfully sets the pseudo-header
@@ -90,7 +90,7 @@ static uint16_t calculate_checksums([[maybe_unused]] uint16_t port_id,
                 case PKT_TX_TCP_CKSUM: {
                     auto* tcp = get_l4_header<struct tcp*>(mbuf);
                     set_tcp_checksum(*tcp, 0);
-                    scratch->ipv6_tcpudp_cksums.set(
+                    scratch.ipv6_tcpudp_cksums.set(
                         nb_ipv6_tcpudp_headers++,
                         {ipv6,
                          reinterpret_cast<uint8_t*>(tcp),
@@ -101,7 +101,7 @@ static uint16_t calculate_checksums([[maybe_unused]] uint16_t port_id,
                 case PKT_TX_UDP_CKSUM: {
                     auto* udp = get_l4_header<struct udp*>(mbuf);
                     set_udp_checksum(*udp, 0);
-                    scratch->ipv6_tcpudp_cksums.set(
+                    scratch.ipv6_tcpudp_cksums.set(
                         nb_ipv6_tcpudp_headers++,
                         {ipv6,
                          reinterpret_cast<uint8_t*>(udp),
@@ -118,18 +118,18 @@ static uint16_t calculate_checksums([[maybe_unused]] uint16_t port_id,
         /* Now, calculate and fill in checksum data */
         if (nb_ipv4_headers) {
             pga_checksum_ipv4_headers(
-                reinterpret_cast<uint8_t**>(scratch->ipv4_cksums.data<0>()),
+                reinterpret_cast<uint8_t**>(scratch.ipv4_cksums.data<0>()),
                 nb_ipv4_headers,
-                scratch->ipv4_cksums.data<1>());
+                scratch.ipv4_cksums.data<1>());
 
             if (nb_ipv4_tcpudp_headers) {
                 pga_checksum_ipv4_tcpudp(
                     reinterpret_cast<uint8_t**>(
-                        scratch->ipv4_tcpudp_cksums.data<0>()),
+                        scratch.ipv4_tcpudp_cksums.data<0>()),
                     nb_ipv4_tcpudp_headers,
-                    scratch->ipv4_tcpudp_cksums.data<1>());
+                    scratch.ipv4_tcpudp_cksums.data<1>());
 
-                auto start = std::begin(scratch->ipv4_tcpudp_cksums);
+                auto start = std::begin(scratch.ipv4_tcpudp_cksums);
                 std::for_each(start,
                               std::next(start, nb_ipv4_tcpudp_headers),
                               [](auto&& tuple) {
@@ -154,7 +154,7 @@ static uint16_t calculate_checksums([[maybe_unused]] uint16_t port_id,
                               });
             }
 
-            auto start = std::begin(scratch->ipv4_cksums);
+            auto start = std::begin(scratch.ipv4_cksums);
             std::for_each(
                 start, std::next(start, nb_ipv4_headers), [](auto&& tuple) {
                     auto* ipv4 = std::get<0>(tuple);
@@ -165,12 +165,12 @@ static uint16_t calculate_checksums([[maybe_unused]] uint16_t port_id,
 
         if (nb_ipv6_tcpudp_headers) {
             pga_checksum_ipv6_tcpudp(reinterpret_cast<uint8_t**>(
-                                         scratch->ipv6_tcpudp_cksums.data<0>()),
-                                     scratch->ipv6_tcpudp_cksums.data<1>(),
+                                         scratch.ipv6_tcpudp_cksums.data<0>()),
+                                     scratch.ipv6_tcpudp_cksums.data<1>(),
                                      nb_ipv6_tcpudp_headers,
-                                     scratch->ipv6_tcpudp_cksums.data<3>());
+                                     scratch.ipv6_tcpudp_cksums.data<3>());
 
-            auto start = std::begin(scratch->ipv6_tcpudp_cksums);
+            auto start = std::begin(scratch.ipv6_tcpudp_cksums);
             std::for_each(start,
                           std::next(start, nb_ipv6_tcpudp_headers),
                           [](auto&& tuple) {
@@ -215,7 +215,10 @@ callback_checksum_calculator::callback()
 
 void* callback_checksum_calculator::callback_arg() const
 {
-    return (std::addressof(scratch));
+    if (scratch.size() != port_info::tx_queue_count(port_id())) {
+        scratch.resize(port_info::tx_queue_count(port_id()));
+    }
+    return (scratch.data());
 }
 
 static checksum_calculator::variant_type

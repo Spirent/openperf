@@ -43,14 +43,14 @@ struct callback_checksum_calculator
         utils::chunk_array,
         std::tuple<libpacket::protocol::ipv6*, uint8_t*, uint8_t, uint32_t>>;
 
-    struct scratch_t
+    struct alignas(RTE_CACHE_LINE_SIZE) scratch_t
     {
         ipv4_cksum_container ipv4_cksums;
         ipv4_cksum_container ipv4_tcpudp_cksums;
         ipv6_cksum_container ipv6_tcpudp_cksums;
     };
 
-    mutable scratch_t scratch;
+    mutable std::vector<scratch_t> scratch;
 };
 
 struct checksum_calculator
