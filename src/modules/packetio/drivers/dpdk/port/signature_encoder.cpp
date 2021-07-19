@@ -77,7 +77,7 @@ inline utils::phxtime get_phxtime(const std::chrono::seconds epoch_offset)
 }
 
 static uint16_t encode_signatures(uint16_t port_id,
-                                  [[maybe_unused]] uint16_t queue_id,
+                                  uint16_t queue_id,
                                   rte_mbuf* packets[],
                                   uint16_t nb_packets,
                                   void* user_param)
@@ -91,8 +91,8 @@ static uint16_t encode_signatures(uint16_t port_id,
         units::to_duration<picoseconds>(mbps(get_link_speed_safe(port_id)))
         * ethernet_octets;
 
-    auto* scratch =
-        reinterpret_cast<callback_signature_encoder::scratch_t*>(user_param);
+    auto& scratch = (reinterpret_cast<callback_signature_encoder::scratch_t*>(
+        user_param)[queue_id]);
 
     /*
      * Given the epoch offset, find the current time as a 38 bit, 2.5ns
@@ -100,7 +100,7 @@ static uint16_t encode_signatures(uint16_t port_id,
      */
     using clock = openperf::timesync::chrono::realtime;
     const auto now =
-        get_phxtime<clock>(std::chrono::seconds{scratch->epoch_offset});
+        get_phxtime<clock>(std::chrono::seconds{scratch.epoch_offset});
 
     auto tx_octets = 0U;
     auto start = 0U;
@@ -131,21 +131,21 @@ static uint16_t encode_signatures(uint16_t port_id,
                          : to_phxtime(
                              now, tx_octets + mbuf_octets, ps_per_octet));
 
-                scratch->signatures.set(nb_sigs++,
-                                        {to_signature<uint8_t>(m),
-                                         sig.sig_stream_id,
-                                         sig.sig_seq_num,
-                                         ts,
-                                         sig.tx.flags});
+                scratch.signatures.set(nb_sigs++,
+                                       {to_signature<uint8_t>(m),
+                                        sig.sig_stream_id,
+                                        sig.sig_seq_num,
+                                        ts,
+                                        sig.tx.flags});
             }
             tx_octets += mbuf_octets;
         });
 
-        pga_signatures_encode(scratch->signatures.data<0>(), /* payload */
-                              scratch->signatures.data<1>(), /* stream id */
-                              scratch->signatures.data<2>(), /* sequence num */
-                              scratch->signatures.data<3>(), /* timestamp */
-                              scratch->signatures.data<4>(), /* flags */
+        pga_signatures_encode(scratch.signatures.data<0>(), /* payload */
+                              scratch.signatures.data<1>(), /* stream id */
+                              scratch.signatures.data<2>(), /* sequence num */
+                              scratch.signatures.data<3>(), /* timestamp */
+                              scratch.signatures.data<4>(), /* flags */
                               nb_sigs);
 
         /*
@@ -171,7 +171,7 @@ static uint16_t encode_signatures(uint16_t port_id,
                      * Store data for checksum calculating and
                      * updating.
                      */
-                    scratch->runts.set(
+                    scratch.runts.set(
                         nb_runts++,
                         {rte_pktmbuf_mtod_offset(
                              mbuf, const uint8_t*, mbuf->l2_len),
@@ -181,14 +181,14 @@ static uint16_t encode_signatures(uint16_t port_id,
 
             /* Then crunch the checksums */
             pga_checksum_ipv4_tcpudp(
-                scratch->runts.data<0>(), nb_runts, scratch->checksums.data());
+                scratch.runts.data<0>(), nb_runts, scratch.checksums.data());
 
             /* And write them into the signature field */
             auto idx = 0U;
-            std::for_each(scratch->runts.data<1>(),
-                          scratch->runts.data<1>() + nb_runts,
+            std::for_each(scratch.runts.data<1>(),
+                          scratch.runts.data<1>() + nb_runts,
                           [&](const auto& sig) {
-                              sig->cheater = scratch->checksums[idx++];
+                              sig->cheater = scratch.checksums[idx++];
                           });
         }
 
@@ -211,8 +211,13 @@ callback_signature_encoder::callback()
 
 void* callback_signature_encoder::callback_arg() const
 {
-    scratch.epoch_offset = utils::get_timestamp_epoch_offset();
-    return (std::addressof(scratch));
+    if (scratch.size() != port_info::tx_queue_count(port_id())) {
+        scratch.resize(port_info::tx_queue_count(port_id()));
+        auto offset = utils::get_timestamp_epoch_offset();
+        for (auto&& item : scratch) { item.epoch_offset = offset; }
+    }
+
+    return (scratch.data());
 }
 
 static signature_encoder::variant_type make_signature_encoder(uint16_t port_id)

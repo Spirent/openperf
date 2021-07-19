@@ -35,14 +35,14 @@ get_phxtime_offset(const std::chrono::seconds epoch_offset)
 }
 
 static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
-                                  [[maybe_unused]] uint16_t queue_id,
+                                  uint16_t queue_id,
                                   rte_mbuf* packets[],
                                   uint16_t nb_packets,
                                   [[maybe_unused]] uint16_t max_packets,
                                   void* user_param)
 {
-    auto* scratch =
-        reinterpret_cast<callback_signature_decoder::scratch_t*>(user_param);
+    auto& scratch = reinterpret_cast<callback_signature_decoder::scratch_t*>(
+        user_param)[queue_id];
 
     /*
      * Given the epoch offset, find the offset that will shift the 38 bit,
@@ -52,7 +52,7 @@ static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
      */
     using clock = openperf::timesync::chrono::realtime;
     auto offset =
-        get_phxtime_offset<clock>(std::chrono::seconds{scratch->epoch_offset});
+        get_phxtime_offset<clock>(std::chrono::seconds{scratch.epoch_offset});
 
     auto start = 0U;
     while (start < nb_packets) {
@@ -66,8 +66,8 @@ static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
         std::transform(
             packets + start,
             packets + end,
-            scratch->payloads.data<1>(), /* storage */
-            scratch->payloads.data<0>(), /* pointer */
+            scratch.payloads.data<1>(), /* storage */
+            scratch.payloads.data<0>(), /* pointer */
             [&](const auto& mbuf, auto& storage) {
                 return (static_cast<const uint8_t*>(rte_pktmbuf_read(
                     mbuf,
@@ -77,23 +77,23 @@ static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
             });
 
         /* Look for signature candidates */
-        if (pga_signatures_crc_filter(scratch->payloads.data<0>(),
+        if (pga_signatures_crc_filter(scratch.payloads.data<0>(),
                                       count,
-                                      scratch->crc_matches.data())) {
+                                      scratch.crc_matches.data())) {
 
             /* Matches found; decode signatures */
             pga_signatures_decode(
-                scratch->payloads.data<0>(),
+                scratch.payloads.data<0>(),
                 count,
-                scratch->signatures.data<0>(),  /* stream id */
-                scratch->signatures.data<1>(),  /* sequence num */
-                scratch->signatures.data<2>(),  /* timestamp */
-                scratch->signatures.data<3>()); /* flags */
+                scratch.signatures.data<0>(),  /* stream id */
+                scratch.signatures.data<1>(),  /* sequence num */
+                scratch.signatures.data<2>(),  /* timestamp */
+                scratch.signatures.data<3>()); /* flags */
 
             /* Write valid signature data to the associated mbuf */
             for (auto idx = 0U; idx < count; idx++) {
-                const auto& sig = scratch->signatures[idx];
-                if (scratch->crc_matches[idx]
+                const auto& sig = scratch.signatures[idx];
+                if (scratch.crc_matches[idx]
                     && (pga_status_flag(std::get<3>(sig))
                         == pga_signature_status::valid)) {
 
@@ -127,8 +127,13 @@ callback_signature_decoder::callback()
 
 void* callback_signature_decoder::callback_arg() const
 {
-    scratch.epoch_offset = utils::get_timestamp_epoch_offset();
-    return (std::addressof(scratch));
+    if (scratch.size() != port_info::rx_queue_count(port_id())) {
+        scratch.resize(port_info::rx_queue_count(port_id()));
+        auto offset = utils::get_timestamp_epoch_offset();
+        for (auto&& item : scratch) { item.epoch_offset = offset; }
+    }
+
+    return (scratch.data());
 }
 
 static signature_decoder::variant_type make_signature_decoder(uint16_t port_id)
