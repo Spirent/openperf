@@ -26,7 +26,7 @@ struct callback_signature_decoder
         utils::chunk_array,
         std::tuple<uint32_t, uint32_t, uint64_t, int>>;
 
-    struct scratch_t
+    struct alignas(RTE_CACHE_LINE_SIZE) scratch_t
     {
         time_t epoch_offset;
         payload_container payloads;
@@ -34,7 +34,7 @@ struct callback_signature_decoder
         sig_container signatures;
     };
 
-    mutable scratch_t scratch;
+    mutable std::vector<scratch_t> scratch;
 };
 
 struct signature_decoder

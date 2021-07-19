@@ -26,7 +26,7 @@ struct callback_signature_encoder
         utils::chunk_array,
         std::tuple<const uint8_t*, utils::spirent_signature*>>;
 
-    struct scratch_t
+    struct alignas(RTE_CACHE_LINE_SIZE) scratch_t
     {
         time_t epoch_offset;
         sig_container signatures;
@@ -34,7 +34,7 @@ struct callback_signature_encoder
         runt_container runts;
     };
 
-    mutable scratch_t scratch;
+    mutable std::vector<scratch_t> scratch;
 };
 
 struct signature_encoder
