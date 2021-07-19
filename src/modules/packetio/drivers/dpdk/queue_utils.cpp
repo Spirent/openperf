@@ -290,7 +290,16 @@ static std::pair<core_mask, core_mask> unique_masks(const core_mask& mask)
         return {available, available};
     }
 
-    /* Else, distribute the available cores to rx/tx usage */
+    /*
+     * If the user specified explicit masks for either tx or rx, then
+     * assign all available cores to the unspecified direction.
+     * E.g., don't override the will of the user.
+     */
+    if (rx_mask.count() && tx_mask.none()) { return {rx_mask, available}; }
+
+    if (rx_mask.none() && tx_mask.count()) { return {available, tx_mask}; }
+
+    /* Else, distribute all available cores to rx/tx usage */
     const auto to_rx = distribute(available.count(), 2U, 0U);
     auto distributed = 0U;
     for (size_t i = 0; i < available.size(); i++) {
