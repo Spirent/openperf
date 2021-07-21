@@ -31,6 +31,7 @@ namespace openperf::packetio::dpdk::worker {
 const std::string_view endpoint = "inproc://op_packetio_workers_control";
 
 static constexpr int mbuf_prefetch_offset = 8;
+static constexpr int idle_loop_timeout = 10; /* milliseconds */
 
 static const rte_gro_param gro_params = {.gro_types = RTE_GRO_TCP_IPV4,
                                          .max_flow_num = pkt_burst_size,
@@ -832,6 +833,22 @@ static void run_pollable(run_args&& args)
     poller.del(&ctrl_sock);
 }
 
+static bool have_active_rx_sinks(const fib* fib,
+                                 const std::vector<task_ptr>& rxqs)
+{
+    return (
+        std::any_of(std::begin(rxqs), std::end(rxqs), [fib](const auto& item) {
+            const auto* rxq = std::get<rx_queue*>(item);
+            const auto& sinks = fib->get_rx_sinks(rxq->port_id());
+            return (fib->has_interface_rx_sinks(rxq->port_id())
+                    || (sinks.size()
+                        && std::any_of(
+                            std::begin(sinks),
+                            std::end(sinks),
+                            [](const auto& s) { return (s.active()); })));
+        }));
+}
+
 static void run_spinning(run_args&& args)
 {
     bool messages = false;
@@ -846,8 +863,7 @@ static void run_spinning(run_args&& args)
     while (!messages) {
         args.recycler->reader_checkpoint(rte_lcore_id());
 
-        /* Service queues as fast as possible if any of them have
-         * packets. */
+        /* Service all receive queues until empty */
         uint16_t pkts;
         do {
             pkts = 0;
@@ -856,15 +872,22 @@ static void run_spinning(run_args&& args)
             }
         } while (pkts);
 
-        rte_pause();
-
-        /* All queues are idle; check callbacks */
-        for (auto& event : poller.poll(0)) {
+        /*
+         * All queues are idle. Generate a poll timeout based on whether we
+         * have any active sinks or not. We don't want to consume a CPU if
+         * nobody wants any packets.
+         */
+        int timeout = (have_active_rx_sinks(args.fib, args.rx_queues)
+                           ? 0
+                           : idle_loop_timeout);
+        for (auto& event : poller.poll(timeout)) {
             service_event(args.loop, args.fib, event);
         }
 
-        /* Perform all loop updates before exiting or restarting the
-         * loop. */
+        /*
+         * Perform all loop updates before exiting or restarting the
+         * loop.
+         */
         loop_adapter.update_poller(poller);
     }
 
