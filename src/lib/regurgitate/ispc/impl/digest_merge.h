@@ -13,7 +13,7 @@ static inline uniform scale_type next_q(uniform scale_type q,
 {
     uniform scale_type k = select(q < 0.5, sqrt(q / 2), 1 - sqrt((1 - q) / 2));
 
-    k += rcp((float)nb_clusters);
+    k += rcp((uniform float)nb_clusters);
 
     uniform scale_type w =
         select(k < 0.5, 2 * k * k, 1 - 2 * (1 - k) * (1 - k));
