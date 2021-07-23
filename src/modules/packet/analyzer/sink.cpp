@@ -260,14 +260,15 @@ uint16_t sink::push_all(sink_result& results,
 
     /* Update flow statistics */
     auto& flows = results.flow(index);
-    auto cache = openperf::utils::flat_memoize<64>(
-        [&](uint32_t rss_hash, std::optional<uint32_t> stream_id) {
+    auto cache = openperf::utils::flat_memoize<burst_size_max>(
+        [&](uint32_t rss_hash, uint32_t stream_id) {
             return (flows.second.find(rss_hash, stream_id));
         });
 
     std::for_each(packets, packets + packets_length, [&](const auto& packet) {
         auto hash = packetio::packet::rss_hash(packet);
-        auto stream_id = packetio::packet::signature_stream_id(packet);
+        auto stream_id =
+            packetio::packet::signature_stream_id(packet).value_or(0);
         auto* counters = cache(hash, stream_id);
         if (!counters) { /* New flow; create stats */
             auto to_delete = flows.second.insert(
