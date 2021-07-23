@@ -169,12 +169,11 @@ private:
     inline return_reference call(CallArgs... args)
     {
         auto key = std::forward_as_tuple(std::forward<CallArgs>(args)...);
-        auto idx =
-            std::hash<tuple_type>{}({std::forward<CallArgs>(args)...}) & mask;
+        auto idx = std::hash<tuple_type>{}(key)&mask;
 
         if (!flags_.test(idx) || keys_[idx] != key) {
             keys_[idx] = std::move(key);
-            values_[idx] = f_(std::forward<decltype(args)>(args)...);
+            values_[idx] = std::apply(f_, keys_[idx]);
             flags_.set(idx);
         }
 
@@ -185,11 +184,10 @@ private:
     inline return_reference call_again(CallArgs... args)
     {
         auto key = std::forward_as_tuple(std::forward<CallArgs>(args)...);
-        auto idx =
-            std::hash<tuple_type>{}({std::forward<CallArgs>(args)...}) & mask;
+        auto idx = std::hash<tuple_type>{}(key)&mask;
 
         keys_[idx] = std::move(key);
-        values_[idx] = f_(std::forward<decltype(args)>(args)...);
+        values_[idx] = std::apply(f_, keys_[idx]);
         flags_.set(idx);
 
         return (values_[idx]);
