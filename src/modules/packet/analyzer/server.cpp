@@ -727,7 +727,7 @@ reply_msg server::handle_request(const request_get_rx_flow& request)
 
     const auto& shard = result->flows()[shard_idx];
     auto guard = utils::recycle::guard(shard.first, api::result_reader_id);
-    auto counters = shard.second.find(hash, stream_id);
+    auto counters = shard.second.find(hash, stream_id.value_or(0));
     if (!counters) { return (to_error(error_type::NOT_FOUND)); }
 
     auto reply = reply_rx_flows{};
