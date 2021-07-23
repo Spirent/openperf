@@ -11,8 +11,9 @@ static inline void load_chunk(centroid c[programCount],
     uniform int j = 0;
     foreach(i = 0 ... programCount * programCount)
     {
-        c[j].keys = select(i < length, keys[i], (key_type)KEY_MAX);
-        c[j].vals = select(i < length, intbits(vals[i]), (int_val_type)0);
+        c[j].keys = select(i < length, keys[i], (uniform key_type)KEY_MAX);
+        c[j].vals =
+            select(i < length, intbits(vals[i]), (uniform int_val_type)0);
         j++;
     }
 }
