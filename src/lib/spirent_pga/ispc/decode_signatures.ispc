@@ -28,10 +28,10 @@ inline void read_signatures(const uniform unsigned int8* const uniform signature
 
     /* And shuffle the data into place */
     aos_to_soa4((uniform int* uniform)&scratch[0],
-                (varying int*)v0,
-                (varying int*)v1,
-                (varying int*)v2,
-                (varying int*)v3);
+                (varying int* uniform)v0,
+                (varying int* uniform)v1,
+                (varying int* uniform)v2,
+                (varying int* uniform)v3);
 }
 
 #else
@@ -52,10 +52,10 @@ inline void read_signatures(const uniform unsigned int8* const uniform signature
 
     /* And shuffle the data into place */
     aos_to_soa4((uniform int* uniform)&scratch[0],
-                (varying int*)v0,
-                (varying int*)v1,
-                (varying int*)v2,
-                (varying int*)v3);
+                (varying int* uniform)v0,
+                (varying int* uniform)v1,
+                (varying int* uniform)v2,
+                (varying int* uniform)v3);
 }
 
 #endif

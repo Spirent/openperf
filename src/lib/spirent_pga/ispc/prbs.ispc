@@ -347,13 +347,12 @@ export uniform unsigned int32 fill_prbs_aligned(uniform unsigned int32 payload[]
     unsigned int32 curr_seed = seed;
     unsigned int32 next_seed = prbs_next(seed, programIndex);
 
-    uniform int base = 0;
     foreach (i = 0 ... length) {
         /*
          * Blend the current and next lane-wide seed values to create the
          * payload data.
          */
-        base += packed_store_active(&payload[base], htonl(to_payload(curr_seed, next_seed)));
+        payload[i] = htonl(to_payload(curr_seed, next_seed));
         curr_seed = next_seed;
         next_seed = prbs_step(next_seed);
     }

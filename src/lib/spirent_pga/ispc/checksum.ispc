@@ -175,12 +175,12 @@ inline void populate_pseudoheaders(const uniform int32 input[],
                                    varying struct ipv4_pseudoheader *phdr)
 {
     unsigned int32<5> headers;
-    aos_to_soa5((uniform int32*)input,
-                (varying int32*)&headers[0],
-                (varying int32*)&headers[1],
-                (varying int32*)&headers[2],
-                (varying int32*)&headers[3],
-                (varying int32*)&headers[4]);
+    aos_to_soa5((uniform int32* uniform)input,
+                (varying int32* uniform)&headers[0],
+                (varying int32* uniform)&headers[1],
+                (varying int32* uniform)&headers[2],
+                (varying int32* uniform)&headers[3],
+                (varying int32* uniform)&headers[4]);
 
     unsigned int length = headers[0] >> 16;
     unsigned int ihl = headers[0] & 0xf;
@@ -210,7 +210,7 @@ export void checksum_ipv4_pseudoheaders(const unsigned int8* const uniform ipv4_
         sum += fold(phdrs.proto_len);
         sum = fold(fold(sum));
 
-        packed_store_active(&checksums[extract(i, 0)], sum);
+        checksums[i] = sum;
     }
 }
 
