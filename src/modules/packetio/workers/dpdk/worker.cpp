@@ -509,8 +509,15 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
     /* Dispatch packets to any port sinks */
     rx_sink_dispatch(fib, rxq, incoming.data(), n);
 
-    /* Dispatch packets to all interface level sinks and interfaces */
-    rx_interface_dispatch(fib, rxq, incoming.data(), n);
+    /*
+     * Check for interfaces. If we don't have any, we can just drop
+     * the packets now. Otherwise, perform interface dispatch.
+     */
+    if (fib->get_interfaces(rxq->port_id()).empty()) {
+        std::for_each(incoming.data(), incoming.data() + n, rte_pktmbuf_free);
+    } else {
+        rx_interface_dispatch(fib, rxq, incoming.data(), n);
+    }
 
     return (n);
 }
