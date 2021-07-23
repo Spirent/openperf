@@ -18,6 +18,48 @@ struct spirent_signature
 
 static constexpr auto prefetch_offset = 8;
 
+/**
+ * Algorithm for transforming an array of data, storing and reducing
+ * the result, and pre-fetching the elements as we go.
+ */
+template <typename InputIt,
+          typename OutputIt,
+          typename T,
+          typename TransformFn,
+          typename ReduceFn,
+          typename PrefetchFn>
+T prefetch_transform_reduce(InputIt cursor,
+                            InputIt end,
+                            OutputIt d_cursor,
+                            T sum,
+                            TransformFn&& xform,
+                            ReduceFn&& reduce,
+                            PrefetchFn&& prefetch,
+                            size_t prefetch_offset)
+{
+    InputIt p_cursor = cursor;
+    size_t n = std::distance(cursor, end);
+
+    // Prefetch initial data
+    auto stop = cursor + std::min(n, prefetch_offset);
+    while (p_cursor != stop) { prefetch(*p_cursor++); }
+
+    // Process items and continue to prefetch
+    while (p_cursor != end) {
+        prefetch(*p_cursor++);
+        *d_cursor = xform(*cursor++);
+        sum = reduce(sum, *d_cursor++);
+    }
+
+    // All done prefetching so just need to process the rest
+    while (cursor != end) {
+        *d_cursor = xform(*cursor++);
+        sum = reduce(sum, *d_cursor++);
+    }
+
+    return (sum);
+}
+
 uint16_t
 crc_filter(const uint8_t* const payloads[], uint16_t count, int crc_matches[])
 {
@@ -26,23 +68,20 @@ crc_filter(const uint8_t* const payloads[], uint16_t count, int crc_matches[])
      * unlikely to be in the CPU cache.  Hence, we explicitly prefetch
      * the payload before calculating the CRC.
      */
-    auto offset = std::min(static_cast<int>(count), prefetch_offset);
-
-    std::for_each(payloads, payloads + offset, [](const auto* payload) {
-        __builtin_prefetch(payload);
-    });
-
-    std::transform(
-        payloads, payloads + count, crc_matches, [&](const auto* payload) {
-            if (offset < count) { __builtin_prefetch(payloads[offset++]); }
-
-            auto signature =
+    return (prefetch_transform_reduce(
+        payloads,
+        payloads + count,
+        crc_matches,
+        uint16_t{0},
+        [&](const auto* payload) {
+            const auto* signature =
                 reinterpret_cast<const spirent_signature*>(payload);
             return (ntohs(signature->crc)
                     == calculate_signature_crc16(signature->data));
-        });
-
-    return (std::accumulate(crc_matches, crc_matches + count, 0));
+        },
+        std::plus<>(),
+        [](const auto* payload) { __builtin_prefetch(payload); },
+        prefetch_offset));
 }
 
 uint16_t decode(const uint8_t* const payloads[],

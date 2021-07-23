@@ -15,12 +15,11 @@ export uniform unsigned int8 fill_step_aligned(uniform unsigned int32 payload[],
                           step * 4 * programCount,
                           step * 4 * programCount };
 
-    uniform int base = 0;
     foreach (i = 0 ... length) {
-        base += packed_store_active(&payload[base], ((fill.x & 0xff)
-                                                     | (fill.y & 0xff) << 8
-                                                     | (fill.z & 0xff) << 16
-                                                     | (fill.w & 0xff) << 24));
+        payload[i] =  ((fill.x & 0xff)
+                       | (fill.y & 0xff) << 8
+                       | (fill.z & 0xff) << 16
+                       | (fill.w & 0xff) << 24);
         fill += fill_step;
     }
 
