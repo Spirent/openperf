@@ -32,13 +32,13 @@ public:
      ***/
 
     /* Prefix */
-    constexpr ipv4_address operator++()
+    constexpr ipv4_address& operator++()
     {
         this->store(load<uint32_t>() + 1);
         return (*this);
     }
 
-    constexpr ipv4_address operator--()
+    constexpr ipv4_address& operator--()
     {
         this->store(load<uint32_t>() - 1);
         return (*this);

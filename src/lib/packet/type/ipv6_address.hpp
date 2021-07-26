@@ -54,13 +54,13 @@ public:
      ***/
 
     /* Prefix */
-    constexpr ipv6_address operator++()
+    constexpr ipv6_address& operator++()
     {
         this->store(load<detail::uint128_t>() + 1);
         return (*this);
     }
 
-    constexpr ipv6_address operator--()
+    constexpr ipv6_address& operator--()
     {
         this->store(load<detail::uint128_t>() - 1);
         return (*this);

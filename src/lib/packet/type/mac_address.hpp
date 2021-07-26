@@ -32,13 +32,13 @@ public:
      ***/
 
     /* Prefix */
-    constexpr mac_address operator++()
+    constexpr mac_address& operator++()
     {
         this->store(load<uint64_t>() + 1);
         return (*this);
     }
 
-    constexpr mac_address operator--()
+    constexpr mac_address& operator--()
     {
         this->store(load<uint64_t>() - 1);
         return (*this);
