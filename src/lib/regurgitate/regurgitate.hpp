@@ -111,7 +111,7 @@ public:
         return (*this);
     }
 
-    centroid_container_iterator& operator++(int)
+    centroid_container_iterator operator++(int)
     {
         auto to_return = *this;
         idx_++;
