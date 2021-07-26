@@ -196,7 +196,7 @@ public:
         return (*this);
     }
 
-    soa_container_iterator& operator++(int)
+    soa_container_iterator operator++(int)
     {
         auto to_return = *this;
         m_idx++;
