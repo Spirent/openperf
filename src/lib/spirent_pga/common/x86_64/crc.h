@@ -239,9 +239,7 @@ inline uint32_t calculate_signature_crc16(const uint8_t data[])
     /**
      * We don't have any more data to load, so just fold in 0's
      */
-    __m128i next_data = {0, 0};
-    next_data = _mm_or_si128(xmm_shift_right(next_data, n),
-                             xmm_shift_left(fold, 16 - n));
+    __m128i next_data = xmm_shift_left(fold, 16 - n);
     fold = xmm_shift_right(fold, n);
 
     /**
