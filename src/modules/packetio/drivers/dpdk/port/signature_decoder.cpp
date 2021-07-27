@@ -2,11 +2,14 @@
 #include "packetio/drivers/dpdk/port/signature_decoder.hpp"
 #include "packetio/drivers/dpdk/port/signature_utils.hpp"
 #include "spirent_pga/api.h"
+#include "utils/prefetch_for_each.hpp"
 #include "utils/soa_container.hpp"
 
 #include "timesync/chrono.hpp"
 
 namespace openperf::packetio::dpdk::port {
+
+static constexpr auto prefetch_offset = 8;
 
 inline int64_t to_nanoseconds(const utils::phxtime timestamp,
                               const utils::phxtime offset)
@@ -90,22 +93,35 @@ static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
                 scratch.signatures.data<2>(),  /* timestamp */
                 scratch.signatures.data<3>()); /* flags */
 
-            /* Write valid signature data to the associated mbuf */
-            for (auto idx = 0U; idx < count; idx++) {
-                const auto& sig = scratch.signatures[idx];
-                if (scratch.crc_matches[idx]
-                    && (pga_status_flag(std::get<3>(sig))
-                        == pga_signature_status::valid)) {
-
-                    mbuf_signature_rx_set(
-                        packets[start + idx],
-                        std::get<0>(sig),
-                        std::get<1>(sig),
-                        to_nanoseconds(utils::phxtime{std::get<2>(sig)},
-                                       offset),
-                        std::get<3>(sig));
-                }
-            }
+            /*
+             * Write valid signature data to the associated mbuf.
+             * Since the 2nd half of the mbuf is unlikely to be in the cache
+             * on platforms with 64 byte cache lines, we need to prefetch it
+             * to avoid write stalls.
+             */
+            openperf::utils::prefetch_enumerate_for_each(
+                packets + start,
+                packets + start + count,
+                [](const auto* mbuf) {
+                    if constexpr (RTE_CACHE_LINE_SIZE == 64) {
+                        __builtin_prefetch(mbuf->cacheline1, 1, 0);
+                    }
+                },
+                [&](auto idx, auto* mbuf) {
+                    const auto& sig = scratch.signatures[idx];
+                    if (scratch.crc_matches[idx]
+                        && (pga_status_flag(std::get<3>(sig))
+                            == pga_signature_status::valid)) {
+                        mbuf_signature_rx_set(
+                            mbuf,
+                            std::get<0>(sig),
+                            std::get<1>(sig),
+                            to_nanoseconds(utils::phxtime{std::get<2>(sig)},
+                                           offset),
+                            std::get<3>(sig));
+                    }
+                },
+                prefetch_offset);
         }
 
         start = end;
