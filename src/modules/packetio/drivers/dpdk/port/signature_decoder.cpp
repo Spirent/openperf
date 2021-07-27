@@ -9,8 +9,6 @@
 
 namespace openperf::packetio::dpdk::port {
 
-static constexpr auto prefetch_offset = 8;
-
 inline int64_t to_nanoseconds(const utils::phxtime timestamp,
                               const utils::phxtime offset)
 {
@@ -121,7 +119,7 @@ static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
                             std::get<3>(sig));
                     }
                 },
-                prefetch_offset);
+                mbuf_prefetch_offset);
         }
 
         start = end;
