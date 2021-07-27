@@ -30,7 +30,6 @@ namespace openperf::packetio::dpdk::worker {
 
 const std::string_view endpoint = "inproc://op_packetio_workers_control";
 
-static constexpr int mbuf_prefetch_offset = 8;
 static constexpr int idle_loop_timeout = 10; /* milliseconds */
 
 static const rte_gro_param gro_params = {.gro_types = RTE_GRO_TCP_IPV4,
@@ -94,23 +93,6 @@ static bool all_pollable(const std::vector<task_ptr>& tasks)
 }
 
 /**
- * Invalidate signature data, if present, by overwriting the CRC field.
- */
-static void rx_mbuf_signature_clear(rte_mbuf* mbuf)
-{
-    constexpr auto crc_offset = 4;
-    if (mbuf_signature_avail(mbuf)) {
-        /*
-         * If there is a signature here, then hopefully this de-referenced
-         * data is still in the cache...
-         */
-        auto* data = rte_pktmbuf_mtod_offset(
-            mbuf, uint16_t*, rte_pktmbuf_pkt_len(mbuf) - crc_offset);
-        *data = 0;
-    }
-}
-
-/**
  * Set the interface pointer the mbuf will be dispatched to.
  *
  * This interface pointer is only valid for unicast packets during parts of the
@@ -138,6 +120,14 @@ static void rx_mbuf_clear_tag(rte_mbuf* mbuf) { mbuf->userdata = nullptr; }
 static bool rx_mbuf_has_tag(rte_mbuf* mbuf)
 {
     return (mbuf->userdata != nullptr);
+}
+
+static void rx_mbuf_free_bulk(rte_mbuf* mbufs[], uint16_t n)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    rte_pktmbuf_free_bulk(mbufs, n);
+#pragma clang diagnostic pop
 }
 
 /**
@@ -170,9 +160,9 @@ static std::pair<uint16_t, uint16_t> rx_resolve_interfaces(const fib* fib,
         [&](auto mbuf) {
             auto eth = rte_pktmbuf_mtod(mbuf, struct rte_ether_hdr*);
             if (rte_is_unicast_ether_addr(&eth->d_addr)) {
-                auto ifp = fib->find_interface(port_id, eth->d_addr.addr_bytes);
-                rx_mbuf_set_tag(mbuf, ifp);
-                if (ifp) {
+                rx_mbuf_set_tag(
+                    mbuf, fib->find_interface(port_id, eth->d_addr.addr_bytes));
+                if (rx_mbuf_has_tag(mbuf)) {
                     to_stack[nb_to_stack++] = mbuf;
                 } else {
                     // Packet doesn't match any interfaces
@@ -468,11 +458,9 @@ static void rx_interface_dispatch(const fib* fib,
     }
 
     /* ... and free all the non-stack packets */
-    std::for_each(to_free.data(), to_free.data() + nb_to_free, [](auto mbuf) {
-        rx_mbuf_clear_tag(mbuf);       // Clear just to be safe
-        rx_mbuf_signature_clear(mbuf); // Prevent leaks when buffer is reused
-        rte_pktmbuf_free(mbuf);
-    });
+    std::for_each(
+        to_free.data(), to_free.data() + nb_to_free, rx_mbuf_clear_tag);
+    rx_mbuf_free_bulk(to_free.data(), nb_to_free);
 }
 
 static void rx_sink_dispatch(const fib* fib,
@@ -514,7 +502,7 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
      * the packets now. Otherwise, perform interface dispatch.
      */
     if (fib->get_interfaces(rxq->port_id()).empty()) {
-        std::for_each(incoming.data(), incoming.data() + n, rte_pktmbuf_free);
+        rx_mbuf_free_bulk(incoming.data(), n);
     } else {
         rx_interface_dispatch(fib, rxq, incoming.data(), n);
     }

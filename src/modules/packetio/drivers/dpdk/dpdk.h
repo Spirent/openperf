@@ -52,4 +52,10 @@
 #include "rte_net.h"
 #include "rte_thash.h"
 
+#ifdef __cplusplus
+namespace openperf::packetio::dpdk {
+static constexpr auto mbuf_prefetch_offset = 8;
+}
+#endif
+
 #endif /* _PACKETIO_DRIVER_DPDK_H_ */
