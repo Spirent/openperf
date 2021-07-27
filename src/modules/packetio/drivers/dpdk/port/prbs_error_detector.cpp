@@ -11,10 +11,7 @@
 
 namespace openperf::packetio::dpdk::port {
 
-static constexpr auto chunk_size = 32U;
-static constexpr auto prefetch_lookahead = 8U;
-
-template <typename T> using chunk_array = std::array<T, chunk_size>;
+template <typename T> using chunk_array = std::array<T, utils::chunk_size>;
 
 static unsigned mbuf_segment_count(const rte_mbuf* m) { return (m->nb_segs); }
 
@@ -95,7 +92,7 @@ static uint16_t detect_prbs_errors([[maybe_unused]] uint16_t port_id,
     while (start < nb_packets) {
         auto end = start
                    + packet_count_for_segment_limit(
-                       packets + start, nb_packets - start, chunk_size);
+                       packets + start, nb_packets - start, utils::chunk_size);
 
         /*
          * Copy all of the packets we need to check into a consecutive block.
@@ -118,7 +115,7 @@ static uint16_t detect_prbs_errors([[maybe_unused]] uint16_t port_id,
                 }
                 scratch.packets.set(nb_prbs_pkts++, {mbuf, offset});
             },
-            prefetch_lookahead);
+            mbuf_prefetch_offset);
 
         /* Find all of the payload data in the PRBS packets we found. */
         auto nb_prbs_segs = 0U;
