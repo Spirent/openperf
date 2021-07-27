@@ -8,37 +8,54 @@ namespace openperf::utils {
 
 /**
  * Algorigthm for iterating over an array and prefetch a few elements ahead.
- * @param first[in] Iterator for first item.
- * @param last[in] Iterator past last item.
+ * @param cursor[in] Iterator for first item.
+ * @param end[in] Iterator past last item.
  * @param prefetch_func[in]
  *   Function to call to prefetch the data required for func.
  * @param func[in]
  *   Function to call for each item.
  */
 template <typename InputIterator, typename Function, typename PrefetchFunction>
-void prefetch_for_each(InputIterator first,
-                       InputIterator last,
-                       PrefetchFunction prefetch_func,
-                       Function func,
+void prefetch_for_each(InputIterator cursor,
+                       InputIterator end,
+                       PrefetchFunction&& prefetch_func,
+                       Function&& func,
                        size_t ahead)
 {
-    InputIterator prefetch_it = first, it = first;
-    size_t n = std::distance(first, last);
+    InputIterator p_cursor = cursor;
+    size_t n = std::distance(cursor, end);
 
-    // Prefetch initial data
-    for (auto end = first + std::min(n, ahead); prefetch_it != end;
-         ++prefetch_it) {
-        prefetch_func(*prefetch_it);
+    auto stop = cursor + std::min(n, ahead);
+    while (p_cursor != stop) { prefetch_func(*p_cursor++); }
+
+    while (p_cursor != end) {
+        prefetch_func(*p_cursor++);
+        func(*cursor++);
     }
 
-    // Process items and continue to prefetch
-    for (; prefetch_it != last; ++it, ++prefetch_it) {
-        prefetch_func(*prefetch_it);
-        func(*it);
+    while (cursor != end) { func(*cursor++); }
+}
+
+template <typename InputIterator, typename Function, typename PrefetchFunction>
+void prefetch_enumerate_for_each(InputIterator cursor,
+                                 InputIterator end,
+                                 PrefetchFunction&& prefetch_func,
+                                 Function&& func,
+                                 size_t ahead)
+{
+    InputIterator p_cursor = cursor;
+    size_t n = std::distance(cursor, end);
+
+    auto stop = cursor + std::min(n, ahead);
+    while (p_cursor != stop) { prefetch_func(*p_cursor++); }
+
+    auto idx = 0;
+    while (p_cursor != end) {
+        prefetch_func(*p_cursor++);
+        func(idx++, *cursor++);
     }
 
-    // All done prefetching so just need to process the rest
-    for (; it != last; ++it) { func(*it); }
+    while (cursor != end) { func(idx++, *cursor++); }
 }
 
 } // namespace openperf::utils
