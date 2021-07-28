@@ -9,11 +9,12 @@
 #include "packet/analyzer/sink.hpp"
 #include "packet/analyzer/statistics/flow/map.tcc"
 #include "spirent_pga/api.h"
-#include "utils/flat_memoize.hpp"
+#include "utils/prefetch_for_each.hpp"
 
 namespace openperf::packet::analyzer {
 
 constexpr uint16_t burst_size_max = 64;
+constexpr auto counters_prefetch_offset = 8;
 
 /* Instantiate our templatized data structures */
 template class statistics::flow::map<statistics::generic_flow_counters>;
@@ -229,66 +230,98 @@ bool sink::uses_feature(packetio::packet::sink_feature_flags flags) const
     return (bool(needed & flags));
 }
 
+using packet_key = std::pair<unsigned, unsigned>;
+
+static packet_key get_packet_key(const packetio::packet::packet_buffer* pkt)
+{
+    return (
+        std::make_pair(packetio::packet::rss_hash(pkt),
+                       packetio::packet::signature_stream_id(pkt).value_or(0)));
+}
+
 uint16_t sink::push_all(sink_result& results,
                         uint8_t index,
                         const packetio::packet::packet_buffer* const packets[],
                         uint16_t packets_length) const
 {
-    /* Update protocol statistics */
+    /* Do some initial setup */
+    auto& flows = results.flow(index);
     auto& protocol = results.protocol(index);
-    uint16_t start = 0;
-    while (start < packets_length) {
-        uint16_t end = start
-                       + std::min(static_cast<int>(burst_size_max),
-                                  packets_length - start);
-        uint16_t count = end - start;
 
-        auto packet_types =
-            std::array<packetio::packet::packet_type::flags, burst_size_max>{};
-        std::transform(
-            packets + start,
-            packets + end,
-            packet_types.data(),
-            [](const auto& packet) {
-                return (packetio::packet::packet_type_flags(packet).value);
-            });
+    auto flow_counters =
+        std::array<const statistics::generic_flow_counters*, burst_size_max>{};
+    auto packet_types =
+        std::array<packetio::packet::packet_type::flags, burst_size_max>{};
 
+    auto cursor = packets;
+    auto end = packets + packets_length;
+
+    while (cursor != end) {
+        /*
+         * Process incoming packet data in chunks.
+         * For each chunk, store the flow counter and packet type flags
+         * in arrays.
+         */
+        auto count = 0;
+        auto start = cursor;
+        auto stop = cursor
+                    + std::min(static_cast<long>(burst_size_max),
+                               std::distance(cursor, end));
+
+        auto key = get_packet_key(*cursor);
+        while (cursor != stop) {
+            auto* counters = flows.second.find(key);
+            if (!counters) { /* New flow; create counters */
+                auto to_insert = statistics::make_flow_counters(
+                    m_config.flow_counters, m_config.flow_digests);
+                to_insert.set_header(*cursor);
+
+                auto to_delete = flows.second.insert(key, std::move(to_insert));
+
+                flows.first.writer_add_gc_callback([to_delete]() {
+                    delete to_delete;
+                    return (sink_result::recycler::gc_callback_result::ok);
+                });
+
+                counters = std::addressof(flows.second.at(key));
+            }
+
+            auto pkt_type = packetio::packet::packet_type_flags(*cursor).value;
+
+            /*
+             * Optimization for packet bursts. Use the current packet stats
+             * and flags so long as the key matches the next packet.
+             */
+            for (;;) {
+                flow_counters[count] = counters;
+                packet_types[count++] = pkt_type;
+                if (++cursor == stop) { break; }
+                if (auto next_key = get_packet_key(*cursor); key != next_key) {
+                    key = next_key;
+                    break;
+                }
+            }
+        }
+
+        /* Update protocol counters in bulk */
         protocol.update(packet_types.data(), count);
 
-        start = end;
+        /*
+         * For any decent size flow count, the stat block we need is unlikely
+         * to be in memory, so prefetch it before we need it.
+         */
+        openperf::utils::prefetch_enumerate_for_each(
+            flow_counters.data(),
+            flow_counters.data() + count,
+            [](const auto* counters) { counters->write_prefetch(); },
+            [&](auto offset, const auto* counters) {
+                auto* pkt = start[offset];
+                counters->update(pkt);
+            },
+            counters_prefetch_offset);
+
+        cursor = stop;
     }
-
-    /* Update flow statistics */
-    auto& flows = results.flow(index);
-    auto cache = openperf::utils::flat_memoize<burst_size_max>(
-        [&](uint32_t rss_hash, uint32_t stream_id) {
-            return (flows.second.find(rss_hash, stream_id));
-        });
-
-    std::for_each(packets, packets + packets_length, [&](const auto& packet) {
-        auto hash = packetio::packet::rss_hash(packet);
-        auto stream_id =
-            packetio::packet::signature_stream_id(packet).value_or(0);
-        auto* counters = cache(hash, stream_id);
-        if (!counters) { /* New flow; create stats */
-            auto to_delete = flows.second.insert(
-                hash,
-                stream_id,
-                statistics::make_flow_counters(m_config.flow_counters,
-                                               m_config.flow_digests));
-
-            counters = cache.retry(hash, stream_id);
-            assert(counters);
-
-            counters->set_header(packet);
-
-            flows.first.writer_add_gc_callback([to_delete]() {
-                delete to_delete;
-                return (sink_result::recycler::gc_callback_result::ok);
-            });
-        }
-        counters->update(packet);
-    });
 
     flows.first.writer_process_gc_callbacks();
 

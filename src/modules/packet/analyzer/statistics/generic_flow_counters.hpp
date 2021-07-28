@@ -46,6 +46,8 @@ public:
         m_self->update(pkt);
     }
 
+    void write_prefetch() const { __builtin_prefetch(m_self.get(), 1, 0); }
+
     void dump(std::ostream& os) const { m_self->dump(os); }
 
 private:

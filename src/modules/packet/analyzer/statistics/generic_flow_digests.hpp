@@ -37,6 +37,8 @@ public:
         m_self->update<DigestType>(v);
     }
 
+    void write_prefetch() const { __builtin_prefetch(m_self.get(), 1, 0); }
+
 private:
     struct digests_concept
     {

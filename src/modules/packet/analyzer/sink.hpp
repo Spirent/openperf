@@ -11,6 +11,7 @@
 #include "packet/analyzer/statistics/generic_flow_digests.hpp"
 #include "packet/statistics/generic_protocol_counters.hpp"
 #include "packetio/generic_sink.hpp"
+#include "utils/flat_memoize.hpp"
 #include "utils/recycle.hpp"
 #include "utils/soa_container.hpp"
 
