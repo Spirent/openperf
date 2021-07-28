@@ -19,6 +19,10 @@ void update(StatsTuple& tuple, const packetio::packet::packet_buffer* pkt)
 
     static_assert(has_type<counter::frame_counter, StatsTuple>::value);
 
+    if constexpr (has_type_v<generic_flow_digests, StatsTuple>) {
+        get_counter<generic_flow_digests>(tuple).write_prefetch();
+    }
+
     const auto rx = packetio::packet::rx_timestamp(pkt);
 
     auto& frames = get_counter<counter::frame_counter>(tuple);
