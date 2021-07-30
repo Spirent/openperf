@@ -4,6 +4,7 @@ import argparse
 import datetime
 import json
 import ipaddress
+import os
 import pprint
 import random
 import requests
@@ -28,7 +29,7 @@ def distribute(total, buckets, n):
     return base + 1 if n < total % buckets else base
 
 
-def get_generator_blob(idx, args):
+def get_generator_blob(idx, port, args):
     src_macs = [get_random_mac(0) for x in range(0, args.flows)]
 
     eth_hdr = {
@@ -39,14 +40,20 @@ def get_generator_blob(idx, args):
                 {
                     'name': 'source',
                     'mac': {
-                        'list': [get_random_mac(0) for x in range(0, args.flows)]
+                        'sequence': {
+                            'count': args.flows,
+                            'start': get_random_mac(0)
+                        }
                     },
                     'permute': False
                 },
                 {
                     'name': 'destination',
                     'mac': {
-                        'list': [get_random_mac(1) for x in range(0, args.flows)]
+                        'sequence': {
+                            'count': args.flows,
+                            'start': get_random_mac(1)
+                        }
                     },
                     'permute': False
                 }
@@ -85,11 +92,15 @@ def get_generator_blob(idx, args):
 
     definition = {'packet': {'modifier_tie': 'zip',
                              'protocols': [eth_hdr, ip_hdr, udp_hdr]},
+                             #'protocols': [eth_hdr, ip_hdr]},
                   'length': {'fixed': args.frame_length}}
 
     if args.signatures:
         definition['signature'] = {'stream_id': idx + 1,
                                    'latency': 'end_of_frame'}
+        if args.fill:
+            fill = {args.fill: True} if args.fill == 'prbs' else {args.fill: 0}
+            definition['signature']['fill'] = fill
 
     load = {'burst_size': args.burst_size,
             'rate': {
@@ -106,18 +117,24 @@ def get_generator_blob(idx, args):
 
     return {
         'id': args.tag + str(idx),
-        'target_id': args.port,
+        'target_id': port,
         'config': config
     }
 
 
 def create_generators(args):
-    items = [get_generator_blob(idx, args) for idx in range(0, args.count)]
+    idx = 0
+    configs = list()
+    for i, port in enumerate(args.ports):
+        count = distribute(args.count, len(args.ports), i)
+        for j in range(0, count):
+            configs.append(get_generator_blob(idx, port, args))
+            idx += 1
 
     total = 0
     while total < args.count:
         r = requests.post("/".join([args.url, 'packet/generators/x/bulk-create']),
-                          json={'items': items[total:total + ADD_PAGE_SIZE]})
+                          json={'items': configs[total:total + ADD_PAGE_SIZE]})
         r.raise_for_status()
         total += ADD_PAGE_SIZE
 
@@ -184,8 +201,10 @@ def aggregate_results(args):
 
     if start and stop:
         delta = (stop - start).total_seconds()
-        print('{} packets ({} octets) in {} seconds ({:.2f} pps)'.format(
-            packets, octets, delta, packets / delta if delta else 0))
+        print('{} packets ({} octets) in {} seconds ({:.2f} pps, {:.2f} octets/sec)'.format(
+            packets, octets, delta,
+            packets / delta if delta else 0,
+            octets / delta if delta else 0))
     else:
         print('No results!')
 
@@ -208,7 +227,13 @@ def str_to_bool(v):
 
 def main():
     parser = argparse.ArgumentParser(description='Bulk generator testing for openperf')
-    parser.add_argument('url')
+
+    if 'URL' not in os.environ:
+        parser.add_argument('url')
+    else:
+        parser.add_argument('--url', default=os.environ.get('URL'),
+                            help='Dummy argument for environment variable')
+
     parser.add_argument('action', choices=['create', 'delete', 'start', 'stop', 'aggregate'])
     parser.add_argument('--tag', default='generator', type=str,
                         help='prefix for generator ids')
@@ -224,8 +249,10 @@ def main():
                         help="frame length (including CRC)")
     parser.add_argument('--signatures', default=False, type=str_to_bool,
                         nargs='?', const=True, help='add signatures to generator traffic')
-    parser.add_argument('--port', default='port0', type=str,
-                        help='specify the transmit port (create only)')
+    parser.add_argument('--fill', choices=['constant', 'increment', 'decrement', 'prbs'],
+                        help="specify packet fill", default=None)
+    parser.add_argument('--ports', nargs='+', type=str,
+                        help='specify the transmit ports (create only)')
     parser.add_argument('--src_network', default='198.18.0.0/15', type=ipaddress.IPv4Network,
                         help='specify the traffic source network (create only)')
     parser.add_argument('--src_offset', default=1, type=int,
@@ -235,6 +262,10 @@ def main():
     parser.add_argument('--dst_offset', default=65537, type=int,
                         help='specify the index of the first destination address (create only)')
     args = parser.parse_args()
+
+
+    if args.fill and not args.signatures:
+        args.signatures = True
 
     if args.action == 'create':
         create_generators(args)

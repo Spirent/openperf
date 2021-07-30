@@ -5,6 +5,7 @@ import collections
 import datetime
 import json
 import ipaddress
+import os
 import pprint
 import random
 import re
@@ -95,11 +96,15 @@ def get_generator_config(idx, src_if, dst_macs, dst_ips, args):
     udp_hdr = {'udp': {}}
 
     definition = {'packet': {'protocols': [eth_hdr, ipv4_hdr, udp_hdr]},
-                  'length': {'fixed': 1024},
+                  'length': {'fixed': args.frame_length},
                   'signature': {'stream_id': idx,
                                 'latency': 'end_of_frame'}}
 
-    load = {'burst_size': 1,
+    if args.signatures:
+        definition['signature'] = {'stream_id': idx + 1,
+                                   'latency': 'end_of_frame'}
+
+    load = {'burst_size': args.burst_size,
             'rate': {'value': distribute(args.rate, args.count, idx),
                      'period': 'seconds'},
             'units': 'frames'}
@@ -121,8 +126,14 @@ def create_interfaces(url, tag, port_id, network, count, offset):
 
     total = 0
     while total < count:
-        r = requests.post("/".join([url, 'interfaces/x/bulk-create']),
-                          json={'items': items[total:total + ADD_PAGE_SIZE]})
+        try:
+            r = requests.post("/".join([url, 'interfaces/x/bulk-create']),
+                              json={'items': items[total:total + ADD_PAGE_SIZE]},
+                              timeout=2)
+        except requests.Timeout:
+            print('Do you have a stack thread running?')
+            raise
+
         r.raise_for_status()
         total += ADD_PAGE_SIZE
 
@@ -271,10 +282,11 @@ def aggregate_results(args):
         counters = r.json()['flow_counters']
         octets += counters['octets_actual']
         packets += counters['packets_actual']
-        local_start = iso8601_to_datetime(counters['timestamp_first'])
-        local_stop = iso8601_to_datetime(counters['timestamp_last'])
-        start = local_start if not start else min(start, local_start)
-        stop = local_stop if not stop else max(stop, local_stop)
+        if 'timestamp_first' in counters:
+            local_start = iso8601_to_datetime(counters['timestamp_first'])
+            local_stop = iso8601_to_datetime(counters['timestamp_last'])
+            start = local_start if not start else min(start, local_start)
+            stop = local_stop if not stop else max(stop, local_stop)
 
     if start and stop:
         delta = (stop - start).total_seconds()
@@ -289,9 +301,31 @@ def stop_generators(args):
     aggregate_results(args)
 
 
+###
+# I shamelessly stole this from stackoverflow because my local python3 version
+# lacks argparse.BooleanOptionalAction. :(
+# See https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
+###
+def str_to_bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 def main():
     parser = argparse.ArgumentParser(description="Bulk learning testing for openperf")
-    parser.add_argument('url')
+
+    if 'URL' not in os.environ:
+        parser.add_argument('url')
+    else:
+        parser.add_argument('--url', default=os.environ.get('URL'),
+                            help='Dummy argument for environment variable')
+
     parser.add_argument('action', choices=['create', 'delete', 'start', 'stop'])
     parser.add_argument('--tag', default='learning', type=str,
                         help='prefix for interfaces and generators')
@@ -305,6 +339,13 @@ def main():
                         help='specify the index of the first network host address (add only)')
     parser.add_argument('--rate', default=100, type=int,
                         help='specify the aggregate packet rate in packets/sec (add only)')
+    parser.add_argument('--burst-size', default=1, type=int,
+                        help='generator burst size')
+    parser.add_argument('--frame-length', default=128, type=int,
+                        help="frame length (including CRC)")
+    parser.add_argument('--signatures', default=False, type=str_to_bool,
+                        nargs='?', const=True, help='add signatures to generator traffic')
+
     args=parser.parse_args()
 
     action_map = {
