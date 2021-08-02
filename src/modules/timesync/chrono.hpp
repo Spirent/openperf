@@ -125,7 +125,9 @@ struct monotime
     {
         using sec_t = decltype(bintime().bt_sec);
 
-        auto tc = counter::timecounter_now.load(std::memory_order_relaxed);
+        const auto* tc =
+            counter::timecounter_now.load(std::memory_order_relaxed);
+        if (!tc) { return (time_point(duration::zero())); }
         auto freq = tc->frequency().count();
         auto scalar = ((1ULL << 63) / freq) << 1;
         auto ticks = tc->now();
