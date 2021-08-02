@@ -315,13 +315,13 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
             input + end,
             std::begin(m_packet_scratch),
             output + start,
-            [&](auto buffer, auto&& pkt_data) {
-                auto&& [flow_idx,
-                        hdr_ptr,
-                        hdr_lens,
-                        hdr_flags,
-                        sig_config,
-                        pkt_len] = pkt_data;
+            [&](auto* buffer, const auto& pkt_data) {
+                const auto& [flow_idx,
+                             hdr_ptr,
+                             hdr_lens,
+                             hdr_flags,
+                             sig_config,
+                             pkt_len] = pkt_data;
 
                 /* Copy header into place */
                 const auto hdr_len = get_header_length(hdr_lens);

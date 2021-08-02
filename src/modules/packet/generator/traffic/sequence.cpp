@@ -520,21 +520,24 @@ public:
     template <typename... Args>
     unzip_output_iterator& operator=(const std::tuple<Args...>& tuple)
     {
-        detail::apply_two(
-            [](auto&& cursor, auto&& arg) { *cursor = arg; }, m_cursors, tuple);
+        detail::apply_two([](auto&& cursor, auto&& arg) { *cursor = arg; },
+                          std::forward<std::tuple<OutputIt...>>(m_cursors),
+                          tuple);
         return (*this);
     }
 
     unzip_output_iterator& operator++()
     {
-        std::apply([](auto&&... cursor) { (++cursor, ...); }, m_cursors);
+        std::apply([](auto&&... cursor) { (++cursor, ...); },
+                   std::forward<std::tuple<OutputIt...>>(m_cursors));
         return (*this);
     }
 
     unzip_output_iterator operator++(int)
     {
         auto to_return = *this;
-        std::apply([](auto&&... cursor) { (cursor++, ...); }, m_cursors);
+        std::apply([](auto&&... cursor) { (cursor++, ...); },
+                   std::forward<std::tuple<OutputIt...>>(m_cursors));
         return (to_return);
     }
 
@@ -565,7 +568,7 @@ OutputIt ring_transform_n(InputIt first,
 {
     const auto distance = std::distance(first, last);
     if (distance == 1) {
-        d_cursor = std::fill_n(d_cursor, n, xform(*cursor++));
+        d_cursor = std::fill_n(d_cursor, n, xform(*cursor));
     } else {
         auto idx = 0U;
         while (idx++ < n) {
