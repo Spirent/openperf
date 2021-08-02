@@ -35,6 +35,7 @@ $(PA_OBJ_DIR)/handler.o: OP_CXXFLAGS += -Wno-unused-parameter
 $(PA_OBJ_DIR)/init.o: OP_CXXFLAGS += -Wno-unused-parameter
 $(PA_OBJ_DIR)/server.o: OP_CXXFLAGS += -Wno-unused-parameter
 $(PA_OBJ_DIR)/sink.o: OP_CXXFLAGS += -Wno-unused-parameter
+$(PA_OBJ_DIR)/statistics/counter_factory.o: OP_CXXFLAGS += -fbracket-depth=1024
 
 PA_VERSIONED_FILES := init.cpp
 PA_UNVERSIONED_OBJECTS :=\
