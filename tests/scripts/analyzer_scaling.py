@@ -42,8 +42,6 @@ def create_analyzers(args):
 
     assert len(configs) > 0, 'No analyzer configs!'
 
-    for c in configs:
-        print(c)
     total = 0
     while total < len(configs):
         r = requests.post("/".join([args.url, 'packet/analyzers/x/bulk-create']),
