@@ -31,20 +31,25 @@ class InterfaceConfig(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'protocols': 'list[InterfaceProtocolConfig]'
+        'protocols': 'list[InterfaceProtocolConfig]',
+        'filter': 'str'
     }
 
     attribute_map = {
-        'protocols': 'protocols'
+        'protocols': 'protocols',
+        'filter': 'filter'
     }
 
-    def __init__(self, protocols=None):  # noqa: E501
+    def __init__(self, protocols=None, filter=None):  # noqa: E501
         """InterfaceConfig - a model defined in Swagger"""  # noqa: E501
 
         self._protocols = None
+        self._filter = None
         self.discriminator = None
 
         self.protocols = protocols
+        if filter is not None:
+            self.filter = filter
 
     @property
     def protocols(self):
@@ -67,6 +72,28 @@ class InterfaceConfig(object):
         :type: list[InterfaceProtocolConfig]
         """
         self._protocols = protocols
+
+    @property
+    def filter(self):
+        """Gets the filter of this InterfaceConfig.  # noqa: E501
+
+        Berkley Packet Filter (BPF) rules that matches input packets for this interface. An empty rule, the default, matches all packets.   # noqa: E501
+
+        :return: The filter of this InterfaceConfig.  # noqa: E501
+        :rtype: str
+        """
+        return self._filter
+
+    @filter.setter
+    def filter(self, filter):
+        """Sets the filter of this InterfaceConfig.
+
+        Berkley Packet Filter (BPF) rules that matches input packets for this interface. An empty rule, the default, matches all packets.   # noqa: E501
+
+        :param filter: The filter of this InterfaceConfig.  # noqa: E501
+        :type: str
+        """
+        self._filter = filter
 
     def to_dict(self):
         """Returns the model properties as a dict"""

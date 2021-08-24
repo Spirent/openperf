@@ -186,6 +186,11 @@ func (m *Interface) UnmarshalBinary(b []byte) error {
 // swagger:model InterfaceConfig
 type InterfaceConfig struct {
 
+	// Berkley Packet Filter (BPF) rules that matches input packets for this
+	// interface. An empty rule, the default, matches all packets.
+	//
+	Filter string `json:"filter,omitempty"`
+
 	// A stack of protocol configurations, beginning with the outermost protocol (i.e. closest to the physical port)
 	//
 	// Required: true

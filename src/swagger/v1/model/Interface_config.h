@@ -21,6 +21,7 @@
 
 #include "ModelBase.h"
 
+#include <string>
 #include "InterfaceProtocolConfig.h"
 #include <vector>
 
@@ -53,10 +54,19 @@ public:
     /// A stack of protocol configurations, beginning with the outermost protocol (i.e. closest to the physical port) 
     /// </summary>
     std::vector<std::shared_ptr<InterfaceProtocolConfig>>& getProtocols();
-    
+        /// <summary>
+    /// Berkley Packet Filter (BPF) rules that matches input packets for this interface. An empty rule, the default, matches all packets. 
+    /// </summary>
+    std::string getFilter() const;
+    void setFilter(std::string value);
+    bool filterIsSet() const;
+    void unsetFilter();
+
 protected:
     std::vector<std::shared_ptr<InterfaceProtocolConfig>> m_Protocols;
 
+    std::string m_Filter;
+    bool m_FilterIsSet;
 };
 
 }

@@ -19,6 +19,8 @@ namespace model {
 
 Interface_config::Interface_config()
 {
+    m_Filter = "";
+    m_FilterIsSet = false;
     
 }
 
@@ -43,6 +45,10 @@ nlohmann::json Interface_config::toJson() const
         }
         val["protocols"] = jsonArray;
             }
+    if(m_FilterIsSet)
+    {
+        val["filter"] = ModelBase::toJson(m_Filter);
+    }
     
 
     return val;
@@ -69,6 +75,11 @@ void Interface_config::fromJson(nlohmann::json& val)
             
         }
     }
+    if(val.find("filter") != val.end())
+    {
+        setFilter(val.at("filter"));
+        
+    }
     
 }
 
@@ -76,6 +87,23 @@ void Interface_config::fromJson(nlohmann::json& val)
 std::vector<std::shared_ptr<InterfaceProtocolConfig>>& Interface_config::getProtocols()
 {
     return m_Protocols;
+}
+std::string Interface_config::getFilter() const
+{
+    return m_Filter;
+}
+void Interface_config::setFilter(std::string value)
+{
+    m_Filter = value;
+    m_FilterIsSet = true;
+}
+bool Interface_config::filterIsSet() const
+{
+    return m_FilterIsSet;
+}
+void Interface_config::unsetFilter()
+{
+    m_FilterIsSet = false;
 }
 
 }

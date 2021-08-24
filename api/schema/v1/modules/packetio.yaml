@@ -304,6 +304,11 @@ definitions:
             items:
               $ref: "#/definitions/InterfaceProtocolConfig"
             minItems: 1
+          filter:
+            type: string
+            description: |
+              Berkley Packet Filter (BPF) rules that matches input packets for this
+              interface. An empty rule, the default, matches all packets.
         required:
           - protocols
       stats:
