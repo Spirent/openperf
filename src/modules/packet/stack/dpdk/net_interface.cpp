@@ -457,6 +457,7 @@ net_interface::net_interface(std::string_view id,
     , m_max_gso_length(net_interface_max_gso_length(port_index))
     , m_config(config)
     , m_transmit(tx)
+    , m_filter(config.filter)
 {
     m_netif.state = this;
 
@@ -524,6 +525,11 @@ void net_interface::unconfigure()
                                     &m_netif);
 
     netifapi_netif_remove(&m_netif);
+}
+
+bool net_interface::accept(const rte_mbuf* packet) const
+{
+    return (m_filter.accept(packet));
 }
 
 bool net_interface::is_up() const

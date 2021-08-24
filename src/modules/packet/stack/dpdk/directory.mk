@@ -2,6 +2,8 @@
 # DPDK specific components for our LwIP based stack
 #
 
+STACK_DEPENDS += packet_bpf
+
 STACK_SOURCES += \
 	dpdk/gso_utils.cpp \
 	dpdk/lwip.cpp \
@@ -9,6 +11,7 @@ STACK_SOURCES += \
 	dpdk/net_interface.cpp \
 	dpdk/netif_utils.cpp \
 	dpdk/offload_utils.cpp \
+	dpdk/packet_filter.cpp \
 	dpdk/pbuf.c \
 	dpdk/pbuf_utils.c \
 	dpdk/stack_factory.cpp \

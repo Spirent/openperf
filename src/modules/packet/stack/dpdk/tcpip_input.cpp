@@ -7,6 +7,7 @@
 #include "lwip/snmp.h"
 #include "lwip/tcpip.h"
 
+#include "packet/stack/dpdk/net_interface.hpp"
 #include "packet/stack/dpdk/pbuf_utils.h"
 #include "packet/stack/dpdk/tcpip_input.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
@@ -16,9 +17,9 @@ namespace openperf::packet::stack::dpdk {
 namespace impl {
 
 /* Receive worker context */
-err_t tcpip_input_direct::inject(netif* ifp, rte_mbuf* mbuf)
+err_t tcpip_input_direct::inject(netif* ifp, rte_mbuf* packet)
 {
-    return (ifp->input(packet_stack_pbuf_synchronize(mbuf), ifp));
+    return (ifp->input(packet_stack_pbuf_synchronize(packet), ifp));
 }
 
 /* Stack context */
@@ -111,9 +112,15 @@ void tcpip_input::init()
 
 void tcpip_input::fini() { m_input.emplace<impl::tcpip_input_direct>(); }
 
-err_t tcpip_input::inject(netif* netif, rte_mbuf* packet)
+err_t tcpip_input::inject(netif* ifp, rte_mbuf* packet)
 {
-    return (std::visit([&](auto& impl) { return (impl.inject(netif, packet)); },
+    auto* interface = static_cast<net_interface*>(ifp->state);
+    if (!interface->accept(packet)) {
+        MIB2_STATS_NETIF_INC_ATOMIC(ifp, ifinerrors);
+        return (ERR_BUF);
+    }
+
+    return (std::visit([&](auto& impl) { return (impl.inject(ifp, packet)); },
                        m_input));
 }
 
