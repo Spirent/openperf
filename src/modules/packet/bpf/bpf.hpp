@@ -122,14 +122,34 @@ public:
     bpf();
     bpf(std::string_view filter_str, int link_type = DLT_EN10MB);
     bpf(const bpf_insn* insns, unsigned int len, uint32_t flags = 0);
-    bpf(const bpf& bpf) = delete;
+
+    bpf(const bpf&) = delete;
+    bpf& operator=(const bpf&) = delete;
+
+    bpf(bpf&& other)
+        : m_flags(other.m_flags)
+        , m_insn(std::move(other.m_insn))
+        , m_jit(std::move(other.m_jit))
+        , m_funcs(other.m_funcs)
+    {}
+
+    bpf& operator=(bpf&& other)
+    {
+        if (this != &other) {
+            m_flags = other.m_flags;
+            std::swap(m_insn, other.m_insn);
+            std::swap(m_jit, other.m_jit);
+            m_funcs = other.m_funcs;
+        }
+        return (*this);
+    }
 
     /**
      * Runs the filter program and returns the results in the results array.
      * @param[in] packets The packets to run the filter on
      * @param[out] results The packets which matched the filter
      * @param[in] length The length of the packets and results array
-     * @return The number of packets which matche
+     * @return The number of packets which matched the filter
      */
     uint16_t filter_burst(
         const openperf::packetio::packet::packet_buffer* const packets[],
