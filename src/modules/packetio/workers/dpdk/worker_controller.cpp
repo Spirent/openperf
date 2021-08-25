@@ -251,7 +251,6 @@ worker_controller::worker_controller(void* context,
         portq_descriptors, m_tx_schedulers, m_tx_workers, queues));
 
     /* And start them */
-    m_driver.start_all_ports();
     m_workers->start(m_context, num_workers());
 }
 
@@ -260,7 +259,6 @@ worker_controller::~worker_controller()
     if (!m_workers) return;
 
     m_workers->stop(m_context, num_workers());
-    m_driver.stop_all_ports();
     m_recycler->writer_process_gc_callbacks();
     rte_eal_mp_wait_lcore();
     worker::port_queues::instance().unset();
