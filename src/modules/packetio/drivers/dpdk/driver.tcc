@@ -303,17 +303,25 @@ template <typename ProcessType> driver<ProcessType>::driver()
                   std::end(m_ethdev_ports),
                   [](const auto& item) { log_port(item.first, item.second); });
 
-    /* Finally, setup mbuf signature/offload flags */
+    /* Setup mbuf signature/offload flags */
     mbuf_signature_init();
     mbuf_rx_prbs_init();
     mbuf_tx_init();
+
+    /* Finally, start all ports */
+    std::for_each(
+        std::begin(m_ethdev_ports),
+        std::end(m_ethdev_ports),
+        [this](const auto& pair) { m_process->start_port(pair.first); });
 }
 
 template <typename ProcessType> driver<ProcessType>::~driver()
 {
-    if (m_ethdev_ports.empty()) { return; }
-
-    stop_all_ports();
+    /* Stop all ports */
+    std::for_each(
+        std::begin(m_ethdev_ports),
+        std::end(m_ethdev_ports),
+        [this](const auto& pair) { m_process->stop_port(pair.first); });
 }
 
 template <typename ProcessType>
@@ -479,22 +487,6 @@ driver<ProcessType>::delete_port(std::string_view id)
     m_bonded_ports.erase(port_idx);
     m_ethdev_ports.erase(port_idx);
     return {};
-}
-
-template <typename ProcessType> void driver<ProcessType>::start_all_ports()
-{
-    std::for_each(
-        std::begin(m_ethdev_ports),
-        std::end(m_ethdev_ports),
-        [this](const auto& pair) { m_process->start_port(pair.first); });
-}
-
-template <typename ProcessType> void driver<ProcessType>::stop_all_ports()
-{
-    std::for_each(
-        std::begin(m_ethdev_ports),
-        std::end(m_ethdev_ports),
-        [this](const auto& pair) { m_process->stop_port(pair.first); });
 }
 
 template <typename ProcessType> bool driver<ProcessType>::is_usable()

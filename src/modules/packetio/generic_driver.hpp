@@ -43,10 +43,6 @@ public:
         return m_self->delete_port(id);
     }
 
-    void start_all_ports() { return m_self->start_all_ports(); }
-
-    void stop_all_ports() { return m_self->stop_all_ports(); }
-
     bool is_usable() { return m_self->is_usable(); }
 
 private:
@@ -61,8 +57,6 @@ private:
         create_port(std::string_view id, const port::config_data& config) = 0;
         virtual tl::expected<void, std::string>
         delete_port(std::string_view id) = 0;
-        virtual void start_all_ports() = 0;
-        virtual void stop_all_ports() = 0;
         virtual bool is_usable() = 0;
     };
 
@@ -100,10 +94,6 @@ private:
         {
             return m_driver.delete_port(id);
         }
-
-        void start_all_ports() override { return m_driver.start_all_ports(); }
-
-        void stop_all_ports() override { return m_driver.stop_all_ports(); }
 
         bool is_usable() override { return m_driver.is_usable(); }
 
