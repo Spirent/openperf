@@ -1,4 +1,5 @@
 #include "packetio/drivers/dpdk/port/rss_hasher.hpp"
+#include "utils/prefetch_for_each.hpp"
 
 namespace openperf::packetio::dpdk::port {
 
@@ -141,15 +142,20 @@ static uint16_t hash_headers([[maybe_unused]] uint16_t port_id,
                              [[maybe_unused]] uint16_t max_packets,
                              [[maybe_unused]] void* user_param)
 {
-    auto hdr_lens = rte_net_hdr_lens{};
-    std::for_each(packets, packets + nb_packets, [&](auto&& mbuf) {
-        const auto ptype = rte_net_get_ptype(mbuf, &hdr_lens, decode_mask);
-        if (RTE_ETH_IS_IPV4_HDR(ptype)) {
-            mbuf->hash.rss = calculate_ipv4_hash(mbuf, hdr_lens, ptype);
-        } else if (RTE_ETH_IS_IPV6_HDR(ptype)) {
-            mbuf->hash.rss = calculate_ipv6_hash(mbuf, hdr_lens, ptype);
-        }
-    });
+    utils::prefetch_for_each(
+        packets,
+        packets + nb_packets,
+        [](const auto* mbuf) { rte_prefetch0(rte_pktmbuf_mtod(mbuf, void*)); },
+        [](auto* mbuf) {
+            auto hdr_lens = rte_net_hdr_lens{};
+            const auto ptype = rte_net_get_ptype(mbuf, &hdr_lens, decode_mask);
+            if (RTE_ETH_IS_IPV4_HDR(ptype)) {
+                mbuf->hash.rss = calculate_ipv4_hash(mbuf, hdr_lens, ptype);
+            } else if (RTE_ETH_IS_IPV6_HDR(ptype)) {
+                mbuf->hash.rss = calculate_ipv6_hash(mbuf, hdr_lens, ptype);
+            }
+        },
+        mbuf_prefetch_offset);
 
     return (nb_packets);
 }

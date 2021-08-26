@@ -1,4 +1,5 @@
 #include "packetio/drivers/dpdk/port/packet_type_decoder.hpp"
+#include "utils/prefetch_for_each.hpp"
 
 namespace openperf::packetio::dpdk::port {
 
@@ -12,9 +13,14 @@ static uint16_t decode_packet_types([[maybe_unused]] uint16_t port_id,
                                     [[maybe_unused]] uint16_t max_packets,
                                     [[maybe_unused]] void* user_param)
 {
-    std::for_each(packets, packets + nb_packets, [&](auto&& mbuf) {
-        mbuf->packet_type = rte_net_get_ptype(mbuf, nullptr, decode_mask);
-    });
+    utils::prefetch_for_each(
+        packets,
+        packets + nb_packets,
+        [](const auto* mbuf) { rte_prefetch0(rte_pktmbuf_mtod(mbuf, void*)); },
+        [](auto* mbuf) {
+            mbuf->packet_type = rte_net_get_ptype(mbuf, nullptr, decode_mask);
+        },
+        mbuf_prefetch_offset);
 
     return (nb_packets);
 }
