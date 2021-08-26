@@ -20,6 +20,7 @@ PIO_DRIVER_SOURCES += \
 	port/signature_utils.cpp \
 	port/timestamper.cpp \
 	queue_utils.cpp \
+	quirks.cpp \
 	topology_utils.cpp
 
 ifeq ($(OP_PACKETIO_DPDK_PROCESS_TYPE),primary)

@@ -8,13 +8,6 @@
 #include "lib/packet/type/mac_address.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
 
-namespace openperf::packetio::dpdk::driver_names {
-
-inline constexpr std::string_view ring = "net_ring";
-inline constexpr std::string_view virtio = "net_virtio";
-
-} // namespace openperf::packetio::dpdk::driver_names
-
 namespace openperf::packetio::dpdk::port_info {
 
 unsigned socket_id(uint16_t port_id);
@@ -53,7 +46,6 @@ rte_eth_txconf default_txconf(uint16_t port_id);
 uint16_t tx_tso_segment_max(uint16_t port_id);
 
 bool lsc_interrupt(uint16_t port_id);
-bool rxq_interrupt(uint16_t port_id);
 
 template <typename T>
 static T get_info_field(int id, T rte_eth_dev_info::*field)

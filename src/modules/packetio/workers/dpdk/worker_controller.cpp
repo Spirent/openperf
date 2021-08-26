@@ -3,7 +3,9 @@
 #include <vector>
 
 #include "core/op_core.h"
+#include "packetio/drivers/dpdk/arg_parser.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/names.hpp"
 #include "packetio/drivers/dpdk/port_info.hpp"
 #include "packetio/drivers/dpdk/topology_utils.hpp"
 #include "packetio/workers/dpdk/event_loop_adapter.hpp"
@@ -168,7 +170,8 @@ static void maybe_disable_rxq_tag_detection(const port::filter& filter)
 
 static void maybe_update_rxq_lro_mode(uint16_t port_index)
 {
-    if (port_info::rx_offloads(port_index) & DEV_RX_OFFLOAD_TCP_LRO) {
+    if (!config::dpdk_disable_lro()
+        && port_info::rx_offloads(port_index) & DEV_RX_OFFLOAD_TCP_LRO) {
         auto& queues = worker::port_queues::instance();
         auto& container = queues[port_index];
         for (uint16_t i = 0; i < container.rx_queues(); i++) {
@@ -181,13 +184,6 @@ static void maybe_update_rxq_lro_mode(uint16_t port_index)
             rxq->flags(rxq->flags() | rx_feature_flags::hardware_lro);
         }
     }
-}
-
-bool always_has_tx_sink(uint16_t port_index)
-{
-    // Always need tx sink callback when using net_ring driver
-    // This is used to clear the mbuf tx_sink flag so it is not seen on rx
-    return (port_info::driver_name(port_index) == driver_names::ring);
 }
 
 worker_controller::worker_controller(void* context,

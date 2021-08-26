@@ -57,6 +57,9 @@ inline void add_dpdk_argument(std::vector<std::string>& args,
     }
 }
 
+bool dpdk_disable_lro();
+bool dpdk_disable_rx_irq();
+
 } /* namespace openperf::packetio::dpdk::config */
 
 #endif /* _OP_PACKETIO_DPDK_ARG_PARSER_HPP_ */

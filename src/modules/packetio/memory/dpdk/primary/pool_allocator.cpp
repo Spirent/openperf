@@ -78,15 +78,18 @@ static void log_mempool(const struct rte_mempool* mpool)
            mpool->socket_id);
 }
 
-static rte_mempool* create_mempool(const char* name, size_t size, int socket_id)
+static rte_mempool* create_mempool(const char* name,
+                                   size_t nb_mbufs,
+                                   uint16_t mbuf_size,
+                                   int socket_id)
 {
-    size_t nb_mbufs = op_min(131072, pool_size_adjust(op_max(1024U, size)));
+    nb_mbufs = op_min(131072, pool_size_adjust(op_max(1024U, nb_mbufs)));
 
     rte_mempool* mp = rte_pktmbuf_pool_create_by_ops(name,
                                                      nb_mbufs,
                                                      get_cache_size(nb_mbufs),
                                                      mempool_private_size,
-                                                     RTE_MBUF_DEFAULT_BUF_SIZE,
+                                                     mbuf_size,
                                                      socket_id,
                                                      "stack");
 
@@ -106,9 +109,9 @@ void pool_allocator::init(const std::vector<uint16_t>& port_indexes,
     /* Base default pool size on the number and types of ports on each NUMA node
      */
     for (auto i = 0U; i < RTE_MAX_NUMA_NODES; i++) {
-        auto sum = std::accumulate(
-            begin(port_indexes),
-            end(port_indexes),
+        auto nb_mbufs = std::accumulate(
+            std::begin(port_indexes),
+            std::end(port_indexes),
             0,
             [&](unsigned x, const uint16_t id) {
                 const auto& cursor = q_counts.find(id);
@@ -118,14 +121,35 @@ void pool_allocator::init(const std::vector<uint16_t>& port_indexes,
                 return (x + (cursor->second.rx * port_info::rx_desc_count(id))
                         + (cursor->second.tx * port_info::tx_desc_count(id)));
             });
-        if (sum) {
-            /* We need a mempool for this NUMA node */
+
+        if (nb_mbufs) {
+            /*
+             * We need a mempool for this NUMA zone.
+             * Figure out how large the mbufs in the pool need to be.
+             * We prefer smaller buffers, however if our ports don't
+             * support fast scatter operations, resort to big buffers.
+             */
+            auto pkt_lengths = std::vector<uint16_t>{};
+            assert(!port_indexes.empty());
+            std::transform(std::begin(port_indexes),
+                           std::end(port_indexes),
+                           std::back_inserter(pkt_lengths),
+                           [](const auto port_id) {
+                               return (port_info::rx_offloads(port_id)
+                                               & DEV_RX_OFFLOAD_SCATTER
+                                           ? RTE_MBUF_DEFAULT_BUF_SIZE
+                                           : port_info::max_rx_pktlen(port_id));
+                           });
+            auto mbuf_size = *(std::max_element(std::begin(pkt_lengths),
+                                                std::end(pkt_lengths)));
+
             std::array<char, RTE_MEMPOOL_NAMESIZE> name_buf;
             snprintf(name_buf.data(),
                      RTE_MEMPOOL_NAMESIZE,
                      mempool_format.data(),
                      i);
-            m_pools.emplace(i, create_mempool(name_buf.data(), sum, i));
+            m_pools.emplace(
+                i, create_mempool(name_buf.data(), nb_mbufs, mbuf_size, i));
         }
     }
 };

@@ -34,4 +34,20 @@ bool dpdk_test_mode()
     return (result.value_or(false));
 }
 
+bool dpdk_disable_lro()
+{
+    auto no_lro = config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
+                      op_packetio_dpdk_no_lro)
+                      .value_or(false);
+    return (no_lro);
+}
+
+bool dpdk_disable_rx_irq()
+{
+    auto no_rx_irqs = config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
+                          op_packetio_dpdk_no_rx_irqs)
+                          .value_or(false);
+    return (no_rx_irqs);
+}
+
 } // namespace openperf::packetio::dpdk::config

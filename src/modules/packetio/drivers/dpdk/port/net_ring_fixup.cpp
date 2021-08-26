@@ -1,8 +1,9 @@
 #include <cstring>
 
+#include "packetio/drivers/dpdk/mbuf_tx.hpp"
+#include "packetio/drivers/dpdk/names.hpp"
 #include "packetio/drivers/dpdk/port/net_ring_fixup.hpp"
 #include "packetio/drivers/dpdk/port_info.hpp"
-#include "packetio/drivers/dpdk/mbuf_tx.hpp"
 
 namespace openperf::packetio::dpdk::port {
 
