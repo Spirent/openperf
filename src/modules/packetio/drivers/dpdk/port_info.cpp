@@ -50,8 +50,9 @@ libpacket::type::mac_address mac_address(uint16_t port_id)
 uint32_t max_rx_pktlen(uint16_t port_id)
 {
     return (
-        std::min(quirks::sane_max_rx_pktlen(port_id),
-                 get_info_field(port_id, &rte_eth_dev_info::max_rx_pktlen)));
+        std::clamp(get_info_field(port_id, &rte_eth_dev_info::max_rx_pktlen),
+                   static_cast<uint32_t>(RTE_MBUF_DEFAULT_BUF_SIZE),
+                   quirks::sane_max_rx_pktlen(port_id)));
 }
 
 uint32_t max_lro_pkt_size(uint16_t port_id)
