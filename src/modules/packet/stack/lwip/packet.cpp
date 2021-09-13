@@ -128,7 +128,7 @@ void packet_input(struct pbuf* p, struct netif* inp)
                 /* Generate sockaddr_ll data */
                 struct sockaddr_ll sa = {
                     .sll_family = AF_PACKET,
-                    .sll_protocol = lwip_htons(ethhdr->type),
+                    .sll_protocol = ethhdr->type,
                     .sll_ifindex = netif_get_index(inp),
                     .sll_hatype = ARPHRD_ETHER,
                     .sll_pkttype = PACKET_HOST,
@@ -144,8 +144,8 @@ void packet_input(struct pbuf* p, struct netif* inp)
                     /* We need to trim the header from the clone */
                     u16_t to_drop = SIZEOF_ETH_HDR;
 #if ETHARP_SUPPORT_VLAN
-                    if (proto == PP_HTONS(ETHTYPE_VLAN)) {
-                        to_drop = SIZEOF_ETH_HDR + SIZEOF_VLAN_HDR;
+                    if (ethhdr->type == PP_HTONS(ETHTYPE_VLAN)) {
+                        to_drop += SIZEOF_VLAN_HDR;
                     }
 #endif
                     pbuf_remove_header(clone, to_drop);
