@@ -607,6 +607,7 @@ void handler::bulk_stop_analyzers(const request_type& request,
             request);
     if (!swagger_request) {
         response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
     }
 
     const auto& ids = swagger_request->getIds();
