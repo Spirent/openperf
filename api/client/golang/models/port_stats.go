@@ -35,6 +35,10 @@ type PortStats struct {
 	// Required: true
 	TxBytes *int64 `json:"tx_bytes"`
 
+	// Packets that could not be transmitted when scheduled
+	// Required: true
+	TxDeferred *int64 `json:"tx_deferred"`
+
 	// Transmit-side errors
 	// Required: true
 	TxErrors *int64 `json:"tx_errors"`
@@ -61,6 +65,10 @@ func (m *PortStats) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateTxBytes(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateTxDeferred(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -108,6 +116,15 @@ func (m *PortStats) validateRxPackets(formats strfmt.Registry) error {
 func (m *PortStats) validateTxBytes(formats strfmt.Registry) error {
 
 	if err := validate.Required("tx_bytes", "body", m.TxBytes); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *PortStats) validateTxDeferred(formats strfmt.Registry) error {
+
+	if err := validate.Required("tx_deferred", "body", m.TxDeferred); err != nil {
 		return err
 	}
 

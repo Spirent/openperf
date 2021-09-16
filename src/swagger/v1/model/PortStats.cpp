@@ -25,6 +25,7 @@ PortStats::PortStats()
     m_Tx_bytes = 0L;
     m_Rx_errors = 0L;
     m_Tx_errors = 0L;
+    m_Tx_deferred = 0L;
     
 }
 
@@ -47,6 +48,7 @@ nlohmann::json PortStats::toJson() const
     val["tx_bytes"] = m_Tx_bytes;
     val["rx_errors"] = m_Rx_errors;
     val["tx_errors"] = m_Tx_errors;
+    val["tx_deferred"] = m_Tx_deferred;
     
 
     return val;
@@ -60,6 +62,7 @@ void PortStats::fromJson(nlohmann::json& val)
     setTxBytes(val.at("tx_bytes"));
     setRxErrors(val.at("rx_errors"));
     setTxErrors(val.at("tx_errors"));
+    setTxDeferred(val.at("tx_deferred"));
     
 }
 
@@ -116,6 +119,15 @@ int64_t PortStats::getTxErrors() const
 void PortStats::setTxErrors(int64_t value)
 {
     m_Tx_errors = value;
+    
+}
+int64_t PortStats::getTxDeferred() const
+{
+    return m_Tx_deferred;
+}
+void PortStats::setTxDeferred(int64_t value)
+{
+    m_Tx_deferred = value;
     
 }
 

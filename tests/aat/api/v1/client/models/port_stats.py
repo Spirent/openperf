@@ -36,7 +36,8 @@ class PortStats(object):
         'rx_bytes': 'int',
         'tx_bytes': 'int',
         'rx_errors': 'int',
-        'tx_errors': 'int'
+        'tx_errors': 'int',
+        'tx_deferred': 'int'
     }
 
     attribute_map = {
@@ -45,10 +46,11 @@ class PortStats(object):
         'rx_bytes': 'rx_bytes',
         'tx_bytes': 'tx_bytes',
         'rx_errors': 'rx_errors',
-        'tx_errors': 'tx_errors'
+        'tx_errors': 'tx_errors',
+        'tx_deferred': 'tx_deferred'
     }
 
-    def __init__(self, rx_packets=None, tx_packets=None, rx_bytes=None, tx_bytes=None, rx_errors=None, tx_errors=None):  # noqa: E501
+    def __init__(self, rx_packets=None, tx_packets=None, rx_bytes=None, tx_bytes=None, rx_errors=None, tx_errors=None, tx_deferred=None):  # noqa: E501
         """PortStats - a model defined in Swagger"""  # noqa: E501
 
         self._rx_packets = None
@@ -57,6 +59,7 @@ class PortStats(object):
         self._tx_bytes = None
         self._rx_errors = None
         self._tx_errors = None
+        self._tx_deferred = None
         self.discriminator = None
 
         self.rx_packets = rx_packets
@@ -65,6 +68,7 @@ class PortStats(object):
         self.tx_bytes = tx_bytes
         self.rx_errors = rx_errors
         self.tx_errors = tx_errors
+        self.tx_deferred = tx_deferred
 
     @property
     def rx_packets(self):
@@ -197,6 +201,28 @@ class PortStats(object):
         :type: int
         """
         self._tx_errors = tx_errors
+
+    @property
+    def tx_deferred(self):
+        """Gets the tx_deferred of this PortStats.  # noqa: E501
+
+        Packets that could not be transmitted when scheduled  # noqa: E501
+
+        :return: The tx_deferred of this PortStats.  # noqa: E501
+        :rtype: int
+        """
+        return self._tx_deferred
+
+    @tx_deferred.setter
+    def tx_deferred(self, tx_deferred):
+        """Sets the tx_deferred of this PortStats.
+
+        Packets that could not be transmitted when scheduled  # noqa: E501
+
+        :param tx_deferred: The tx_deferred of this PortStats.  # noqa: E501
+        :type: int
+        """
+        self._tx_deferred = tx_deferred
 
     def to_dict(self):
         """Returns the model properties as a dict"""

@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **tx_bytes** | **int** | Transmitted bytes | 
 **rx_errors** | **int** | Receive-side errors | 
 **tx_errors** | **int** | Transmit-side errors | 
+**tx_deferred** | **int** | Packets that could not be transmitted when scheduled | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

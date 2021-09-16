@@ -77,6 +77,11 @@ public:
     /// </summary>
     int64_t getTxErrors() const;
     void setTxErrors(int64_t value);
+        /// <summary>
+    /// Packets that could not be transmitted when scheduled
+    /// </summary>
+    int64_t getTxDeferred() const;
+    void setTxDeferred(int64_t value);
     
 protected:
     int64_t m_Rx_packets;
@@ -90,6 +95,8 @@ protected:
     int64_t m_Rx_errors;
 
     int64_t m_Tx_errors;
+
+    int64_t m_Tx_deferred;
 
 };
 
