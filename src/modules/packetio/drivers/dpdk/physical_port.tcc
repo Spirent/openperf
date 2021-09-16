@@ -6,6 +6,7 @@
 #include "packetio/generic_port.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/port_info.hpp"
+#include "packetio/drivers/dpdk/port_stats.hpp"
 
 namespace openperf::packetio::dpdk {
 
@@ -53,7 +54,9 @@ public:
                 .tx_bytes = static_cast<int64_t>(stats.obytes),
                 .rx_errors = static_cast<int64_t>(stats.imissed + stats.ierrors
                                                   + stats.rx_nombuf),
-                .tx_errors = static_cast<int64_t>(stats.oerrors)};
+                .tx_errors = static_cast<int64_t>(stats.oerrors),
+                .tx_deferred =
+                    static_cast<int64_t>(port_stats::tx_deferred(m_idx))};
     }
 
     port::config_data config() const

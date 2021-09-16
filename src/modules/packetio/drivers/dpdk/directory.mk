@@ -6,6 +6,7 @@ PIO_DRIVER_SOURCES += \
 	arg_parser.cpp \
 	arg_parser_register.c \
 	port_info.cpp \
+	port_stats.cpp \
 	port/checksum_calculator.cpp \
 	port/filter.cpp \
 	port/flow_filter.cpp \

@@ -1,6 +1,7 @@
 #include <sys/timerfd.h>
 #include <unistd.h>
 
+#include "packetio/drivers/dpdk/port_stats.hpp"
 #include "packetio/workers/dpdk/tx_scheduler.hpp"
 #include "utils/overloaded_visitor.hpp"
 
@@ -281,6 +282,7 @@ static uint16_t do_transmit(uint16_t port_idx,
 
             /* Queue is still full after our retries; buffer packets */
             if (sent < to_send) {
+                port_stats::tx_deferred_add(port_idx, to_send - sent);
                 std::copy_n(outgoing.data() + sent,
                             to_send - sent,
                             std::back_inserter(untransmitted));

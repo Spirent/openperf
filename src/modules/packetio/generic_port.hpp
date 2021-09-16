@@ -51,6 +51,7 @@ struct stats_data
     int64_t tx_bytes;
     int64_t rx_errors;
     int64_t tx_errors;
+    int64_t tx_deferred;
 };
 
 struct dpdk_config
