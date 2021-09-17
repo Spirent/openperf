@@ -29,6 +29,13 @@ type PacketGeneratorFlowCounters struct {
 	// Minimum: 0
 	OctetsActual *int64 `json:"octets_actual"`
 
+	// The total number of octets that were dropped due to overrunning the
+	// transmit queue. Transmit packet drops are not enabled by default and
+	// must be explicitly enabled.
+	//
+	// Minimum: 0
+	OctetsDropped *int64 `json:"octets_dropped,omitempty"`
+
 	// The total number of octets that should have been transmitted
 	// Required: true
 	// Minimum: 0
@@ -38,6 +45,13 @@ type PacketGeneratorFlowCounters struct {
 	// Required: true
 	// Minimum: 0
 	PacketsActual *int64 `json:"packets_actual"`
+
+	// The total number of packets that were dropped due to overrunning the
+	// transmit queue. Transmit packet drops are not enabled by default and
+	// must be explicitly enabled.
+	//
+	// Minimum: 0
+	PacketsDropped *int64 `json:"packets_dropped,omitempty"`
 
 	// The total number of packets that should have been transmitted
 	// Required: true
@@ -65,11 +79,19 @@ func (m *PacketGeneratorFlowCounters) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateOctetsDropped(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateOctetsIntended(formats); err != nil {
 		res = append(res, err)
 	}
 
 	if err := m.validatePacketsActual(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validatePacketsDropped(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -117,6 +139,18 @@ func (m *PacketGeneratorFlowCounters) validateOctetsActual(formats strfmt.Regist
 	return nil
 }
 
+func (m *PacketGeneratorFlowCounters) validateOctetsDropped(formats strfmt.Registry) error {
+	if swag.IsZero(m.OctetsDropped) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("octets_dropped", "body", *m.OctetsDropped, 0, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *PacketGeneratorFlowCounters) validateOctetsIntended(formats strfmt.Registry) error {
 
 	if err := validate.Required("octets_intended", "body", m.OctetsIntended); err != nil {
@@ -137,6 +171,18 @@ func (m *PacketGeneratorFlowCounters) validatePacketsActual(formats strfmt.Regis
 	}
 
 	if err := validate.MinimumInt("packets_actual", "body", *m.PacketsActual, 0, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *PacketGeneratorFlowCounters) validatePacketsDropped(formats strfmt.Registry) error {
+	if swag.IsZero(m.PacketsDropped) { // not required
+		return nil
+	}
+
+	if err := validate.MinimumInt("packets_dropped", "body", *m.PacketsDropped, 0, false); err != nil {
 		return err
 	}
 

@@ -33,8 +33,10 @@ class PacketGeneratorFlowCounters(object):
     swagger_types = {
         'errors': 'int',
         'octets_actual': 'int',
+        'octets_dropped': 'int',
         'octets_intended': 'int',
         'packets_actual': 'int',
+        'packets_dropped': 'int',
         'packets_intended': 'int',
         'timestamp_first': 'datetime',
         'timestamp_last': 'datetime'
@@ -43,20 +45,24 @@ class PacketGeneratorFlowCounters(object):
     attribute_map = {
         'errors': 'errors',
         'octets_actual': 'octets_actual',
+        'octets_dropped': 'octets_dropped',
         'octets_intended': 'octets_intended',
         'packets_actual': 'packets_actual',
+        'packets_dropped': 'packets_dropped',
         'packets_intended': 'packets_intended',
         'timestamp_first': 'timestamp_first',
         'timestamp_last': 'timestamp_last'
     }
 
-    def __init__(self, errors=None, octets_actual=None, octets_intended=None, packets_actual=None, packets_intended=None, timestamp_first=None, timestamp_last=None):  # noqa: E501
+    def __init__(self, errors=None, octets_actual=None, octets_dropped=None, octets_intended=None, packets_actual=None, packets_dropped=None, packets_intended=None, timestamp_first=None, timestamp_last=None):  # noqa: E501
         """PacketGeneratorFlowCounters - a model defined in Swagger"""  # noqa: E501
 
         self._errors = None
         self._octets_actual = None
+        self._octets_dropped = None
         self._octets_intended = None
         self._packets_actual = None
+        self._packets_dropped = None
         self._packets_intended = None
         self._timestamp_first = None
         self._timestamp_last = None
@@ -64,8 +70,12 @@ class PacketGeneratorFlowCounters(object):
 
         self.errors = errors
         self.octets_actual = octets_actual
+        if octets_dropped is not None:
+            self.octets_dropped = octets_dropped
         self.octets_intended = octets_intended
         self.packets_actual = packets_actual
+        if packets_dropped is not None:
+            self.packets_dropped = packets_dropped
         self.packets_intended = packets_intended
         if timestamp_first is not None:
             self.timestamp_first = timestamp_first
@@ -117,6 +127,28 @@ class PacketGeneratorFlowCounters(object):
         self._octets_actual = octets_actual
 
     @property
+    def octets_dropped(self):
+        """Gets the octets_dropped of this PacketGeneratorFlowCounters.  # noqa: E501
+
+        The total number of octets that were dropped due to overrunning the transmit queue. Transmit packet drops are not enabled by default and must be explicitly enabled.   # noqa: E501
+
+        :return: The octets_dropped of this PacketGeneratorFlowCounters.  # noqa: E501
+        :rtype: int
+        """
+        return self._octets_dropped
+
+    @octets_dropped.setter
+    def octets_dropped(self, octets_dropped):
+        """Sets the octets_dropped of this PacketGeneratorFlowCounters.
+
+        The total number of octets that were dropped due to overrunning the transmit queue. Transmit packet drops are not enabled by default and must be explicitly enabled.   # noqa: E501
+
+        :param octets_dropped: The octets_dropped of this PacketGeneratorFlowCounters.  # noqa: E501
+        :type: int
+        """
+        self._octets_dropped = octets_dropped
+
+    @property
     def octets_intended(self):
         """Gets the octets_intended of this PacketGeneratorFlowCounters.  # noqa: E501
 
@@ -159,6 +191,28 @@ class PacketGeneratorFlowCounters(object):
         :type: int
         """
         self._packets_actual = packets_actual
+
+    @property
+    def packets_dropped(self):
+        """Gets the packets_dropped of this PacketGeneratorFlowCounters.  # noqa: E501
+
+        The total number of packets that were dropped due to overrunning the transmit queue. Transmit packet drops are not enabled by default and must be explicitly enabled.   # noqa: E501
+
+        :return: The packets_dropped of this PacketGeneratorFlowCounters.  # noqa: E501
+        :rtype: int
+        """
+        return self._packets_dropped
+
+    @packets_dropped.setter
+    def packets_dropped(self, packets_dropped):
+        """Sets the packets_dropped of this PacketGeneratorFlowCounters.
+
+        The total number of packets that were dropped due to overrunning the transmit queue. Transmit packet drops are not enabled by default and must be explicitly enabled.   # noqa: E501
+
+        :param packets_dropped: The packets_dropped of this PacketGeneratorFlowCounters.  # noqa: E501
+        :type: int
+        """
+        self._packets_dropped = packets_dropped
 
     @property
     def packets_intended(self):

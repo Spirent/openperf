@@ -585,6 +585,14 @@ definitions:
         description: The total number of octets that have been transmitted
         format: int64
         minimum: 0
+      octets_dropped:
+        type: integer
+        description: |
+          The total number of octets that were dropped due to overrunning the
+          transmit queue. Transmit packet drops are not enabled by default and
+          must be explicitly enabled.
+        format: int64
+        minimum: 0
       octets_intended:
         type: integer
         description: The total number of octets that should have been transmitted
@@ -593,6 +601,14 @@ definitions:
       packets_actual:
         type: integer
         description: The total number of packets that have been transmitted
+        format: int64
+        minimum: 0
+      packets_dropped:
+        type: integer
+        description: |
+          The total number of packets that were dropped due to overrunning the
+          transmit queue. Transmit packet drops are not enabled by default and
+          must be explicitly enabled.
         format: int64
         minimum: 0
       packets_intended:
