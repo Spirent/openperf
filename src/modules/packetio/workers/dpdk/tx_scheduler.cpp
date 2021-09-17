@@ -1,7 +1,10 @@
 #include <sys/timerfd.h>
 #include <unistd.h>
 
+#include "packetio/drivers/dpdk/arg_parser.hpp"
 #include "packetio/workers/dpdk/tx_scheduler.hpp"
+#include "timesync/chrono.hpp"
+#include "units/data-rates.hpp"
 #include "utils/overloaded_visitor.hpp"
 
 namespace openperf::packetio::dpdk {
@@ -13,7 +16,7 @@ static constexpr auto link_poll = 100us;
 static constexpr auto min_poll = 1ns;
 static constexpr auto schedule_poll = idle_poll;
 
-static constexpr uint16_t max_retries = 4;
+static constexpr auto quanta_bits = 512; /* 1 quanta is 512 bit-times */
 
 namespace schedule {
 
@@ -238,6 +241,41 @@ static __attribute__((const)) T distribute(T total, T buckets, T n)
     return (n < total % buckets ? base + 1 : base);
 }
 
+static uint32_t get_link_speed_safe(uint16_t port_id)
+{
+    /* Query the port's link speed */
+    struct rte_eth_link link;
+    rte_eth_link_get_nowait(port_id, &link);
+
+    /* Caller should only call this when the link is up */
+    assert(link.link_status == ETH_LINK_UP);
+    return (link.link_speed);
+}
+
+static void do_packet_wait(uint16_t port_idx, uint16_t nb_packets)
+{
+    /*
+     * Wait one ethernet quanta for each packet. Since a bit-time
+     * takes less that 1 nanosecond at 100G, we need to use
+     * picoseconds for our calculations.
+     */
+    using clock = openperf::timesync::chrono::monotime;
+    using mbps = units::rate<uint64_t, units::megabits>;
+    using picoseconds = std::chrono::duration<int64_t, std::pico>;
+
+    auto delay =
+        units::to_duration<picoseconds>(mbps(get_link_speed_safe(port_idx)))
+        * quanta_bits * nb_packets;
+
+    auto until = clock::now() + delay;
+    do {
+        rte_pause();
+        rte_pause();
+        rte_pause();
+        rte_pause();
+    } while (clock::now() <= until);
+}
+
 template <typename Source>
 static uint16_t do_transmit(uint16_t port_idx,
                             uint16_t queue_idx,
@@ -266,29 +304,26 @@ static uint16_t do_transmit(uint16_t port_idx,
             rte_eth_tx_burst(port_idx, queue_idx, outgoing.data(), to_send);
 
         /*
-         * If we were unable to send all of the packets in our burst, retry
-         * a few times before buffering the packets and returning.
+         * If we were unable to send all of the packets in our burst, take
+         * a break and try again.
          */
         if (sent < to_send) {
-            unsigned retries = 0;
-            do {
-                rte_pause();
-                sent += rte_eth_tx_burst(port_idx,
-                                         queue_idx,
-                                         outgoing.data() + sent,
-                                         to_send - sent);
-            } while (sent < to_send && ++retries < max_retries);
+            do_packet_wait(port_idx, to_send - sent);
+            sent += rte_eth_tx_burst(
+                port_idx, queue_idx, outgoing.data() + sent, to_send - sent);
 
-            /* Queue is still full after our retries; buffer packets */
+            /* Queue is still full after retrying; buffer packets */
             if (sent < to_send) {
-                std::copy_n(outgoing.data() + sent,
-                            to_send - sent,
-                            std::back_inserter(untransmitted));
+                auto* begin = outgoing.data() + sent;
+                auto* end = outgoing.data() + to_send;
+
+                std::copy(begin, end, std::back_inserter(untransmitted));
                 total_sent += sent;
                 break;
             }
         }
 
+        assert(sent == to_send);
         total_sent += sent;
     }
 
@@ -303,9 +338,40 @@ static uint16_t do_transmit(uint16_t port_idx,
     return (total_sent);
 }
 
+template <typename Source>
+static void do_drop(uint16_t port_idx,
+                    uint16_t queue_idx,
+                    Source& source,
+                    std::vector<rte_mbuf*>& mbufs)
+{
+    auto octets = std::accumulate(std::begin(mbufs),
+                                  std::end(mbufs),
+                                  size_t{0},
+                                  [](size_t sum, const auto* mbuf) {
+                                      return (sum + rte_pktmbuf_pkt_len(mbuf));
+                                  });
+
+    source->update_drop_counters(mbufs.size(), octets);
+
+    OP_LOG(OP_LOG_TRACE,
+           "Dropping %zu packets on %u:%u from source %s\n",
+           mbufs.size(),
+           port_idx,
+           queue_idx,
+           source->id().c_str());
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    rte_pktmbuf_free_bulk(mbufs.data(), mbufs.size());
+#pragma clang diagnostic pop
+    mbufs.clear();
+}
+
 std::optional<schedule::state>
 tx_scheduler::on_timeout(const schedule::state_running& state)
 {
+    assert(m_buffer.empty());
+
     if (link_down(port_id())) return (schedule::state_link_check{});
 
     if (state.reschedule) {
@@ -332,8 +398,16 @@ tx_scheduler::on_timeout(const schedule::state_running& state)
             do_transmit(port_id(), queue_id(), source, burst_size, m_buffer);
 
         if (!m_buffer.empty()) {
-            uint16_t remaining = burst_size - sent - m_buffer.size();
-            return (schedule::state_blocked{remaining, {deadline, key}});
+            /*
+             * If the user wants us to drop overruns, do that here. Otherwise
+             * transition to the blocked state.
+             */
+            if (config::dpdk_drop_tx_overruns()) {
+                do_drop(port_id(), queue_id(), source, m_buffer);
+            } else {
+                uint16_t remaining = burst_size - sent - m_buffer.size();
+                return (schedule::state_blocked{remaining, {deadline, key}});
+            }
         }
 
         /* Re-add entry to schedule if it still active */
@@ -366,6 +440,7 @@ std::optional<schedule::state>
 tx_scheduler::on_timeout(const schedule::state_blocked& blocked)
 {
     assert(!m_buffer.empty());
+    assert(!config::dpdk_drop_tx_overruns());
 
     if (link_down(port_id())) return (schedule::state_link_check{});
 
@@ -485,6 +560,7 @@ void tx_scheduler::on_transition(const schedule::state_running& state)
 void tx_scheduler::on_transition(const schedule::state_blocked&)
 {
     assert(!m_buffer.empty());
+    assert(!config::dpdk_drop_tx_overruns());
     set_timer_oneshot(m_timerfd, block_poll);
 }
 

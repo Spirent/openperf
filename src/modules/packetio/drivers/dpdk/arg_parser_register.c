@@ -11,6 +11,8 @@ const char op_packetio_dpdk_rx_worker_mask[] =
     "modules.packetio.dpdk.rx-worker-mask";
 const char op_packetio_dpdk_tx_worker_mask[] =
     "modules.packetio.dpdk.tx-worker-mask";
+const char op_packetio_dpdk_drop_tx_overruns[] =
+    "modules.packetio.dpdk.drop-tx-overruns";
 
 MAKE_OPTION_DATA(
     dpdk,
@@ -43,6 +45,10 @@ MAKE_OPTION_DATA(
     MAKE_OPT("specifies CPU core mask for transmit threads, in hex",
              op_packetio_dpdk_tx_worker_mask,
              'T',
-             OP_OPTION_TYPE_HEX), );
+             OP_OPTION_TYPE_HEX),
+    MAKE_OPT("drop packets if the transmit queue is overrun",
+             op_packetio_dpdk_drop_tx_overruns,
+             0,
+             OP_OPTION_TYPE_NONE), );
 
 REGISTER_CLI_OPTIONS(dpdk)
