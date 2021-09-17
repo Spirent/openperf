@@ -1,7 +1,6 @@
 from mamba import description, before, after
 from expects import *
 import os
-import time
 
 import client.api
 import client.models
@@ -49,19 +48,6 @@ CUSTOM_PAYLOAD = [
     {'custom': {'data': CUSTOM_DATA,
                 'layer': 'payload'}}
 ]
-
-POLL_INTERVAL = 0.025
-
-def wait_until_done(gen_client, result_id, initial_sleep = None):
-    if (initial_sleep):
-        time.sleep(initial_sleep)
-
-    while True:
-        result = gen_client.get_packet_generator_result(result_id)
-        expect(result).to(be_valid_packet_generator_result)
-        if result.flow_counters.packets_actual > 0 and not result.active:
-            break;
-        time.sleep(POLL_INTERVAL)
 
 
 with description('Packet Generator,', 'packet_generator') as self:
@@ -498,31 +484,6 @@ with description('Packet Generator,', 'packet_generator') as self:
                         expect(result).to(be_valid_packet_generator_result)
                     expect([r for r in results if r.active is True]).not_to(be_empty)
                     expect([r for r in results if r.active is False]).not_to(be_empty)
-
-        with description('generator stops automatically,'):
-            with it('succeeds'):
-                time = client.models.TrafficDurationTime()
-                time.value = 10;
-                time.units = "milliseconds"
-                duration = client.models.TrafficDuration()
-                duration.time = time
-                gen = packet_generator_model(self.api.api_client)
-                gen.config.duration = duration
-
-                # Set a load the test environment can't possibly hit
-                gen.config.load.rate.value = 148809523
-
-                gen = self.api.create_packet_generator(gen)
-                expect(gen).to(be_valid_packet_generator)
-
-                result = self.api.start_packet_generator(gen.id)
-                expect(result).to(be_valid_packet_generator_result)
-
-                # Wait for automatic stop
-                wait_until_done(self.api, result.id)
-
-                result = self.api.get_packet_generator_result(result.id)
-                expect(result.flow_counters.packets_actual).to(be_below(gen.config.load.rate.value))
 
         with description('toggle generators,'):
             with before.each:
