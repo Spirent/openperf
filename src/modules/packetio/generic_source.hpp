@@ -52,6 +52,11 @@ public:
         return (m_self->transform(input, input_length, output));
     }
 
+    void update_drop_counters(uint16_t packets, size_t octets) const
+    {
+        m_self->update_drop_counters(packets, octets);
+    }
+
     bool uses_feature(enum source_feature_flags flags) const
     {
         return (m_self->uses_feature(flags));
@@ -82,7 +87,9 @@ private:
         virtual packets_per_hour packet_rate() const = 0;
         virtual uint16_t transform(packet_buffer* input[],
                                    uint16_t input_length,
-                                   packet_buffer* output[]) = 0;
+                                   packet_buffer* output[]) const = 0;
+        virtual void update_drop_counters(uint16_t packets,
+                                          size_t octets) const = 0;
         virtual bool uses_feature(enum source_feature_flags) const = 0;
         virtual const std::type_info& type_info() const = 0;
     };
@@ -130,6 +137,16 @@ private:
         : std::true_type
     {};
 
+    template <typename T, typename = std::void_t<>>
+    struct has_update_drop_counters : std::false_type
+    {};
+
+    template <typename T>
+    struct has_update_drop_counters<
+        T,
+        std::void_t<decltype(&T::update_drop_counters)>> : std::true_type
+    {};
+
     template <typename Source> struct source_model final : source_concept
     {
         source_model(Source s)
@@ -172,9 +189,17 @@ private:
 
         uint16_t transform(packet_buffer* input[],
                            uint16_t input_length,
-                           packet_buffer* output[]) override
+                           packet_buffer* output[]) const override
         {
             return (m_source.transform(input, input_length, output));
+        }
+
+        void update_drop_counters(uint16_t packets,
+                                  size_t octets) const override
+        {
+            if constexpr (has_update_drop_counters<Source>::value) {
+                m_source.update_drop_counters(packets, octets);
+            }
         }
 
         bool uses_feature(enum source_feature_flags flags) const override

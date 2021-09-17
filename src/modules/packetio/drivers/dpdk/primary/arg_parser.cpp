@@ -20,33 +20,41 @@ std::vector<std::string> dpdk_args()
 
 int dpdk_test_portpairs()
 {
-    auto result = config::file::op_config_get_param<OP_OPTION_TYPE_LONG>(
-        op_packetio_dpdk_test_portpairs);
+    static const auto port_pairs =
+        config::file::op_config_get_param<OP_OPTION_TYPE_LONG>(
+            op_packetio_dpdk_test_portpairs)
+            .value_or(dpdk_test_mode() ? 1 : 0);
 
-    return (result.value_or(dpdk_test_mode() ? 1 : 0));
+    return (port_pairs);
 }
 
 bool dpdk_test_mode()
 {
-    auto result = config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
-        op_packetio_dpdk_test_mode);
+    static const auto test_mode =
+        config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
+            op_packetio_dpdk_test_mode)
+            .value_or(false);
 
-    return (result.value_or(false));
+    return (test_mode);
 }
 
 bool dpdk_disable_lro()
 {
-    auto no_lro = config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
-                      op_packetio_dpdk_no_lro)
-                      .value_or(false);
+    static const auto no_lro =
+        config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
+            op_packetio_dpdk_no_lro)
+            .value_or(false);
+
     return (no_lro);
 }
 
 bool dpdk_disable_rx_irq()
 {
-    auto no_rx_irqs = config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
-                          op_packetio_dpdk_no_rx_irqs)
-                          .value_or(false);
+    static const auto no_rx_irqs =
+        config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
+            op_packetio_dpdk_no_rx_irqs)
+            .value_or(false);
+
     return (no_rx_irqs);
 }
 

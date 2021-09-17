@@ -263,4 +263,14 @@ std::optional<core_mask> tx_core_mask()
     return (get_mask_argument(op_packetio_dpdk_tx_worker_mask));
 }
 
+bool dpdk_drop_tx_overruns()
+{
+    static const auto do_tx_drop =
+        config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
+            op_packetio_dpdk_drop_tx_overruns)
+            .value_or(false);
+
+    return (do_tx_drop);
+}
+
 } /* namespace openperf::packetio::dpdk::config */

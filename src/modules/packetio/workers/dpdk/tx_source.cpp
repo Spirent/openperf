@@ -81,4 +81,9 @@ uint16_t tx_source::pull(rte_mbuf* packets[], uint16_t count) const
     return (m);
 }
 
+void tx_source::update_drop_counters(uint16_t packets, size_t octets) const
+{
+    m_source.update_drop_counters(packets, octets);
+}
+
 } // namespace openperf::packetio::dpdk
