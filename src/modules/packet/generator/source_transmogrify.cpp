@@ -186,6 +186,8 @@ generator_result_ptr to_swagger(const core::uuid& id,
                       flow_counters,
                       result.parent().packet_rate(),
                       result.parent().sequence());
+    flow_counters->setOctetsDropped(result.dropped_octets());
+    flow_counters->setPacketsDropped(result.dropped_packets());
     dst->setFlowCounters(flow_counters);
 
     auto protocol_counters =
