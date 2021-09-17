@@ -42,6 +42,12 @@ private:
     using protocol_counters = packet::statistics::generic_protocol_counters;
     protocol_counters m_protocols;
 
+    struct
+    {
+        uint64_t packets = 0;
+        uint64_t octets = 0;
+    } m_dropped;
+
     bool m_active = false;
 
 public:
@@ -59,6 +65,11 @@ public:
 
     void start(size_t nb_flows);
     void stop();
+
+    uint64_t dropped_packets() const;
+    uint64_t dropped_octets() const;
+
+    void update_drop_counters(uint16_t packets, size_t octets);
 };
 
 struct source_load
@@ -113,6 +124,8 @@ public:
     uint16_t transform(packetio::packet::packet_buffer* input[],
                        uint16_t input_length,
                        packetio::packet::packet_buffer* output[]) const;
+
+    void update_drop_counters(uint16_t packets, size_t octets) const;
 
     /*
      * Methods related to ARP/ND learning.

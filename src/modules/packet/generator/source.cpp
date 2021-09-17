@@ -85,6 +85,16 @@ void source_result::start(size_t nb_flows)
 
 void source_result::stop() { m_active = false; }
 
+uint64_t source_result::dropped_packets() const { return (m_dropped.packets); }
+
+uint64_t source_result::dropped_octets() const { return (m_dropped.octets); }
+
+void source_result::update_drop_counters(uint16_t packets, size_t octets)
+{
+    m_dropped.packets += packets;
+    m_dropped.octets += octets;
+}
+
 source_helper make_source_helper(packetio::internal::api::client& client,
                                  std::string_view target_id,
                                  [[maybe_unused]] core::event_loop& loop)
@@ -411,6 +421,13 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
     }
 
     return (to_send);
+}
+
+void source::update_drop_counters(uint16_t packets, size_t octets) const
+{
+    if (auto* results = m_results.load(std::memory_order_relaxed)) {
+        results->update_drop_counters(packets, octets);
+    }
 }
 
 bool source::supports_learning() const
