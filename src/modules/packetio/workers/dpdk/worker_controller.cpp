@@ -82,10 +82,11 @@ static std::vector<queue::descriptor>
 filter_queue_descriptors(std::vector<queue::descriptor>&& q_descriptors)
 {
     /*
-     * XXX: If we have only one worker thread, then everything should use the
-     * direct transmit functions.  Hence, we don't need any tx queues.
+     * XXX: If we have only one worker thread or no stack thread, then
+     * everything should use the direct transmit functions.
+     * Hence, we don't need any tx queues.
      */
-    if (rte_lcore_count() <= 2) {
+    if (rte_lcore_count() <= 2 || !topology::get_stack_lcore_id()) {
         /* Filter out all tx queues; we don't need them */
         q_descriptors.erase(
             std::remove_if(begin(q_descriptors),
