@@ -15,16 +15,16 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-// CPUInfoReader is a Reader for the CPUInfo structure.
-type CPUInfoReader struct {
+// GetCPUInfoReader is a Reader for the GetCPUInfo structure.
+type GetCPUInfoReader struct {
 	formats strfmt.Registry
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *CPUInfoReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetCPUInfoReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
 	case 200:
-		result := NewCPUInfoOK()
+		result := NewGetCPUInfoOK()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
@@ -34,29 +34,29 @@ func (o *CPUInfoReader) ReadResponse(response runtime.ClientResponse, consumer r
 	}
 }
 
-// NewCPUInfoOK creates a CPUInfoOK with default headers values
-func NewCPUInfoOK() *CPUInfoOK {
-	return &CPUInfoOK{}
+// NewGetCPUInfoOK creates a GetCPUInfoOK with default headers values
+func NewGetCPUInfoOK() *GetCPUInfoOK {
+	return &GetCPUInfoOK{}
 }
 
-/* CPUInfoOK describes a response with status code 200, with default header values.
+/* GetCPUInfoOK describes a response with status code 200, with default header values.
 
 Success
 */
-type CPUInfoOK struct {
-	Payload *CPUInfoOKBody
+type GetCPUInfoOK struct {
+	Payload *GetCPUInfoOKBody
 }
 
-func (o *CPUInfoOK) Error() string {
-	return fmt.Sprintf("[GET /cpu-info][%d] cpuInfoOK  %+v", 200, o.Payload)
+func (o *GetCPUInfoOK) Error() string {
+	return fmt.Sprintf("[GET /cpu-info][%d] getCpuInfoOK  %+v", 200, o.Payload)
 }
-func (o *CPUInfoOK) GetPayload() *CPUInfoOKBody {
+func (o *GetCPUInfoOK) GetPayload() *GetCPUInfoOKBody {
 	return o.Payload
 }
 
-func (o *CPUInfoOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+func (o *GetCPUInfoOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(CPUInfoOKBody)
+	o.Payload = new(GetCPUInfoOKBody)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
@@ -66,10 +66,10 @@ func (o *CPUInfoOK) readResponse(response runtime.ClientResponse, consumer runti
 	return nil
 }
 
-/*CPUInfoOKBody CpuInfoResult
-swagger:model CPUInfoOKBody
+/*GetCPUInfoOKBody CpuInfoResult
+swagger:model GetCPUInfoOKBody
 */
-type CPUInfoOKBody struct {
+type GetCPUInfoOKBody struct {
 
 	// Processor architecture name
 	Architecture string `json:"architecture,omitempty"`
@@ -81,18 +81,18 @@ type CPUInfoOKBody struct {
 	Cores int32 `json:"cores,omitempty"`
 }
 
-// Validate validates this CPU info o k body
-func (o *CPUInfoOKBody) Validate(formats strfmt.Registry) error {
+// Validate validates this get CPU info o k body
+func (o *GetCPUInfoOKBody) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this CPU info o k body based on context it is used
-func (o *CPUInfoOKBody) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+// ContextValidate validates this get CPU info o k body based on context it is used
+func (o *GetCPUInfoOKBody) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (o *CPUInfoOKBody) MarshalBinary() ([]byte, error) {
+func (o *GetCPUInfoOKBody) MarshalBinary() ([]byte, error) {
 	if o == nil {
 		return nil, nil
 	}
@@ -100,8 +100,8 @@ func (o *CPUInfoOKBody) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (o *CPUInfoOKBody) UnmarshalBinary(b []byte) error {
-	var res CPUInfoOKBody
+func (o *GetCPUInfoOKBody) UnmarshalBinary(b []byte) error {
+	var res GetCPUInfoOKBody
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

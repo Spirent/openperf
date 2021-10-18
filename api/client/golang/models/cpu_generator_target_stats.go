@@ -21,6 +21,10 @@ import (
 // swagger:model CpuGeneratorTargetStats
 type CPUGeneratorTargetStats struct {
 
+	// load
+	// Required: true
+	Load *CPUGeneratorCoreLoad `json:"load"`
+
 	// The total amount of finished instruction set operations
 	// Required: true
 	Operations *int64 `json:"operations"`
@@ -30,6 +34,10 @@ type CPUGeneratorTargetStats struct {
 func (m *CPUGeneratorTargetStats) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateLoad(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateOperations(formats); err != nil {
 		res = append(res, err)
 	}
@@ -37,6 +45,24 @@ func (m *CPUGeneratorTargetStats) Validate(formats strfmt.Registry) error {
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *CPUGeneratorTargetStats) validateLoad(formats strfmt.Registry) error {
+
+	if err := validate.Required("load", "body", m.Load); err != nil {
+		return err
+	}
+
+	if m.Load != nil {
+		if err := m.Load.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("load")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -49,8 +75,31 @@ func (m *CPUGeneratorTargetStats) validateOperations(formats strfmt.Registry) er
 	return nil
 }
 
-// ContextValidate validates this Cpu generator target stats based on context it is used
+// ContextValidate validate this Cpu generator target stats based on the context it is used
 func (m *CPUGeneratorTargetStats) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.contextValidateLoad(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *CPUGeneratorTargetStats) contextValidateLoad(ctx context.Context, formats strfmt.Registry) error {
+
+	if m.Load != nil {
+		if err := m.Load.ContextValidate(ctx, formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("load")
+			}
+			return err
+		}
+	}
+
 	return nil
 }
 

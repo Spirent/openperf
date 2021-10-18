@@ -270,7 +270,7 @@ paths:
 
   /cpu-info:
     get:
-      operationId: CpuInfo
+      operationId: GetCpuInfo
       tags:
         - CpuGenerator
       summary: Get a CPU info
@@ -347,6 +347,33 @@ definitions:
     required:
       - method
 
+  CpuGeneratorCoreLoad:
+    type: object
+    description: Describes the type of CPU load
+    properties:
+      instruction_set:
+        type: string
+        description: CPU load instruction set
+        enum:
+          - scalar
+          - sse2
+          - sse4
+          - avx
+          - avx2
+          - avx512
+          - neon
+      data_type:
+        type: string
+        description: CPU load target operation data type, actual for chosen instruction set
+        enum:
+          - int32
+          - int64
+          - float32
+          - float64
+    required:
+      - instruction_set
+      - data_type
+
   CpuGeneratorCoreConfig:
     title: CpuGeneratorCoreConfig
     type: object
@@ -365,32 +392,14 @@ definitions:
         items:
           type: object
           properties:
-            instruction_set:
-              type: string
-              description: CPU load instruction set
-              enum:
-                - scalar
-                - sse2
-                - sse4
-                - avx
-                - avx2
-                - avx512
-                - neon
-            data_type:
-              type: string
-              description: CPU load target operation data type, actual for chosen instruction set
-              enum:
-                - int32
-                - int64
-                - float32
-                - float64
+            load:
+              $ref: "#/definitions/CpuGeneratorCoreLoad"
             weight:
               type: integer
               description: Targeted load ratio
               minimum: 1
           required:
-            - instruction_set
-            - data_type
+            - load
             - weight
     required:
       - utilization
@@ -527,11 +536,14 @@ definitions:
     type: object
     description: Instruction set statistics
     properties:
+      load:
+        $ref: "#/definitions/CpuGeneratorCoreLoad"
       operations:
         type: integer
         description: The total amount of finished instruction set operations
         format: int64
     required:
+      - load
       - operations
 
   BulkStartCpuGeneratorsRequest:
