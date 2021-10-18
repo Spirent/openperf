@@ -10,32 +10,32 @@
 * Do not edit the class manually.
 */
 /*
- * CpuGeneratorTargetStats.h
+ * CpuGeneratorCoreLoad.h
  *
- * Instruction set statistics
+ * Describes the type of CPU load
  */
 
-#ifndef CpuGeneratorTargetStats_H_
-#define CpuGeneratorTargetStats_H_
+#ifndef CpuGeneratorCoreLoad_H_
+#define CpuGeneratorCoreLoad_H_
 
 
 #include "ModelBase.h"
 
-#include "CpuGeneratorCoreLoad.h"
+#include <string>
 
 namespace swagger {
 namespace v1 {
 namespace model {
 
 /// <summary>
-/// Instruction set statistics
+/// Describes the type of CPU load
 /// </summary>
-class  CpuGeneratorTargetStats
+class  CpuGeneratorCoreLoad
     : public ModelBase
 {
 public:
-    CpuGeneratorTargetStats();
-    virtual ~CpuGeneratorTargetStats();
+    CpuGeneratorCoreLoad();
+    virtual ~CpuGeneratorCoreLoad();
 
     /////////////////////////////////////////////
     /// ModelBase overrides
@@ -46,23 +46,23 @@ public:
     void fromJson(nlohmann::json& json) override;
 
     /////////////////////////////////////////////
-    /// CpuGeneratorTargetStats members
+    /// CpuGeneratorCoreLoad members
 
     /// <summary>
-    /// 
+    /// CPU load instruction set
     /// </summary>
-    std::shared_ptr<CpuGeneratorCoreLoad> getLoad() const;
-    void setLoad(std::shared_ptr<CpuGeneratorCoreLoad> value);
+    std::string getInstructionSet() const;
+    void setInstructionSet(std::string value);
         /// <summary>
-    /// The total amount of finished instruction set operations
+    /// CPU load target operation data type, actual for chosen instruction set
     /// </summary>
-    int64_t getOperations() const;
-    void setOperations(int64_t value);
+    std::string getDataType() const;
+    void setDataType(std::string value);
     
 protected:
-    std::shared_ptr<CpuGeneratorCoreLoad> m_Load;
+    std::string m_Instruction_set;
 
-    int64_t m_Operations;
+    std::string m_Data_type;
 
 };
 
@@ -70,4 +70,4 @@ protected:
 }
 }
 
-#endif /* CpuGeneratorTargetStats_H_ */
+#endif /* CpuGeneratorCoreLoad_H_ */

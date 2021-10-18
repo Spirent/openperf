@@ -88,6 +88,7 @@ from client.models.cpu_generator import CpuGenerator
 from client.models.cpu_generator_config import CpuGeneratorConfig
 from client.models.cpu_generator_core_config import CpuGeneratorCoreConfig
 from client.models.cpu_generator_core_config_targets import CpuGeneratorCoreConfigTargets
+from client.models.cpu_generator_core_load import CpuGeneratorCoreLoad
 from client.models.cpu_generator_core_stats import CpuGeneratorCoreStats
 from client.models.cpu_generator_result import CpuGeneratorResult
 from client.models.cpu_generator_stats import CpuGeneratorStats

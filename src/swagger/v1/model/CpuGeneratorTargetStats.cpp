@@ -36,6 +36,7 @@ nlohmann::json CpuGeneratorTargetStats::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    val["load"] = ModelBase::toJson(m_Load);
     val["operations"] = m_Operations;
     
 
@@ -49,6 +50,15 @@ void CpuGeneratorTargetStats::fromJson(nlohmann::json& val)
 }
 
 
+std::shared_ptr<CpuGeneratorCoreLoad> CpuGeneratorTargetStats::getLoad() const
+{
+    return m_Load;
+}
+void CpuGeneratorTargetStats::setLoad(std::shared_ptr<CpuGeneratorCoreLoad> value)
+{
+    m_Load = value;
+    
+}
 int64_t CpuGeneratorTargetStats::getOperations() const
 {
     return m_Operations;

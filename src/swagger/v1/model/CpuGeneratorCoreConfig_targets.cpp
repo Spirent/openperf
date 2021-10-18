@@ -19,8 +19,6 @@ namespace model {
 
 CpuGeneratorCoreConfig_targets::CpuGeneratorCoreConfig_targets()
 {
-    m_Instruction_set = "";
-    m_Data_type = "";
     m_Weight = 0;
     
 }
@@ -38,8 +36,7 @@ nlohmann::json CpuGeneratorCoreConfig_targets::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    val["instruction_set"] = ModelBase::toJson(m_Instruction_set);
-    val["data_type"] = ModelBase::toJson(m_Data_type);
+    val["load"] = ModelBase::toJson(m_Load);
     val["weight"] = m_Weight;
     
 
@@ -48,29 +45,18 @@ nlohmann::json CpuGeneratorCoreConfig_targets::toJson() const
 
 void CpuGeneratorCoreConfig_targets::fromJson(nlohmann::json& val)
 {
-    setInstructionSet(val.at("instruction_set"));
-    setDataType(val.at("data_type"));
     setWeight(val.at("weight"));
     
 }
 
 
-std::string CpuGeneratorCoreConfig_targets::getInstructionSet() const
+std::shared_ptr<CpuGeneratorCoreLoad> CpuGeneratorCoreConfig_targets::getLoad() const
 {
-    return m_Instruction_set;
+    return m_Load;
 }
-void CpuGeneratorCoreConfig_targets::setInstructionSet(std::string value)
+void CpuGeneratorCoreConfig_targets::setLoad(std::shared_ptr<CpuGeneratorCoreLoad> value)
 {
-    m_Instruction_set = value;
-    
-}
-std::string CpuGeneratorCoreConfig_targets::getDataType() const
-{
-    return m_Data_type;
-}
-void CpuGeneratorCoreConfig_targets::setDataType(std::string value)
-{
-    m_Data_type = value;
+    m_Load = value;
     
 }
 int32_t CpuGeneratorCoreConfig_targets::getWeight() const

@@ -8,12 +8,12 @@ Method | HTTP request | Description
 [**bulk_delete_cpu_generators**](CpuGeneratorApi.md#bulk_delete_cpu_generators) | **POST** /cpu-generators/x/bulk-delete | Bulk delete CPU generators
 [**bulk_start_cpu_generators**](CpuGeneratorApi.md#bulk_start_cpu_generators) | **POST** /cpu-generators/x/bulk-start | Tell multiple CPU generators to start
 [**bulk_stop_cpu_generators**](CpuGeneratorApi.md#bulk_stop_cpu_generators) | **POST** /cpu-generators/x/bulk-stop | Bulk stop CPU generators
-[**cpu_info**](CpuGeneratorApi.md#cpu_info) | **GET** /cpu-info | Get a CPU info
 [**create_cpu_generator**](CpuGeneratorApi.md#create_cpu_generator) | **POST** /cpu-generators | Create a CPU generator
 [**delete_cpu_generator**](CpuGeneratorApi.md#delete_cpu_generator) | **DELETE** /cpu-generators/{id} | Delete a CPU generator
 [**delete_cpu_generator_result**](CpuGeneratorApi.md#delete_cpu_generator_result) | **DELETE** /cpu-generator-results/{id} | Delete results from a CPU generator. Idempotent.
 [**get_cpu_generator**](CpuGeneratorApi.md#get_cpu_generator) | **GET** /cpu-generators/{id} | Get a CPU generator
 [**get_cpu_generator_result**](CpuGeneratorApi.md#get_cpu_generator_result) | **GET** /cpu-generator-results/{id} | Get a result from a CPU generator
+[**get_cpu_info**](CpuGeneratorApi.md#get_cpu_info) | **GET** /cpu-info | Get a CPU info
 [**list_cpu_generator_results**](CpuGeneratorApi.md#list_cpu_generator_results) | **GET** /cpu-generator-results | List CPU generator results
 [**list_cpu_generators**](CpuGeneratorApi.md#list_cpu_generators) | **GET** /cpu-generators | List CPU generators
 [**start_cpu_generator**](CpuGeneratorApi.md#start_cpu_generator) | **POST** /cpu-generators/{id}/start | Start a CPU generator
@@ -198,50 +198,6 @@ Name | Type | Description  | Notes
 ### Return type
 
 void (empty response body)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **cpu_info**
-> CpuInfoResult cpu_info()
-
-Get a CPU info
-
-The `cpu-info` endpoint returns CPU system info
-
-### Example
-```python
-from __future__ import print_function
-import time
-import client
-from client.rest import ApiException
-from pprint import pprint
-
-# create an instance of the API class
-api_instance = client.CpuGeneratorApi()
-
-try:
-    # Get a CPU info
-    api_response = api_instance.cpu_info()
-    pprint(api_response)
-except ApiException as e:
-    print("Exception when calling CpuGeneratorApi->cpu_info: %s\n" % e)
-```
-
-### Parameters
-This endpoint does not need any parameter.
-
-### Return type
-
-[**CpuInfoResult**](CpuInfoResult.md)
 
 ### Authorization
 
@@ -478,6 +434,50 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**CpuGeneratorResult**](CpuGeneratorResult.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **get_cpu_info**
+> CpuInfoResult get_cpu_info()
+
+Get a CPU info
+
+The `cpu-info` endpoint returns CPU system info
+
+### Example
+```python
+from __future__ import print_function
+import time
+import client
+from client.rest import ApiException
+from pprint import pprint
+
+# create an instance of the API class
+api_instance = client.CpuGeneratorApi()
+
+try:
+    # Get a CPU info
+    api_response = api_instance.get_cpu_info()
+    pprint(api_response)
+except ApiException as e:
+    print("Exception when calling CpuGeneratorApi->get_cpu_info: %s\n" % e)
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**CpuInfoResult**](CpuInfoResult.md)
 
 ### Authorization
 

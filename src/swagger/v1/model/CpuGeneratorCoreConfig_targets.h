@@ -21,7 +21,7 @@
 
 #include "ModelBase.h"
 
-#include <string>
+#include "CpuGeneratorCoreLoad.h"
 
 namespace swagger {
 namespace v1 {
@@ -49,15 +49,10 @@ public:
     /// CpuGeneratorCoreConfig_targets members
 
     /// <summary>
-    /// CPU load instruction set
+    /// 
     /// </summary>
-    std::string getInstructionSet() const;
-    void setInstructionSet(std::string value);
-        /// <summary>
-    /// CPU load target operation data type, actual for chosen instruction set
-    /// </summary>
-    std::string getDataType() const;
-    void setDataType(std::string value);
+    std::shared_ptr<CpuGeneratorCoreLoad> getLoad() const;
+    void setLoad(std::shared_ptr<CpuGeneratorCoreLoad> value);
         /// <summary>
     /// Targeted load ratio
     /// </summary>
@@ -65,9 +60,7 @@ public:
     void setWeight(int32_t value);
     
 protected:
-    std::string m_Instruction_set;
-
-    std::string m_Data_type;
+    std::shared_ptr<CpuGeneratorCoreLoad> m_Load;
 
     int32_t m_Weight;
 

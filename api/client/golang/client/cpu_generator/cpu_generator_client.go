@@ -38,8 +38,6 @@ type ClientService interface {
 
 	BulkStopCPUGenerators(params *BulkStopCPUGeneratorsParams, opts ...ClientOption) (*BulkStopCPUGeneratorsNoContent, error)
 
-	CPUInfo(params *CPUInfoParams, opts ...ClientOption) (*CPUInfoOK, error)
-
 	CreateCPUGenerator(params *CreateCPUGeneratorParams, opts ...ClientOption) (*CreateCPUGeneratorCreated, error)
 
 	DeleteCPUGenerator(params *DeleteCPUGeneratorParams, opts ...ClientOption) (*DeleteCPUGeneratorNoContent, error)
@@ -49,6 +47,8 @@ type ClientService interface {
 	GetCPUGenerator(params *GetCPUGeneratorParams, opts ...ClientOption) (*GetCPUGeneratorOK, error)
 
 	GetCPUGeneratorResult(params *GetCPUGeneratorResultParams, opts ...ClientOption) (*GetCPUGeneratorResultOK, error)
+
+	GetCPUInfo(params *GetCPUInfoParams, opts ...ClientOption) (*GetCPUInfoOK, error)
 
 	ListCPUGeneratorResults(params *ListCPUGeneratorResultsParams, opts ...ClientOption) (*ListCPUGeneratorResultsOK, error)
 
@@ -223,46 +223,6 @@ func (a *Client) BulkStopCPUGenerators(params *BulkStopCPUGeneratorsParams, opts
 	// unexpected success response
 	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
 	msg := fmt.Sprintf("unexpected success response for BulkStopCpuGenerators: API contract not enforced by server. Client expected to get an error, but got: %T", result)
-	panic(msg)
-}
-
-/*
-  CPUInfo gets a CPU info
-
-  The `cpu-info` endpoint returns CPU system info
-*/
-func (a *Client) CPUInfo(params *CPUInfoParams, opts ...ClientOption) (*CPUInfoOK, error) {
-	// TODO: Validate the params before sending
-	if params == nil {
-		params = NewCPUInfoParams()
-	}
-	op := &runtime.ClientOperation{
-		ID:                 "CpuInfo",
-		Method:             "GET",
-		PathPattern:        "/cpu-info",
-		ProducesMediaTypes: []string{"application/json"},
-		ConsumesMediaTypes: []string{"application/json"},
-		Schemes:            []string{"http", "https"},
-		Params:             params,
-		Reader:             &CPUInfoReader{formats: a.formats},
-		Context:            params.Context,
-		Client:             params.HTTPClient,
-	}
-	for _, opt := range opts {
-		opt(op)
-	}
-
-	result, err := a.transport.Submit(op)
-	if err != nil {
-		return nil, err
-	}
-	success, ok := result.(*CPUInfoOK)
-	if ok {
-		return success, nil
-	}
-	// unexpected success response
-	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
-	msg := fmt.Sprintf("unexpected success response for CpuInfo: API contract not enforced by server. Client expected to get an error, but got: %T", result)
 	panic(msg)
 }
 
@@ -461,6 +421,46 @@ func (a *Client) GetCPUGeneratorResult(params *GetCPUGeneratorResultParams, opts
 	// unexpected success response
 	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
 	msg := fmt.Sprintf("unexpected success response for GetCpuGeneratorResult: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
+}
+
+/*
+  GetCPUInfo gets a CPU info
+
+  The `cpu-info` endpoint returns CPU system info
+*/
+func (a *Client) GetCPUInfo(params *GetCPUInfoParams, opts ...ClientOption) (*GetCPUInfoOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewGetCPUInfoParams()
+	}
+	op := &runtime.ClientOperation{
+		ID:                 "GetCpuInfo",
+		Method:             "GET",
+		PathPattern:        "/cpu-info",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http", "https"},
+		Params:             params,
+		Reader:             &GetCPUInfoReader{formats: a.formats},
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	}
+	for _, opt := range opts {
+		opt(op)
+	}
+
+	result, err := a.transport.Submit(op)
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*GetCPUInfoOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for GetCpuInfo: API contract not enforced by server. Client expected to get an error, but got: %T", result)
 	panic(msg)
 }
 
