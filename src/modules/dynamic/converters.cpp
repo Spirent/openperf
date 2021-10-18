@@ -1,79 +1,79 @@
-#include "api.hpp"
+#include <algorithm>
+#include <cctype>
 
-#include <unordered_map>
-#include <functional>
+#include "dynamic/api.hpp"
+#include "utils/associative_array.hpp"
 
 #include "swagger/v1/model/DynamicResultsConfig.h"
 #include "swagger/v1/model/DynamicResults.h"
-#include "swagger/v1/model/ThresholdConfig.h"
-#include "swagger/v1/model/ThresholdResult.h"
-#include "swagger/v1/model/TDigestConfig.h"
-#include "swagger/v1/model/TDigestResult.h"
-#include "swagger/v1/model/TDigestCentroid.h"
 
 namespace openperf::dynamic {
 
 // Enum Conversions
-constexpr comparator to_comparator(std::string_view value)
-{
-    if (value == "equal") return comparator::EQUAL;
-    if (value == "greater") return comparator::GREATER_THAN;
-    if (value == "greater_or_equal") return comparator::GREATER_OR_EQUAL;
-    if (value == "less") return comparator::LESS_THAN;
-    if (value == "less_or_equal") return comparator::LESS_OR_EQUAL;
+constexpr auto comparator_type_names =
+    utils::associative_array<std::string_view, comparator>(
+        std::pair("equal", comparator::EQUAL),
+        std::pair("greater", comparator::GREATER_THAN),
+        std::pair("greater_or_equal", comparator::GREATER_OR_EQUAL),
+        std::pair("less", comparator::LESS_THAN),
+        std::pair("less_or_equal", comparator::LESS_OR_EQUAL));
 
-    throw std::runtime_error(
-        "Error from string to comparator conversion: illegal string value");
+constexpr auto function_type_names =
+    utils::associative_array<std::string_view, argument_t::function_t>(
+        std::pair("dx", argument_t::DX),
+        std::pair("dxdy", argument_t::DXDY),
+        std::pair("dxdt", argument_t::DXDT));
+
+comparator to_comparator(std::string_view value)
+{
+    return (utils::key_to_value(comparator_type_names, value)
+                .value_or(comparator::NONE));
 }
 
-constexpr std::string_view to_string(const comparator& pattern)
+std::string_view to_string(comparator pattern)
 {
-    switch (pattern) {
-    case comparator::EQUAL:
-        return "equal";
-    case comparator::GREATER_THAN:
-        return "greater";
-    case comparator::GREATER_OR_EQUAL:
-        return "greater_or_equal";
-    case comparator::LESS_THAN:
-        return "less";
-    case comparator::LESS_OR_EQUAL:
-        return "less_or_equal";
-    default:
-        return "unknown";
-    };
+    return (utils::value_to_key(comparator_type_names, pattern)
+                .value_or("unknown"));
 }
 
-constexpr argument_t::function_t to_argument_function(std::string_view value)
+argument_t::function_t to_argument_function(std::string_view value)
 {
-    if (value == "dx") return argument_t::DX;
-    if (value == "dxdy") return argument_t::DXDY;
-    if (value == "dxdt") return argument_t::DXDT;
-
-    throw std::runtime_error(
-        "Error from string to function_t conversion: illegal string value");
+    return (utils::key_to_value(function_type_names, value)
+                .value_or(argument_t::NONE));
 }
 
-constexpr std::string_view to_string(const argument_t::function_t& value)
+std::string_view to_string(argument_t::function_t value)
 {
-    switch (value) {
-    case argument_t::DX:
-        return "dx";
-    case argument_t::DXDY:
-        return "dxdy";
-    case argument_t::DXDT:
-        return "dxdt";
-    default:
-        return "unknown";
-    };
+    return (
+        utils::value_to_key(function_type_names, value).value_or("unknown"));
+}
+
+std::string normalize(std::string_view input)
+{
+    auto output = std::string{};
+
+    /* Upper -> Lower */
+    std::transform(std::begin(input),
+                   std::end(input),
+                   std::back_inserter(output),
+                   [](unsigned char c) { return (std::tolower(c)); });
+
+    /* Remove spaces; use unsigned char for safety */
+    output.erase(
+        std::remove_if(std::begin(output),
+                       std::end(output),
+                       [](unsigned char c) { return (std::isspace(c)); }),
+        std::end(output));
+
+    return (output);
 }
 
 // Swagger Model Conversions
 configuration::threshold from_swagger(const model::ThresholdConfig& m)
 {
     return configuration::threshold{
-        .argument = {.x = m.getStatX(),
-                     .y = m.getStatY(),
+        .argument = {.x = normalize(m.getStatX()),
+                     .y = normalize(m.getStatY()),
                      .function = to_argument_function(m.getFunction())},
         .id = m.getId(),
         .value = m.getValue(),
@@ -83,8 +83,8 @@ configuration::threshold from_swagger(const model::ThresholdConfig& m)
 configuration::tdigest from_swagger(const model::TDigestConfig& m)
 {
     return configuration::tdigest{
-        .argument = {.x = m.getStatX(),
-                     .y = m.getStatY(),
+        .argument = {.x = normalize(m.getStatX()),
+                     .y = normalize(m.getStatY()),
                      .function = to_argument_function(m.getFunction())},
         .id = m.getId(),
         .compression = static_cast<uint32_t>(m.getCompression())};

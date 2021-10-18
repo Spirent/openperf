@@ -164,7 +164,7 @@ template <typename T> void spool<T>::reset()
 
 template <typename T> void spool<T>::add(const T& stat)
 {
-    if (elapsed_periods(stat) < 1) return;
+    // if (elapsed_periods(stat) < 1) return;
 
     for (auto& th : m_thresholds) {
         auto& data = th.second;
@@ -196,18 +196,20 @@ template <typename T> results spool<T>::result() const
                        };
                    });
 
-    std::transform(m_tdigests.begin(),
-                   m_tdigests.end(),
-                   std::back_inserter(result.tdigests),
-                   [](const auto& pair) {
-                       auto& data = pair.second;
-                       return results::tdigest{
-                           .argument = data.argument,
-                           .id = pair.first,
-                           .compression = data.compression,
-                           .centroids = data.tdigest.get(),
-                       };
-                   });
+    std::transform(
+        m_tdigests.begin(),
+        m_tdigests.end(),
+        std::back_inserter(result.tdigests),
+        [](const auto& pair) {
+            auto& data = pair.second;
+            const_cast<decltype(data.tdigest)&>(data.tdigest).merge();
+            return results::tdigest{
+                .argument = data.argument,
+                .id = pair.first,
+                .compression = data.compression,
+                .centroids = data.tdigest.get(),
+            };
+        });
 
     return result;
 }
@@ -236,7 +238,6 @@ template <typename T> double spool<T>::elapsed_periods(const T& stat) const
 {
     auto t = m_extractor(stat, "timestamp").value();
     auto last_t = m_extractor(m_last_stat, "timestamp").value();
-
     return (t - last_t) / m_computation_period.count();
 }
 
@@ -249,6 +250,7 @@ double spool<T>::delta(const argument_t& arg, const T& stat) const
 
     double delta = 0;
     switch (arg.function) {
+    case argument_t::NONE:
     case argument_t::DX: {
         delta = delta_x;
         break;

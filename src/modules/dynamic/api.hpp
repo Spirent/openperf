@@ -23,7 +23,7 @@ namespace model = ::swagger::v1::model;
 
 struct argument_t
 {
-    enum function_t { DX = 1, DXDY, DXDT };
+    enum function_t { NONE = 0, DX, DXDY, DXDT };
     std::string x;
     std::string y;
     function_t function;
@@ -74,10 +74,10 @@ struct configuration
 };
 
 // Enum Conversions
-constexpr comparator to_comparator(std::string_view);
-constexpr argument_t::function_t to_argument_function(std::string_view);
-constexpr std::string_view to_string(const comparator&);
-constexpr std::string_view to_string(const argument_t::function_t&);
+comparator to_comparator(std::string_view);
+argument_t::function_t to_argument_function(std::string_view);
+std::string_view to_string(comparator);
+std::string_view to_string(argument_t::function_t);
 
 // Swagger Model Conversions
 configuration from_swagger(model::DynamicResultsConfig&);
@@ -86,6 +86,16 @@ configuration::threshold from_swagger(const model::ThresholdConfig&);
 model::DynamicResults to_swagger(const results&);
 model::TDigestResult to_swagger(const results::tdigest&);
 model::ThresholdResult to_swagger(const results::threshold&);
+
+// Validation structure for client modules
+// Only the modules know for sure what strings are valid
+std::string normalize(std::string_view);
+
+template <typename Derived> struct validator
+{
+    bool operator()(const model::DynamicResultsConfig&,
+                    std::vector<std::string>&);
+};
 
 } // namespace openperf::dynamic
 
