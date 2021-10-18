@@ -6,6 +6,9 @@
 #include "framework/utils/overloaded_visitor.hpp"
 #include "framework/utils/variant_index.hpp"
 
+#include "swagger/v1/model/CpuGenerator.h"
+#include "swagger/v1/model/CpuGeneratorResult.h"
+
 namespace openperf::cpu::api {
 
 serialized_msg serialize_request(request_msg&& msg)
@@ -67,8 +70,7 @@ serialized_msg serialize_request(request_msg&& msg)
                  },
                  [&](const request_cpu_generator_result_del& result) {
                      return message::push(serialized, result.id);
-                 },
-                 [&](const request_cpu_info&) { return 0; }),
+                 }),
              msg));
     if (error) { throw std::bad_alloc(); }
 
@@ -80,22 +82,19 @@ serialized_msg serialize_reply(reply_msg&& msg)
     serialized_msg serialized;
     auto error =
         (message::push(serialized, msg.index())
-         || std::visit(
-             utils::overloaded_visitor(
-                 [&](reply_cpu_generators& reply) {
-                     return message::push(serialized, reply.generators);
-                 },
-                 [&](reply_cpu_generator_results& reply) {
-                     return message::push(serialized, reply.results);
-                 },
-                 [&](reply_cpu_info& reply) {
-                     return message::push(serialized, std::move(reply.info));
-                 },
-                 [&](const reply_ok&) { return 0; },
-                 [&](reply_error& error) {
-                     return message::push(serialized, std::move(error.info));
-                 }),
-             msg));
+         || std::visit(utils::overloaded_visitor(
+                           [&](reply_cpu_generators& reply) {
+                               return message::push(serialized,
+                                                    reply.generators);
+                           },
+                           [&](reply_cpu_generator_results& reply) {
+                               return message::push(serialized, reply.results);
+                           },
+                           [&](const reply_ok&) { return 0; },
+                           [&](reply_error& error) {
+                               return message::push(serialized, error.info);
+                           }),
+                       msg));
     if (error) { throw std::bad_alloc(); }
 
     return serialized;
@@ -111,7 +110,7 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     }
     case utils::variant_index<request_msg, request_cpu_generator_add>(): {
         auto request = request_cpu_generator_add{};
-        request.source.reset(message::pop<cpu_generator_t*>(msg));
+        request.source.reset(message::pop<cpu_generator_type*>(msg));
         return request;
     }
     case utils::variant_index<request_msg, request_cpu_generator>(): {
@@ -122,7 +121,7 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     }
     case utils::variant_index<request_msg, request_cpu_generator_bulk_add>(): {
         return request_cpu_generator_bulk_add{
-            message::pop_unique_vector<cpu_generator_t>(msg)};
+            message::pop_unique_vector<cpu_generator_type>(msg)};
     }
     case utils::variant_index<request_msg, request_cpu_generator_bulk_del>(): {
         auto request = request_cpu_generator_bulk_del{};
@@ -166,9 +165,6 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
                               request_cpu_generator_result_del>(): {
         return request_cpu_generator_result_del{message::pop_string(msg)};
     }
-    case utils::variant_index<request_msg, request_cpu_info>(): {
-        return request_cpu_info{};
-    }
     }
 
     return tl::make_unexpected(EINVAL);
@@ -181,46 +177,24 @@ tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg)
     switch (idx) {
     case utils::variant_index<reply_msg, reply_cpu_generators>(): {
         return reply_cpu_generators{
-            message::pop_unique_vector<cpu_generator_t>(msg)};
+            message::pop_unique_vector<cpu_generator_type>(msg)};
     }
     case utils::variant_index<reply_msg, reply_cpu_generator_results>(): {
         return reply_cpu_generator_results{
-            message::pop_unique_vector<cpu_generator_result_t>(msg)};
-    }
-    case utils::variant_index<reply_msg, reply_cpu_info>(): {
-        auto reply = reply_cpu_info{};
-        reply.info.reset(message::pop<cpu_info_t*>(msg));
-        return reply;
+            message::pop_unique_vector<cpu_generator_result_type>(msg)};
     }
     case utils::variant_index<reply_msg, reply_ok>():
         return reply_ok{};
     case utils::variant_index<reply_msg, reply_error>():
-        auto reply = reply_error{};
-        reply.info.reset(message::pop<typed_error*>(msg));
-        return reply;
+        return reply_error{message::pop<typed_error>(msg)};
     }
 
     return tl::make_unexpected(EINVAL);
 }
 
-std::string to_string(const api::typed_error& error)
+reply_error to_error(error_type type, int value)
 {
-    switch (error.type) {
-    case api::error_type::NOT_FOUND:
-        return "";
-    case api::error_type::ZMQ_ERROR:
-        return zmq_strerror(error.code);
-    case api::error_type::CUSTOM_ERROR:
-        return error.value;
-    default:
-        return "unknown error type";
-    }
-}
-
-reply_error to_error(error_type type, int code, const std::string& value)
-{
-    return reply_error{.info = std::make_unique<typed_error>(typed_error{
-                           .type = type, .code = code, .value = value})};
+    return (reply_error{.info = typed_error{.type = type, .value = value}});
 }
 
 } // namespace openperf::cpu::api

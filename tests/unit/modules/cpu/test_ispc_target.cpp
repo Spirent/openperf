@@ -3,18 +3,11 @@
 #include <algorithm>
 
 #include "catch.hpp"
-#include "cpu/matrix.hpp"
+#include "cpu/generator/matrix_functions.hpp"
 #include "test_ispc_target.hpp"
 
 using isa_type = openperf::cpu::instruction_set::type;
-using namespace openperf::cpu::internal;
-
-using function_t = void (*)(const uint32_t[],
-                            const uint32_t[],
-                            uint32_t[],
-                            uint32_t);
-
-auto wrapper = function_wrapper<function_t>();
+using namespace openperf::cpu::generator;
 
 TEST_CASE("CPU matrix multiplication", "[cpu]")
 {
@@ -28,7 +21,7 @@ TEST_CASE("CPU matrix multiplication", "[cpu]")
         // {94, 59, 19, 58},
         // {58, 24, 61, 37},
         // {15, 72, 48, 38},
-        std::vector<uint32_t> matrix_a = {
+        std::vector<int32_t> matrix_a = {
             12, 52, 49, 20, 94, 59, 19, 58, 58, 24, 61, 37, 15, 72, 48, 38};
 
         // Matrix B:
@@ -36,7 +29,7 @@ TEST_CASE("CPU matrix multiplication", "[cpu]")
         // {71, 15, 72, 37},
         // {49, 82, 27, 18},
         // {52, 81, 38, 10},
-        std::vector<uint32_t> matrix_b = {
+        std::vector<int32_t> matrix_b = {
             91, 18, 40, 27, 71, 15, 72, 37, 49, 82, 27, 18, 52, 81, 38, 10};
 
         // Matrix R = A x B:
@@ -44,25 +37,25 @@ TEST_CASE("CPU matrix multiplication", "[cpu]")
         // {16690, 8833, 10725, 5643},
         // {11895, 9403, 7101,  3922},
         // {10805, 8364, 8524,  4313},
-        std::vector<uint32_t> matrix_r = {8225,
-                                          6634,
-                                          6307,
-                                          3330,
-                                          16690,
-                                          8833,
-                                          10725,
-                                          5643,
-                                          11895,
-                                          9403,
-                                          7101,
-                                          3922,
-                                          10805,
-                                          8364,
-                                          8524,
-                                          4313};
+        std::vector<int32_t> matrix_r = {8225,
+                                         6634,
+                                         6307,
+                                         3330,
+                                         16690,
+                                         8833,
+                                         10725,
+                                         5643,
+                                         11895,
+                                         9403,
+                                         7101,
+                                         3922,
+                                         10805,
+                                         8364,
+                                         8524,
+                                         4313};
 
-        std::vector<uint32_t> matrix_c(16);
-        scalar::multiply_matrix_uint32(
+        std::vector<int32_t> matrix_c(16);
+        scalar::multiply_matrix_int32(
             matrix_a.data(), matrix_b.data(), matrix_c.data(), 4);
 
         REQUIRE(std::equal(matrix_c.begin(), matrix_c.end(), matrix_r.begin()));
@@ -73,7 +66,7 @@ TEST_CASE("CPU matrix multiplication", "[cpu]")
         std::random_device rnd_device;
         std::mt19937 rnd_gen(rnd_device());
 
-        std::vector<uint32_t> matrix_a, matrix_b, matrix_c, matrix_r;
+        std::vector<int32_t> matrix_a, matrix_b, matrix_c, matrix_r;
 
         auto get_random = [&rnd_gen]() {
             static std::uniform_int_distribution<> rnd_distrib(1, 100);
@@ -95,11 +88,13 @@ TEST_CASE("CPU matrix multiplication", "[cpu]")
 
         BENCHMARK(benchmark_name + " SCALAR")
         {
-            scalar::multiply_matrix_uint32(
+            scalar::multiply_matrix_int32(
                 matrix_a.data(), matrix_b.data(), matrix_r.data(), matrix_size);
         };
 
+        auto& wrapper = matrix_functions::instance().multiply_matrix_int32;
         bool vector_test_was_executed = false;
+
         for (auto set : cpu::test::vector_instruction_sets()) {
             auto instruction = std::string(to_string(set));
             std::for_each(instruction.begin(), instruction.end(), [](auto& c) {
