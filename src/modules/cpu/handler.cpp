@@ -1,15 +1,22 @@
-#include "api.hpp"
-#include "api_converters.hpp"
+#include <zmq.h>
 
+#include "api/api_route_handler.hpp"
+#include "api/api_utils.hpp"
+#include "cpu/api.hpp"
+#include "dynamic/api.hpp"
 #include "framework/config/op_config_utils.hpp"
 #include "framework/core/op_core.h"
 #include "framework/message/serialized_message.hpp"
-#include "modules/api/api_route_handler.hpp"
-#include "modules/dynamic/api.hpp"
 
 #include "swagger/converters/cpu.hpp"
+#include "swagger/v1/model/CpuGenerator.h"
+#include "swagger/v1/model/CpuGeneratorResult.h"
+#include "swagger/v1/model/CpuInfoResult.h"
+#include "swagger/v1/model/BulkDeleteCpuGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStartCpuGeneratorsRequest.h"
+#include "swagger/v1/model/BulkStopCpuGeneratorsRequest.h"
 
-namespace openperf::cpu {
+namespace openperf::cpu::api {
 
 using namespace Pistache;
 using namespace swagger::v1::model;
@@ -65,16 +72,43 @@ public:
                       Http::ResponseWriter response);
 };
 
-enum Http::Code to_code(const api::reply_error& error)
+static enum Http::Code to_code(const api::reply_error& error)
 {
-    switch (error.info->type) {
+    switch (error.info.type) {
     case api::error_type::NOT_FOUND:
         return (Http::Code::Not_Found);
-    case api::error_type::CUSTOM_ERROR:
+    case api::error_type::POSIX:
         return (Http::Code::Bad_Request);
     default:
         return (Http::Code::Internal_Server_Error);
     }
+}
+
+static void handle_reply_error(const api::reply_msg& reply,
+                               Pistache::Http::ResponseWriter response)
+{
+    if (auto error = std::get_if<api::reply_error>(&reply)) {
+        response.send(to_code(*error), to_string(*error));
+    } else {
+        response.send(Http::Code::Internal_Server_Error);
+    }
+}
+
+static std::string concatenate(const std::vector<std::string>& strings)
+{
+    return (std::accumulate(
+        std::begin(strings),
+        std::end(strings),
+        std::string{},
+        [](std::string& lhs, const std::string& rhs) -> decltype(auto) {
+            return (lhs += ((lhs.empty() ? "" : " ") + rhs));
+        }));
+}
+
+static std::string json_error(int code, std::string_view message)
+{
+    return (
+        nlohmann::json({{"code", code}, {"message", message.data()}}).dump());
 }
 
 handler::handler(void* context, Rest::Router& router)
@@ -125,6 +159,7 @@ handler::handler(void* context, Rest::Router& router)
         router,
         "/cpu-generator-results/:id",
         Rest::Routes::bind(&handler::delete_generator_result, this));
+
     Rest::Routes::Get(
         router, "/cpu-info", Rest::Routes::bind(&handler::get_cpu_info, this));
 }
@@ -150,64 +185,70 @@ void handler::list_generators(const Rest::Request&,
         submit_request(m_socket.get(), api::request_cpu_generator_list{});
     if (auto reply = std::get_if<api::reply_cpu_generators>(&api_reply)) {
         auto generators = json::array();
-        std::transform(std::begin(reply->generators),
-                       std::end(reply->generators),
-                       std::back_inserter(generators),
-                       [](const auto& generator) {
-                           return api::to_swagger(*generator)->toJson();
-                       });
-
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok, generators.dump());
-    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), api::to_string(*error->info));
+        std::transform(
+            std::begin(reply->generators),
+            std::end(reply->generators),
+            std::back_inserter(generators),
+            [](const auto& generator) { return (generator->toJson()); });
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, generators);
     } else {
-        response.send(Http::Code::Internal_Server_Error);
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+static tl::expected<swagger::v1::model::CpuGenerator, std::string>
+parse_create_generator(const Pistache::Rest::Request& request)
+{
+    try {
+        return (json::parse(request.body())
+                    .get<swagger::v1::model::CpuGenerator>());
+    } catch (const json::exception& e) {
+        return (tl::unexpected(json_error(e.id, e.what())));
     }
 }
 
 void handler::create_generator(const Rest::Request& request,
                                Http::ResponseWriter response)
 {
-    try {
-        auto generator_model = json::parse(request.body()).get<CpuGenerator>();
+    auto generator = parse_create_generator(request);
+    if (!generator) {
+        response.send(Http::Code::Bad_Request, generator.error());
+        return;
+    }
 
-        if (auto ok = api::is_valid(*generator_model.getConfig()); !ok) {
-            throw json::other_error::create(
-                0,
-                std::accumulate(
-                    ok.error().begin(),
-                    ok.error().end(),
-                    std::string{},
-                    [](auto& acc, auto& s) { return acc += " " + s; }),
-                request.body());
+    /* Validate any user provided id before forwarding request */
+    if (!generator->getId().empty()) {
+        auto res = config::op_config_validate_id_string(generator->getId());
+        if (!res) {
+            response.send(Http::Code::Bad_Request, res.error());
+            return;
         }
+    }
 
-        auto api_request = api::request_cpu_generator_add{
-            std::make_unique<api::cpu_generator_t>(
-                api::from_swagger(generator_model))};
-        auto api_reply = submit_request(m_socket.get(), std::move(api_request));
-        if (auto reply = std::get_if<api::reply_cpu_generators>(&api_reply)) {
-            assert(!reply->generators.empty());
-            response.headers().add<Http::Header::Location>(
-                "/cpu-generators/" + reply->generators.front()->id());
-            response.headers().add<Http::Header::ContentType>(
-                MIME(Application, Json));
-            response.send(
-                Http::Code::Created,
-                api::to_swagger(*reply->generators.front())->toJson().dump());
-        } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-            response.send(to_code(*error), api::to_string(*error->info));
-        } else {
-            response.send(Http::Code::Internal_Server_Error);
-        }
-    } catch (const json::exception& e) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(
-            Http::Code::Bad_Request,
-            nlohmann::json({{"code", e.id}, {"message", e.what()}}).dump());
+    /* Make sure generator object is valid before forwarding to the server */
+    std::vector<std::string> errors;
+    if (!is_valid(*generator, errors)) {
+        response.send(Http::Code::Bad_Request, concatenate(errors));
+        return;
+    }
+
+    auto api_request = api::request_cpu_generator_add{
+        std::make_unique<swagger::v1::model::CpuGenerator>(
+            std::move(*generator))};
+
+    auto api_reply = submit_request(m_socket.get(), std::move(api_request));
+
+    if (auto reply = std::get_if<api::reply_cpu_generators>(&api_reply)) {
+        assert(!reply->generators.empty());
+        response.headers().add<Http::Header::Location>(
+            "/cpu-generators/" + reply->generators.front()->getId());
+        openperf::api::utils::send_chunked_response(
+            std::move(response),
+            Http::Code::Created,
+            reply->generators[0]->toJson());
+    } else {
+        handle_reply_error(api_reply, std::move(response));
     }
 }
 
@@ -222,17 +263,15 @@ void handler::get_generator(const Rest::Request& request,
 
     auto api_reply =
         submit_request(m_socket.get(), api::request_cpu_generator{id});
+
     if (auto reply = std::get_if<api::reply_cpu_generators>(&api_reply)) {
         assert(!reply->generators.empty());
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(
+        openperf::api::utils::send_chunked_response(
+            std::move(response),
             Http::Code::Ok,
-            api::to_swagger(*reply->generators.front())->toJson().dump());
-    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), api::to_string(*error->info));
+            reply->generators[0]->toJson());
     } else {
-        response.send(Http::Code::Internal_Server_Error);
+        handle_reply_error(api_reply, std::move(response));
     }
 }
 
@@ -249,74 +288,128 @@ void handler::delete_generator(const Rest::Request& request,
         submit_request(m_socket.get(), api::request_cpu_generator_del{id});
 
     if (std::get_if<api::reply_ok>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
         response.send(Http::Code::No_Content);
-    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), api::to_string(*error->info));
     } else {
-        response.send(Http::Code::Internal_Server_Error);
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+static tl::expected<request_cpu_generator_bulk_add, std::string>
+parse_bulk_create_generators(const Rest::Request& request)
+{
+    auto bulk_request = request_cpu_generator_bulk_add{};
+    try {
+        const auto j = json::parse(request.body());
+        for (const auto& item : j["items"]) {
+            bulk_request.generators.emplace_back(
+                std::make_unique<cpu_generator_type>(
+                    item.get<cpu_generator_type>()));
+        }
+        return (bulk_request);
+    } catch (const json::exception& e) {
+        return (tl::unexpected(json_error(e.id, e.what())));
     }
 }
 
 void handler::bulk_create_generators(const Rest::Request& request,
                                      Http::ResponseWriter response)
 {
-    auto request_model =
-        json::parse(request.body()).get<BulkCreateCpuGeneratorsRequest>();
+    auto api_request = parse_bulk_create_generators(request);
+    if (!api_request) {
+        response.send(Http::Code::Bad_Request, api_request.error());
+        return;
+    }
 
-    auto api_reply =
-        submit_request(m_socket.get(), api::from_swagger(request_model));
+    /* Verify all ID's are valid */
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(api_request->generators),
+                  std::end(api_request->generators),
+                  [&](const auto& gen) {
+                      if (!gen->getId().empty()) {
+                          if (auto res = config::op_config_validate_id_string(
+                                  gen->getId());
+                              !res) {
+                              id_errors.emplace_back(res.error());
+                          }
+                      }
+                  });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Bad_Request, concatenate(id_errors));
+        return;
+    }
+
+    /* Verify generator objects before forwarding to the server */
+    std::vector<std::string> validation_errors;
+    std::for_each(std::begin(api_request->generators),
+                  std::end(api_request->generators),
+                  [&](const auto& gen) { is_valid(*gen, validation_errors); });
+    if (!validation_errors.empty()) {
+        response.send(Http::Code::Bad_Request, concatenate(validation_errors));
+        return;
+    }
+
+    auto api_reply = submit_request(m_socket.get(), std::move(*api_request));
+
     if (auto reply = std::get_if<api::reply_cpu_generators>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        auto results = json::array();
+        auto items = json::array();
         std::transform(std::begin(reply->generators),
                        std::end(reply->generators),
-                       std::back_inserter(results),
-                       [](const auto& result) {
-                           return (api::to_swagger(*result)->toJson());
-                       });
-        response.send(Http::Code::Ok, results.dump());
-    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), api::to_string(*error->info));
+                       std::back_inserter(items),
+                       [](const auto& gen) { return (gen->toJson()); });
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, items);
     } else {
-        response.send(Http::Code::Internal_Server_Error);
+        handle_reply_error(api_reply, std::move(response));
+    }
+}
+
+template <typename T>
+tl::expected<T, std::string> parse_request(const Rest::Request& request)
+{
+    try {
+        auto obj = T{};
+        auto j = nlohmann::json::parse(request.body());
+        obj.fromJson(j);
+        return (obj);
+    } catch (const nlohmann::json::exception& e) {
+        return (tl::unexpected(json_error(e.id, e.what())));
     }
 }
 
 void handler::bulk_delete_generators(const Rest::Request& request,
                                      Http::ResponseWriter response)
 {
-    // Best-effort manner
-    auto request_model =
-        json::parse(request.body()).get<BulkDeleteCpuGeneratorsRequest>();
+    auto swagger_request =
+        parse_request<BulkDeleteCpuGeneratorsRequest>(request);
+    if (!swagger_request) {
+        response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
+    }
 
-    // Erase an invalid ids from request list
-    // TODO: replace to std::erase_if for C++20
-    auto& ids = request_model.getIds();
-    ids.erase(std::remove_if(
-                  ids.begin(),
-                  ids.end(),
-                  [](const auto& id) {
-                      return !openperf::config::op_config_validate_id_string(
-                          id);
-                  }),
-              ids.end());
+    /* Verify ids */
+    const auto& ids = swagger_request->getIds();
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(ids), std::end(ids), [&](const auto& id) {
+        if (!id.empty()) {
+            if (auto res = config::op_config_validate_id_string(id); !res) {
+                id_errors.emplace_back(res.error());
+            }
+        }
+    });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Bad_Request, concatenate(id_errors));
+        return;
+    }
 
     auto api_reply = submit_request(m_socket.get(),
                                     api::request_cpu_generator_bulk_del{
-                                        .ids = std::move(ids),
+                                        .ids = ids,
                                     });
 
     if (std::get_if<api::reply_ok>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
         response.send(Http::Code::No_Content);
-    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), api::to_string(*error->info));
     } else {
-        response.send(Http::Code::Internal_Server_Error);
+        handle_reply_error(api_reply, std::move(response));
     }
 }
 
@@ -332,11 +425,15 @@ void handler::start_generator(const Rest::Request& request,
     api::request_cpu_generator_start data{.id = id};
 
     if (!request.body().empty()) {
-        auto json_obj = json::parse(request.body());
-        DynamicResultsConfig model;
-        model.fromJson(json_obj);
-
-        data.dynamic_results = dynamic::from_swagger(model);
+        auto dynamic_config = DynamicResultsConfig();
+        auto j = json::parse(request.body());
+        dynamic_config.fromJson(j);
+        auto errors = std::vector<std::string>{};
+        if (!is_valid(dynamic_config, errors)) {
+            response.send(Http::Code::Bad_Request, concatenate(errors));
+            return;
+        }
+        data.dynamic_results = dynamic::from_swagger(dynamic_config);
     }
 
     auto api_reply = submit_request(m_socket.get(), std::move(data));
@@ -345,16 +442,13 @@ void handler::start_generator(const Rest::Request& request,
             std::get_if<api::reply_cpu_generator_results>(&api_reply)) {
         assert(!reply->results.empty());
         response.headers().add<Http::Header::Location>(
-            "/cpu-generator-results/" + reply->results.front()->id());
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(
+            "/cpu-generator-results/" + reply->results.front()->getId());
+        openperf::api::utils::send_chunked_response(
+            std::move(response),
             Http::Code::Created,
-            api::to_swagger(*reply->results.front())->toJson().dump());
-    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), api::to_string(*error->info));
+            reply->results[0]->toJson());
     } else {
-        response.send(Http::Code::Internal_Server_Error);
+        handle_reply_error(api_reply, std::move(response));
     }
 }
 
@@ -374,7 +468,7 @@ void handler::stop_generator(const Rest::Request& request,
             MIME(Application, Json));
         response.send(Http::Code::No_Content);
     } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), api::to_string(*error->info));
+        response.send(to_code(*error), to_string(*error));
     } else {
         response.send(Http::Code::Internal_Server_Error);
     }
@@ -383,79 +477,87 @@ void handler::stop_generator(const Rest::Request& request,
 void handler::bulk_start_generators(const Rest::Request& request,
                                     Http::ResponseWriter response)
 {
-    // All-or-nothing behavior
-    auto request_model =
-        json::parse(request.body()).get<BulkStartCpuGeneratorsRequest>();
+    auto swagger_request =
+        parse_request<BulkStartCpuGeneratorsRequest>(request);
+    if (!swagger_request) {
+        response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
+    }
 
-    // Check ID format
-    for (const auto& id : request_model.getIds()) {
-        if (auto r = openperf::config::op_config_validate_id_string(id); !r) {
-            response.send(Http::Code::Bad_Request, r.error());
-            return;
+    /* Verify that all user provided id's are valid */
+    const auto& ids = swagger_request->getIds();
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(ids), std::end(ids), [&](const auto& id) {
+        if (auto res = config::op_config_validate_id_string(id); !res) {
+            id_errors.emplace_back(res.error());
         }
+    });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Bad_Request, concatenate(id_errors));
+        return;
     }
 
     api::request_cpu_generator_bulk_start data{
-        .ids = std::move(request_model.getIds())};
+        .ids = std::move(swagger_request->getIds())};
 
-    if (request_model.dynamicResultsIsSet())
+    if (swagger_request->dynamicResultsIsSet()) {
+        auto errors = std::vector<std::string>{};
+        if (!is_valid(*(swagger_request->getDynamicResults()), errors)) {
+            response.send(Http::Code::Bad_Request, concatenate(errors));
+            return;
+        }
         data.dynamic_results =
-            dynamic::from_swagger(*request_model.getDynamicResults().get());
+            dynamic::from_swagger(*(swagger_request->getDynamicResults()));
+    }
 
     auto api_reply = submit_request(m_socket.get(), std::move(data));
 
     if (auto reply =
             std::get_if<api::reply_cpu_generator_results>(&api_reply)) {
-        auto results = json::array();
+        auto items = json::array();
         std::transform(std::begin(reply->results),
                        std::end(reply->results),
-                       std::back_inserter(results),
-                       [](const auto& result) {
-                           return api::to_swagger(*result)->toJson();
-                       });
-
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok, results.dump());
-    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), api::to_string(*error->info));
+                       std::back_inserter(items),
+                       [](const auto& result) { return (result->toJson()); });
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, items);
     } else {
-        response.send(Http::Code::Internal_Server_Error);
+        handle_reply_error(api_reply, std::move(response));
     }
 }
 
 void handler::bulk_stop_generators(const Rest::Request& request,
                                    Http::ResponseWriter response)
 {
-    // Best-effort manner
-    auto request_model =
-        json::parse(request.body()).get<BulkStopCpuGeneratorsRequest>();
+    auto swagger_request =
+        parse_request<BulkStartCpuGeneratorsRequest>(request);
+    if (!swagger_request) {
+        response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
+    }
 
-    // Erase an invalid ids from request list
-    // TODO: replace to std::erase_if for C++20
-    auto& ids = request_model.getIds();
-    ids.erase(std::remove_if(
-                  ids.begin(),
-                  ids.end(),
-                  [](const auto& id) {
-                      return !openperf::config::op_config_validate_id_string(
-                          id);
-                  }),
-              ids.end());
+    /* Verify that all user provided id's are valid */
+    const auto& ids = swagger_request->getIds();
+    std::vector<std::string> id_errors;
+    std::for_each(std::begin(ids), std::end(ids), [&](const auto& id) {
+        if (auto res = config::op_config_validate_id_string(id); !res) {
+            id_errors.emplace_back(res.error());
+        }
+    });
+    if (!id_errors.empty()) {
+        response.send(Http::Code::Bad_Request, concatenate(id_errors));
+        return;
+    }
 
     auto api_reply = submit_request(m_socket.get(),
                                     api::request_cpu_generator_bulk_stop{
-                                        .ids = std::move(ids),
+                                        .ids = ids,
                                     });
 
     if (std::get_if<api::reply_ok>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
         response.send(Http::Code::No_Content);
-    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), api::to_string(*error->info));
     } else {
-        response.send(Http::Code::Internal_Server_Error);
+        handle_reply_error(api_reply, std::move(response));
     }
 }
 
@@ -466,21 +568,15 @@ void handler::list_generator_results(const Rest::Request&,
                                     api::request_cpu_generator_result_list{});
     if (auto reply =
             std::get_if<api::reply_cpu_generator_results>(&api_reply)) {
-        auto results = json::array();
+        auto items = json::array();
         std::transform(std::begin(reply->results),
                        std::end(reply->results),
-                       std::back_inserter(results),
-                       [](const auto& result) {
-                           return api::to_swagger(*result)->toJson();
-                       });
-
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok, results.dump());
-    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), api::to_string(*error->info));
+                       std::back_inserter(items),
+                       [](const auto& result) { return (result->toJson()); });
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, items);
     } else {
-        response.send(Http::Code::Internal_Server_Error);
+        handle_reply_error(api_reply, std::move(response));
     }
 }
 
@@ -495,18 +591,14 @@ void handler::get_generator_result(const Rest::Request& request,
 
     auto api_reply =
         submit_request(m_socket.get(), api::request_cpu_generator_result{id});
+
     if (auto reply =
             std::get_if<api::reply_cpu_generator_results>(&api_reply)) {
         assert(!reply->results.empty());
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(
-            Http::Code::Ok,
-            api::to_swagger(*reply->results.front())->toJson().dump());
-    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), api::to_string(*error->info));
+        openperf::api::utils::send_chunked_response(
+            std::move(response), Http::Code::Ok, reply->results[0]->toJson());
     } else {
-        response.send(Http::Code::Internal_Server_Error);
+        handle_reply_error(api_reply, std::move(response));
     }
 }
 
@@ -521,28 +613,19 @@ void handler::delete_generator_result(const Rest::Request& request,
 
     auto api_reply = submit_request(m_socket.get(),
                                     api::request_cpu_generator_result_del{id});
+
     if (std::get_if<api::reply_ok>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
         response.send(Http::Code::No_Content);
-    } else if (auto error = std::get_if<api::reply_error>(&api_reply)) {
-        response.send(to_code(*error), api::to_string(*error->info));
     } else {
-        response.send(Http::Code::Internal_Server_Error);
+        handle_reply_error(api_reply, std::move(response));
     }
 }
 
 void handler::get_cpu_info(const Rest::Request&, Http::ResponseWriter response)
 {
-    auto api_reply = submit_request(m_socket.get(), api::request_cpu_info{});
-    if (auto reply = std::get_if<api::reply_cpu_info>(&api_reply)) {
-        response.headers().add<Http::Header::ContentType>(
-            MIME(Application, Json));
-        response.send(Http::Code::Ok,
-                      api::to_swagger(*reply->info)->toJson().dump());
-    } else {
-        response.send(Http::Code::Internal_Server_Error);
-    }
+    auto info = api::get_cpu_info();
+    openperf::api::utils::send_chunked_response(
+        std::move(response), Http::Code::Ok, info->toJson());
 }
 
-} // namespace openperf::cpu
+} // namespace openperf::cpu::api

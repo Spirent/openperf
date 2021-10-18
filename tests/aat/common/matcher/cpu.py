@@ -52,11 +52,18 @@ class _be_valid_cpu_generator_core_config(Matcher):
         return True, ['is valid CPU Generator Core Configuration']
 
 
+class _be_valid_cpu_generator_core_load(Matcher):
+    def _match(self, target):
+        expect(target).to(be_a(client.models.CpuGeneratorCoreLoad))
+        expect(target.instruction_set).to(be_a(str))
+        expect(target.data_type).to(be_a(str))
+        return True, ['is valid CPU Generator Core Load']
+
+
 class _be_valid_cpu_generator_core_config_targets(Matcher):
     def _match(self, target):
         expect(target).to(be_a(client.models.CpuGeneratorCoreConfigTargets))
-        expect(target.instruction_set).to(be_a(str))
-        expect(target.data_type).to(be_a(str))
+        expect(target.load).to(be_valid_cpu_generator_core_load)
         expect(target.weight).to(be_a(int))
         return True, ['is valid CPU Generator Core Targets Configuration']
 
@@ -74,11 +81,21 @@ class _be_valid_cpu_generator_result(Matcher):
         return True, ['is valid CPU Generator Result']
 
 
+class _be_valid_cpu_generator_target_stats(Matcher):
+    def _match(self, stats):
+        expect(stats).to(be_a(client.models.CpuGeneratorTargetStats))
+        expect(stats.load).to(be_valid_cpu_generator_core_load)
+        expect(stats.operations).to(be_a(int))
+        return True, ['is valid CPU Generator Target Stats']
+
+
 class _be_valid_cpu_generator_core_stats(Matcher):
     def _match(self, stats):
         expect(stats).to(be_a(client.models.CpuGeneratorCoreStats))
         expect(stats.utilization).to(equal(stats.system + stats.user - stats.steal))
-        expect(stats.error).to(equal(stats.target - stats.utilization))
+        expect(stats.error).to(equal(stats.utilization - stats.target))
+        for target in stats.targets:
+            expect(target).to(be_valid_cpu_generator_target_stats)
         return True, ['is valid CPU Generator Core Stats']
 
 
@@ -86,7 +103,7 @@ class _be_valid_cpu_generator_stats(Matcher):
     def _match(self, stats):
         expect(stats).to(be_a(client.models.CpuGeneratorStats))
         expect(stats.utilization).to(equal(stats.system + stats.user - stats.steal))
-        expect(stats.error).to(equal(stats.target - stats.utilization))
+        expect(stats.error).to(equal(stats.utilization - stats.target))
         for core in stats.cores:
             expect(core).to(be_valid_cpu_generator_core_stats)
         return True, ['is valid CPU Generator Stats']
@@ -98,6 +115,8 @@ be_valid_cpu_generator_config = _be_valid_cpu_generator_config()
 be_valid_cpu_generator_system_config = _be_valid_cpu_generator_system_config()
 be_valid_cpu_generator_core_config = _be_valid_cpu_generator_core_config()
 be_valid_cpu_generator_core_config_targets = _be_valid_cpu_generator_core_config_targets()
+be_valid_cpu_generator_core_load = _be_valid_cpu_generator_core_load()
 be_valid_cpu_generator_result = _be_valid_cpu_generator_result()
 be_valid_cpu_generator_stats = _be_valid_cpu_generator_stats()
+be_valid_cpu_generator_target_stats = _be_valid_cpu_generator_target_stats()
 be_valid_cpu_generator_core_stats = _be_valid_cpu_generator_core_stats()

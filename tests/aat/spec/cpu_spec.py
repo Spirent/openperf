@@ -52,7 +52,7 @@ with description('CPU Generator Module', 'cpu') as self:
 
             with context('GET'):
                 with before.all:
-                    self._result = self._api.cpu_info_with_http_info(
+                    self._result = self._api.get_cpu_info_with_http_info(
                         _return_http_data_only=False)
 
                 with it('success (200)'):
@@ -200,6 +200,9 @@ with description('CPU Generator Module', 'cpu') as self:
                 with description('by existing ID'):
                     with shared_context('delete generator'):
                         with it('deleted (204)'):
+                            gen = self._api.get_cpu_generator(self._g7r.id)
+                            if gen.running:
+                                self._api.stop_cpu_generator(self._g7r.id)
                             result = self._api.delete_cpu_generator_with_http_info(
                                 self._g7r.id, _return_http_data_only=False)
                             expect(result[1]).to(equal(204))
@@ -225,9 +228,10 @@ with description('CPU Generator Module', 'cpu') as self:
                     with description('running generator'):
                         with before.all:
                             model = cpu_generator_model(
-                                self._api.api_client, running = True)
+                                self._api.api_client)
                             self._g7r = self._api.create_cpu_generator(model)
                             expect(self._g7r).to(be_valid_cpu_generator)
+                            self._api.start_cpu_generator(self._g7r.id)
 
                         with it('running'):
                             result = self._api.get_cpu_generator(self._g7r.id)
@@ -261,6 +265,9 @@ with description('CPU Generator Module', 'cpu') as self:
                     with before.all:
                         self._result = self._api.start_cpu_generator_with_http_info(
                             self._g7r.id, _return_http_data_only=False)
+
+                    with after.all:
+                        self._api.stop_cpu_generator(self._g7r.id)
 
                     with shared_context('start generator'):
                         with it('not running'):
@@ -318,9 +325,11 @@ with description('CPU Generator Module', 'cpu') as self:
         with description('/cpu-generators/{id}/stop'):
             with before.all:
                 model = cpu_generator_model(
-                    self._api.api_client, running=True)
-                self._g7r = self._api.create_cpu_generator(model)
-                expect(self._g7r).to(be_valid_cpu_generator)
+                    self._api.api_client)
+                gen = self._api.create_cpu_generator(model)
+                expect(gen).to(be_valid_cpu_generator)
+                self._api.start_cpu_generator(gen.id)
+                self._g7r = self._api.get_cpu_generator(gen.id)
 
             with after.all:
                 self._api.delete_cpu_generator(self._g7r.id)
@@ -341,7 +350,7 @@ with description('CPU Generator Module', 'cpu') as self:
                         expect(g7r.running).to(be_false)
 
                     with description('already stopped generator'):
-                        with it('bad request (400)'):
+                        with _it('bad request (400)'):
                             expr = lambda: self._api.stop_cpu_generator(self._g7r.id)
                             expect(expr).to(raise_api_exception(400))
 
@@ -373,8 +382,9 @@ with description('CPU Generator Module', 'cpu') as self:
                         request, _return_http_data_only=False)
 
                 with after.all:
-                    for g7r in self._result[0]:
-                        self._api.delete_cpu_generator(g7r.id)
+                    self._api.bulk_delete_cpu_generators(
+                        client.models.BulkDeleteCpuGeneratorsRequest(
+                            [gen.id for gen in self._api.list_cpu_generators()]))
 
                 with it('created (200)'):
                     expect(self._result[1]).to(equal(200))
@@ -404,6 +414,11 @@ with description('CPU Generator Module', 'cpu') as self:
                     self._ids = []
                     self._model = cpu_generator_model(
                         self._api.api_client, running=False)
+
+                with after.all:
+                    self._api.bulk_delete_cpu_generators(
+                        client.models.BulkDeleteCpuGeneratorsRequest(
+                            [gen.id for gen in self._api.list_cpu_generators()]))
 
                 with shared_context('delete generators'):
                     with before.all:
@@ -441,7 +456,7 @@ with description('CPU Generator Module', 'cpu') as self:
 
                 with description('with invalid ID'):
                     with before.all:
-                        self._ids = ['bad_id']
+                        self._ids = ['bad-id']
 
                     with included_context('delete generators'):
                         pass
@@ -461,9 +476,12 @@ with description('CPU Generator Module', 'cpu') as self:
                             for i in range(3)]
 
                 with after.all:
-                    request = client.models.BulkDeleteCpuGeneratorsRequest(
-                        [g7r.id for g7r in self._g8s])
-                    self._api.bulk_delete_cpu_generators(request)
+                    self._api.bulk_stop_cpu_generators(
+                        client.models.BulkStopCpuGeneratorsRequest(
+                            [gen.id for gen in self._g8s]))
+                    self._api.bulk_delete_cpu_generators(
+                        client.models.BulkDeleteCpuGeneratorsRequest(
+                            [gen.id for gen in self._g8s]))
 
                 with description('by existing IDs'):
                     with before.all:
@@ -471,6 +489,11 @@ with description('CPU Generator Module', 'cpu') as self:
                             [g7r.id for g7r in self._g8s])
                         self._result = self._api.bulk_start_cpu_generators_with_http_info(
                             request, _return_http_data_only=False)
+
+                    with after.all:
+                        self._api.bulk_stop_cpu_generators(
+                            client.models.BulkStopCpuGeneratorsRequest(
+                                [gen.id for gen in self._g8s]))
 
                     with it('all not running'):
                         for g7r in self._g8s:
@@ -508,16 +531,6 @@ with description('CPU Generator Module', 'cpu') as self:
 
                 with description('with non-existent ID'):
                     with before.all:
-                        for num, g7r in enumerate(self._g8s, start=1):
-                            try:
-                                if (num % 2) == 0:
-                                    g7r.running = False
-                                    self._api.stop_cpu_generator(g7r.id)
-                                else:
-                                    g7r.running = True
-                                    self._api.start_cpu_generator(g7r.id)
-                            except Exception:
-                                pass
                         self._results_count = len(self._api.list_cpu_generator_results())
 
                     with it('not found (404)'):
@@ -571,14 +584,22 @@ with description('CPU Generator Module', 'cpu') as self:
                             for i in range(3)]
 
                 with after.all:
-                    request = client.models.BulkDeleteCpuGeneratorsRequest(
-                        [g7r.id for g7r in self._g8s])
-                    self._api.bulk_delete_cpu_generators(request)
+                    self._api.bulk_stop_cpu_generators(
+                        client.models.BulkStopCpuGeneratorsRequest(
+                            [gen.id for gen in self._g8s]))
+                    self._api.bulk_delete_cpu_generators(
+                        client.models.BulkDeleteCpuGeneratorsRequest(
+                            [gen.id for gen in self._g8s]))
 
                 with shared_context('stop generators'):
                     with before.all:
                         for g7r in self._g8s:
                             self._api.start_cpu_generator(g7r.id)
+
+                    with after.all:
+                        self._api.bulk_stop_cpu_generators(
+                            client.models.BulkStopCpuGeneratorsRequest(
+                                [gen.id for gen in self._g8s]))
 
                     with it('all running'):
                         for g7r in self._g8s:
@@ -619,13 +640,14 @@ with description('CPU Generator Module', 'cpu') as self:
 
                 with description('with invalid ID'):
                     with before.all:
-                        self._ids = ['bad_id']
+                        self._ids = ['bad-id']
 
                     with included_context('stop generators'):
                         pass
 
     with description('CPU Generator Results'):
         with before.all:
+            expect(self._api.list_cpu_generator_results()).to(be_empty)
             model = cpu_generator_model(self._api.api_client, running = False)
             self._g7r = self._api.create_cpu_generator(model)
             expect(self._g7r).to(be_valid_cpu_generator)
@@ -751,4 +773,3 @@ with description('CPU Generator Module', 'cpu') as self:
             with it('results deleted'):
                 results = self._api.list_cpu_generator_results()
                 expect(results).to(be_empty)
-

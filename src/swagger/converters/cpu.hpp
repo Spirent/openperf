@@ -6,6 +6,7 @@
 namespace swagger::v1::model {
 
 class CpuGenerator;
+class CpuGeneratorConfig;
 class BulkCreateCpuGeneratorsRequest;
 class BulkDeleteCpuGeneratorsRequest;
 class BulkStartCpuGeneratorsRequest;
@@ -13,6 +14,7 @@ class BulkStopCpuGeneratorsRequest;
 class CpuGeneratorResult;
 
 void from_json(const nlohmann::json&, CpuGenerator&);
+void from_json(const nlohmann::json&, CpuGeneratorConfig&);
 void from_json(const nlohmann::json&, BulkCreateCpuGeneratorsRequest&);
 void from_json(const nlohmann::json&, BulkDeleteCpuGeneratorsRequest&);
 void from_json(const nlohmann::json&, BulkStartCpuGeneratorsRequest&);

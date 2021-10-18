@@ -1,6 +1,7 @@
 
 #include "tvlp.hpp"
 
+#include "cpu.hpp"
 #include "packet_generator.hpp"
 #include "swagger/v1/model/TvlpConfiguration.h"
 
@@ -13,7 +14,7 @@ void from_json(const nlohmann::json& j, TvlpProfile_cpu_series& cpu_series)
     cpu_series.setLength(val.at("length"));
 
     auto gc = std::make_shared<CpuGeneratorConfig>();
-    gc->fromJson(val.at("config"));
+    *gc = j["config"].get<CpuGeneratorConfig>();
     cpu_series.setConfig(gc);
 }
 

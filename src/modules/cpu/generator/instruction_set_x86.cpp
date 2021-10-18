@@ -2,7 +2,7 @@
 
 #include <cpuid.h>
 
-#include "instruction_set.hpp"
+#include "cpu/generator/instruction_set.hpp"
 
 namespace openperf::cpu::instruction_set {
 

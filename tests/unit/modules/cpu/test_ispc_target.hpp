@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "cpu/instruction_set.hpp"
+#include "cpu/generator/instruction_set.hpp"
 
 namespace cpu::test {
 
