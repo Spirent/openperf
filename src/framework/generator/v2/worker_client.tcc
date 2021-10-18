@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <random>
 #include <stdexcept>
 
@@ -12,6 +13,9 @@ namespace openperf::generator::worker {
 
 /* XXX: Length is arbitrary */
 static constexpr auto max_endpoint_length = 256;
+
+using namespace std::chrono_literals;
+static constexpr auto notify_interval = 1000ms;
 
 /**
  * Generate a random endpoint for worker synchronization.
@@ -80,7 +84,7 @@ void client<Derived, ResultType, LoadType>::start(void* context,
     op_task_sync_block_and_warn(
         &sync,
         nb_workers,
-        1000,
+        notify_interval.count(),
         "Still waiting on start acknowledgment from workers "
         "(syncpoint = %s)\n",
         syncpoint.c_str());
@@ -104,7 +108,7 @@ void client<Derived, ResultType, LoadType>::stop(void* context,
     op_task_sync_block_and_warn(
         &sync,
         nb_workers,
-        1000,
+        notify_interval.count(),
         "Still waiting on stop acknowledgment from workers "
         "(syncpoint = %s)\n",
         syncpoint.c_str());

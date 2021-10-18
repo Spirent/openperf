@@ -1,11 +1,11 @@
-#ifndef _OP_CPU_ISPC_FUNCTION_WRAPPER_HPP_
-#define _OP_CPU_ISPC_FUNCTION_WRAPPER_HPP_
+#ifndef _OP_CPU_GENERATOR_FUNCTION_WRAPPER_HPP_
+#define _OP_CPU_GENERATOR_FUNCTION_WRAPPER_HPP_
 
 #include <functional>
 
-#include "cpu/instruction_set.hpp"
+#include "cpu/generator/instruction_set.hpp"
 
-namespace openperf::cpu::internal {
+namespace openperf::cpu::generator {
 
 template <typename Function> class function_wrapper
 {
@@ -16,14 +16,7 @@ public:
 
     static constexpr functions_map functions;
 
-    template <instruction_set::type S, typename... Args>
-    auto operator()(Args&&... args)
-    {
-        return std::invoke(std::forward<Function>(function(S)),
-                           std::forward<Args>(args)...);
-    }
-
-    constexpr Function function(instruction_set::type set)
+    constexpr Function function(instruction_set::type set) const
     {
         auto function_it =
             std::find_if(std::begin(functions),
@@ -33,21 +26,9 @@ public:
         return (function_it == std::end(functions)) ? nullptr
                                                     : function_it->second;
     }
-
-    constexpr instruction_set::type instruction_set(Function f)
-    {
-        auto function_it =
-            std::find_if(std::begin(functions),
-                         std::end(functions),
-                         [f](auto& item) { return item.second == f; });
-
-        return (function_it == std::end(functions))
-                   ? instruction_set::type::NONE
-                   : function_it->first;
-    }
 };
 
-} // namespace openperf::cpu::internal
+} // namespace openperf::cpu::generator
 
 namespace instruction_set = openperf::cpu::instruction_set;
 
@@ -84,9 +65,9 @@ namespace instruction_set = openperf::cpu::instruction_set;
     extern "C" ret f##_avx512skx(__VA_ARGS__);                                 \
     }                                                                          \
     template <>                                                                \
-    constexpr openperf::cpu::internal::function_wrapper<decltype(&ispc::f)>::  \
-        functions_map openperf::cpu::internal::function_wrapper<decltype(      \
+    constexpr openperf::cpu::generator::function_wrapper<decltype(&ispc::f)>:: \
+        functions_map openperf::cpu::generator::function_wrapper<decltype(     \
             &ispc::f)>::functions = {                                          \
             ISPC_FUNCTION_WRAPPER_INIT_FUNCTION_DATA(f)}
 
-#endif // _OP_CPU_ISPC_FUNCTION_WRAPPER_HPP_
+#endif // _OP_CPU_GENERATOR_FUNCTION_WRAPPER_HPP_

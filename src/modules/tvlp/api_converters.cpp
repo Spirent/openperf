@@ -332,7 +332,7 @@ swagger::TvlpConfiguration to_swagger(const tvlp_configuration_t& config)
                 entry->setLength(cpu_entry.length.count());
 
                 auto g_config = std::make_shared<swagger::CpuGeneratorConfig>();
-                g_config->fromJson(cpu_entry.config);
+                swagger::from_json(cpu_entry.config, *g_config);
                 entry->setConfig(g_config);
                 return entry;
             });

@@ -6,6 +6,8 @@
 #include <string_view>
 #include <utility>
 
+#include "utils/associative_array.hpp"
+
 namespace openperf::cpu::instruction_set {
 
 /* Scalar instructions are always available */
@@ -67,15 +69,8 @@ enum class type {
     MAX
 };
 
-template <typename Key, typename Value, typename... Pairs>
-constexpr auto associative_array(Pairs&&... pairs)
-    -> std::array<std::pair<Key, Value>, sizeof...(pairs)>
-{
-    return {{std::forward<Pairs>(pairs)...}};
-}
-
 /* On x86 platforms, we have explicit algorithms to choose from */
-constexpr auto type_names = associative_array<type, std::string_view>(
+constexpr auto type_names = utils::associative_array<type, std::string_view>(
     std::pair(type::SCALAR, "scalar"),
     std::pair(type::AUTO, "automatic"),
     std::pair(type::SSE2, "SSE2"),
@@ -89,31 +84,19 @@ namespace detail {
 
 constexpr std::string_view to_string(type t)
 {
-    auto cursor = std::begin(type_names), end = std::end(type_names);
-    while (cursor != end) {
-        if (cursor->first == t) return (cursor->second);
-        cursor++;
-    }
-
-    return ("unknown");
+    return (utils::key_to_value(type_names, t).value_or("unknown"));
 }
 
 constexpr type to_type(std::string_view value)
 {
-    auto cursor = std::begin(type_names), end = std::end(type_names);
-    while (cursor != end) {
-        if (cursor->second == value) return (cursor->first);
-        cursor++;
-    }
-
-    return (type::NONE);
+    return (utils::value_to_key(type_names, value).value_or(type::NONE));
 }
 
 } // namespace detail
 
 constexpr bool enabled(type t)
 {
-    constexpr auto sets_enabled = associative_array<type, bool>(
+    constexpr auto sets_enabled = utils::associative_array<type, bool>(
         std::pair(type::SCALAR, true),
         std::pair(type::AUTO, automatic_enabled),
         std::pair(type::SSE2, sse2_enabled),
@@ -123,13 +106,7 @@ constexpr bool enabled(type t)
         std::pair(type::AVX512SKX, avx512skx_enabled),
         std::pair(type::NEON, neon_enabled));
 
-    auto cursor = std::begin(sets_enabled), end = std::end(sets_enabled);
-    while (cursor != end) {
-        if (cursor->first == t) return (cursor->second);
-        cursor++;
-    }
-
-    return (false);
+    return (utils::key_to_value(sets_enabled, t).value_or(false));
 }
 
 bool available(type t);
