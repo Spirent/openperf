@@ -599,6 +599,7 @@ void handler::bulk_stop_captures(const request_type& request,
             request);
     if (!swagger_request) {
         response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
     }
 
     const auto& ids = swagger_request->getIds();
@@ -823,6 +824,7 @@ void handler::merge_captures_pcap(const request_type& request,
         parse_request<swagger::v1::model::GetPacketCapturesPcapConfig>(request);
     if (!swagger_request) {
         response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
     }
 
     const auto& ids = swagger_request->getIds();
