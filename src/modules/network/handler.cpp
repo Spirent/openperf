@@ -416,8 +416,8 @@ void handler::create_generator(const Rest::Request& request,
                     ok.error().begin(),
                     ok.error().end(),
                     std::string{},
-                    [](auto& acc, auto& s) { return acc += " " + s; })
-                    .c_str());
+                    [](auto& acc, auto& s) { return acc += " " + s; }),
+                request.body());
         }
 
         auto api_request =
