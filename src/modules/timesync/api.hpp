@@ -107,7 +107,11 @@ struct time_source_config_ntp
 
 struct time_source_stats_ntp
 {
+    using time_point = std::chrono::time_point<chrono::realtime>;
+    std::optional<time_point> last_rx_accepted;
+    std::optional<time_point> last_rx_ignored;
     std::chrono::seconds poll_period;
+    int64_t rx_ignored;
     int64_t rx_packets;
     int64_t tx_packets;
     std::optional<uint8_t> stratum;

@@ -41,7 +41,12 @@ struct ntp
     unsigned poll_loop_id = 0;
     struct
     {
+        std::optional<chrono::realtime::time_point> last_rx_accepted =
+            std::nullopt;
+        std::optional<chrono::realtime::time_point> last_rx_ignored =
+            std::nullopt;
         std::chrono::seconds poll_period = 64s;
+        unsigned rx_ignored = 0;
         unsigned rx = 0;
         unsigned tx = 0;
         std::optional<uint8_t> stratum = std::nullopt; /* unsynchronized */
