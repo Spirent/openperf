@@ -31,34 +31,91 @@ class TimeSourceStatsNtp(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'last_rx_accepted': 'datetime',
+        'last_rx_ignored': 'datetime',
         'poll_period': 'int',
+        'rx_ignored': 'int',
         'rx_packets': 'int',
         'tx_packets': 'int',
         'stratum': 'int'
     }
 
     attribute_map = {
+        'last_rx_accepted': 'last_rx_accepted',
+        'last_rx_ignored': 'last_rx_ignored',
         'poll_period': 'poll_period',
+        'rx_ignored': 'rx_ignored',
         'rx_packets': 'rx_packets',
         'tx_packets': 'tx_packets',
         'stratum': 'stratum'
     }
 
-    def __init__(self, poll_period=None, rx_packets=None, tx_packets=None, stratum=None):  # noqa: E501
+    def __init__(self, last_rx_accepted=None, last_rx_ignored=None, poll_period=None, rx_ignored=None, rx_packets=None, tx_packets=None, stratum=None):  # noqa: E501
         """TimeSourceStatsNtp - a model defined in Swagger"""  # noqa: E501
 
+        self._last_rx_accepted = None
+        self._last_rx_ignored = None
         self._poll_period = None
+        self._rx_ignored = None
         self._rx_packets = None
         self._tx_packets = None
         self._stratum = None
         self.discriminator = None
 
-        if poll_period is not None:
-            self.poll_period = poll_period
+        if last_rx_accepted is not None:
+            self.last_rx_accepted = last_rx_accepted
+        if last_rx_ignored is not None:
+            self.last_rx_ignored = last_rx_ignored
+        self.poll_period = poll_period
+        self.rx_ignored = rx_ignored
         self.rx_packets = rx_packets
         self.tx_packets = tx_packets
         if stratum is not None:
             self.stratum = stratum
+
+    @property
+    def last_rx_accepted(self):
+        """Gets the last_rx_accepted of this TimeSourceStatsNtp.  # noqa: E501
+
+        the time and date of the last accepted NTP reply, in ISO8601 format  # noqa: E501
+
+        :return: The last_rx_accepted of this TimeSourceStatsNtp.  # noqa: E501
+        :rtype: datetime
+        """
+        return self._last_rx_accepted
+
+    @last_rx_accepted.setter
+    def last_rx_accepted(self, last_rx_accepted):
+        """Sets the last_rx_accepted of this TimeSourceStatsNtp.
+
+        the time and date of the last accepted NTP reply, in ISO8601 format  # noqa: E501
+
+        :param last_rx_accepted: The last_rx_accepted of this TimeSourceStatsNtp.  # noqa: E501
+        :type: datetime
+        """
+        self._last_rx_accepted = last_rx_accepted
+
+    @property
+    def last_rx_ignored(self):
+        """Gets the last_rx_ignored of this TimeSourceStatsNtp.  # noqa: E501
+
+        The time and date of the last ignored NTP reply, in ISO8601 format  # noqa: E501
+
+        :return: The last_rx_ignored of this TimeSourceStatsNtp.  # noqa: E501
+        :rtype: datetime
+        """
+        return self._last_rx_ignored
+
+    @last_rx_ignored.setter
+    def last_rx_ignored(self, last_rx_ignored):
+        """Sets the last_rx_ignored of this TimeSourceStatsNtp.
+
+        The time and date of the last ignored NTP reply, in ISO8601 format  # noqa: E501
+
+        :param last_rx_ignored: The last_rx_ignored of this TimeSourceStatsNtp.  # noqa: E501
+        :type: datetime
+        """
+        self._last_rx_ignored = last_rx_ignored
 
     @property
     def poll_period(self):
@@ -81,6 +138,28 @@ class TimeSourceStatsNtp(object):
         :type: int
         """
         self._poll_period = poll_period
+
+    @property
+    def rx_ignored(self):
+        """Gets the rx_ignored of this TimeSourceStatsNtp.  # noqa: E501
+
+        Received packets that were ignored due to an invalid origin timestamp or stratum, e.g. a Kiss-o'-Death packet   # noqa: E501
+
+        :return: The rx_ignored of this TimeSourceStatsNtp.  # noqa: E501
+        :rtype: int
+        """
+        return self._rx_ignored
+
+    @rx_ignored.setter
+    def rx_ignored(self, rx_ignored):
+        """Sets the rx_ignored of this TimeSourceStatsNtp.
+
+        Received packets that were ignored due to an invalid origin timestamp or stratum, e.g. a Kiss-o'-Death packet   # noqa: E501
+
+        :param rx_ignored: The rx_ignored of this TimeSourceStatsNtp.  # noqa: E501
+        :type: int
+        """
+        self._rx_ignored = rx_ignored
 
     @property
     def rx_packets(self):

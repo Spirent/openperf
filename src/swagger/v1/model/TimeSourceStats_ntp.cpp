@@ -19,8 +19,12 @@ namespace model {
 
 TimeSourceStats_ntp::TimeSourceStats_ntp()
 {
+    m_Last_rx_accepted = "";
+    m_Last_rx_acceptedIsSet = false;
+    m_Last_rx_ignored = "";
+    m_Last_rx_ignoredIsSet = false;
     m_Poll_period = 0L;
-    m_Poll_periodIsSet = false;
+    m_Rx_ignored = 0L;
     m_Rx_packets = 0L;
     m_Tx_packets = 0L;
     m_Stratum = 0;
@@ -41,10 +45,16 @@ nlohmann::json TimeSourceStats_ntp::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
-    if(m_Poll_periodIsSet)
+    if(m_Last_rx_acceptedIsSet)
     {
-        val["poll_period"] = m_Poll_period;
+        val["last_rx_accepted"] = ModelBase::toJson(m_Last_rx_accepted);
     }
+    if(m_Last_rx_ignoredIsSet)
+    {
+        val["last_rx_ignored"] = ModelBase::toJson(m_Last_rx_ignored);
+    }
+    val["poll_period"] = m_Poll_period;
+    val["rx_ignored"] = m_Rx_ignored;
     val["rx_packets"] = m_Rx_packets;
     val["tx_packets"] = m_Tx_packets;
     if(m_StratumIsSet)
@@ -58,10 +68,18 @@ nlohmann::json TimeSourceStats_ntp::toJson() const
 
 void TimeSourceStats_ntp::fromJson(nlohmann::json& val)
 {
-    if(val.find("poll_period") != val.end())
+    if(val.find("last_rx_accepted") != val.end())
     {
-        setPollPeriod(val.at("poll_period"));
+        setLastRxAccepted(val.at("last_rx_accepted"));
+        
     }
+    if(val.find("last_rx_ignored") != val.end())
+    {
+        setLastRxIgnored(val.at("last_rx_ignored"));
+        
+    }
+    setPollPeriod(val.at("poll_period"));
+    setRxIgnored(val.at("rx_ignored"));
     setRxPackets(val.at("rx_packets"));
     setTxPackets(val.at("tx_packets"));
     if(val.find("stratum") != val.end())
@@ -72,6 +90,40 @@ void TimeSourceStats_ntp::fromJson(nlohmann::json& val)
 }
 
 
+std::string TimeSourceStats_ntp::getLastRxAccepted() const
+{
+    return m_Last_rx_accepted;
+}
+void TimeSourceStats_ntp::setLastRxAccepted(std::string value)
+{
+    m_Last_rx_accepted = value;
+    m_Last_rx_acceptedIsSet = true;
+}
+bool TimeSourceStats_ntp::lastRxAcceptedIsSet() const
+{
+    return m_Last_rx_acceptedIsSet;
+}
+void TimeSourceStats_ntp::unsetLast_rx_accepted()
+{
+    m_Last_rx_acceptedIsSet = false;
+}
+std::string TimeSourceStats_ntp::getLastRxIgnored() const
+{
+    return m_Last_rx_ignored;
+}
+void TimeSourceStats_ntp::setLastRxIgnored(std::string value)
+{
+    m_Last_rx_ignored = value;
+    m_Last_rx_ignoredIsSet = true;
+}
+bool TimeSourceStats_ntp::lastRxIgnoredIsSet() const
+{
+    return m_Last_rx_ignoredIsSet;
+}
+void TimeSourceStats_ntp::unsetLast_rx_ignored()
+{
+    m_Last_rx_ignoredIsSet = false;
+}
 int64_t TimeSourceStats_ntp::getPollPeriod() const
 {
     return m_Poll_period;
@@ -79,15 +131,16 @@ int64_t TimeSourceStats_ntp::getPollPeriod() const
 void TimeSourceStats_ntp::setPollPeriod(int64_t value)
 {
     m_Poll_period = value;
-    m_Poll_periodIsSet = true;
+    
 }
-bool TimeSourceStats_ntp::pollPeriodIsSet() const
+int64_t TimeSourceStats_ntp::getRxIgnored() const
 {
-    return m_Poll_periodIsSet;
+    return m_Rx_ignored;
 }
-void TimeSourceStats_ntp::unsetPoll_period()
+void TimeSourceStats_ntp::setRxIgnored(int64_t value)
 {
-    m_Poll_periodIsSet = false;
+    m_Rx_ignored = value;
+    
 }
 int64_t TimeSourceStats_ntp::getRxPackets() const
 {

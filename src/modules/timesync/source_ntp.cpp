@@ -210,6 +210,7 @@ static int handle_ntp_reply(const struct op_event_data*, void* arg)
 
     auto buffer = std::array<std::byte, timesync::ntp::packet_size>();
     auto length = buffer.size();
+    auto now = chrono::realtime::now();
     while (auto rx_time = source->socket.recv(buffer.data(), length)) {
         assert(length <= buffer.size());
         auto reply = timesync::ntp::deserialize(buffer.data(), length);
@@ -217,12 +218,16 @@ static int handle_ntp_reply(const struct op_event_data*, void* arg)
         /* Skip replies we can't decode. */
         if (!reply) { continue; }
 
+        source->stats.rx++;
+
         /*
          * According to RFC 5905, if the stratum is 0, then the
          * reply is invalid and the server might be trying to tell
          * us something.
          */
         if (!reply->stratum) {
+            source->stats.rx_ignored++;
+            source->stats.last_rx_ignored = now;
             handle_invalid_ntp_reply(source, *reply);
             continue;
         }
@@ -233,6 +238,8 @@ static int handle_ntp_reply(const struct op_event_data*, void* arg)
          * we expect.
          */
         if (reply->origin != source->expected_origin) {
+            source->stats.rx_ignored++;
+            source->stats.last_rx_ignored = now;
             OP_LOG(OP_LOG_WARNING,
                    "Ignoring NTP reply with unrecognized origin timestamp, "
                    "%016" PRIx64 ".%016" PRIx64 "\n",
@@ -243,7 +250,7 @@ static int handle_ntp_reply(const struct op_event_data*, void* arg)
 
         // ntp::dump(stderr, *reply);
 
-        source->stats.rx++;
+        source->stats.last_rx_accepted = now;
         source->stats.stratum = reply->stratum;
         source->clock->update(
             source->last_tx, reply->receive, reply->transmit, *rx_time);
@@ -317,8 +324,11 @@ api::time_source_ntp to_time_source(const ntp& source)
     auto ntp = api::time_source_ntp{
         .config = config,
         .stats = {
+            .last_rx_accepted = source.stats.last_rx_accepted,
+            .last_rx_ignored = source.stats.last_rx_ignored,
             .poll_period = std::chrono::duration_cast<std::chrono::seconds>(
                 ntp_poll_delay(source.stats.tx, source.stats.poll_period)),
+            .rx_ignored = source.stats.rx_ignored,
             .rx_packets = source.stats.rx,
             .tx_packets = source.stats.tx,
             .stratum = source.stats.stratum}};

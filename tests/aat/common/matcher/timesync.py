@@ -29,6 +29,21 @@ class _be_valid_keeper(Matcher):
         return True, ['is valid keeper']
 
 
+class _be_valid_source_ntp_stats(Matcher):
+    def _match(self, stats):
+        expect(stats).to(be_a(client.models.TimeSourceStatsNtp))
+        expect(stats.poll_period).not_to(be_none)
+        expect(stats.rx_ignored).not_to(be_none)
+        expect(stats.rx_packets).not_to(be_none)
+        expect(stats.tx_packets).not_to(be_none)
+        if stats.rx_packets > 0:
+            expect(stats.last_rx_accepted).to(be_a(datetime))
+            expect(stats.stratum).to(be_above_or_equal(1))
+        if stats.rx_ignored > 0:
+            expect(stats.last_rx_ingored).to(be_a(datetime))
+        return True, ['is valid source ntp stats']
+
+
 class _be_valid_source(Matcher):
     def _match(self, source):
         expect(source).to(be_a(client.models.TimeSource))
@@ -39,9 +54,7 @@ class _be_valid_source(Matcher):
             ntp = source.config.ntp
             expect(ntp).to(be_a(client.models.TimeSourceConfigNtp))
             expect(ntp.hostname).not_to(be_empty)
-
-            expect(source.stats.ntp).to(be_a(client.models.TimeSourceStatsNtp))
-
+            expect(source.stats.ntp).to(be_valid_source_ntp_stats)
             return True, ['is valid ntp source']
         elif source.kind == 'system':
             expect(source.stats.system).to(be_a(client.models.TimeSourceStatsSystem))
@@ -52,4 +65,5 @@ class _be_valid_source(Matcher):
 
 be_valid_counter = _be_valid_counter()
 be_valid_keeper = _be_valid_keeper()
+be_valid_source_ntp_stats = _be_valid_source_ntp_stats()
 be_valid_source = _be_valid_source()
