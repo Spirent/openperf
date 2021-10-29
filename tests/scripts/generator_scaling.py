@@ -186,6 +186,7 @@ def iso8601_to_datetime(s):
 def aggregate_results(args):
     octets = 0
     packets = 0
+    drops = 0
     start = None
     stop = None
 
@@ -194,6 +195,7 @@ def aggregate_results(args):
         counters = r.json()['flow_counters']
         octets += counters['octets_actual']
         packets += counters['packets_actual']
+        drops += counters['packets_dropped']
         local_start = iso8601_to_datetime(counters['timestamp_first'])
         local_stop = iso8601_to_datetime(counters['timestamp_last'])
         start = local_start if not start else min(start, local_start)
@@ -201,10 +203,11 @@ def aggregate_results(args):
 
     if start and stop:
         delta = (stop - start).total_seconds()
-        print('{} packets ({} octets) in {} seconds ({:.2f} pps, {:.2f} octets/sec)'.format(
+        print('{} packets ({} octets) in {} seconds ({:.2f} pps, {:.2f} octets/sec, {:.2f} drops/sec)'.format(
             packets, octets, delta,
             packets / delta if delta else 0,
-            octets / delta if delta else 0))
+            octets / delta if delta else 0,
+            drops / delta if delta else 0))
     else:
         print('No results!')
 

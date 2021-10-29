@@ -1,3 +1,4 @@
+#include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/port/rss_hasher.hpp"
 #include "utils/prefetch_for_each.hpp"
 

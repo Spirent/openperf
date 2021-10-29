@@ -17,13 +17,13 @@ constexpr auto sane_rx_pktlens =
 
 constexpr auto slow_rx_offloads =
     utils::associative_array<std::string_view, uint64_t>(
-        std::pair(driver_names::mlx5, DEV_RX_OFFLOAD_SCATTER),
-        std::pair(driver_names::virtio, DEV_RX_OFFLOAD_RSS_HASH));
+        std::pair(driver_names::mlx5, RTE_ETH_RX_OFFLOAD_TCP_LRO),
+        std::pair(driver_names::virtio, RTE_ETH_RX_OFFLOAD_RSS_HASH));
 
 constexpr auto slow_tx_offloads =
     utils::associative_array<std::string_view, uint64_t>(
         std::pair(driver_names::virtio,
-                  DEV_TX_OFFLOAD_TCP_CKSUM | DEV_TX_OFFLOAD_UDP_CKSUM));
+                  RTE_ETH_TX_OFFLOAD_TCP_CKSUM | RTE_ETH_TX_OFFLOAD_UDP_CKSUM));
 
 } // namespace detail
 

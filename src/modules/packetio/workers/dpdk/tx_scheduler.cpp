@@ -360,10 +360,7 @@ static void do_drop(uint16_t port_idx,
            queue_idx,
            source->id().c_str());
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     rte_pktmbuf_free_bulk(mbufs.data(), mbufs.size());
-#pragma clang diagnostic pop
     mbufs.clear();
 }
 

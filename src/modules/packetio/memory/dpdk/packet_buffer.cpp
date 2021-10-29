@@ -1,7 +1,5 @@
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/mbuf_rx_prbs.hpp"
-#include "packetio/drivers/dpdk/mbuf_signature.hpp"
-#include "packetio/drivers/dpdk/mbuf_tx.hpp"
+#include "packetio/drivers/dpdk/mbuf_metadata.hpp"
 #include "packetio/packet_buffer.hpp"
 #include "spirent_pga/api.h"
 
@@ -79,11 +77,15 @@ void tx_offload(packet_buffer* buffer,
 
     uint64_t ol_flags = 0;
     if (flags & packet_type::ip::ipv4) {
-        ol_flags |= (PKT_TX_IP_CKSUM | PKT_TX_IPV4);
+        ol_flags |= (RTE_MBUF_F_TX_IP_CKSUM | RTE_MBUF_F_TX_IPV4);
     }
-    if (flags & packet_type::ip::ipv6) { ol_flags |= PKT_TX_IPV6; }
-    if (flags & packet_type::protocol::udp) { ol_flags |= PKT_TX_UDP_CKSUM; }
-    if (flags & packet_type::protocol::tcp) { ol_flags |= PKT_TX_TCP_CKSUM; }
+    if (flags & packet_type::ip::ipv6) { ol_flags |= RTE_MBUF_F_TX_IPV6; }
+    if (flags & packet_type::protocol::udp) {
+        ol_flags |= RTE_MBUF_F_TX_UDP_CKSUM;
+    }
+    if (flags & packet_type::protocol::tcp) {
+        ol_flags |= RTE_MBUF_F_TX_TCP_CKSUM;
+    }
 
     /* Update packet metadata */
     buffer->ol_flags = ol_flags;
@@ -139,7 +141,7 @@ uint16_t frame_length(const packet_buffer* buffer)
 timesync::chrono::realtime::time_point rx_timestamp(const packet_buffer* buffer)
 {
     using clock = openperf::timesync::chrono::realtime;
-    return (clock::time_point{clock::duration{buffer->timestamp}});
+    return (clock::time_point{dpdk::mbuf_timestamp_get(buffer)});
 }
 
 packet_type::flags packet_type_flags(const packet_buffer* buffer)
@@ -151,7 +153,8 @@ uint32_t rss_hash(const packet_buffer* buffer) { return (buffer->hash.rss); }
 
 bool ipv4_checksum_error(const packet_buffer* buffer)
 {
-    return ((buffer->ol_flags & PKT_RX_IP_CKSUM_MASK) == PKT_RX_IP_CKSUM_BAD);
+    return ((buffer->ol_flags & RTE_MBUF_F_RX_IP_CKSUM_MASK)
+            == RTE_MBUF_F_RX_IP_CKSUM_BAD);
 }
 
 bool tcp_checksum_error(const packet_buffer* buffer)
@@ -159,8 +162,8 @@ bool tcp_checksum_error(const packet_buffer* buffer)
     const auto is_tcp =
         packet_type::flags(buffer->packet_type) & packet_type::protocol::tcp;
     return (is_tcp.value
-            && (buffer->ol_flags & PKT_RX_L4_CKSUM_MASK)
-                   == PKT_RX_L4_CKSUM_BAD);
+            && (buffer->ol_flags & RTE_MBUF_F_RX_L4_CKSUM_MASK)
+                   == RTE_MBUF_F_RX_L4_CKSUM_BAD);
 }
 
 bool udp_checksum_error(const packet_buffer* buffer)
@@ -168,35 +171,35 @@ bool udp_checksum_error(const packet_buffer* buffer)
     const auto is_udp =
         packet_type::flags(buffer->packet_type) & packet_type::protocol::udp;
     return (is_udp.value
-            && (buffer->ol_flags & PKT_RX_L4_CKSUM_MASK)
-                   == PKT_RX_L4_CKSUM_BAD);
+            && (buffer->ol_flags & RTE_MBUF_F_RX_L4_CKSUM_MASK)
+                   == RTE_MBUF_F_RX_L4_CKSUM_BAD);
 }
 
 std::optional<uint32_t> prbs_octets(const packet_buffer* buffer)
 {
-    return (dpdk::mbuf_rx_prbs_avail(buffer)
-                ? std::make_optional(dpdk::mbuf_rx_prbs_octets(buffer))
+    return (dpdk::mbuf_rx_prbs_is_set(buffer)
+                ? std::make_optional(dpdk::mbuf_rx_prbs_get_octets(buffer))
                 : std::nullopt);
 }
 
 std::optional<uint32_t> prbs_bit_errors(const packet_buffer* buffer)
 {
-    return (dpdk::mbuf_rx_prbs_avail(buffer)
-                ? std::make_optional(dpdk::mbuf_rx_prbs_bit_errors(buffer))
+    return (dpdk::mbuf_rx_prbs_is_set(buffer)
+                ? std::make_optional(dpdk::mbuf_rx_prbs_get_bit_errors(buffer))
                 : std::nullopt);
 }
 
 std::optional<uint32_t> signature_stream_id(const packet_buffer* buffer)
 {
-    return (dpdk::mbuf_signature_avail(buffer)
-                ? std::make_optional(dpdk::mbuf_signature_stream_id_get(buffer))
+    return (dpdk::mbuf_signature_is_set(buffer)
+                ? std::make_optional(dpdk::mbuf_signature_get_stream_id(buffer))
                 : std::nullopt);
 }
 
 std::optional<uint32_t> signature_sequence_number(const packet_buffer* buffer)
 {
-    return (dpdk::mbuf_signature_avail(buffer)
-                ? std::make_optional(dpdk::mbuf_signature_seq_num_get(buffer))
+    return (dpdk::mbuf_signature_is_set(buffer)
+                ? std::make_optional(dpdk::mbuf_signature_get_seq_num(buffer))
                 : std::nullopt);
 }
 
@@ -204,12 +207,15 @@ std::optional<timesync::chrono::realtime::time_point>
 signature_tx_timestamp(const packet_buffer* buffer)
 {
     using clock = openperf::timesync::chrono::realtime;
-    return (dpdk::mbuf_signature_avail(buffer)
+    return (dpdk::mbuf_signature_is_set(buffer)
                 ? std::make_optional(clock::time_point{clock::duration{
-                    dpdk::mbuf_signature_timestamp_get(buffer)}})
+                    dpdk::mbuf_signature_get_timestamp(buffer)}})
                 : std::nullopt);
 }
 
-bool tx_sink(const packet_buffer* buffer) { return dpdk::mbuf_tx_sink(buffer); }
+bool tx_sink(const packet_buffer* buffer)
+{
+    return dpdk::mbuf_tx_sink_is_set(buffer);
+}
 
 } // namespace openperf::packetio::packet

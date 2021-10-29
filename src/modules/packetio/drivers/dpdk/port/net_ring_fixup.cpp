@@ -1,6 +1,6 @@
 #include <cstring>
 
-#include "packetio/drivers/dpdk/mbuf_tx.hpp"
+#include "packetio/drivers/dpdk/mbuf_metadata.hpp"
 #include "packetio/drivers/dpdk/names.hpp"
 #include "packetio/drivers/dpdk/port/net_ring_fixup.hpp"
 #include "packetio/drivers/dpdk/port_info.hpp"
@@ -19,7 +19,7 @@ static uint16_t fixup_net_ring_metadata([[maybe_unused]] uint16_t port_id,
                                         [[maybe_unused]] uint16_t max_packets,
                                         [[maybe_unused]] void* user_param)
 {
-    std::for_each(packets, packets + nb_packets, mbuf_clear_tx_sink);
+    std::for_each(packets, packets + nb_packets, mbuf_tx_sink_clear);
     return (nb_packets);
 }
 

@@ -121,9 +121,10 @@ static int thread_wrapper(void* arg)
 static int get_waiting_lcore()
 {
     int i = 0;
-    RTE_LCORE_FOREACH_SLAVE (i) {
+    RTE_LCORE_FOREACH_WORKER(i)
+    {
         switch (rte_eal_get_lcore_state(i)) {
-        case FINISHED:
+        case RUNNING:
             rte_eal_wait_lcore(i);
             break;
         case WAIT:

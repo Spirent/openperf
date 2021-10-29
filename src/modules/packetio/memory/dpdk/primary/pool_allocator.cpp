@@ -136,7 +136,7 @@ void pool_allocator::init(const std::vector<uint16_t>& port_indexes,
                            std::back_inserter(pkt_lengths),
                            [](const auto port_id) {
                                return (port_info::rx_offloads(port_id)
-                                               & DEV_RX_OFFLOAD_SCATTER
+                                               & RTE_ETH_RX_OFFLOAD_SCATTER
                                            ? RTE_MBUF_DEFAULT_BUF_SIZE
                                            : port_info::max_rx_pktlen(port_id));
                            });

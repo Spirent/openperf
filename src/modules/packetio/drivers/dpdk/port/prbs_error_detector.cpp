@@ -1,8 +1,8 @@
 #include <cassert>
 #include <numeric>
 
-#include "packetio/drivers/dpdk/mbuf_rx_prbs.hpp"
-#include "packetio/drivers/dpdk/mbuf_signature.hpp"
+#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/mbuf_metadata.hpp"
 #include "packetio/drivers/dpdk/port/prbs_error_detector.hpp"
 #include "packetio/drivers/dpdk/port/signature_utils.hpp"
 #include "spirent_pga/api.h"
@@ -33,8 +33,8 @@ static uint16_t packet_count_for_segment_limit(rte_mbuf* const packets[],
 
 static bool has_prbs_payload(const rte_mbuf* m)
 {
-    return (mbuf_signature_avail(m)
-            && pga_prbs_flag(mbuf_signature_flags_get(m))
+    return (mbuf_signature_is_set(m)
+            && pga_prbs_flag(mbuf_signature_get_flags(m))
                    == pga_signature_prbs::enable);
 }
 
