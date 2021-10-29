@@ -7,7 +7,7 @@ namespace openperf::packetio::dpdk::driver_names {
 
 inline constexpr std::string_view ring = "net_ring";
 inline constexpr std::string_view virtio = "net_virtio";
-inline constexpr std::string_view mlx5 = "net_mlx5";
+inline constexpr std::string_view mlx5 = "mlx5_pci";
 
 } // namespace openperf::packetio::dpdk::driver_names
 

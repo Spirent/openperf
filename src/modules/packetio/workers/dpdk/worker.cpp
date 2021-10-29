@@ -11,8 +11,8 @@
 #include "core/op_thread.h"
 #include "utils/prefetch_for_each.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/mbuf_signature.hpp"
-#include "packetio/drivers/dpdk/mbuf_tx.hpp"
+#include "packetio/drivers/dpdk/mbuf_metadata.hpp"
+
 #include "packetio/drivers/dpdk/queue_utils.hpp"
 #include "packetio/workers/dpdk/callback.hpp"
 #include "packetio/workers/dpdk/epoll_poller.hpp"
@@ -93,44 +93,6 @@ static bool all_pollable(const std::vector<task_ptr>& tasks)
 }
 
 /**
- * Set the interface pointer the mbuf will be dispatched to.
- *
- * This interface pointer is only valid for unicast packets during parts of the
- * rx dispatch.
- */
-template <typename T> static void rx_mbuf_set_tag(rte_mbuf* mbuf, T* tag)
-{
-    mbuf->userdata = const_cast<std::remove_const_t<T>*>(tag);
-}
-
-template <typename T> T* rx_mbuf_get_tag(rte_mbuf* mbuf)
-{
-    assert(mbuf->userdata != nullptr);
-    return (static_cast<T*>(mbuf->userdata));
-}
-
-static void rx_mbuf_clear_tag(rte_mbuf* mbuf) { mbuf->userdata = nullptr; }
-
-/**
- * Get the interface pointer the mbuf will be dispatchd to.
- *
- * This interface pointer is only valid for unicast packets during parts
- * of the rx dispatch.
- */
-static bool rx_mbuf_has_tag(rte_mbuf* mbuf)
-{
-    return (mbuf->userdata != nullptr);
-}
-
-static void rx_mbuf_free_bulk(rte_mbuf* mbufs[], uint16_t n)
-{
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    rte_pktmbuf_free_bulk(mbufs, n);
-#pragma clang diagnostic pop
-}
-
-/**
  * Resolve interfaces for the packets and store interface in the packet
  * ancillary data.  If the mbuf is destined to an interface which is not
  * found, the mbuf is added to the list of packets to free.
@@ -159,18 +121,18 @@ static std::pair<uint16_t, uint16_t> rx_resolve_interfaces(const fib* fib,
         },
         [&](auto mbuf) {
             auto eth = rte_pktmbuf_mtod(mbuf, struct rte_ether_hdr*);
-            if (rte_is_unicast_ether_addr(&eth->d_addr)) {
-                rx_mbuf_set_tag(
-                    mbuf, fib->find_interface(port_id, eth->d_addr.addr_bytes));
-                if (rx_mbuf_has_tag(mbuf)) {
+            if (rte_is_unicast_ether_addr(&eth->dst_addr)) {
+                if (auto* ifp = fib->find_interface(port_id,
+                                                    eth->dst_addr.addr_bytes)) {
+                    mbuf_tag_set(mbuf, ifp);
                     to_stack[nb_to_stack++] = mbuf;
                 } else {
-                    // Packet doesn't match any interfaces
+                    mbuf_tag_clear(mbuf);
                     to_free[nb_to_free++] = mbuf;
                 }
             } else {
+                mbuf_tag_clear(mbuf);
                 to_stack[nb_to_stack++] = mbuf;
-                rx_mbuf_clear_tag(mbuf);
             }
         },
         mbuf_prefetch_offset);
@@ -264,7 +226,7 @@ rx_interface_sink_dispatch(const fib* fib,
         },
         [&](auto* mbuf) {
             auto* eth = rte_pktmbuf_mtod(mbuf, struct rte_ether_hdr*);
-            auto* dst_addr = &eth->d_addr;
+            auto* dst_addr = &eth->dst_addr;
             bool unicast = rte_is_unicast_ether_addr(dst_addr);
 
             if (unicast) {
@@ -283,14 +245,14 @@ rx_interface_sink_dispatch(const fib* fib,
                 } else {
                     // Store interface pointers to avoid multiple
                     // lookups for the same packet
-                    rx_mbuf_set_tag(mbuf, std::addressof(last_entry->ifp));
+                    mbuf_tag_set(mbuf, std::addressof(last_entry->ifp));
                     to_stack[nb_to_stack++] = mbuf;
                 }
             } else {
                 // Multicast packets don't need to match anything
                 // They will be delivered to all sinks on the port.
                 to_stack[nb_to_stack++] = mbuf;
-                rx_mbuf_clear_tag(mbuf);
+                mbuf_tag_clear(mbuf);
             }
 
             if (!burst || std::get<IFP_SINKS>(*burst) != last_entry) {
@@ -338,13 +300,14 @@ static void rx_stack_dispatch(const fib* fib,
                             [](auto* mbuf) -> bool {
                                 // Unicast packets should have a non
                                 // null interace
-                                return rx_mbuf_has_tag(mbuf);
+                                return (mbuf_tag_is_set(mbuf));
                             });
 
     // Dispatch unicast packets
     std::for_each(unicast.data(), unicast_last, [](auto* mbuf) {
-        auto* ifp = rx_mbuf_get_tag<interface::generic_interface>(mbuf);
-        rx_mbuf_clear_tag(mbuf);
+        auto* ifp = mbuf_tag_get<interface::generic_interface>(mbuf);
+        assert(ifp);
+        mbuf_tag_clear(mbuf);
         if (ifp->input_packet(reinterpret_cast<void*>(mbuf))) {
             rte_pktmbuf_free(mbuf);
         }
@@ -386,48 +349,46 @@ static void rx_interface_dispatch(const fib* fib,
         nb_to_stack = nb_resolved;
         nb_to_free += nb_unresolved;
 
-        auto [to_stack_last, to_free_last] =
-            std::partition_copy(to_stack.data(),
-                                to_stack.data() + nb_to_stack,
-                                to_stack.data(),
-                                to_free.data() + nb_to_free,
-                                [&](auto mbuf) {
-                                    // Filter signature packets from being
-                                    // processed by the stack
-                                    if (mbuf_signature_avail(mbuf))
-                                        return false;
-                                    if (has_hardware_tags) {
-                                        // Filter packets with hardware tags
-                                        if (!(mbuf->ol_flags & PKT_RX_FDIR)
-                                            || !mbuf->hash.fdir.hi) {
-                                            return false;
-                                        }
-                                    }
-                                    return true;
-                                });
+        auto [to_stack_last, to_free_last] = std::partition_copy(
+            to_stack.data(),
+            to_stack.data() + nb_to_stack,
+            to_stack.data(),
+            to_free.data() + nb_to_free,
+            [&](auto mbuf) {
+                // Filter signature packets from being
+                // processed by the stack
+                if (mbuf_signature_is_set(mbuf)) return false;
+                if (has_hardware_tags) {
+                    // Filter packets with hardware tags
+                    if (!(mbuf->ol_flags & RTE_MBUF_F_RX_FDIR)
+                        || !mbuf->hash.fdir.hi) {
+                        return false;
+                    }
+                }
+                return true;
+            });
         nb_to_stack = std::distance(to_stack.data(), to_stack_last);
         nb_to_free = std::distance(to_free.data(), to_free_last);
 
     } else {
-        auto [to_stack_last, to_free_last] =
-            std::partition_copy(incoming,
-                                incoming + n,
-                                to_stack.data(),
-                                to_free.data(),
-                                [&](auto mbuf) {
-                                    // Filter signature packets from being
-                                    // processed by the stack
-                                    if (mbuf_signature_avail(mbuf))
-                                        return false;
-                                    if (has_hardware_tags) {
-                                        // Filter packets with hardware tags
-                                        if (!(mbuf->ol_flags & PKT_RX_FDIR)
-                                            || !mbuf->hash.fdir.hi) {
-                                            return false;
-                                        }
-                                    }
-                                    return true;
-                                });
+        auto [to_stack_last, to_free_last] = std::partition_copy(
+            incoming,
+            incoming + n,
+            to_stack.data(),
+            to_free.data(),
+            [&](auto mbuf) {
+                // Filter signature packets from being
+                // processed by the stack
+                if (mbuf_signature_is_set(mbuf)) return false;
+                if (has_hardware_tags) {
+                    // Filter packets with hardware tags
+                    if (!(mbuf->ol_flags & RTE_MBUF_F_RX_FDIR)
+                        || !mbuf->hash.fdir.hi) {
+                        return false;
+                    }
+                }
+                return true;
+            });
         nb_to_stack = std::distance(to_stack.data(), to_stack_last);
         nb_to_free = std::distance(to_free.data(), to_free_last);
 
@@ -458,9 +419,8 @@ static void rx_interface_dispatch(const fib* fib,
     }
 
     /* ... and free all the non-stack packets */
-    std::for_each(
-        to_free.data(), to_free.data() + nb_to_free, rx_mbuf_clear_tag);
-    rx_mbuf_free_bulk(to_free.data(), nb_to_free);
+    std::for_each(to_free.data(), to_free.data() + nb_to_free, mbuf_tag_clear);
+    rte_pktmbuf_free_bulk(to_free.data(), nb_to_free);
 }
 
 static void rx_sink_dispatch(const fib* fib,
@@ -502,7 +462,7 @@ static uint16_t rx_burst(const fib* fib, const rx_queue* rxq)
      * the packets now. Otherwise, perform interface dispatch.
      */
     if (fib->get_interfaces(rxq->port_id()).empty()) {
-        rx_mbuf_free_bulk(incoming.data(), n);
+        rte_pktmbuf_free_bulk(incoming.data(), n);
     } else {
         rx_interface_dispatch(fib, rxq, incoming.data(), n);
     }
@@ -530,7 +490,7 @@ static void tx_interface_sink_dispatch(const fib* fib,
     // Create bursts of contiguous packets to the same interface
     std::for_each(packets, packets + nb_packets, [&](auto mbuf) {
         rte_ether_addr hw_addr;
-        mbuf_get_tx_hwaddr(mbuf, hw_addr.addr_bytes);
+        mbuf_tx_sink_get_hwaddr(mbuf, hw_addr.addr_bytes);
         if (!rte_is_same_ether_addr(&hw_addr, &burst_hw_addr)) {
             auto sinks =
                 fib->find_interface_tx_sinks(port_id, hw_addr.addr_bytes);
@@ -566,13 +526,9 @@ static void tx_timestamp_packets(rte_mbuf* packets[], uint16_t n)
 {
     using clock = openperf::timesync::chrono::realtime;
     auto now = clock::now().time_since_epoch();
-    auto timestamp =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
 
-    std::for_each(packets, packets + n, [timestamp](auto m) {
-        m->ol_flags |= PKT_RX_TIMESTAMP;
-        m->timestamp = timestamp;
-    });
+    std::for_each(
+        packets, packets + n, [now](auto m) { mbuf_timestamp_set(m, now); });
 }
 
 static void tx_sink_dispatch(const fib* fib,
@@ -611,19 +567,21 @@ static void tx_sink_burst_dispatch(const fib* fib,
     uint16_t burst_count = 0;
 
     std::for_each(packets, packets + nb_packets, [&](auto mbuf) {
-        if (mbuf_tx_sink(mbuf)) {
+        if (mbuf_tx_sink_is_set(mbuf)) {
             if (burst_count == 0) { burst_start = idx; }
             ++burst_count;
-        } else {
-            if (burst_count) {
-                tx_sink_dispatch(fib, port_id, packets, burst_count);
-                burst_count = 0;
-            }
+        } else if (burst_count) {
+            tx_sink_dispatch(fib, port_id, packets + burst_start, burst_count);
+            burst_count = 0;
         }
         ++idx;
     });
 
-    if (burst_count) { tx_sink_dispatch(fib, port_id, packets, burst_count); }
+    if (burst_count) {
+        tx_sink_dispatch(fib, port_id, packets + burst_start, burst_count);
+    }
+
+    std::for_each(packets, packets + nb_packets, mbuf_tx_sink_clear);
 }
 
 uint16_t worker_transmit(const fib* fib,

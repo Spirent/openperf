@@ -1,6 +1,6 @@
 #include <cassert>
 
-#include "packetio/drivers/dpdk/mbuf_signature.hpp"
+#include "packetio/drivers/dpdk/mbuf_metadata.hpp"
 #include "packetio/drivers/dpdk/port/signature_payload_filler.hpp"
 #include "spirent_pga/api.h"
 
@@ -15,7 +15,7 @@ static uint16_t packet_segment_limit(rte_mbuf* const packets[],
     auto cursor =
         std::find_if(packets, packets + nb_packets, [&](const auto* mbuf) {
             const auto nb_segs = mbuf_segment_count(mbuf);
-            if (!mbuf_signature_avail(mbuf)) { return (false); }
+            if (!mbuf_signature_is_set(mbuf)) { return (false); }
             switch (mbuf_signature_tx_get_fill_type(mbuf)) {
             case mbuf_signature::fill_type::constant:
                 const_segs += nb_segs;
@@ -98,7 +98,7 @@ static uint16_t fill_signature_payloads([[maybe_unused]] uint16_t port_id,
         auto const_segs = 0U, incr_segs = 0U, decr_segs = 0U, prbs_segs = 0U;
         /* Sort segments into contiguous blocks where we can blast data */
         std::for_each(packets + start, packets + end, [&](auto* mbuf) {
-            if (!mbuf_signature_avail(mbuf)) { return; }
+            if (!mbuf_signature_is_set(mbuf)) { return; }
 
             const auto offset = get_payload_offset(mbuf);
 

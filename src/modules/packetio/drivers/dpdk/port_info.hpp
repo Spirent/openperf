@@ -5,8 +5,12 @@
 #include <optional>
 #include <string>
 
+#ifndef _NETINET_IP6_H
+#define _NETINET_IP6_H
+#endif
+#include "rte_ethdev.h"
+
 #include "lib/packet/type/mac_address.hpp"
-#include "packetio/drivers/dpdk/dpdk.h"
 
 namespace openperf::packetio::dpdk::port_info {
 

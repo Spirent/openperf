@@ -37,7 +37,8 @@ static uint16_t calculate_checksums([[maybe_unused]] uint16_t port_id,
 {
     using namespace libpacket::protocol;
 
-    constexpr auto PKT_TX_L4_CKSUM = PKT_TX_TCP_CKSUM | PKT_TX_UDP_CKSUM;
+    constexpr auto TX_L4_CKSUM =
+        RTE_MBUF_F_TX_TCP_CKSUM | RTE_MBUF_F_TX_UDP_CKSUM;
 
     auto& scratch = reinterpret_cast<callback_checksum_calculator::scratch_t*>(
         user_param)[queue_id];
@@ -55,11 +56,11 @@ static uint16_t calculate_checksums([[maybe_unused]] uint16_t port_id,
          * type of checksums to calculate.
          */
         std::for_each(packets + start, packets + end, [&](auto* mbuf) {
-            if (mbuf->ol_flags & PKT_TX_IPV4) {
+            if (mbuf->ol_flags & RTE_MBUF_F_TX_IPV4) {
                 auto* ipv4 = get_l3_header<struct ipv4*>(mbuf);
                 scratch.ipv4_cksums.set(nb_ipv4_headers++, {ipv4, 0});
 
-                if (mbuf->ol_flags & PKT_TX_L4_CKSUM) {
+                if (mbuf->ol_flags & TX_L4_CKSUM) {
                     scratch.ipv4_tcpudp_cksums.set(nb_ipv4_tcpudp_headers++,
                                                    {ipv4, 0});
 
@@ -69,13 +70,13 @@ static uint16_t calculate_checksums([[maybe_unused]] uint16_t port_id,
                      * it in order to calculate the correct checksum with our
                      * pga functions.
                      */
-                    switch (mbuf->ol_flags & PKT_TX_L4_CKSUM) {
-                    case PKT_TX_TCP_CKSUM: {
+                    switch (mbuf->ol_flags & TX_L4_CKSUM) {
+                    case RTE_MBUF_F_TX_TCP_CKSUM: {
                         auto* tcp = get_l4_header<struct tcp*>(mbuf);
                         set_tcp_checksum(*tcp, 0);
                         break;
                     }
-                    case PKT_TX_UDP_CKSUM: {
+                    case RTE_MBUF_F_TX_UDP_CKSUM: {
                         auto* udp = get_l4_header<struct udp*>(mbuf);
                         set_udp_checksum(*udp, 0);
                         break;
@@ -84,10 +85,10 @@ static uint16_t calculate_checksums([[maybe_unused]] uint16_t port_id,
                         break;
                     }
                 }
-            } else if (mbuf->ol_flags & PKT_TX_IPV6) {
+            } else if (mbuf->ol_flags & RTE_MBUF_F_TX_IPV6) {
                 auto* ipv6 = get_l3_header<struct ipv6*>(mbuf);
-                switch (mbuf->ol_flags & PKT_TX_L4_CKSUM) {
-                case PKT_TX_TCP_CKSUM: {
+                switch (mbuf->ol_flags & TX_L4_CKSUM) {
+                case RTE_MBUF_F_TX_TCP_CKSUM: {
                     auto* tcp = get_l4_header<struct tcp*>(mbuf);
                     set_tcp_checksum(*tcp, 0);
                     scratch.ipv6_tcpudp_cksums.set(
@@ -98,7 +99,7 @@ static uint16_t calculate_checksums([[maybe_unused]] uint16_t port_id,
                          0});
                     break;
                 }
-                case PKT_TX_UDP_CKSUM: {
+                case RTE_MBUF_F_TX_UDP_CKSUM: {
                     auto* udp = get_l4_header<struct udp*>(mbuf);
                     set_udp_checksum(*udp, 0);
                     scratch.ipv6_tcpudp_cksums.set(
@@ -225,8 +226,8 @@ static checksum_calculator::variant_type
 make_checksum_calculator(uint16_t port_id)
 {
     constexpr auto tx_cksum_offloads =
-        (DEV_TX_OFFLOAD_IPV4_CKSUM | DEV_TX_OFFLOAD_TCP_CKSUM
-         | DEV_TX_OFFLOAD_UDP_CKSUM);
+        (RTE_ETH_TX_OFFLOAD_IPV4_CKSUM | RTE_ETH_TX_OFFLOAD_TCP_CKSUM
+         | RTE_ETH_TX_OFFLOAD_UDP_CKSUM);
 
     if ((port_info::tx_offloads(port_id) & tx_cksum_offloads)
         != tx_cksum_offloads) {

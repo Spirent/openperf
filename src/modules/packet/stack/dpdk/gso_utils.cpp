@@ -8,6 +8,9 @@
 #include <algorithm>
 #include <cassert>
 
+#include "rte_config.h"
+#include "rte_memcpy.h"
+
 #include "lwip/tcp.h"
 #include "lwip/priv/tcp_priv.h"
 #include "packet/stack/dpdk/pbuf_utils.h"

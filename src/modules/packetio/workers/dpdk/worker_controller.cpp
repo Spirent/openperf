@@ -34,7 +34,7 @@ static void launch_workers(void* context,
     };
 
     /* Launch a worker on every available core */
-    if (rte_eal_mp_remote_launch(worker::main, &args, SKIP_MASTER) != 0) {
+    if (rte_eal_mp_remote_launch(worker::main, &args, SKIP_MAIN) != 0) {
         throw std::runtime_error("DPDK worker core is busy!");
     }
 
@@ -172,7 +172,7 @@ static void maybe_disable_rxq_tag_detection(const port::filter& filter)
 static void maybe_update_rxq_lro_mode(uint16_t port_index)
 {
     if (!config::dpdk_disable_lro()
-        && port_info::rx_offloads(port_index) & DEV_RX_OFFLOAD_TCP_LRO) {
+        && port_info::rx_offloads(port_index) & RTE_ETH_RX_OFFLOAD_TCP_LRO) {
         auto& queues = worker::port_queues::instance();
         auto& container = queues[port_index];
         for (uint16_t i = 0; i < container.rx_queues(); i++) {
@@ -206,7 +206,8 @@ worker_controller::worker_controller(void* context,
      * 2. Initialize the transmit worker load map.
      */
     unsigned lcore_id;
-    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
+    RTE_LCORE_FOREACH_WORKER(lcore_id)
+    {
         m_recycler->writer_add_reader(lcore_id);
     }
 

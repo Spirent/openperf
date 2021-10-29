@@ -44,6 +44,13 @@ else # cross compile
 op_check_system_lib = 0
 endif
 
+# Generate a comma separated string from a list of tokens
+# $(1): token list
+OP_COMMA := ,
+OP_EMPTY :=
+OP_SPACE := $(OP_EMPTY) $(OP_EMPTY)
+op_make_comma_delimited = $(subst $(OP_SPACE),$(OP_COMMA),$(1))
+
 ###
 # Build functions
 ###
@@ -137,7 +144,7 @@ op_generate_clean_rules = \
 # $(3): extra link options (optional)
 define op_link_binary
 	@mkdir -p $(dir $(1))
-	$(strip $(OP_CXX) -o $(1) $(OP_LDOPTS) $(OP_CROSSFLAGS) $(OP_LDFLAGS) $(2) $(OP_LDLIBS) $(3))
+	$(strip $(OP_CXX) -o $(1) $(OP_LDOPTS) $(OP_CROSSFLAGS) $(OP_LDFLAGS) $(2) $(OP_LDLIBS) $(OP_DPDK_LDLIBS) $(3))
 endef
 
 define op_link_shared_library

@@ -1,6 +1,6 @@
 #include "core/op_log.h"
 #include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/mbuf_tx.hpp"
+#include "packetio/drivers/dpdk/mbuf_metadata.hpp"
 #include "packetio/workers/dpdk/worker_queues.hpp"
 #include "packetio/workers/dpdk/worker_tx_functions.hpp"
 #include "packetio/workers/dpdk/worker_api.hpp"
@@ -21,10 +21,9 @@ static void eal_mbuf_copy_seg(rte_mbuf* dst, const rte_mbuf* src)
     dst->data_len = src->data_len;
     dst->vlan_tci = src->vlan_tci;
     dst->vlan_tci_outer = src->vlan_tci_outer;
-    dst->timestamp = src->timestamp;
-    dst->udata64 = src->udata64;
     dst->tx_offload = src->tx_offload;
-    dst->timesync = src->timesync;
+    dst->hash = src->hash;
+    memcpy(&dst->dynfield1, &src->dynfield1, sizeof(dst->dynfield1));
 
     rte_memcpy(rte_pktmbuf_mtod(dst, void*),
                rte_pktmbuf_mtod(src, const void*),

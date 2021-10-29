@@ -17,9 +17,7 @@ static core::cpuset dpdk_mask()
 {
     auto mask = core::cpuset{};
     auto lcore_id = 0U;
-    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
-        mask.set(lcore_id);
-    }
+    RTE_LCORE_FOREACH_WORKER(lcore_id) { mask.set(lcore_id); }
     return (mask);
 }
 
@@ -48,7 +46,8 @@ index_queue_distribute(const std::vector<uint16_t>& port_ids)
 
     cores_by_id nodes;
     unsigned lcore_id = 0;
-    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
+    RTE_LCORE_FOREACH_WORKER(lcore_id)
+    {
         if (lcore_id == stack_lcore || !mask[lcore_id]) continue;
         nodes[rte_lcore_to_socket_id(lcore_id)].set(lcore_id);
     }
@@ -182,7 +181,8 @@ std::optional<unsigned> get_stack_lcore_id()
     const auto misc_mask = get_misc_mask();
     cores_by_id nodes;
     int lcore_id = 0;
-    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
+    RTE_LCORE_FOREACH_WORKER(lcore_id)
+    {
         if (!misc_mask[lcore_id]) { continue; }
         nodes[rte_lcore_to_socket_id(lcore_id)].set(lcore_id);
     }

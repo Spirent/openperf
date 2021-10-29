@@ -92,6 +92,8 @@
 #endif
 
 #include "packet/stack/dpdk/pbuf_utils.h"
+//#include "packetio/drivers/dpdk/dpdk.h"
+#include "rte_mbuf.h"
 
 /* Since the pool is created in memp, PBUF_POOL_BUFSIZE will be automatically
    aligned there. Therefore, PBUF_POOL_BUFSIZE_ALIGNED can be used here. */

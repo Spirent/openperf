@@ -55,9 +55,7 @@ static void log_idle_workers(const std::vector<queue::descriptor>& descriptors)
     /* Generate a mask for all available cores */
     auto eal_mask = core::cpuset{};
     unsigned lcore_id = 0;
-    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
-        eal_mask.set(lcore_id);
-    }
+    RTE_LCORE_FOREACH_WORKER(lcore_id) { eal_mask.set(lcore_id); }
     const auto worker_count = eal_mask.count();
 
     /* Clear the bits used to support port queues */
@@ -151,7 +149,9 @@ template <typename ProcessType> eal_process<ProcessType>::~eal_process()
         static_cast<ProcessType*>(this)->do_cleanup();
     }
     pool_allocator::instance().fini();
-    rte_eal_cleanup();
+
+    /* XXX: causes core dump on exit due to module shutdown ordering issues */
+    // rte_eal_cleanup();
 }
 
 template <typename ProcessType>

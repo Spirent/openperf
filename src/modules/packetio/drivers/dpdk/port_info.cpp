@@ -62,7 +62,7 @@ uint32_t max_lro_pkt_size(uint16_t port_id)
      * to limit LRO size to the packet size in order to preserve
      * fast packet processing.
      */
-    return (rx_offloads(port_id) & DEV_RX_OFFLOAD_SCATTER
+    return (rx_offloads(port_id) & RTE_ETH_RX_OFFLOAD_SCATTER
                 ? get_info_field(port_id, &rte_eth_dev_info::max_lro_pkt_size)
                 : max_rx_pktlen(port_id));
 }
@@ -126,9 +126,9 @@ uint64_t tx_offloads(uint16_t port_id)
 
 uint64_t rss_offloads(uint16_t port_id)
 {
-    return (rx_offloads(port_id) & DEV_RX_OFFLOAD_RSS_HASH ? get_info_field(
+    return (rx_offloads(port_id) & RTE_ETH_RX_OFFLOAD_RSS_HASH ? get_info_field(
                 port_id, &rte_eth_dev_info::flow_type_rss_offloads)
-                                                           : 0);
+                                                               : 0);
 }
 
 enum rte_eth_rx_mq_mode rx_mq_mode(uint16_t port_id)
