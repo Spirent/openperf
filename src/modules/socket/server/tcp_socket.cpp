@@ -193,7 +193,7 @@ tcp_socket::~tcp_socket()
      * the stack after this point, but we don't want it attempting to use
      * this socket to handle its callbacks...
      */
-    if (m_pcb) ::tcp_arg(m_pcb.get(), nullptr);
+    if (m_pcb) { ::tcp_arg(m_pcb.get(), nullptr); }
 }
 
 /**

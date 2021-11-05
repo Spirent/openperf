@@ -33,7 +33,12 @@ err_t lwip_tcp_event(void* arg,
                      uint16_t size,
                      err_t err)
 {
-    if (arg == nullptr) {
+    /*
+     * XXX: lwip will hand us a bogus arg if the pcb is already
+     * null (since that's where the arg is stored).
+     * It doesn't appear to check!
+     */
+    if (pcb == nullptr || arg == nullptr) {
         /* Nothing to do; our socket has been destroyed */
         return (ERR_RST);
     }
