@@ -104,6 +104,7 @@ class worker : public finite_state_machine<worker, state, command_msg>
     void* m_context;
     result* m_result;
     double m_ratio;
+    double m_ref_ratio;
     std::vector<target_op> m_ops;
     uint8_t m_id;
 
@@ -117,9 +118,13 @@ class worker : public finite_state_machine<worker, state, command_msg>
 
     utilization_time<clock> m_ref;
 
-    /* We need these clock based values to be double based */
+    /*
+     * We need these clock based values to be double based.
+     * Use a prime quanta value to avoid any sort of potential
+     * synchronization with the OS scheduler.
+     */
     static constexpr auto quanta =
-        1. * std::chrono::duration_cast<clock::duration>(10ms);
+        1. * std::chrono::duration_cast<clock::duration>(97ms);
     static constexpr auto zero = 1. * clock::duration::zero();
 
 public:
@@ -127,6 +132,7 @@ public:
         : m_context(context)
         , m_result(nullptr)
         , m_ratio(config.utilization / 100.)
+        , m_ref_ratio(m_ratio)
         , m_id(id)
     {
         assert(m_ratio <= 1.);
@@ -185,7 +191,7 @@ public:
         auto t1 = clock::now();
         clock::time_point t2;
         if (time_to_sleep > zero) {
-            std::this_thread::sleep_for(time_to_sleep);
+            std::this_thread::sleep_until(t1 + time_to_sleep);
             t2 = clock::now();
             m_time.sleep += t2 - t1;
         } else {
@@ -204,7 +210,7 @@ public:
         thread_stats.system = ut.time_system - m_ref.time_system;
         thread_stats.user = ut.time_user - m_ref.time_user;
         thread_stats.target = std::chrono::duration_cast<clock::duration>(
-            (ut.time_stamp - m_ref.time_stamp) * m_ratio);
+            (ut.time_stamp - m_ref.time_stamp) * m_ref_ratio);
 
         return (0);
     }
