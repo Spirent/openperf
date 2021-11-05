@@ -18,7 +18,7 @@ public:
     using const_reference = const T&;
     using value_type = T;
     using size_type = size_t;
-    using difference_type = ptrdiff_t;
+    using difference_type = std::ptrdiff_t;
     using is_always_equal = std::false_type;
     using propagate_on_container_move_assignment = std::true_type;
 
@@ -33,6 +33,10 @@ public:
     ~std_allocator() = default;
 
     std_allocator& operator=(const std_allocator&) = delete;
+
+    uintptr_t base() const noexcept { return (m_impl.base()); }
+
+    size_type size() const noexcept { return (m_impl.size()); }
 
     size_type max_size() const noexcept
     {

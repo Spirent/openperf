@@ -97,7 +97,7 @@ TEST_CASE("CPU matrix multiplication", "[cpu]")
         {
             scalar::multiply_matrix_uint32(
                 matrix_a.data(), matrix_b.data(), matrix_r.data(), matrix_size);
-        }
+        };
 
         bool vector_test_was_executed = false;
         for (auto set : cpu::test::vector_instruction_sets()) {
@@ -128,7 +128,7 @@ TEST_CASE("CPU matrix multiplication", "[cpu]")
                         matrix_b.data(),
                         matrix_c.data(),
                         matrix_size);
-                }
+                };
 
                 REQUIRE(std::equal(
                     matrix_r.begin(), matrix_r.end(), matrix_c.begin()));

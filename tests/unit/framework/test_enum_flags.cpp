@@ -2,7 +2,7 @@
 
 #include "utils/enum_flags.hpp"
 
-enum class test_enums {
+enum class test_enums : unsigned {
     A = (1 << 0),
     B = (1 << 1),
     C = (1 << 2),

@@ -2,6 +2,7 @@
 #define _OP_TIMESYNC_CLOCK_HPP_
 
 #include <functional>
+#include <optional>
 #include <set>
 
 #include "tl/expected.hpp"

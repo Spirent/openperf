@@ -91,7 +91,7 @@ TEST_CASE("flow headers", "[packet_analyzer]")
         REQUIRE_NOTHROW(std::get<const libpacket::protocol::ipv4*>(view1[1]));
         REQUIRE_NOTHROW(std::get<const libpacket::protocol::udp*>(view1[2]));
 
-        auto count1 = 0;
+        auto count1 = 0UL;
         std::for_each(
             std::begin(view1), std::end(view1), [&](const auto&) { count1++; });
         REQUIRE(view1.size() == count1);
@@ -110,7 +110,7 @@ TEST_CASE("flow headers", "[packet_analyzer]")
         REQUIRE_NOTHROW(std::get<const libpacket::protocol::ipv6*>(view2[3]));
         REQUIRE_NOTHROW(std::get<const libpacket::protocol::tcp*>(view2[4]));
 
-        auto count2 = 0;
+        auto count2 = 0UL;
         std::for_each(
             std::begin(view2), std::end(view2), [&](const auto&) { count2++; });
         REQUIRE(view2.size() == count2);

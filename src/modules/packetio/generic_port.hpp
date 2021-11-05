@@ -2,6 +2,7 @@
 #define _OP_PACKETIO_GENERIC_PORT_HPP_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>

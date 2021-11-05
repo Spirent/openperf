@@ -49,7 +49,6 @@ protected:
 
 public:
     generator_result() = default;
-    generator_result(const generator_result&) = default;
 
     std::string id() const { return m_id; }
     std::string generator_id() const { return m_generator_id; }
