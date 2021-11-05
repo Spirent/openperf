@@ -31,44 +31,72 @@ class CpuGeneratorCoreConfigTargets(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'load': 'CpuGeneratorCoreLoad',
+        'data_type': 'str',
+        'instruction_set': 'str',
         'weight': 'int'
     }
 
     attribute_map = {
-        'load': 'load',
+        'data_type': 'data_type',
+        'instruction_set': 'instruction_set',
         'weight': 'weight'
     }
 
-    def __init__(self, load=None, weight=None):  # noqa: E501
+    def __init__(self, data_type=None, instruction_set=None, weight=None):  # noqa: E501
         """CpuGeneratorCoreConfigTargets - a model defined in Swagger"""  # noqa: E501
 
-        self._load = None
+        self._data_type = None
+        self._instruction_set = None
         self._weight = None
         self.discriminator = None
 
-        self.load = load
+        self.data_type = data_type
+        self.instruction_set = instruction_set
         self.weight = weight
 
     @property
-    def load(self):
-        """Gets the load of this CpuGeneratorCoreConfigTargets.  # noqa: E501
+    def data_type(self):
+        """Gets the data_type of this CpuGeneratorCoreConfigTargets.  # noqa: E501
 
+        CPU load target operation data type, actual for chosen instruction set  # noqa: E501
 
-        :return: The load of this CpuGeneratorCoreConfigTargets.  # noqa: E501
-        :rtype: CpuGeneratorCoreLoad
+        :return: The data_type of this CpuGeneratorCoreConfigTargets.  # noqa: E501
+        :rtype: str
         """
-        return self._load
+        return self._data_type
 
-    @load.setter
-    def load(self, load):
-        """Sets the load of this CpuGeneratorCoreConfigTargets.
+    @data_type.setter
+    def data_type(self, data_type):
+        """Sets the data_type of this CpuGeneratorCoreConfigTargets.
 
+        CPU load target operation data type, actual for chosen instruction set  # noqa: E501
 
-        :param load: The load of this CpuGeneratorCoreConfigTargets.  # noqa: E501
-        :type: CpuGeneratorCoreLoad
+        :param data_type: The data_type of this CpuGeneratorCoreConfigTargets.  # noqa: E501
+        :type: str
         """
-        self._load = load
+        self._data_type = data_type
+
+    @property
+    def instruction_set(self):
+        """Gets the instruction_set of this CpuGeneratorCoreConfigTargets.  # noqa: E501
+
+        CPU load instruction set  # noqa: E501
+
+        :return: The instruction_set of this CpuGeneratorCoreConfigTargets.  # noqa: E501
+        :rtype: str
+        """
+        return self._instruction_set
+
+    @instruction_set.setter
+    def instruction_set(self, instruction_set):
+        """Sets the instruction_set of this CpuGeneratorCoreConfigTargets.
+
+        CPU load instruction set  # noqa: E501
+
+        :param instruction_set: The instruction_set of this CpuGeneratorCoreConfigTargets.  # noqa: E501
+        :type: str
+        """
+        self._instruction_set = instruction_set
 
     @property
     def weight(self):

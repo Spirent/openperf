@@ -7,6 +7,7 @@ package models
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -21,9 +22,15 @@ import (
 // swagger:model CpuGeneratorTargetStats
 type CPUGeneratorTargetStats struct {
 
-	// load
+	// CPU load target operation data type, actual for chosen instruction set
 	// Required: true
-	Load *CPUGeneratorCoreLoad `json:"load"`
+	// Enum: [int32 int64 float32 float64]
+	DataType *string `json:"data_type"`
+
+	// CPU load instruction set
+	// Required: true
+	// Enum: [scalar sse2 sse4 avx avx2 avx512 neon]
+	InstructionSet *string `json:"instruction_set"`
 
 	// The total amount of finished instruction set operations
 	// Required: true
@@ -34,7 +41,11 @@ type CPUGeneratorTargetStats struct {
 func (m *CPUGeneratorTargetStats) Validate(formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.validateLoad(formats); err != nil {
+	if err := m.validateDataType(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateInstructionSet(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -48,19 +59,108 @@ func (m *CPUGeneratorTargetStats) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *CPUGeneratorTargetStats) validateLoad(formats strfmt.Registry) error {
+var cpuGeneratorTargetStatsTypeDataTypePropEnum []interface{}
 
-	if err := validate.Required("load", "body", m.Load); err != nil {
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["int32","int64","float32","float64"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		cpuGeneratorTargetStatsTypeDataTypePropEnum = append(cpuGeneratorTargetStatsTypeDataTypePropEnum, v)
+	}
+}
+
+const (
+
+	// CPUGeneratorTargetStatsDataTypeInt32 captures enum value "int32"
+	CPUGeneratorTargetStatsDataTypeInt32 string = "int32"
+
+	// CPUGeneratorTargetStatsDataTypeInt64 captures enum value "int64"
+	CPUGeneratorTargetStatsDataTypeInt64 string = "int64"
+
+	// CPUGeneratorTargetStatsDataTypeFloat32 captures enum value "float32"
+	CPUGeneratorTargetStatsDataTypeFloat32 string = "float32"
+
+	// CPUGeneratorTargetStatsDataTypeFloat64 captures enum value "float64"
+	CPUGeneratorTargetStatsDataTypeFloat64 string = "float64"
+)
+
+// prop value enum
+func (m *CPUGeneratorTargetStats) validateDataTypeEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, cpuGeneratorTargetStatsTypeDataTypePropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *CPUGeneratorTargetStats) validateDataType(formats strfmt.Registry) error {
+
+	if err := validate.Required("data_type", "body", m.DataType); err != nil {
 		return err
 	}
 
-	if m.Load != nil {
-		if err := m.Load.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("load")
-			}
-			return err
-		}
+	// value enum
+	if err := m.validateDataTypeEnum("data_type", "body", *m.DataType); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var cpuGeneratorTargetStatsTypeInstructionSetPropEnum []interface{}
+
+func init() {
+	var res []string
+	if err := json.Unmarshal([]byte(`["scalar","sse2","sse4","avx","avx2","avx512","neon"]`), &res); err != nil {
+		panic(err)
+	}
+	for _, v := range res {
+		cpuGeneratorTargetStatsTypeInstructionSetPropEnum = append(cpuGeneratorTargetStatsTypeInstructionSetPropEnum, v)
+	}
+}
+
+const (
+
+	// CPUGeneratorTargetStatsInstructionSetScalar captures enum value "scalar"
+	CPUGeneratorTargetStatsInstructionSetScalar string = "scalar"
+
+	// CPUGeneratorTargetStatsInstructionSetSse2 captures enum value "sse2"
+	CPUGeneratorTargetStatsInstructionSetSse2 string = "sse2"
+
+	// CPUGeneratorTargetStatsInstructionSetSse4 captures enum value "sse4"
+	CPUGeneratorTargetStatsInstructionSetSse4 string = "sse4"
+
+	// CPUGeneratorTargetStatsInstructionSetAvx captures enum value "avx"
+	CPUGeneratorTargetStatsInstructionSetAvx string = "avx"
+
+	// CPUGeneratorTargetStatsInstructionSetAvx2 captures enum value "avx2"
+	CPUGeneratorTargetStatsInstructionSetAvx2 string = "avx2"
+
+	// CPUGeneratorTargetStatsInstructionSetAvx512 captures enum value "avx512"
+	CPUGeneratorTargetStatsInstructionSetAvx512 string = "avx512"
+
+	// CPUGeneratorTargetStatsInstructionSetNeon captures enum value "neon"
+	CPUGeneratorTargetStatsInstructionSetNeon string = "neon"
+)
+
+// prop value enum
+func (m *CPUGeneratorTargetStats) validateInstructionSetEnum(path, location string, value string) error {
+	if err := validate.EnumCase(path, location, value, cpuGeneratorTargetStatsTypeInstructionSetPropEnum, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *CPUGeneratorTargetStats) validateInstructionSet(formats strfmt.Registry) error {
+
+	if err := validate.Required("instruction_set", "body", m.InstructionSet); err != nil {
+		return err
+	}
+
+	// value enum
+	if err := m.validateInstructionSetEnum("instruction_set", "body", *m.InstructionSet); err != nil {
+		return err
 	}
 
 	return nil
@@ -75,31 +175,8 @@ func (m *CPUGeneratorTargetStats) validateOperations(formats strfmt.Registry) er
 	return nil
 }
 
-// ContextValidate validate this Cpu generator target stats based on the context it is used
+// ContextValidate validates this Cpu generator target stats based on context it is used
 func (m *CPUGeneratorTargetStats) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
-	var res []error
-
-	if err := m.contextValidateLoad(ctx, formats); err != nil {
-		res = append(res, err)
-	}
-
-	if len(res) > 0 {
-		return errors.CompositeValidationError(res...)
-	}
-	return nil
-}
-
-func (m *CPUGeneratorTargetStats) contextValidateLoad(ctx context.Context, formats strfmt.Registry) error {
-
-	if m.Load != nil {
-		if err := m.Load.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("load")
-			}
-			return err
-		}
-	}
-
 	return nil
 }
 
