@@ -60,26 +60,6 @@ bool cpu_dynamic_validator::is_valid_stat(std::string_view name)
     return (false);
 }
 
-static void is_valid(const swagger::v1::model::CpuGeneratorCoreLoad& load,
-                     std::vector<std::string>& errors)
-{
-    auto instr = load.getInstructionSet();
-    if (instr.empty()) {
-        errors.emplace_back("Instruction set must be specified for each load.");
-    }
-    if (to_instruction_type(instr) == instruction_type::none) {
-        errors.emplace_back("Instruction set, " + instr + ", is not valid.");
-    }
-
-    auto data = load.getDataType();
-    if (data.empty()) {
-        errors.emplace_back("Data type must be specified for each load.");
-    }
-    if (to_data_type(data) == data_type::none) {
-        errors.emplace_back("Data type, " + data + ", is not valid.");
-    }
-}
-
 static void is_valid(const swagger::v1::model::CpuGeneratorCoreConfig& config,
                      std::vector<std::string>& errors)
 {
@@ -97,11 +77,23 @@ static void is_valid(const swagger::v1::model::CpuGeneratorCoreConfig& config,
     }
     std::for_each(
         std::begin(targets), std::end(targets), [&](const auto& target) {
-            const auto& load = target->getLoad();
-            if (!load) {
-                errors.emplace_back("Load must be specified for each target.");
-            } else {
-                is_valid(*load, errors);
+            auto instr = target->getInstructionSet();
+            if (instr.empty()) {
+                errors.emplace_back(
+                    "Instruction set must be specified for each target.");
+            }
+            if (to_instruction_type(instr) == instruction_type::none) {
+                errors.emplace_back("Instruction set, " + instr
+                                    + ", is not valid.");
+            }
+
+            auto data = target->getDataType();
+            if (data.empty()) {
+                errors.emplace_back(
+                    "Data type must be specified for each target.");
+            }
+            if (to_data_type(data) == data_type::none) {
+                errors.emplace_back("Data type, " + data + ", is not valid.");
             }
         });
 }

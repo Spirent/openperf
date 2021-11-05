@@ -60,9 +60,8 @@ generator::target_op_config to_target_op_config(enum data_type data, int weight)
 static generator::target_op_config
 from_swagger(const swagger::v1::model::CpuGeneratorCoreConfig_targets& src)
 {
-    auto load = src.getLoad();
-    auto instr = to_instruction_type(load->getInstructionSet());
-    auto data = to_data_type(load->getDataType());
+    auto instr = to_instruction_type(src.getInstructionSet());
+    auto data = to_data_type(src.getDataType());
 
     switch (instr) {
     case instruction_type::sse2:
@@ -134,112 +133,132 @@ from_swagger(const swagger::v1::model::CpuGeneratorConfig& src)
     }
 }
 
-static std::shared_ptr<swagger::v1::model::CpuGeneratorCoreLoad>
-to_swagger(instruction_type instr, data_type data)
+template <typename SwaggerObject,
+          template <typename, typename>
+          class Target,
+          typename Variant>
+std::shared_ptr<SwaggerObject> to_swagger_load_object(const Variant& src)
 {
-    auto dst = std::make_shared<swagger::v1::model::CpuGeneratorCoreLoad>();
+    auto dst = std::make_shared<SwaggerObject>();
 
-    dst->setInstructionSet(to_string(instr));
-    dst->setDataType(to_string(data));
-
-    return (dst);
-}
-
-template <template <typename, typename> class Target, typename Variant>
-std::shared_ptr<swagger::v1::model::CpuGeneratorCoreLoad>
-to_load(const Variant& src)
-{
-    auto dst = std::visit(
+    auto [instr, data] = std::visit(
         utils::overloaded_visitor(
             [](const Target<instruction_set::scalar, int32_t>&) {
-                return (to_swagger(instruction_type::scalar, data_type::int32));
+                return (std::make_pair(to_string(instruction_type::scalar),
+                                       to_string(data_type::int32)));
             },
             [](const Target<instruction_set::scalar, int64_t>&) {
-                return (to_swagger(instruction_type::scalar, data_type::int64));
+                return (std::make_pair(to_string(instruction_type::scalar),
+                                       to_string(data_type::int64)));
             },
             [](const Target<instruction_set::scalar, float>&) {
-                return (
-                    to_swagger(instruction_type::scalar, data_type::float32));
+                return (std::make_pair(to_string(instruction_type::scalar),
+                                       to_string(data_type::float32)));
             },
             [](const Target<instruction_set::scalar, double>&) {
-                return (
-                    to_swagger(instruction_type::scalar, data_type::float64));
+                return (std::make_pair(to_string(instruction_type::scalar),
+                                       to_string(data_type::float64)));
             },
             [](const Target<instruction_set::sse2, int32_t>&) {
-                return (to_swagger(instruction_type::sse2, data_type::int32));
+                return (std::make_pair(to_string(instruction_type::sse2),
+                                       to_string(data_type::int32)));
             },
             [](const Target<instruction_set::sse2, int64_t>&) {
-                return (to_swagger(instruction_type::sse2, data_type::int64));
+                return (std::make_pair(to_string(instruction_type::sse2),
+                                       to_string(data_type::int64)));
             },
             [](const Target<instruction_set::sse2, float>&) {
-                return (to_swagger(instruction_type::sse2, data_type::float32));
+                return (std::make_pair(to_string(instruction_type::sse2),
+                                       to_string(data_type::float32)));
             },
             [](const Target<instruction_set::sse2, double>&) {
-                return (to_swagger(instruction_type::sse2, data_type::float64));
+                return (std::make_pair(to_string(instruction_type::sse2),
+                                       to_string(data_type::float64)));
             },
             [](const Target<instruction_set::sse4, int32_t>&) {
-                return (to_swagger(instruction_type::sse4, data_type::int32));
+                return (std::make_pair(to_string(instruction_type::sse4),
+                                       to_string(data_type::int32)));
             },
             [](const Target<instruction_set::sse4, int64_t>&) {
-                return (to_swagger(instruction_type::sse4, data_type::int64));
+                return (std::make_pair(to_string(instruction_type::sse4),
+                                       to_string(data_type::int64)));
             },
             [](const Target<instruction_set::sse4, float>&) {
-                return (to_swagger(instruction_type::sse4, data_type::float32));
+                return (std::make_pair(to_string(instruction_type::sse4),
+                                       to_string(data_type::float32)));
             },
             [](const Target<instruction_set::sse4, double>&) {
-                return (to_swagger(instruction_type::sse4, data_type::float64));
+                return (std::make_pair(to_string(instruction_type::sse4),
+                                       to_string(data_type::float64)));
             },
             [](const Target<instruction_set::avx, int32_t>&) {
-                return (to_swagger(instruction_type::avx, data_type::int32));
+                return (std::make_pair(to_string(instruction_type::avx),
+                                       to_string(data_type::int32)));
             },
             [](const Target<instruction_set::avx, int64_t>&) {
-                return (to_swagger(instruction_type::avx, data_type::int64));
+                return (std::make_pair(to_string(instruction_type::avx),
+                                       to_string(data_type::int64)));
             },
             [](const Target<instruction_set::avx, float>&) {
-                return (to_swagger(instruction_type::avx, data_type::float32));
+                return (std::make_pair(to_string(instruction_type::avx),
+                                       to_string(data_type::float32)));
             },
             [](const Target<instruction_set::avx, double>&) {
-                return (to_swagger(instruction_type::avx, data_type::float64));
+                return (std::make_pair(to_string(instruction_type::avx),
+                                       to_string(data_type::float64)));
             },
             [](const Target<instruction_set::avx2, int32_t>&) {
-                return (to_swagger(instruction_type::avx2, data_type::int32));
+                return (std::make_pair(to_string(instruction_type::avx2),
+                                       to_string(data_type::int32)));
             },
             [](const Target<instruction_set::avx2, int64_t>&) {
-                return (to_swagger(instruction_type::avx2, data_type::int64));
+                return (std::make_pair(to_string(instruction_type::avx2),
+                                       to_string(data_type::int64)));
             },
             [](const Target<instruction_set::avx2, float>&) {
-                return (to_swagger(instruction_type::avx2, data_type::float32));
+                return (std::make_pair(to_string(instruction_type::avx2),
+                                       to_string(data_type::float32)));
             },
             [](const Target<instruction_set::avx2, double>&) {
-                return (to_swagger(instruction_type::avx2, data_type::float64));
+                return (std::make_pair(to_string(instruction_type::avx2),
+                                       to_string(data_type::float64)));
             },
             [](const Target<instruction_set::avx512, int32_t>&) {
-                return (to_swagger(instruction_type::avx512, data_type::int32));
+                return (std::make_pair(to_string(instruction_type::avx512),
+                                       to_string(data_type::int32)));
             },
             [](const Target<instruction_set::avx512, int64_t>&) {
-                return (to_swagger(instruction_type::avx512, data_type::int64));
+                return (std::make_pair(to_string(instruction_type::avx512),
+                                       to_string(data_type::int64)));
             },
             [](const Target<instruction_set::avx512, float>&) {
-                return (
-                    to_swagger(instruction_type::avx512, data_type::float32));
+                return (std::make_pair(to_string(instruction_type::avx512),
+                                       to_string(data_type::float32)));
             },
             [](const Target<instruction_set::avx512, double>&) {
-                return (
-                    to_swagger(instruction_type::avx512, data_type::float64));
+                return (std::make_pair(to_string(instruction_type::avx512),
+                                       to_string(data_type::float64)));
             },
             [](const Target<instruction_set::neon, int32_t>&) {
-                return (to_swagger(instruction_type::neon, data_type::int32));
+                return (std::make_pair(to_string(instruction_type::neon),
+                                       to_string(data_type::int32)));
             },
             [](const Target<instruction_set::neon, int64_t>&) {
-                return (to_swagger(instruction_type::neon, data_type::int64));
+                return (std::make_pair(to_string(instruction_type::neon),
+                                       to_string(data_type::int64)));
             },
             [](const Target<instruction_set::neon, float>&) {
-                return (to_swagger(instruction_type::neon, data_type::float32));
+                return (std::make_pair(to_string(instruction_type::neon),
+                                       to_string(data_type::float32)));
             },
             [](const Target<instruction_set::neon, double>&) {
-                return (to_swagger(instruction_type::neon, data_type::float64));
+                return (std::make_pair(to_string(instruction_type::neon),
+                                       to_string(data_type::float64)));
             }),
         src);
+
+    dst->setInstructionSet(instr);
+    dst->setDataType(data);
 
     return (dst);
 }
@@ -256,10 +275,9 @@ to_swagger(const generator::core_config& config)
         std::end(config.targets),
         std::back_inserter(dst->getTargets()),
         [](const auto& target) {
-            auto t = std::make_shared<
-                swagger::v1::model::CpuGeneratorCoreConfig_targets>();
-            t->setLoad(
-                to_load<generator::target_operations_config_impl>(target));
+            auto t = to_swagger_load_object<
+                swagger::v1::model::CpuGeneratorCoreConfig_targets,
+                generator::target_operations_config_impl>(target);
             t->setWeight(std::visit(
                 [](const auto& impl) { return (impl.weight); }, target));
             return (t);
@@ -335,9 +353,9 @@ std::chrono::nanoseconds to_nanoseconds(const Duration& duration)
 static std::shared_ptr<swagger::v1::model::CpuGeneratorTargetStats>
 to_swagger(const target_stats& src)
 {
-    auto dst = std::make_shared<swagger::v1::model::CpuGeneratorTargetStats>();
-
-    dst->setLoad(to_load<target_stats_impl>(src));
+    auto dst =
+        to_swagger_load_object<swagger::v1::model::CpuGeneratorTargetStats,
+                               target_stats_impl>(src);
     dst->setOperations(
         std::visit([](const auto& stat) { return (stat.operations); }, src));
 

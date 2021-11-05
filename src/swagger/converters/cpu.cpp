@@ -35,17 +35,7 @@ void from_json(const nlohmann::json& j, CpuGeneratorCoreConfig& core_config)
                    [](const auto& j_target) {
                        auto target =
                            std::make_shared<CpuGeneratorCoreConfig_targets>();
-
-                       if (auto jweight = find_key(j_target, "weight")) {
-                           target->setWeight(jweight->template get<int>());
-                       }
-
-                       if (auto jload = find_key(j_target, "load")) {
-                           auto load = std::make_shared<CpuGeneratorCoreLoad>();
-                           load->fromJson(*jload);
-                           target->setLoad(load);
-                       }
-
+                       target->fromJson(const_cast<nlohmann::json&>(j_target));
                        return (target);
                    });
 }
@@ -123,26 +113,6 @@ void from_json(const nlohmann::json& j, CpuGeneratorResult& result)
     auto stats = std::make_shared<CpuGeneratorStats>();
     stats->fromJson(const_cast<nlohmann::json&>(j).at("stats"));
     result.setStats(stats);
-
-    /*
-     * XXX: fromJson doesn't copy the deeply nested load config over,
-     * so do it manually.
-     */
-    auto& cores = stats->getCores();
-    auto core_idx = 0;
-    std::for_each(std::begin(cores), std::end(cores), [&](auto& core) {
-        auto& targets = core->getTargets();
-        auto target_idx = 0;
-        std::for_each(
-            std::begin(targets), std::end(targets), [&](auto& target) {
-                auto j_target =
-                    j["stats"]["cores"][core_idx]["targets"][target_idx++];
-                auto load = std::make_shared<CpuGeneratorCoreLoad>();
-                load->fromJson(j_target.at("load"));
-                target->setLoad(load);
-            });
-        core_idx++;
-    });
 }
 
 } // namespace swagger::v1::model
