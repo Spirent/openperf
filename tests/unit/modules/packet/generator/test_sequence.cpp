@@ -93,7 +93,7 @@ bool is_ipv4_header(const uint8_t* ptr)
 
 void check_ipv4_count(const sequence& seq, size_t exp_ipv4_headers)
 {
-    auto nb_ipv4_headers =
+    size_t nb_ipv4_headers =
         std::count_if(std::begin(seq), std::end(seq), [](const auto& tuple) {
             return (is_ipv4_header(std::get<const uint8_t*>(tuple)));
         });
@@ -155,7 +155,7 @@ TEST_CASE("packet generator sequences", "[packet_generator]")
         auto defs = definitions;
         auto seq = sequence::round_robin_sequence(std::move(defs));
 
-        auto flow_lcm = std::lcm(ipv4_mod_count, ipv6_mod_count);
+        size_t flow_lcm = std::lcm(ipv4_mod_count, ipv6_mod_count);
         REQUIRE(seq.size() == flow_lcm * (ipv4_weight + ipv6_weight));
 
         auto pkt_len_sum =

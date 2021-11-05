@@ -27,5 +27,5 @@ TEST_CASE("verify init factory behavior", "[init_factory]")
     std::vector<std::unique_ptr<test_base>> test_objects;
     int counter = 0;
     test_base::make_all(test_objects, counter);
-    REQUIRE(test_objects.size() == counter);
+    REQUIRE(static_cast<int>(test_objects.size()) == counter);
 }

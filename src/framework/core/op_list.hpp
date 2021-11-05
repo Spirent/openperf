@@ -2,6 +2,7 @@
 #define _OP_LIST_HPP_
 
 #include <iterator>
+#include <limits>
 #include <memory>
 
 #include "core/op_list.h"

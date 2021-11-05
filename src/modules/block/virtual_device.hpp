@@ -2,6 +2,7 @@
 #define _OP_BLOCK_VIRTUAL_DEVICE_HPP_
 
 #include <atomic>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <thread>

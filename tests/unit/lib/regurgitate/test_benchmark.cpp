@@ -59,7 +59,7 @@ TEST_CASE("benchmark", "[regurgitate]")
         {
             auto digest = regurgitate::digest<float, float, compression>();
             fill_random(digest, size);
-        }
+        };
     }
 
     BENCHMARK("digestible<float, double>")
@@ -85,6 +85,6 @@ TEST_CASE("benchmark", "[regurgitate]")
         {
             auto digest = regurgitate::digest<float, double, compression>();
             fill_random(digest, size);
-        }
+        };
     }
 }

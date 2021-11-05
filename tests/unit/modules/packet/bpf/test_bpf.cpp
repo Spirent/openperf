@@ -223,7 +223,7 @@ TEST_CASE("bpf sink_feature_flags", "[bpf]")
 
     SECTION("packet_type_decode")
     {
-        auto expected = static_cast<uint32_t>(
+        auto expected = static_cast<int>(
             openperf::packetio::packet::sink_feature_flags::packet_type_decode);
 
         REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
@@ -253,9 +253,9 @@ TEST_CASE("bpf sink_feature_flags", "[bpf]")
 
     SECTION("spirent_signature_decode")
     {
-        auto expected = static_cast<uint32_t>(
-            openperf::packetio::packet::sink_feature_flags::
-                spirent_signature_decode);
+        auto expected =
+            static_cast<int>(openperf::packetio::packet::sink_feature_flags::
+                                 spirent_signature_decode);
 
         REQUIRE(openperf::packet::bpf::bpf_sink_feature_flags(
                     openperf::packet::bpf::BPF_FILTER_FLAGS_SIGNATURE)
@@ -977,7 +977,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
         BENCHMARK("all, match")
         {
             bpf.exec_burst(packets.data(), results.data(), packets.size());
-        }
+        };
 
         std::for_each(results.begin(), results.end(), [&](auto& result) {
             REQUIRE(result != 0);
@@ -991,7 +991,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
         BENCHMARK("ether, match")
         {
             bpf.exec_burst(packets.data(), results.data(), packets.size());
-        }
+        };
 
         std::for_each(results.begin(), results.end(), [&](auto& result) {
             REQUIRE(result != 0);
@@ -1005,7 +1005,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
         BENCHMARK("ether, no match")
         {
             bpf.exec_burst(packets.data(), results.data(), packets.size());
-        }
+        };
 
         std::for_each(results.begin(), results.end(), [&](auto& result) {
             REQUIRE(result == 0);
@@ -1018,7 +1018,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
         BENCHMARK("ip, match")
         {
             bpf.exec_burst(packets.data(), results.data(), packets.size());
-        }
+        };
 
         std::for_each(results.begin(), results.end(), [&](auto& result) {
             REQUIRE(result != 0);
@@ -1031,7 +1031,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
         BENCHMARK("ip, no match")
         {
             bpf.exec_burst(packets.data(), results.data(), packets.size());
-        }
+        };
 
         std::for_each(results.begin(), results.end(), [&](auto& result) {
             REQUIRE(result == 0);
@@ -1049,7 +1049,8 @@ TEST_CASE("bpf benchmarks", "[bpf]")
         BENCHMARK("signature, match")
         {
             bpf.exec_burst(packets.data(), results.data(), packets.size());
-        }
+        };
+
         std::for_each(results.begin(), results.end(), [&](auto& result) {
             REQUIRE(result != 0);
         });
@@ -1059,7 +1060,8 @@ TEST_CASE("bpf benchmarks", "[bpf]")
         BENCHMARK("signature, no match")
         {
             bpf.exec_burst(packets.data(), results.data(), packets.size());
-        }
+        };
+
         std::for_each(results.begin(), results.end(), [&](auto& result) {
             REQUIRE(result == 0);
         });
@@ -1073,7 +1075,8 @@ TEST_CASE("bpf benchmarks", "[bpf]")
         BENCHMARK("not signature, match")
         {
             bpf.exec_burst(packets.data(), results.data(), packets.size());
-        }
+        };
+
         std::for_each(results.begin(), results.end(), [&](auto& result) {
             REQUIRE(result != 0);
         });
@@ -1086,7 +1089,8 @@ TEST_CASE("bpf benchmarks", "[bpf]")
         BENCHMARK("not signature, no match")
         {
             bpf.exec_burst(packets.data(), results.data(), packets.size());
-        }
+        };
+
         std::for_each(results.begin(), results.end(), [&](auto& result) {
             REQUIRE(result == 0);
         });
@@ -1102,7 +1106,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
         BENCHMARK("not signature ether, match")
         {
             bpf.exec_burst(packets.data(), results.data(), packets.size());
-        }
+        };
 
         std::for_each(results.begin(), results.end(), [&](auto& result) {
             REQUIRE(result != 0);
@@ -1116,7 +1120,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
         BENCHMARK("not signature ether, no match (has sig)")
         {
             bpf.exec_burst(packets.data(), results.data(), packets.size());
-        }
+        };
 
         std::for_each(results.begin(), results.end(), [&](auto& result) {
             REQUIRE(result == 0);
@@ -1133,7 +1137,7 @@ TEST_CASE("bpf benchmarks", "[bpf]")
         BENCHMARK("not signature ether, no match (bad mac)")
         {
             bpf.exec_burst(packets.data(), results.data(), packets.size());
-        }
+        };
 
         std::for_each(results.begin(), results.end(), [&](auto& result) {
             REQUIRE(result == 0);
