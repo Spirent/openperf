@@ -40,10 +40,10 @@ def expected_transmit(protocol):
 class nc_command_impl(object):
     """Simple class to parse command line options for nc"""
 
-    def __init__(self, address, **kwargs):
+    def __init__(self, address, port, **kwargs):
         self.address = address
+        self.port = port
         self.listen = kwargs['listen'] if 'listen' in kwargs else False
-        self.port = kwargs['port'] if 'port' in kwargs else 3357
         self.protocol = kwargs['protocol'] if 'protocol' in kwargs else socket.IPPROTO_TCP
         self.verbose = kwargs['verbose'] if 'verbose' in kwargs else False
         self.version = kwargs['version'] if 'version' in kwargs else socket.AF_INET
@@ -75,9 +75,9 @@ class nc_command_impl(object):
         return ' '.join(args)
 
 
-def nc_command(address, **kwargs):
+def nc_command(address, port, **kwargs):
     """Generate a nc shell command for Popen"""
-    cmd = nc_command_impl(address, **kwargs)
+    cmd = nc_command_impl(address, port, **kwargs)
     return str(cmd).split()
 
 
@@ -202,10 +202,11 @@ def create_connected_endpoints(api_client, reader_id, writer_id, domain, protoco
 
     server_id = reader_id if is_server_interface(reader_id) else writer_id
     server_ip_addr = get_interface_address(api_client, server_id, domain)
+    server_ip_port = random.randint(1024, 65535)
 
     server_input = None
     if is_server_interface(writer_id):
-        writer = subprocess.Popen(nc_command(server_ip_addr, version=domain, protocol=protocol, listen=True),
+        writer = subprocess.Popen(nc_command(server_ip_addr, server_ip_port, version=domain, protocol=protocol, listen=True),
                                   stdin=subprocess.PIPE,
                                   stdout=null,
                                   stderr=subprocess.PIPE,
@@ -215,7 +216,7 @@ def create_connected_endpoints(api_client, reader_id, writer_id, domain, protoco
         server_input = writer.stdin
 
     if is_server_interface(reader_id):
-        reader = subprocess.Popen(nc_command(server_ip_addr, version=domain, protocol=protocol, listen=True),
+        reader = subprocess.Popen(nc_command(server_ip_addr, server_ip_port, version=domain, protocol=protocol, listen=True),
                                   stdin=subprocess.PIPE,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE,
@@ -236,7 +237,7 @@ def create_connected_endpoints(api_client, reader_id, writer_id, domain, protoco
 
     client_output = None
     if not is_server_interface(writer_id):
-        writer = subprocess.Popen(nc_command(server_ip_addr, version=domain, protocol=protocol, verbose=True),
+        writer = subprocess.Popen(nc_command(server_ip_addr, server_ip_port, version=domain, protocol=protocol, verbose=True),
                                   stdin=subprocess.PIPE,
                                   stdout=null,
                                   stderr=subprocess.PIPE,
@@ -246,7 +247,7 @@ def create_connected_endpoints(api_client, reader_id, writer_id, domain, protoco
         client_output = writer.stderr
 
     if not is_server_interface(reader_id):
-        reader = subprocess.Popen(nc_command(server_ip_addr, version=domain, protocol=protocol, verbose=True),
+        reader = subprocess.Popen(nc_command(server_ip_addr, server_ip_port, version=domain, protocol=protocol, verbose=True),
                                   stdin=null,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE,
