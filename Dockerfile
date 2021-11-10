@@ -14,15 +14,15 @@ RUN apt-get clean && \
     apt-get install -y --no-install-recommends autoconf automake \
     bison build-essential ca-certificates crossbuild-essential-arm64 \
     debhelper devscripts flex git libcap-dev libcap2-bin libibverbs-dev \
-    libnuma-dev libtool lintian netcat-openbsd \
-    pkg-config python sudo virtualenv wget \
+    libnuma-dev libtool lintian meson netcat-openbsd \
+    pkg-config python3 python3-pyelftools sudo virtualenv wget \
     clang-${LLVM_VERSION} clang-format-${LLVM_VERSION} \
     clang-tidy-${LLVM_VERSION} \
     llvm-${LLVM_VERSION} llvm-${LLVM_VERSION}-dev \
     lld-${LLVM_VERSION} bear
 
 # Install Intel SPMD Program Compiler (ISPC)
-ENV ISPC_VERSION 1.15.0
+ENV ISPC_VERSION 1.16.1
 RUN wget -q -O - https://github.com/ispc/ispc/releases/download/v${ISPC_VERSION}/ispc-v${ISPC_VERSION}-linux.tar.gz \
     | tar -C /opt -xvz && \
     chown -R root:root /opt/ispc-v${ISPC_VERSION}-linux/bin/ispc && \
