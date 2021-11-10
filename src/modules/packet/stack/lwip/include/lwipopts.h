@@ -32,7 +32,6 @@
 #define LWIP_DHCP 1
 #define LWIP_AUTOIP 1
 #define LWIP_DHCP_AUTOIP_COOP 1
-#define LWIP_DHCP_DOES_ACD_CHECK 1 /* let's be a good net-citizen */
 #define LWIP_IPV6_AUTOCONFIG 1
 #define LWIP_IPV6_DHCP6 1
 #define LWIP_IPV6_SEND_ROUTER_SOLICIT 1

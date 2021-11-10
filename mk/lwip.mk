@@ -37,7 +37,6 @@ LWIP_CORE_SOURCES := \
 	netif/ethernet.c
 
 LWIP_CORE4_SOURCES := \
-	core/ipv4/acd.c \
 	core/ipv4/autoip.c \
 	core/ipv4/dhcp.c \
 	core/ipv4/etharp.c \
