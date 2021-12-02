@@ -29,6 +29,7 @@ typedef int(op_option_callback_fn)(int opt, const char* optarg);
  * Enum denoting the type of an option's data.
  * Exact types are mapped as:
  * NONE -> bool
+ * CPUSET_STRING -> std::string (can be converted to core::cpuset)
  * STRING -> std::string
  * HEX -> long
  * LONG -> long
@@ -41,6 +42,7 @@ typedef int(op_option_callback_fn)(int opt, const char* optarg);
  */
 typedef enum op_option_type {
     OP_OPTION_TYPE_NONE = 0,
+    OP_OPTION_TYPE_CPUSET_STRING,
     OP_OPTION_TYPE_STRING,
     OP_OPTION_TYPE_HEX,
     OP_OPTION_TYPE_LONG,
