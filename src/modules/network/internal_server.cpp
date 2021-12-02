@@ -1,12 +1,10 @@
 #include "config/op_config_file.hpp"
 #include "framework/core/op_log.h"
-#include "internal_server.hpp"
 
+#include "arg_parser.hpp"
 #include "firehose/server_tcp.hpp"
 #include "firehose/server_udp.hpp"
-
-#include "drivers/kernel.hpp"
-#include "drivers/dpdk.hpp"
+#include "internal_server.hpp"
 
 namespace openperf::network::internal {
 
@@ -25,15 +23,7 @@ server::server(const model::server& server_model)
         openperf::config::file::op_config_get_param<OP_OPTION_TYPE_STRING>(
             "modules.network.driver");
 
-    std::shared_ptr<drivers::driver> nd;
-    if (!driver || !driver.value().compare(drivers::kernel::key)) {
-        nd = drivers::driver::instance<drivers::kernel>();
-    } else if (!driver.value().compare(drivers::dpdk::key)) {
-        nd = drivers::driver::instance<drivers::dpdk>();
-    } else {
-        throw std::runtime_error("Network driver " + driver.value()
-                                 + " is unsupported");
-    }
+    auto nd = config::driver();
 
     if (!m_interface && nd->bind_to_device_required())
         throw std::runtime_error(

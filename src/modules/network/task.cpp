@@ -8,25 +8,25 @@
 #include <tl/expected.hpp>
 #include <fcntl.h>
 
-#include "task.hpp"
-
 #include "config/op_config_file.hpp"
 #include "framework/core/op_log.h"
 #include "framework/core/op_event_loop.hpp"
 #include "framework/utils/random.hpp"
 #include "framework/utils/overloaded_visitor.hpp"
-#include "firehose/protocol.hpp"
-#include "utils/network_sockaddr.hpp"
-#include "drivers/kernel.hpp"
 #include "packet/type/ipv6_address.hpp"
 #include "timesync/bintime.hpp"
+
+#include "arg_parser.hpp"
+#include "firehose/protocol.hpp"
+#include "drivers/kernel.hpp"
+#include "task.hpp"
+#include "utils/network_sockaddr.hpp"
 
 namespace openperf::network::internal::task {
 
 using namespace std::chrono_literals;
 constexpr duration TASK_SPIN_THRESHOLD = 100ms;
 constexpr duration QUANTA = 10ms;
-constexpr auto default_operation_timeout_usec = 1000000;
 const size_t max_buffer_size = 64 * 1024;
 
 stat_t& stat_t::operator+=(const stat_t& stat)
@@ -373,12 +373,8 @@ network_task::new_connection(const network_sockaddr& server,
     }
 
     if (config.target.protocol == IPPROTO_UDP) {
-        static auto timeout = std::chrono::microseconds(
-            openperf::config::file::op_config_get_param<OP_OPTION_TYPE_LONG>(
-                "modules.network.operation-timeout")
-                .value_or(default_operation_timeout_usec));
-
-        static auto read_timeout = timesync::to_timeval(timeout);
+        static auto read_timeout =
+            timesync::to_timeval(config::operation_timeout());
         m_driver->setsockopt(
             sock, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout));
     }
@@ -526,10 +522,7 @@ int network_task::do_read(connection_t& conn, stat_t& stat)
                                 std::min(conn.buffer.size(), conn.bytes_left),
                                 0))
             == -1) {
-            static auto timeout = std::chrono::microseconds(
-                openperf::config::file::op_config_get_param<
-                    OP_OPTION_TYPE_LONG>("modules.network.operation-timeout")
-                    .value_or(default_operation_timeout_usec));
+            static auto timeout = config::operation_timeout();
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 if (ref_clock::now() - conn.operation_start_time < timeout) {
                     return 0;
