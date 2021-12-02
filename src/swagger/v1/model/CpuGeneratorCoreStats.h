@@ -75,13 +75,6 @@ public:
     int64_t getUser() const;
     void setUser(int64_t value);
         /// <summary>
-    /// The amount of time the hypervisor reported our virtual cores were blocked
-    /// </summary>
-    int64_t getSteal() const;
-    void setSteal(int64_t value);
-    bool stealIsSet() const;
-    void unsetSteal();
-    /// <summary>
     /// The difference between intended and actual CPU utilization
     /// </summary>
     int64_t getError() const;
@@ -102,8 +95,6 @@ protected:
 
     int64_t m_User;
 
-    int64_t m_Steal;
-    bool m_StealIsSet;
     int64_t m_Error;
 
     std::vector<std::shared_ptr<CpuGeneratorTargetStats>> m_Targets;

@@ -36,7 +36,6 @@ class CpuGeneratorCoreStats(object):
         'target': 'int',
         'system': 'int',
         'user': 'int',
-        'steal': 'int',
         'error': 'int',
         'targets': 'list[CpuGeneratorTargetStats]'
     }
@@ -47,12 +46,11 @@ class CpuGeneratorCoreStats(object):
         'target': 'target',
         'system': 'system',
         'user': 'user',
-        'steal': 'steal',
         'error': 'error',
         'targets': 'targets'
     }
 
-    def __init__(self, available=None, utilization=None, target=None, system=None, user=None, steal=None, error=None, targets=None):  # noqa: E501
+    def __init__(self, available=None, utilization=None, target=None, system=None, user=None, error=None, targets=None):  # noqa: E501
         """CpuGeneratorCoreStats - a model defined in Swagger"""  # noqa: E501
 
         self._available = None
@@ -60,7 +58,6 @@ class CpuGeneratorCoreStats(object):
         self._target = None
         self._system = None
         self._user = None
-        self._steal = None
         self._error = None
         self._targets = None
         self.discriminator = None
@@ -70,8 +67,6 @@ class CpuGeneratorCoreStats(object):
         self.target = target
         self.system = system
         self.user = user
-        if steal is not None:
-            self.steal = steal
         self.error = error
         self.targets = targets
 
@@ -184,28 +179,6 @@ class CpuGeneratorCoreStats(object):
         :type: int
         """
         self._user = user
-
-    @property
-    def steal(self):
-        """Gets the steal of this CpuGeneratorCoreStats.  # noqa: E501
-
-        The amount of time the hypervisor reported our virtual cores were blocked  # noqa: E501
-
-        :return: The steal of this CpuGeneratorCoreStats.  # noqa: E501
-        :rtype: int
-        """
-        return self._steal
-
-    @steal.setter
-    def steal(self, steal):
-        """Sets the steal of this CpuGeneratorCoreStats.
-
-        The amount of time the hypervisor reported our virtual cores were blocked  # noqa: E501
-
-        :param steal: The steal of this CpuGeneratorCoreStats.  # noqa: E501
-        :type: int
-        """
-        self._steal = steal
 
     @property
     def error(self):

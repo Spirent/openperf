@@ -21,7 +21,7 @@ struct linux_proc_stats
     uint64_t steal;
 };
 
-std::chrono::microseconds get_core_steal_time(uint8_t core_id)
+std::chrono::microseconds get_steal_time()
 {
     using namespace std::chrono_literals;
 
@@ -40,7 +40,7 @@ std::chrono::microseconds get_core_steal_time(uint8_t core_id)
             break; /* error processing input data */
         }
 
-        if (stats.cpu == "cpu" + std::to_string(core_id)) {
+        if (stats.cpu == "cpu") {
             auto us =
                 stats.steal
                 * std::chrono::duration_cast<std::chrono::microseconds>(1s)

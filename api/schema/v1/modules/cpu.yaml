@@ -500,10 +500,6 @@ definitions:
         type: integer
         description: The amount of user time used, e.g. openperf code
         format: int64
-      steal:
-        type: integer
-        description: The amount of time the hypervisor reported our virtual cores were blocked
-        format: int64
       error:
         type: integer
         description: The difference between intended and actual CPU utilization
