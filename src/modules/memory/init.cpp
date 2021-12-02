@@ -5,6 +5,8 @@
 #include "framework/core/op_core.h"
 #include "config/op_config_file.hpp"
 
+extern const char op_memory_mask[];
+
 namespace openperf::memory {
 
 static constexpr int module_version = 1;
@@ -18,6 +20,16 @@ static int handle_zmq_shutdown(const op_event_data* data,
     }
 
     return 0;
+}
+
+static std::optional<core::cpuset> core_mask()
+{
+    if (const auto mask = openperf::config::file::op_config_get_param<
+            OP_OPTION_TYPE_CPUSET_STRING>(op_memory_mask)) {
+        return (core::cpuset_online() & core::cpuset(mask.value()));
+    }
+
+    return (std::nullopt);
 }
 
 class service
@@ -48,20 +60,19 @@ public:
     {
         m_service = std::thread([this]() {
             op_thread_setname("op_memory");
-            auto mask =
-                openperf::config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
-                    "modules.memory.cpu-mask");
-            if (mask) {
-                if (auto res =
-                        op_thread_set_relative_affinity_mask(mask.value());
-                    res) {
-                    op_exit("Applying Memory module affinity mask failed! %s\n",
-                            std::strerror(res));
-                }
 
-                OP_LOG(OP_LOG_DEBUG,
-                       "Memory module been configured with cpu-mask: 0x%x",
-                       mask.value());
+            if (auto mask = core_mask()) {
+                if (auto error = core::cpuset_set_affinity(mask.value())) {
+                    OP_LOG(OP_LOG_ERROR,
+                           "Could not configure %s as core mask for memory "
+                           "generator: %s\n",
+                           mask->to_string().c_str(),
+                           strerror(error));
+                } else {
+                    OP_LOG(OP_LOG_DEBUG,
+                           "Configured %s as core mask for memory generator\n",
+                           mask->to_string().c_str());
+                }
             }
 
             struct op_event_callbacks callbacks = {.on_read =
