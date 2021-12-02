@@ -4,10 +4,12 @@
 
 #include <array>
 #include <cstdint>
+#include <numeric>
 #include <optional>
 #include <variant>
 
 #include "cpu/generator/load_types.hpp"
+#include "cpu/generator/system_stats.hpp"
 
 namespace openperf::cpu {
 
@@ -44,57 +46,83 @@ constexpr auto variant_array(std::variant<Types...>)
     return {{Types{}...}};
 }
 
+template <typename T> struct range
+{
+    T first;
+    T last;
+
+    range& operator+=(const range& other)
+    {
+        first = std::min(first, other.first);
+        last = std::max(last, other.last);
+        return (*this);
+    }
+};
+
+template <typename T> range<T> operator+(range<T> lhs, const range<T>& rhs)
+{
+    lhs += rhs;
+    return (lhs);
+}
+
 template <typename Clock> struct core_stats
 {
     using timestamp = typename Clock::time_point;
     using duration = typename Clock::duration;
 
-    timestamp first_;
-    timestamp last_;
-    duration target;
+    /*
+     * XXX: The expectation is that steal time is accumulated since boot.
+     * However, we only want to report the steal time that occurs over a test
+     * duration, hence we need to store a range for steal time.
+     */
+    range<timestamp> time_;
+    range<duration> steal_;
     duration system;
+    duration target;
     duration user;
-    duration steal;
     std::array<target_stats, std::variant_size_v<target_stats>> targets;
 
-    core_stats(timestamp first, timestamp last)
-        : first_(first)
-        , last_(last)
-        , target(duration::zero())
+    core_stats(timestamp timestamp_first,
+               timestamp timestamp_last,
+               duration steal_first,
+               duration steal_last)
+        : time_({timestamp_first, timestamp_last})
+        , steal_({steal_first, steal_last})
         , system(duration::zero())
+        , target(duration::zero())
         , user(duration::zero())
-        , steal(duration::zero())
     {
         targets = variant_array(target_stats{});
     }
 
-    core_stats(timestamp now)
-        : core_stats(now, now)
+    core_stats(timestamp now, duration steal)
+        : core_stats(now, now, steal, steal)
     {}
 
     core_stats()
-        : core_stats(timestamp::max(), timestamp::min())
+        : core_stats(timestamp::max(),
+                     timestamp::min(),
+                     duration::max(),
+                     duration::min())
     {}
 
     core_stats(const core_stats& other)
-        : first_(other.first_)
-        , last_(other.last_)
-        , target(other.target)
+        : time_(other.time_)
+        , steal_(other.steal_)
         , system(other.system)
+        , target(other.target)
         , user(other.user)
-        , steal(other.steal)
         , targets(other.targets)
     {}
 
     core_stats operator=(const core_stats& other)
     {
         if (this != &other) {
-            first_ = other.first_;
-            last_ = other.last_;
-            target = other.target;
+            time_ = other.time_;
+            steal_ = other.steal_;
             system = other.system;
+            target = other.target;
             user = other.user;
-            steal = other.steal;
             std::copy(std::begin(other.targets),
                       std::end(other.targets),
                       std::begin(targets));
@@ -106,24 +134,26 @@ template <typename Clock> struct core_stats
     {
         if (!first() || !last()) { return (duration::zero()); }
 
-        return (last_ - first_);
+        return (time_.last - time_.first);
     }
 
     duration error() const { return (utilization() - target); }
 
     duration utilization() const { return (system + user); }
 
+    duration steal() const { return (steal_.last - steal_.first); }
+
     std::optional<timestamp> first() const
     {
         return (utilization() > duration::zero()
-                    ? std::optional<timestamp>{first_}
+                    ? std::optional<timestamp>{time_.first}
                     : std::nullopt);
     }
 
     std::optional<timestamp> last() const
     {
         return (utilization() > duration::zero()
-                    ? std::optional<timestamp>{last_}
+                    ? std::optional<timestamp>{time_.last}
                     : std::nullopt);
     }
 
@@ -136,12 +166,11 @@ template <typename Clock> struct core_stats
 
     core_stats& operator+=(const core_stats& rhs)
     {
-        first_ = std::min(first_, rhs.first_);
-        last_ = std::max(last_, rhs.last_);
-        target += rhs.target;
+        time_ += rhs.time_;
+        steal_ += rhs.steal_;
         system += rhs.system;
+        target += rhs.target;
         user += rhs.user;
-        steal += rhs.steal;
 
         plus_equals(
             targets,
@@ -159,6 +188,27 @@ inline core_stats<Clock> operator+(core_stats<Clock> lhs,
 {
     lhs += rhs;
     return (lhs);
+}
+
+template <typename Clock>
+inline void init_stats(core_stats<Clock>& stats,
+                       typename Clock::time_point ts,
+                       typename Clock::duration steal)
+{
+    stats.time_.first = ts;
+    stats.time_.last = ts;
+    stats.steal_.first = steal;
+    stats.steal_.last = steal;
+}
+
+template <typename Clock>
+inline core_stats<Clock> sum_stats(const std::vector<core_stats<Clock>>& shards)
+{
+    auto sum = std::accumulate(std::begin(shards),
+                               std::end(shards),
+                               core_stats<Clock>{},
+                               std::plus<>{});
+    return (sum);
 }
 
 } // namespace openperf::cpu

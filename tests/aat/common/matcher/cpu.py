@@ -86,7 +86,7 @@ class _be_valid_cpu_generator_target_stats(Matcher):
 class _be_valid_cpu_generator_core_stats(Matcher):
     def _match(self, stats):
         expect(stats).to(be_a(client.models.CpuGeneratorCoreStats))
-        expect(stats.utilization).to(equal(stats.system + stats.user - stats.steal))
+        expect(stats.utilization).to(equal(stats.system + stats.user))
         expect(stats.error).to(equal(stats.utilization - stats.target))
         for target in stats.targets:
             expect(target).to(be_valid_cpu_generator_target_stats)

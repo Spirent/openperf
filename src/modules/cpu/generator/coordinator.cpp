@@ -105,7 +105,7 @@ static std::optional<double> shard_extractor(const result::core_shard& stat,
          * XXX: We need to bypass the sanity check for last(),
          * on the first read hence, we get the "timestamp" value directly.
          */
-        return (to_nanoseconds(stat.last_.time_since_epoch()).count());
+        return (to_nanoseconds(stat.time_.last.time_since_epoch()).count());
     }
     if (name == "available") { return (to_seconds(stat.available()).count()); }
     if (name == "utilization") {
@@ -114,7 +114,7 @@ static std::optional<double> shard_extractor(const result::core_shard& stat,
     if (name == "target") { return (to_seconds(stat.target).count()); }
     if (name == "system") { return (to_seconds(stat.system).count()); }
     if (name == "user") { return (to_seconds(stat.user).count()); }
-    if (name == "steal") { return (to_seconds(stat.steal).count()); }
+    if (name == "steal") { return (to_seconds(stat.steal()).count()); }
     if (name == "error") { return (to_seconds(stat.error()).count()); }
 
     /* Parse the targets[N] field name */
@@ -145,11 +145,7 @@ result_extractor(const std::vector<result::core_shard>& shards,
     if (name == "timestamp" || name == "available" || name == "utilization"
         || name == "target" || name == "system" || name == "user"
         || name == "steal" || name == "error") {
-        auto sum = std::accumulate(std::begin(shards),
-                                   std::end(shards),
-                                   result::core_shard{},
-                                   std::plus<>{});
-        return (shard_extractor(sum, name));
+        return (shard_extractor(sum_stats(shards), name));
     }
 
     /* Parse the cores[N] field name */
@@ -174,8 +170,10 @@ result_extractor(const std::vector<result::core_shard>& shards,
     return (0);
 }
 
+/* XXX: Initialize core shard with values so that results are 0'd out */
 result::result(size_t size, const dynamic::configuration& dynamic_config)
-    : m_shards(size, core_shard{result::clock::now()})
+    : m_shards(size,
+               core_shard{result::clock::now(), generator::get_steal_time()})
     , m_dynamic(result_extractor)
 {
     m_dynamic.configure(dynamic_config, shards());
@@ -333,9 +331,7 @@ int coordinator::do_load_update()
     assert(shards.size());
 
     /* Collect load from workers */
-    using stat_t = remove_cvref_t<decltype(shards)>::value_type;
-    auto sum = std::accumulate(
-        std::begin(shards), std::end(shards), stat_t{}, std::plus<>{});
+    auto sum = sum_stats(shards);
     auto load = (sum.utilization() - m_prev_sum->utilization()) * 100.0
                 / (sum.available() - m_prev_sum->available());
 

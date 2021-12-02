@@ -370,7 +370,6 @@ to_swagger(const generator::result::core_shard& src)
 
     dst->setAvailable(to_nanoseconds(src.available()).count());
     dst->setError(to_nanoseconds(src.error()).count());
-    dst->setSteal(to_nanoseconds(src.steal).count());
     dst->setSystem(to_nanoseconds(src.system).count());
     dst->setTarget(to_nanoseconds(src.target).count());
     dst->setUser(to_nanoseconds(src.user).count());
@@ -393,7 +392,7 @@ to_swagger(const std::vector<generator::result::core_shard>& shards,
 
     dst->setAvailable(to_nanoseconds(sum.available() * shards.size()).count());
     dst->setError(to_nanoseconds(sum.error()).count());
-    dst->setSteal(to_nanoseconds(sum.steal).count());
+    dst->setSteal(to_nanoseconds(sum.steal()).count());
     dst->setSystem(to_nanoseconds(sum.system).count());
     dst->setTarget(to_nanoseconds(sum.target).count());
     dst->setUser(to_nanoseconds(sum.user).count());
@@ -421,13 +420,10 @@ to_swagger(std::string_view generator_id,
     dst->setActive(result.use_count() > 1);
 
     const auto& shards = result->shards();
-    auto sum = std::accumulate(std::begin(shards),
-                               std::end(shards),
-                               generator::result::core_shard{},
-                               std::plus<>{});
+    auto sum = sum_stats(shards);
 
-    dst->setTimestampFirst(to_rfc3339(sum.first_));
-    dst->setTimestampLast(to_rfc3339(sum.last_));
+    dst->setTimestampFirst(to_rfc3339(sum.time_.first));
+    dst->setTimestampLast(to_rfc3339(sum.time_.last));
     dst->setStats(to_swagger(shards, sum));
     dst->setDynamicResults(std::make_shared<swagger::v1::model::DynamicResults>(
         to_swagger(result->dynamic())));

@@ -192,18 +192,18 @@ public:
             t2 = t1;
         }
 
-        auto& core_stats = m_result->shard(m_id);
-        spin_for(time_to_spin, m_ops, core_stats.targets.data());
+        auto& thread_stats = m_result->shard(m_id);
+        spin_for(time_to_spin, m_ops, thread_stats.targets.data());
 
         m_time.run += clock::now() - t2;
 
-        auto ut = get_core_utilization_time<clock>(m_id);
+        auto ut = get_thread_utilization_time<clock>();
 
-        core_stats.last_ = ut.time_stamp;
-        core_stats.system = ut.time_system - m_ref.time_system;
-        core_stats.user = ut.time_user - m_ref.time_user;
-        core_stats.steal = ut.time_steal - m_ref.time_steal;
-        core_stats.target = std::chrono::duration_cast<clock::duration>(
+        thread_stats.time_.last = ut.time_stamp;
+        thread_stats.steal_.last = get_steal_time();
+        thread_stats.system = ut.time_system - m_ref.time_system;
+        thread_stats.user = ut.time_user - m_ref.time_user;
+        thread_stats.target = std::chrono::duration_cast<clock::duration>(
             (ut.time_stamp - m_ref.time_stamp) * m_ratio);
 
         return (0);
@@ -228,9 +228,8 @@ public:
         OP_LOG(OP_LOG_DEBUG, "Running\n");
 
         /* Initialize result values */
-        m_ref = get_core_utilization_time<clock>(m_id);
-        m_result->shard(m_id).last_ = m_ref.time_stamp;
-        m_result->shard(m_id).first_ = m_ref.time_stamp;
+        m_ref = get_thread_utilization_time<clock>();
+        init_stats(m_result->shard(m_id), m_ref.time_stamp, get_steal_time());
 
         return (state_started{});
     }
