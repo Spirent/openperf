@@ -19,13 +19,14 @@ from_swagger(const swagger::v1::model::CpuGeneratorSystemConfig& src)
         generator::target_operations_config_impl<instruction_set::scalar,
                                                  int64_t>;
 
-    auto cores = config::available_cores();
-    auto per_core_load = src.getUtilization() / cores.count();
+    auto cores = config::core_mask();
+    auto core_count = cores ? cores->count() : core::cpuset_online().count();
+    auto per_core_load = src.getUtilization() / core_count;
 
     assert(per_core_load <= 100.0);
 
     auto dst = generator::config{.cores = cores, .is_system_config = true};
-    std::generate_n(std::back_inserter(dst.core_configs), cores.count(), [&]() {
+    std::generate_n(std::back_inserter(dst.core_configs), core_count, [&]() {
         auto cc = generator::core_config{};
         cc.utilization = per_core_load;
         cc.targets.emplace_back(system_target_config_type{1});
@@ -116,11 +117,11 @@ from_swagger(const swagger::v1::model::CpuGeneratorConfig& src)
         return (from_swagger(*system));
     }
     case method_type::cores: {
-        auto dst = generator::config{.cores = config::available_cores(),
+        auto dst = generator::config{.cores = config::core_mask(),
                                      .is_system_config = false};
         const auto& core_configs =
             const_cast<swagger::v1::model::CpuGeneratorConfig&>(src).getCores();
-        assert(core_configs.size() <= dst.cores.count());
+        assert(core_configs.size() <= op_cpu_count());
         std::transform(
             std::begin(core_configs),
             std::end(core_configs),

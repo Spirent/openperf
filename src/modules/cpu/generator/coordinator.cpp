@@ -210,7 +210,8 @@ coordinator::coordinator(void* context, struct config&& conf)
     , m_prev_sum(std::nullopt)
     , m_pid(0.07, 1.0 / 9, 0)
 {
-    assert(m_config.core_configs.size() <= m_config.cores.count());
+    assert(m_config.cores.has_value() == false
+           || m_config.core_configs.size() <= m_config.cores->count());
 
     m_setpoint = std::accumulate(std::begin(m_config.core_configs),
                                  std::end(m_config.core_configs),
@@ -227,8 +228,7 @@ coordinator::coordinator(void* context, struct config&& conf)
     auto start_results = std::vector<std::future<void>>{};
     auto core_id = 0;
 
-    for (auto i = 0U; i < m_config.core_configs.size(); i++) {
-        while (m_config.cores.test(core_id) == 0) { core_id++; }
+    for (auto&& config : m_config.core_configs) {
         auto start_token = std::promise<void>{};
         start_results.push_back(start_token.get_future());
 
@@ -236,7 +236,7 @@ coordinator::coordinator(void* context, struct config&& conf)
                                            m_context,
                                            id,
                                            core_id,
-                                           m_config.core_configs[core_id],
+                                           config,
                                            endpoint.c_str(),
                                            std::move(start_token)));
         core_id++;

@@ -23,6 +23,10 @@ CONFIG = Config(os.path.join(os.path.dirname(__file__),
                 os.environ.get('MAMBA_CONFIG', 'config.yaml')))
 
 
+def approximately_equal(a, b):
+    return abs(a - b) < 0.01
+
+
 with description('CPU Generator Module', 'cpu') as self:
     with before.all:
         service = Service(CONFIG.service())
@@ -89,9 +93,16 @@ with description('CPU Generator Module', 'cpu') as self:
                         expect(self._result[0]).to(be_valid_cpu_generator)
 
                     with it('has same config'):
-                        if (not self._model.id):
-                            self._model.id = self._result[0].id
-                        expect(self._result[0]).to(equal(self._model))
+                        if (self._model.config.method == 'system'):
+                            expect(self._result[0].config.cores).to(equal(self._model.config.cores))
+                            expect(self._result[0].config.method).to(equal(self._model.config.method))
+                            expect(approximately_equal(self._result[0].config.system.utilization,
+                                                       self._model.config.system.utilization)).to(be_true)
+                            expect(self._result[0].running).to(equal(self._model.running))
+                        else:
+                            if (not self._model.id):
+                                self._model.id = self._result[0].id
+                            expect(self._result[0]).to(equal(self._model))
 
                 with description('method cores'):
                     with description('with empty ID'):
@@ -399,9 +410,16 @@ with description('CPU Generator Module', 'cpu') as self:
                 with it('has same config'):
                     for idx in range(len(self._models)):
                         model = self._models[idx]
-                        if (not model.id):
-                            model.id = self._result[0][idx].id
-                        expect(self._result[0][idx]).to(equal(model))
+                        if model.config.method == 'system':
+                            expect(self._result[0][idx].config.cores).to(equal(model.config.cores))
+                            expect(self._result[0][idx].config.method).to(equal(model.config.method))
+                            expect(approximately_equal(self._result[0][idx].config.system.utilization,
+                                                       model.config.system.utilization)).to(be_true)
+                            expect(self._result[0][idx].running).to(equal(model.running))
+                        else:
+                            if (not model.id):
+                                model.id = self._result[0][idx].id
+                            expect(self._result[0][idx]).to(equal(model))
 
         with description('/cpu-generators/x/bulk-delete'):
             with context('PUT'):

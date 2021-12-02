@@ -9,6 +9,6 @@ MAKE_OPTION_DATA(
     MAKE_OPT("specifies CPU core mask for all CPU module threads, in hex",
              op_cpu_mask,
              0,
-             OP_OPTION_TYPE_HEX), );
+             OP_OPTION_TYPE_CPUSET_STRING), );
 
 REGISTER_CLI_OPTIONS(cpu)

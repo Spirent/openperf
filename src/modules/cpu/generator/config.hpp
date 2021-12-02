@@ -2,7 +2,6 @@
 #define _OP_CPU_GENERATOR_CONFIG_HPP_
 
 #include <atomic>
-#include <bitset>
 #include <thread>
 #include <vector>
 
@@ -37,7 +36,7 @@ struct core_config
 
 struct config
 {
-    openperf::cpu::config::core_mask cores;
+    std::optional<core::cpuset> cores;
     std::vector<core_config> core_configs;
     bool is_system_config;
 };

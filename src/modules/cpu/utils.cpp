@@ -29,7 +29,6 @@ bool cpu_dynamic_validator::is_valid_stat(std::string_view name)
 {
     if (is_valid_name_stat(name)) { return (true); }
 
-    auto nb_cores = config::available_cores().count();
     auto core_idx = 0U;
     auto instr = std::string(16, '\0');
     auto data = std::string(16, '\0');
@@ -42,7 +41,6 @@ bool cpu_dynamic_validator::is_valid_stat(std::string_view name)
                data.data(),
                op.data())
             == 4
-        && core_idx < nb_cores
         && to_instruction_type(instr.c_str()) != instruction_type::none
         && to_data_type(data.c_str()) != data_type::none
         && op == "operations") {
@@ -53,7 +51,7 @@ bool cpu_dynamic_validator::is_valid_stat(std::string_view name)
     if (sscanf(
             std::string(name).c_str(), "cores[%d].%31s", &core_idx, stat.data())
             == 2
-        && core_idx < nb_cores && is_valid_name_stat(stat.c_str())) {
+        && is_valid_name_stat(stat.c_str())) {
         return (true);
     }
 
@@ -116,11 +114,15 @@ static void is_valid(const swagger::v1::model::CpuGeneratorConfig& config,
                 .getCores();
         if (cores.empty()) {
             errors.emplace_back("Empty cores array is not allowed.");
-        } else if (auto avail_cores = config::available_cores();
-                   avail_cores.count() < cores.size()) {
+        } else if (op_cpu_count() < cores.size()) {
             errors.emplace_back("Not enough CPU cores available: have "
-                                + std::to_string(avail_cores.count())
-                                + ", need " + std::to_string(cores.size()));
+                                + std::to_string(op_cpu_count()) + ", need "
+                                + std::to_string(cores.size()));
+        } else if (auto mask = config::core_mask();
+                   mask && mask->count() < cores.size()) {
+            errors.emplace_back("To many CPU cores for provided mask: have "
+                                + std::to_string(mask->count()) + ", need "
+                                + std::to_string(cores.size()));
         } else {
             for (const auto& core : cores) { is_valid(*core, errors); }
         }
@@ -153,7 +155,7 @@ cpu_info_ptr get_cpu_info()
 {
     auto info = std::make_unique<swagger::v1::model::CpuInfoResult>();
 
-    info->setCores(config::available_cores().count());
+    info->setCores(op_cpu_count());
     info->setCacheLineSize(op_cpu_l1_cache_line_size());
     info->setArchitecture(std::string(op_cpu_architecture()));
 
