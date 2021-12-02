@@ -4,8 +4,9 @@
 #include <zmq.h>
 
 #include "config/op_config_file.hpp"
+#include "cpu/arg_parser.hpp"
 #include "framework/core/op_core.h"
-#include "framework/core/op_thread.h"
+#include "framework/core/op_cpuset.hpp"
 #include "server.hpp"
 
 namespace openperf::cpu {
@@ -43,20 +44,19 @@ struct service
     {
         m_service = std::thread([this]() {
             op_thread_setname("op_cpu");
-            auto mask =
-                openperf::config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
-                    "modules.cpu.cpu-mask");
-            if (mask) {
-                if (auto res =
-                        op_thread_set_relative_affinity_mask(mask.value());
-                    res) {
-                    op_exit("Applying CPU module affinity mask failed! %s\n",
-                            std::strerror(res));
-                }
 
-                OP_LOG(OP_LOG_DEBUG,
-                       "CPU module been configured with cpu-mask: 0x%x",
-                       mask.value());
+            if (auto mask = config::core_mask()) {
+                if (auto error = core::cpuset_set_affinity(mask.value())) {
+                    OP_LOG(OP_LOG_ERROR,
+                           "Could not configure %s as core mask for CPU "
+                           "generator: %s\n",
+                           mask->to_string().c_str(),
+                           strerror(error));
+                } else {
+                    OP_LOG(OP_LOG_DEBUG,
+                           "Configured %s as core mask for CPU generator\n",
+                           mask->to_string().c_str());
+                }
             }
 
             struct op_event_callbacks callbacks = {.on_read =

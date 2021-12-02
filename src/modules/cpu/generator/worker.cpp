@@ -281,7 +281,6 @@ int do_work(void* context,
     op_thread_setname(("op_cpu_" + std::to_string(coordinator_id) + "/"
                        + std::to_string(core_id))
                           .c_str());
-    op_thread_set_affinity(core_id);
 
     std::unique_ptr<void, op_socket_deleter> control(
         op_socket_get_client_subscription(context, endpoint, ""));
