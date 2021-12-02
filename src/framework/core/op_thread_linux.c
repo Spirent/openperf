@@ -15,7 +15,6 @@ int op_thread_getname(pthread_t tid, char* name)
     return (pthread_getname_np(tid, name, OP_THREAD_NAME_MAX_LENGTH));
 }
 
-#include <stdio.h>
 int op_thread_set_affinity(int core_id)
 {
     int nb_cores = sysconf(_SC_NPROCESSORS_ONLN);
