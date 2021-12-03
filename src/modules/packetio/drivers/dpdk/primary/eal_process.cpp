@@ -53,7 +53,7 @@ inline constexpr bool has_cleanup_v = has_cleanup<T>::value;
 static void log_idle_workers(const std::vector<queue::descriptor>& descriptors)
 {
     /* Generate a mask for all available cores */
-    auto eal_mask = core_mask{};
+    auto eal_mask = core::cpuset{};
     unsigned lcore_id = 0;
     RTE_LCORE_FOREACH_SLAVE (lcore_id) {
         eal_mask.set(lcore_id);

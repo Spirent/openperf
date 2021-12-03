@@ -55,13 +55,13 @@ static inline void sanity_check_environment()
                                  "At least 2 CPU cores are required.");
     }
 
-    const auto misc_mask = config::misc_core_mask().value_or(core_mask{});
-    const auto rx_mask = config::rx_core_mask().value_or(core_mask{});
-    const auto tx_mask = config::tx_core_mask().value_or(core_mask{});
+    const auto misc_mask = config::misc_core_mask().value_or(core::cpuset{});
+    const auto rx_mask = config::rx_core_mask().value_or(core::cpuset{});
+    const auto tx_mask = config::tx_core_mask().value_or(core::cpuset{});
     const auto user_mask = misc_mask | rx_mask | tx_mask;
 
     if (user_mask[rte_get_master_lcore()]) {
-        throw std::runtime_error("User specified mask, " + to_string(user_mask)
+        throw std::runtime_error("User specified mask, " + user_mask.to_string()
                                  + ", conflicts with DPDK master core "
                                  + std::to_string(rte_get_master_lcore()));
     }
