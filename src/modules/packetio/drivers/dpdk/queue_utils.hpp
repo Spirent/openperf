@@ -5,9 +5,13 @@
 #include <map>
 #include <vector>
 
-#include "packetio/drivers/dpdk/core_mask.hpp"
+namespace openperf {
 
-namespace openperf::packetio::dpdk::queue {
+namespace core {
+class cpuset;
+}
+
+namespace packetio::dpdk::queue {
 
 enum class queue_direction { NONE = 0, RX, TX };
 
@@ -43,7 +47,7 @@ uint16_t suggested_queue_count(uint16_t nb_ports,
  */
 std::vector<descriptor>
 distribute_queues(const std::vector<uint16_t>& port_indexes,
-                  const core_mask& mask);
+                  const core::cpuset& mask);
 
 struct count
 {
@@ -63,6 +67,7 @@ struct count
 std::map<uint16_t, count>
 get_port_queue_counts(const std::vector<descriptor>& descriptors);
 
-} // namespace openperf::packetio::dpdk::queue
+} // namespace packetio::dpdk::queue
+} // namespace openperf
 
 #endif /* _OP_PACKETIO_DPDK_QUEUE_UTILS_HPP_ */

@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "packetio/drivers/dpdk/core_mask.hpp"
+#include "core/op_cpuset.hpp"
 
 extern const char op_packetio_cpu_mask[];
 extern const char op_packetio_dpdk_misc_worker_mask[];
@@ -29,10 +29,10 @@ bool dpdk_disabled();
 std::map<uint16_t, std::string>
 dpdk_id_map(); /**< Retrieve a copy of port idx->id map */
 
-std::optional<core_mask> packetio_mask();
-std::optional<core_mask> misc_core_mask();
-std::optional<core_mask> rx_core_mask();
-std::optional<core_mask> tx_core_mask();
+std::optional<core::cpuset> packetio_mask();
+std::optional<core::cpuset> misc_core_mask();
+std::optional<core::cpuset> rx_core_mask();
+std::optional<core::cpuset> tx_core_mask();
 
 template <typename Container, typename Thing>
 bool contains(const Container& c, const Thing& t)

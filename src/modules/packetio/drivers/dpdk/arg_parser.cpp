@@ -101,62 +101,6 @@ process_dpdk_port_ids(const std::map<std::string, std::string>& input,
     return (0);
 }
 
-template <typename Key, typename Value, typename... Pairs>
-constexpr auto associative_array(Pairs&&... pairs)
-    -> std::array<std::pair<Key, Value>, sizeof...(pairs)>
-{
-    return {{std::forward<Pairs>(pairs)...}};
-}
-
-constexpr std::string_view bin_to_hex_chunk(std::string_view value)
-{
-    constexpr auto bin_to_hex_array =
-        associative_array<std::string_view, std::string_view>(
-            std::pair("0000", "0"),
-            std::pair("0001", "1"),
-            std::pair("0010", "2"),
-            std::pair("0011", "3"),
-            std::pair("0100", "4"),
-            std::pair("0101", "5"),
-            std::pair("0110", "6"),
-            std::pair("0111", "7"),
-            std::pair("1000", "8"),
-            std::pair("1001", "9"),
-            std::pair("1010", "a"),
-            std::pair("1011", "b"),
-            std::pair("1100", "c"),
-            std::pair("1101", "d"),
-            std::pair("1110", "e"),
-            std::pair("1111", "f"));
-
-    auto cursor = std::begin(bin_to_hex_array),
-         end = std::end(bin_to_hex_array);
-    while (cursor != end) {
-        if (cursor->first == value) { return (cursor->second); }
-        ++cursor;
-    }
-
-    return ("0");
-}
-
-std::string bin_to_hex(std::string_view value)
-{
-
-    /* Let's make this easy for ourselves */
-    assert(value.length() % 4 == 0);
-
-    auto out = std::string{};
-    for (auto idx = 0U; idx < value.length(); idx += 4) {
-        out += bin_to_hex_chunk(value.substr(idx, 4));
-    }
-
-    /* Trim leading 0's */
-    auto start = out.find_first_not_of('0');
-    return (start == std::string::npos
-                ? "0x0" /* all zeroes */
-                : "0x" + out.substr(start, out.length() - start));
-}
-
 std::vector<std::string> common_dpdk_args()
 {
     // Add name value in straight away.
@@ -188,8 +132,7 @@ std::vector<std::string> common_dpdk_args()
      */
     if (auto mask = packetio_mask()) {
         if (!contains(to_return, core_mask_arg)) {
-            add_argument(
-                to_return, core_mask_arg, bin_to_hex(mask.value().to_string()));
+            add_argument(to_return, core_mask_arg, mask->to_string());
         } else {
             OP_LOG(OP_LOG_WARNING,
                    "Ignoring packetio cpu-mask value due to explicit DPDK core "
@@ -233,32 +176,33 @@ std::map<uint16_t, std::string> dpdk_id_map()
     return (to_return);
 }
 
-static std::optional<core_mask> get_mask_argument(std::string_view name)
+static std::optional<core::cpuset> get_mask_argument(std::string_view name)
 {
     if (const auto mask =
-            config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(name)) {
-        return (core_mask{*mask});
+            config::file::op_config_get_param<OP_OPTION_TYPE_CPUSET_STRING>(
+                name)) {
+        return (core::cpuset(mask.value()));
     }
 
     return (std::nullopt);
 }
 
-std::optional<core_mask> packetio_mask()
+std::optional<core::cpuset> packetio_mask()
 {
     return (get_mask_argument(op_packetio_cpu_mask));
 }
 
-std::optional<core_mask> misc_core_mask()
+std::optional<core::cpuset> misc_core_mask()
 {
     return (get_mask_argument(op_packetio_dpdk_misc_worker_mask));
 }
 
-std::optional<core_mask> rx_core_mask()
+std::optional<core::cpuset> rx_core_mask()
 {
     return (get_mask_argument(op_packetio_dpdk_rx_worker_mask));
 }
 
-std::optional<core_mask> tx_core_mask()
+std::optional<core::cpuset> tx_core_mask()
 {
     return (get_mask_argument(op_packetio_dpdk_tx_worker_mask));
 }
