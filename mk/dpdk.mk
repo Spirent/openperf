@@ -81,12 +81,9 @@ endif
 
 DPDK_MESON_OPTS += -Dc_args="$(DPDK_C_ARGS)"
 
-ifeq (,$(wildcard $(DPDK_SRC_DIR)/mk/machine/$(OP_MACHINE_ARCH)))
-	DPDK_MACHINE := $(shell $(OP_ROOT)/mk/dpdk_cpu.sh $(OP_MACHINE_ARCH))
-else
-	DPDK_MACHINE := $(OP_MACHINE_ARCH)
+ifneq (,$(OP_MACHINE_ARCH))
+	DPDK_MESON_OPTS += -Dcpu_instruction_set=$(OP_MACHINE_ARCH)
 endif
-DPDK_MESON_OPTS += -Dcpu_instruction_set=$(DPDK_MACHINE)
 
 # DPDK requires the use of pkg-config to determine libraries, however
 # we can't access that file until *after* we build and install the
