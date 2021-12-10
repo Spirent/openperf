@@ -268,7 +268,7 @@ uint16_t packet_stack_gso_max_segment_length(const struct tcp_pcb* pcb)
 }
 
 uint16_t packet_stack_gso_segment_ack_partial(struct tcp_seg* seg,
-                                              uint16_t acked)
+                                              uint32_t acked)
 {
     LWIP_ERROR("(seg != NULL) && (acked < seg->len) (programmer violates API)",
                ((seg != nullptr) && (acked < seg->len)),
