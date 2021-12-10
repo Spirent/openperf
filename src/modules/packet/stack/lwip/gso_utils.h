@@ -35,7 +35,7 @@ uint16_t packet_stack_gso_max_segment_length(const struct tcp_pcb*);
  * function should never fail.
  */
 uint16_t packet_stack_gso_segment_ack_partial(struct tcp_seg* seg,
-                                                uint16_t acked);
+                                                uint32_t acked);
 
 /**
  * Split a segment at the specified split value.
