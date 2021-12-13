@@ -6,7 +6,7 @@ EXPECTED_REQ_VARS := \
 	OP_ROOT
 $(call op_check_vars,$(EXPECTED_REQ_VARS))
 
-EXPECTED_SRC_DIR := $(OP_ROOT)/deps/expected
+EXPECTED_SRC_DIR := $(OP_ROOT)/deps/expected/include
 
 OP_INC_DIRS += $(EXPECTED_SRC_DIR)
 

@@ -32,6 +32,7 @@ YAML_SOURCES := \
 	src/convert.cpp	\
 	src/contrib/graphbuilder.cpp \
 	src/contrib/graphbuilderadapter.cpp \
+	src/depthguard.cpp \
 	src/directives.cpp \
 	src/emit.cpp \
 	src/emitfromevents.cpp \
