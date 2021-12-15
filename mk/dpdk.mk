@@ -56,6 +56,7 @@ DPDK_MESON_OPTS := --prefix=$(DPDK_TGT_DIR) \
 	-Dc_std=gnu11 \
 	-Denable_driver_sdk=true \
 	-Denable_drivers=$(call op_make_comma_delimited,$(DPDK_DRIVERS)) \
+	-Dibverbs_link=dlopen \
 	-Dlibdir=lib \
 	-Dtests=false
 
