@@ -22,6 +22,7 @@
 #include "packetio/workers/dpdk/tx_scheduler.hpp"
 #include "packetio/workers/dpdk/zmq_socket.hpp"
 #include "packetio/workers/dpdk/worker_api.hpp"
+#include "packetio/workers/dpdk/worker_gro.hpp"
 #include "packetio/workers/dpdk/worker_queues.hpp"
 #include "timesync/chrono.hpp"
 #include "utils/overloaded_visitor.hpp"
@@ -329,53 +330,6 @@ static void rx_stack_dispatch(const fib* fib,
     });
 }
 
-static bool is_ipv4_tcp_packet(uint32_t packet_type)
-{
-    return (RTE_ETH_IS_IPV4_HDR(packet_type)
-            && ((packet_type & RTE_PTYPE_L4_TCP) == RTE_PTYPE_L4_TCP)
-            && (RTE_ETH_IS_TUNNEL_PKT(packet_type) == 0));
-}
-
-/*
- * Perform TCP segment reassembly in-place, e.g. the packets array
- * will be converted from individual packets to packet chains.
- * Returns the updated length of the array.
- */
-static uint16_t do_software_lro(rte_mbuf* packets[], uint16_t n)
-{
-    static const rte_gro_param gro_params = {.gro_types = RTE_GRO_TCP_IPV4,
-                                             .max_flow_num = pkt_burst_size,
-                                             .max_item_per_flow =
-                                                 pkt_burst_size};
-
-    /* Skip performing GRO if there is no obvious benefit */
-    if (n == 1 || std::count_if(packets, packets + n, [](auto* m) {
-                      return (is_ipv4_tcp_packet(m->packet_type));
-                  }) < 2) {
-        return (n);
-    }
-
-    /*
-     * The DPDK GRO function requires the mbuf metadata to contain
-     * header lengths. Since no hardware will do this for us, we need
-     * to parse the headers and fill in the data ourselves.
-     */
-    std::for_each(packets, packets + n, [](auto* m) {
-        if (is_ipv4_tcp_packet(m->packet_type)) {
-            struct rte_net_hdr_lens hdr_lens = {};
-            rte_net_get_ptype(
-                m,
-                &hdr_lens,
-                (RTE_PTYPE_L2_MASK | RTE_PTYPE_L3_MASK | RTE_PTYPE_L4_MASK));
-            m->l2_len = hdr_lens.l2_len;
-            m->l3_len = hdr_lens.l3_len;
-            m->l4_len = hdr_lens.l4_len;
-        }
-    });
-
-    return (rte_gro_reassemble_burst(packets, n, &gro_params));
-}
-
 static void rx_interface_dispatch(const fib* fib,
                                   const rx_queue* rxq,
                                   rte_mbuf* incoming[],
@@ -454,7 +408,7 @@ static void rx_interface_dispatch(const fib* fib,
          * packets before handing them up the stack.
          */
         if (!(rxq->flags() & rx_feature_flags::hardware_lro)) {
-            nb_to_stack = do_software_lro(to_stack.data(), nb_to_stack);
+            nb_to_stack = do_software_gro(to_stack.data(), nb_to_stack);
         }
 
         rx_stack_dispatch(fib, rxq, to_stack.data(), nb_to_stack);
