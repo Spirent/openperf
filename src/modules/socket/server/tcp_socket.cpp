@@ -106,20 +106,26 @@ static size_t do_tcp_transmit(tcp_pcb* pcb,
     written += to_write;
 
     /* Trigger a transmission if we have a push. */
-    if (push) tcp_output(pcb);
+    if (push) { tcp_output(pcb); }
 
     return (written);
 }
 
 static void do_tcp_transmit_all(tcp_pcb* pcb, stream_channel& channel)
 {
+    size_t total_readable = channel.readable();
+    size_t total_written = 0;
     for (;;) {
         auto iov = channel.recv_peek();
-        if (channel.recv_drop(do_tcp_transmit(
-                pcb,
-                iov.iov_base,
-                iov.iov_len,
-                [&](size_t written) { return (written == iov.iov_len); }))
+        if (channel.recv_drop(
+                do_tcp_transmit(pcb,
+                                iov.iov_base,
+                                iov.iov_len,
+                                [&](size_t written) {
+                                    total_written += written;
+                                    return (written == iov.iov_len
+                                            && total_written >= total_readable);
+                                }))
             == 0) {
             break;
         }
