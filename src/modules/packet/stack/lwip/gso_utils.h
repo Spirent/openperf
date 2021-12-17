@@ -64,6 +64,12 @@ uint16_t packet_stack_gso_pbuf_copy(struct pbuf* p_head,
                                       const void* dataptr,
                                       uint16_t length);
 
+/**
+ * Calculate the minimum number of segments required to generate the
+ * specified data. Returned value will be clamped to [1, 127];
+ */
+uint8_t packet_stack_gso_segment_count(const struct tcp_pcb* pcb, uint32_t length);
+
 #ifdef __cplusplus
 }
 #endif

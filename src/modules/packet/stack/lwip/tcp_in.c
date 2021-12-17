@@ -1272,7 +1272,7 @@ tcp_receive(struct tcp_pcb *pcb)
         if (pcb->cwnd < pcb->ssthresh) {
           tcpwnd_size_t increase;
           /* limit to 1 SMSS segment during period following RTO */
-          u8_t num_seg = (pcb->flags & TF_RTO) ? 1 : 2;
+          u8_t num_seg = (pcb->flags & TF_RTO) ? 1 : 2 * packet_stack_gso_segment_count(pcb, acked);
           /* RFC 3465, section 2.2 Slow Start */
           increase = LWIP_MIN(acked, (tcpwnd_size_t)(num_seg * pcb->mss));
           TCP_WND_INC(pcb->cwnd, increase);
