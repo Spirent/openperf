@@ -82,7 +82,7 @@
 #define TCP_SND_BUF TCP_WND
 
 #define TCP_SNDLOWAT 1
-#define TCP_MSS 1460
+#define TCP_MSS 1440 /* IPv6 safe value; use 1460 for IPv4 only stack */
 #define TCP_WND (2 * 1024 * 1024) /* 2 MB */
 #define TCP_RCV_SCALE 6
 #define TCP_OVERSIZE TCP_MSS
