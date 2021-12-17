@@ -15,7 +15,6 @@ DPDK_EMPTY :=
 DPDK_SPACE := $(PGA_EMPTY) $(PGA_EMPTY)
 
 DPDK_SRC_DIR := $(OP_ROOT)/deps/dpdk
-DPDK_PATCH_DIR := $(OP_ROOT)/deps/patch/dpdk
 DPDK_BLD_DIR := $(OP_BUILD_ROOT)/obj/dpdk
 DPDK_TGT_DIR := $(OP_BUILD_ROOT)/dpdk
 DPDK_INC_DIR := $(DPDK_TGT_DIR)/include
@@ -103,13 +102,7 @@ OP_DEFINES += $(DPDK_DEFINES)
 # DPDK build rules
 ###
 
-DPDK_PATCH_TAG = $(DPDK_SRC_DIR)/.patched
-
-$(DPDK_PATCH_TAG): $(DPDK_PATCH_DIR)/gro.diff
-	cd $(DPDK_SRC_DIR) && patch -p1 < $<
-	touch $(DPDK_PATCH_TAG)
-
-$(DPDK_BLD_DIR)/build.ninja: $(DPDK_DEFCONFIG) $(DPDK_PATCH_TAG)
+$(DPDK_BLD_DIR)/build.ninja: $(DPDK_DEFCONFIG)
 	cd $(DPDK_SRC_DIR) && CC="$(DPDK_CC)" meson $(DPDK_MESON_OPTS) $(DPDK_BLD_DIR)
 
 # Sigh. Ninja doesn't seem to play well from make, so we don't
@@ -122,6 +115,5 @@ dpdk: $(DPDK_LIB_DIR)
 
 .PHONY: clean_dpdk
 clean_dpdk:
-	@rm -rf $(DPDK_BLD_DIR) $(DPDK_TGT_DIR) $(DPDK_PATCH_TAG)
-	@cd $(DPDK_SRC_DIR) && git checkout .
+	@rm -rf $(DPDK_BLD_DIR) $(DPDK_TGT_DIR)
 clean: clean_dpdk
