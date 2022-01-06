@@ -18,12 +18,11 @@ OP_LIB_NAME := libopenperf-shim.so
 BUILD_PLUGINS_DIR := $(abspath $(dir $(BUILD_BIN_DIR))/plugins)
 PLUGINS_SRC_FILES := $(shell find $(BUILD_PLUGINS_DIR) -type f -name "*.so")
 PLUGINS_TGT_DIR := $(abspath $(DESTDIR)/usr/lib/openperf/plugins)
-PLUGINS_TGT_FILES := $(subst $(BUILD_PLUGINS_DIR)/,$(PLUGINS_TGT_DIR)/,$(PLUGINS_SRC_FILES))
+PLUGINS_TGT_FILES := $(foreach _f,$(PLUGINS_SRC_FILES),$(PLUGINS_TGT_DIR)/$(notdir $(_f)))
 BUILD_DPDK_LIB_DIR := $(abspath $(dir $(BUILD_BIN_DIR))/dpdk/lib)
 DPDK_LIB_SRC_FILES := $(shell find $(BUILD_DPDK_LIB_DIR) -type f -name "*glue.so*")
 DPDK_LIB_TGT_DIR := $(abspath $(DESTDIR)/usr/lib)
-DPDK_LIB_TGT_FILES := $(subst $(BUILD_DPDK_LIB_DIR)/,$(DPDK_LIB_TGT_DIR)/,$(DPDK_LIB_SRC_FILES))
-
+DPDK_LIB_TGT_FILES := $(foreach _f,$(DPDK_LIB_SRC_FILES),$(DPDK_LIB_TGT_DIR)/$(notdir $(_f)))
 .PHONY: all install
 
 all:
