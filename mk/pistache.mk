@@ -14,7 +14,7 @@ HTTP_INC_DIR := $(HTTP_SRC_DIR)/include
 HTTP_LIB_DIR := $(HTTP_BLD_DIR)/lib
 
 # Update global variables
-OP_INC_DIRS += $(HTTP_INC_DIR)
+OP_INC_DIRS += $(HTTP_INC_DIR) $(HTTP_SRC_DIR)/subprojects/hinnant-date/include
 OP_LIB_DIRS += $(HTTP_LIB_DIR)
 OP_LDLIBS += -lpistache
 
