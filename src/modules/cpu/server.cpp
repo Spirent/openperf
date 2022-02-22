@@ -144,8 +144,9 @@ reply_msg server::handle_request(const request_cpu_generator& request)
 reply_msg server::handle_request(const request_cpu_generator_add& request)
 {
     /* if the user did not specify an id, create one for them. */
-    auto id = request.source->getId().empty() ? to_string(core::uuid::random())
-                                              : request.source->getId();
+    auto id = request.generator->getId().empty()
+                  ? to_string(core::uuid::random())
+                  : request.generator->getId();
 
     if (m_coordinators.count(id) != 0) {
         return (to_error(error_type::POSIX, EEXIST));
@@ -154,7 +155,7 @@ reply_msg server::handle_request(const request_cpu_generator_add& request)
     auto [cursor, success] = m_coordinators.emplace(
         id,
         std::make_unique<generator::coordinator>(
-            m_context, from_swagger(*request.source->getConfig())));
+            m_context, from_swagger(*request.generator->getConfig())));
     assert(success);
 
     auto reply = reply_cpu_generators{};

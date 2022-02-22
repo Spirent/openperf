@@ -24,7 +24,7 @@ serialized_msg serialize_request(request_msg&& msg)
                  },
                  [&](request_cpu_generator_add& cpu_generator) {
                      return message::push(serialized,
-                                          std::move(cpu_generator.source));
+                                          std::move(cpu_generator.generator));
                  },
                  [&](const request_cpu_generator_del& cpu_generator) {
                      return message::push(serialized, cpu_generator.id);
@@ -110,7 +110,7 @@ tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
     }
     case utils::variant_index<request_msg, request_cpu_generator_add>(): {
         auto request = request_cpu_generator_add{};
-        request.source.reset(message::pop<cpu_generator_type*>(msg));
+        request.generator.reset(message::pop<cpu_generator_type*>(msg));
         return request;
     }
     case utils::variant_index<request_msg, request_cpu_generator>(): {
