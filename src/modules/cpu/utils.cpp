@@ -1,3 +1,5 @@
+#include "zmq.h"
+
 #include "core/op_core.h"
 #include "cpu/api.hpp"
 #include "cpu/arg_parser.hpp"

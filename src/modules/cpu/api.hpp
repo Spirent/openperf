@@ -7,8 +7,8 @@
 #include <variant>
 
 #include "tl/expected.hpp"
-#include "zmq.h"
 
+#include "api/api_rest_error.hpp"
 #include "modules/dynamic/api.hpp"
 
 namespace swagger::v1::model {
@@ -81,7 +81,7 @@ struct request_cpu_generator
 
 struct request_cpu_generator_add
 {
-    cpu_generator_ptr source;
+    cpu_generator_ptr generator;
 };
 
 struct request_cpu_generator_del
@@ -151,13 +151,8 @@ struct reply_cpu_generator_results
 struct reply_ok
 {};
 
-enum class error_type { NONE = 0, NOT_FOUND, ZMQ_ERROR, POSIX };
-
-struct typed_error
-{
-    error_type type = error_type::NONE;
-    int value = 0;
-};
+using error_type = openperf::api::rest::error_type;
+using typed_error = openperf::api::rest::typed_error;
 
 struct reply_error
 {
