@@ -10,6 +10,7 @@ API_SOURCES += \
 	api_internal_client.cpp \
 	api_module_info.cpp \
 	api_register.c \
+	api_rest_error.cpp \
 	api_utils.cpp \
 	api_version.cpp
 
