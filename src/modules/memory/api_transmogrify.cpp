@@ -4,229 +4,167 @@
 #include "framework/utils/overloaded_visitor.hpp"
 #include "framework/utils/variant_index.hpp"
 
+#include "swagger/v1/model/MemoryGenerator.h"
+#include "swagger/v1/model/MemoryGeneratorResult.h"
+
 namespace openperf::memory::api {
 
-serialized_msg serialize(api_request&& msg)
+serialized_msg serialize(request_msg&& msg)
 {
     serialized_msg serialized;
     auto error =
-        (openperf::message::push(serialized, msg.index())
+        (message::push(serialized, msg.index())
          || std::visit(
              utils::overloaded_visitor(
                  [&](request::generator::create& create) {
-                     return openperf::message::push(
-                         serialized,
-                         std::make_unique<request::generator::create>(
-                             std::move(create)));
+                     return message::push(serialized,
+                                          std::move(create.generator));
                  },
                  [&](request::generator::start& start) -> int {
-                     return openperf::message::push(serialized, start.id)
-                            || openperf::message::push(
+                     return message::push(serialized, start.id)
+                            || message::push(
                                 serialized,
                                 std::make_unique<dynamic::configuration>(
                                     std::move(start.dynamic_results)));
                  },
                  [&](request::generator::bulk::create& create) {
-                     return openperf::message::push(
-                         serialized,
-                         std::make_unique<request::generator::bulk::create>(
-                             std::move(create)));
+                     return message::push(serialized, create.generators);
                  },
                  [&](request::generator::bulk::start& start) -> int {
-                     return openperf::message::push(
-                                serialized,
-                                std::make_unique<decltype(start.ids)>(
-                                    std::move(start.ids)))
-                            || openperf::message::push(
+                     return message::push(serialized,
+                                          std::make_unique<decltype(start.ids)>(
+                                              std::move(start.ids)))
+                            || message::push(
                                 serialized,
                                 std::make_unique<dynamic::configuration>(
                                     std::move(start.dynamic_results)));
                  },
-                 [&](request::generator::bulk::id_list& list) {
-                     return openperf::message::push(
+                 [&](const request::detail::empty_message&) { return (0); },
+                 [&](const request::detail::id_message& msg) {
+                     return message::push(serialized, msg.id);
+                 },
+                 [&](request::detail::ids_message& request) {
+                     return message::push(
                          serialized,
-                         std::make_unique<request::generator::bulk::id_list>(
-                             std::move(list)));
-                 },
-                 [&](const id_message& msg) {
-                     return openperf::message::push(serialized, msg.id);
-                 },
-                 [&](const message&) { return 0; }),
+                         std::make_unique<decltype(request.ids)>(
+                             std::move(request.ids)));
+                 }),
              msg));
     if (error) { throw std::bad_alloc(); }
 
     return (serialized);
 }
 
-serialized_msg serialize(api_reply&& msg)
+serialized_msg serialize(reply_msg&& msg)
 {
     serialized_msg serialized;
     auto error =
-        (openperf::message::push(serialized, msg.index())
-         || std::visit(
-             utils::overloaded_visitor(
-                 [&](reply::generator::list& list) {
-                     return openperf::message::push(
-                         serialized,
-                         std::make_unique<reply::generator::list>(
-                             std::move(list)));
-                 },
-                 [&](reply::generator::item& item) -> int {
-                     return openperf::message::push(serialized, item.id)
-                            || openperf::message::push(serialized,
-                                                       item.is_running)
-                            || openperf::message::push(
-                                serialized,
-                                std::make_unique<decltype(item.config)>(
-                                    std::move(item.config)))
-                            || openperf::message::push(
-                                serialized, item.init_percent_complete);
-                 },
-                 [&](reply::statistic::list& list) {
-                     return openperf::message::push(
-                         serialized,
-                         std::make_unique<reply::statistic::list>(
-                             std::move(list)));
-                 },
-                 [&](reply::statistic::item& item) -> int {
-                     return openperf::message::push(serialized, item.id)
-                            || openperf::message::push(serialized,
-                                                       item.generator_id)
-                            || openperf::message::push(serialized, item.stat)
-                            || openperf::message::push(
-                                serialized,
-                                std::make_unique<dynamic::results>(
-                                    std::move(item.dynamic_results)));
-                 },
-                 [&](const reply::info& info) {
-                     return openperf::message::push(serialized, info);
-                 },
-                 [&](reply::error& error) -> int {
-                     return openperf::message::push(serialized, error.type)
-                            || openperf::message::push(serialized, error.value)
-                            || openperf::message::push(serialized,
-                                                       error.message);
-                 },
-                 [&](const message&) { return 0; }),
-             msg));
+        (message::push(serialized, msg.index())
+         || std::visit(utils::overloaded_visitor(
+                           [&](reply::generators& reply) {
+                               return message::push(serialized,
+                                                    reply.generators);
+                           },
+                           [&](reply::results& reply) {
+                               return message::push(serialized, reply.results);
+                           },
+                           [&](const reply::ok&) { return 0; },
+                           [&](reply::error& error) {
+                               return message::push(serialized, error.info);
+                           }),
+                       msg));
     if (error) { throw std::bad_alloc(); }
 
     return serialized;
 }
 
-tl::expected<api_request, int> deserialize_request(serialized_msg&& msg)
+tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg)
 {
-    using index_type = decltype(std::declval<api_request>().index());
-    auto idx = openperf::message::pop<index_type>(msg);
+    using index_type = decltype(std::declval<request_msg>().index());
+    auto idx = message::pop<index_type>(msg);
     switch (idx) {
-    case utils::variant_index<api_request, request::info>():
-        return request::info{};
-    case utils::variant_index<api_request, request::generator::list>():
+    case utils::variant_index<request_msg, request::generator::list>():
         return request::generator::list{};
-    case utils::variant_index<api_request, request::generator::get>(): {
-        return request::generator::get{
-            {.id = openperf::message::pop_string(msg)}};
+    case utils::variant_index<request_msg, request::generator::get>(): {
+        return request::generator::get{{.id = message::pop_string(msg)}};
     }
-    case utils::variant_index<api_request, request::generator::create>(): {
-        return std::move(*std::unique_ptr<request::generator::create>(
-            openperf::message::pop<request::generator::create*>(msg)));
+    case utils::variant_index<request_msg, request::generator::create>(): {
+        auto request = request::generator::create{};
+        request.generator.reset(message::pop<mem_generator_type*>(msg));
+        return (request);
     }
-    case utils::variant_index<api_request, request::generator::erase>(): {
-        return request::generator::erase{
-            {.id = openperf::message::pop_string(msg)}};
+    case utils::variant_index<request_msg, request::generator::erase>(): {
+        return request::generator::erase{{.id = message::pop_string(msg)}};
     }
-    case utils::variant_index<api_request,
+    case utils::variant_index<request_msg,
                               request::generator::bulk::create>(): {
-        return std::move(
-            *openperf::message::pop<request::generator::bulk::create*>(msg));
+        return request::generator::bulk::create{
+            message::pop_unique_vector<mem_generator_type>(msg)};
     }
-    case utils::variant_index<api_request, request::generator::bulk::erase>(): {
-        return std::move(
-            *openperf::message::pop<request::generator::bulk::erase*>(msg));
-    }
-    case utils::variant_index<api_request, request::generator::start>(): {
-        request::generator::start request{};
-        request.id = openperf::message::pop_string(msg);
-        request.dynamic_results =
-            std::move(*std::unique_ptr<dynamic::configuration>(
-                openperf::message::pop<dynamic::configuration*>(msg)));
+    case utils::variant_index<request_msg, request::generator::bulk::erase>(): {
+        auto request = request::generator::bulk::erase{};
+        request.ids = std::move(*std::unique_ptr<decltype(request.ids)>(
+            message::pop<decltype(request.ids)*>(msg)));
         return request;
     }
-    case utils::variant_index<api_request, request::generator::stop>(): {
-        return request::generator::stop{
-            {.id = openperf::message::pop_string(msg)}};
+    case utils::variant_index<request_msg, request::generator::start>(): {
+        request::generator::start request{};
+        request.id = message::pop_string(msg);
+        request.dynamic_results =
+            std::move(*std::unique_ptr<dynamic::configuration>(
+                message::pop<dynamic::configuration*>(msg)));
+        return request;
     }
-    case utils::variant_index<api_request, request::generator::bulk::start>(): {
+    case utils::variant_index<request_msg, request::generator::stop>(): {
+        return request::generator::stop{{.id = message::pop_string(msg)}};
+    }
+    case utils::variant_index<request_msg, request::generator::bulk::start>(): {
         request::generator::bulk::start request{};
         request.ids = std::move(*std::unique_ptr<decltype(request.ids)>(
-            openperf::message::pop<decltype(request.ids)*>(msg)));
+            message::pop<decltype(request.ids)*>(msg)));
         request.dynamic_results =
             std::move(*std::unique_ptr<dynamic::configuration>(
-                openperf::message::pop<dynamic::configuration*>(msg)));
+                message::pop<dynamic::configuration*>(msg)));
         return request;
     }
-    case utils::variant_index<api_request, request::generator::bulk::stop>(): {
-        return std::move(
-            *openperf::message::pop<request::generator::bulk::stop*>(msg));
+    case utils::variant_index<request_msg, request::generator::bulk::stop>(): {
+        auto request = request::generator::bulk::stop{};
+        request.ids = std::move(*std::unique_ptr<decltype(request.ids)>(
+            message::pop<decltype(request.ids)*>(msg)));
+        return request;
     }
-    case utils::variant_index<api_request, request::statistic::list>():
-        return request::statistic::list{};
-    case utils::variant_index<api_request, request::statistic::get>(): {
-        return request::statistic::get{
-            {.id = openperf::message::pop_string(msg)}};
+    case utils::variant_index<request_msg, request::result::list>():
+        return request::result::list{};
+    case utils::variant_index<request_msg, request::result::get>(): {
+        return request::result::get{{.id = message::pop_string(msg)}};
     }
-    case utils::variant_index<api_request, request::statistic::erase>(): {
-        return request::statistic::erase{
-            {.id = openperf::message::pop_string(msg)}};
+    case utils::variant_index<request_msg, request::result::erase>(): {
+        return request::result::erase{{.id = message::pop_string(msg)}};
     }
     }
 
     return tl::make_unexpected(EINVAL);
 }
 
-tl::expected<api_reply, int> deserialize_reply(serialized_msg&& msg)
+tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg)
 {
-    using index_type = decltype(std::declval<api_reply>().index());
-    auto idx = openperf::message::pop<index_type>(msg);
+    using index_type = decltype(std::declval<request_msg>().index());
+    auto idx = message::pop<index_type>(msg);
     switch (idx) {
-    case utils::variant_index<api_reply, reply::ok>():
+    case utils::variant_index<reply_msg, reply::generators>(): {
+        return reply::generators{
+            message::pop_unique_vector<mem_generator_type>(msg)};
+    }
+    case utils::variant_index<reply_msg, reply::results>(): {
+        return reply::results{
+            message::pop_unique_vector<mem_generator_result_type>(msg)};
+    }
+    case utils::variant_index<reply_msg, reply::ok>():
         return reply::ok{};
-    case utils::variant_index<api_reply, reply::info>():
-        return openperf::message::pop<reply::info>(msg);
-    case utils::variant_index<api_reply, reply::error>(): {
-        reply::error error{};
-        error.type = openperf::message::pop<reply::error::type_t>(msg);
-        error.value = openperf::message::pop<int>(msg);
-        error.message = openperf::message::pop_string(msg);
-        return error;
+    case utils::variant_index<reply_msg, reply::error>():
+        return reply::error{message::pop<reply::typed_error>(msg)};
     }
-    case utils::variant_index<api_reply, reply::generator::item>(): {
-        reply::generator::item item{};
-        item.id = openperf::message::pop_string(msg);
-        item.is_running = openperf::message::pop<bool>(msg);
-        item.config = std::move(*std::unique_ptr<decltype(item.config)>(
-            openperf::message::pop<decltype(item.config)*>(msg)));
-        item.init_percent_complete = openperf::message::pop<int32_t>(msg);
-        return item;
-    }
-    case utils::variant_index<api_reply, reply::generator::list>(): {
-        return std::move(*std::unique_ptr<reply::generator::list>(
-            openperf::message::pop<reply::generator::list*>(msg)));
-    }
-    case utils::variant_index<api_reply, reply::statistic::item>(): {
-        reply::statistic::item reply{};
-        reply.id = openperf::message::pop_string(msg);
-        reply.generator_id = openperf::message::pop_string(msg);
-        reply.stat = openperf::message::pop<internal::memory_stat>(msg);
-        reply.dynamic_results = std::move(*std::unique_ptr<dynamic::results>(
-            openperf::message::pop<dynamic::results*>(msg)));
-        return reply;
-    }
-    case utils::variant_index<api_reply, reply::statistic::list>(): {
-        return std::move(*std::unique_ptr<reply::statistic::list>(
-            openperf::message::pop<reply::statistic::list*>(msg)));
-    }
-    }
+
     return tl::make_unexpected(EINVAL);
 }
 
