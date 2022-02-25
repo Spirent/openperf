@@ -7,162 +7,202 @@
 
 #include <tl/expected.hpp>
 
-#include "dynamic/api.hpp"
-#include "memory/generator.hpp"
-#include "memory/info.hpp"
+#include "api/api_rest_error.hpp"
+#include "modules/dynamic/api.hpp"
+
+namespace swagger::v1::model {
+class MemoryGenerator;
+class MemoryGeneratorConfig;
+class MemoryGeneratorResult;
+class MemoryInfoResult;
+} // namespace swagger::v1::model
+
+namespace openperf::message {
+struct serialized_message;
+}
+
+namespace openperf::memory::generator {
+class coordinator;
+class result;
+struct config;
+} // namespace openperf::memory::generator
 
 namespace openperf::memory::api {
 
 static constexpr auto endpoint = "inproc://openperf_memory";
 
-// ZMQ message structs
-using config_t = openperf::memory::internal::generator::config_t;
 using serialized_msg = openperf::message::serialized_message;
 
-struct message
-{};
-struct id_message : message
-{
-    std::string id;
-};
+using mem_generator_type = swagger::v1::model::MemoryGenerator;
+using mem_generator_ptr = std::unique_ptr<mem_generator_type>;
+
+using mem_generator_result_type = swagger::v1::model::MemoryGeneratorResult;
+using mem_generator_result_ptr = std::unique_ptr<mem_generator_result_type>;
+
+using mem_info_type = swagger::v1::model::MemoryInfoResult;
+using mem_info_ptr = std::unique_ptr<mem_info_type>;
+
+enum class pattern_type { none = 0, random, sequential, reverse };
+pattern_type to_pattern_type(std::string_view name);
+std::string to_string(pattern_type type);
+
+/**
+ * Memory server requests
+ */
 
 namespace request {
 
-struct info : message
+namespace detail {
+
+struct empty_message
 {};
+
+struct id_message
+{
+    std::string id;
+};
+
+struct ids_message
+{
+    std::vector<std::string> ids;
+};
+
+} // namespace detail
 
 namespace generator {
 
-struct list : message
+struct list : detail::empty_message
 {};
-struct get : id_message
+
+struct get : detail::id_message
 {};
-struct erase : id_message
+
+struct erase : detail::id_message
 {};
+
 struct create
 {
-    std::string id;
-    bool is_running;
-    config_t config;
+    mem_generator_ptr generator;
 };
-struct stop : id_message
-{};
+
 struct start
 {
     std::string id;
     dynamic::configuration dynamic_results;
 };
+
+struct stop : detail::id_message
+{};
 
 namespace bulk {
 
-using id_list = std::vector<std::string>;
-using create = std::vector<generator::create>;
+struct create
+{
+    std::vector<mem_generator_ptr> generators;
+};
+
+struct erase : detail::ids_message
+{};
 
 struct start
 {
-    id_list ids;
+    std::vector<std::string> ids;
     dynamic::configuration dynamic_results;
 };
 
-struct stop : id_list
-{};
-
-struct erase : id_list
+struct stop : detail::ids_message
 {};
 
 } // namespace bulk
+
 } // namespace generator
 
-namespace statistic {
-struct list : message
+namespace result {
+
+struct list : detail::empty_message
 {};
-struct get : id_message
+
+struct get : detail::id_message
 {};
-struct erase : id_message
+
+struct erase : detail::id_message
 {};
-} // namespace statistic
+
+} // namespace result
+
 } // namespace request
+
+/**
+ * Memory server replies
+ */
 
 namespace reply {
 
-struct ok : message
+struct generators
+{
+    std::vector<mem_generator_ptr> generators;
+};
+
+struct results
+{
+    std::vector<mem_generator_result_ptr> results;
+};
+
+struct ok
 {};
+
+using error_type = openperf::api::rest::error_type;
+using typed_error = openperf::api::rest::typed_error;
+
 struct error
 {
-    enum type_t {
-        NONE = 0,
-        ACTIVE_STAT,
-        NOT_FOUND,
-        EXISTS,
-        INVALID_ID,
-        NOT_INITIALIZED,
-        ZMQ_ERROR,
-        CUSTOM
-    };
-
-    type_t type = NONE;
-    int value = 0;
-    std::string message;
+    typed_error info;
 };
 
-using info = memory_info::info_t;
-
-namespace generator {
-struct item
-{
-    std::string id;
-    bool is_running;
-    config_t config;
-    int32_t init_percent_complete;
-};
-
-using list = std::vector<item>;
-
-} // namespace generator
-
-namespace statistic {
-struct item
-{
-    std::string id;
-    std::string generator_id;
-    internal::memory_stat stat;
-    dynamic::results dynamic_results;
-};
-
-using list = std::vector<item>;
-
-} // namespace statistic
 } // namespace reply
 
-// Variant types
-using api_request = std::variant<request::info,
-                                 request::generator::list,
+/**
+ * Memory server messages
+ */
+
+using request_msg = std::variant<request::generator::list,
                                  request::generator::get,
-                                 request::generator::erase,
                                  request::generator::create,
-                                 request::generator::bulk::create,
-                                 request::generator::bulk::erase,
+                                 request::generator::erase,
                                  request::generator::start,
                                  request::generator::stop,
+                                 request::generator::bulk::create,
+                                 request::generator::bulk::erase,
                                  request::generator::bulk::start,
                                  request::generator::bulk::stop,
-                                 request::statistic::list,
-                                 request::statistic::get,
-                                 request::statistic::erase>;
+                                 request::result::list,
+                                 request::result::get,
+                                 request::result::erase>;
 
-using api_reply = std::variant<reply::ok,
-                               reply::error,
-                               reply::info,
-                               reply::generator::list,
-                               reply::generator::item,
-                               reply::statistic::list,
-                               reply::statistic::item>;
+using reply_msg =
+    std::variant<reply::generators, reply::results, reply::ok, reply::error>;
 
-serialized_msg serialize(api_request&& request);
-serialized_msg serialize(api_reply&& reply);
+serialized_msg serialize(request_msg&& request);
+serialized_msg serialize(reply_msg&& reply);
 
-tl::expected<api_request, int> deserialize_request(serialized_msg&& msg);
-tl::expected<api_reply, int> deserialize_reply(serialized_msg&& msg);
+tl::expected<request_msg, int> deserialize_request(serialized_msg&& msg);
+tl::expected<reply_msg, int> deserialize_reply(serialized_msg&& msg);
+
+mem_info_ptr get_memory_info();
+
+bool is_valid(const mem_generator_type&, std::vector<std::string>&);
+bool is_valid(const swagger::v1::model::DynamicResultsConfig&,
+              std::vector<std::string>&);
+
+mem_generator_ptr to_swagger(std::string_view id,
+                             const generator::coordinator& gen);
+mem_generator_result_ptr
+to_swagger(std::string_view generator_id,
+           std::string_view result_id,
+           const std::shared_ptr<generator::result>& result);
+
+generator::config
+from_swagger(const swagger::v1::model::MemoryGeneratorConfig&);
 
 } // namespace openperf::memory::api
 
