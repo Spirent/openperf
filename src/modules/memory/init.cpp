@@ -1,9 +1,9 @@
 #include <thread>
 #include <zmq.h>
 
-#include "server.hpp"
 #include "framework/core/op_core.h"
-#include "config/op_config_file.hpp"
+#include "memory/arg_parser.hpp"
+#include "memory/server.hpp"
 
 extern const char op_memory_mask[];
 
@@ -20,16 +20,6 @@ static int handle_zmq_shutdown(const op_event_data* data,
     }
 
     return 0;
-}
-
-static std::optional<core::cpuset> core_mask()
-{
-    if (const auto mask = openperf::config::file::op_config_get_param<
-            OP_OPTION_TYPE_CPUSET_STRING>(op_memory_mask)) {
-        return (core::cpuset_online() & core::cpuset(mask.value()));
-    }
-
-    return (std::nullopt);
 }
 
 class service
@@ -61,7 +51,7 @@ public:
         m_service = std::thread([this]() {
             op_thread_setname("op_memory");
 
-            if (auto mask = core_mask()) {
+            if (auto mask = config::core_mask()) {
                 if (auto error = core::cpuset_set_affinity(mask.value())) {
                     OP_LOG(OP_LOG_ERROR,
                            "Could not configure %s as core mask for memory "
