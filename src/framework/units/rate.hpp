@@ -418,6 +418,17 @@ operator*(const rate<Rep1, Frequency>& value,
     return (value.count() * duration.count() * scalar::num / scalar::den);
 }
 
+template <typename Rep1, typename Period, typename Rep2, typename Frequency>
+constexpr typename std::enable_if_t<
+    std::is_convertible<Rep2, std::common_type_t<Rep1, Rep2>>::value,
+    typename std::common_type_t<Rep1, Rep2>>
+operator*(const std::chrono::duration<Rep1, Period>& duration,
+          const rate<Rep2, Frequency>& value)
+{
+    using scalar = std::ratio_multiply<Period, Frequency>;
+    return (value.count() * duration.count() * scalar::num / scalar::den);
+}
+
 /* division */
 template <typename Rep1, typename Frequency, typename Rep2>
 constexpr typename std::enable_if_t<
