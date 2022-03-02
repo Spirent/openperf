@@ -20,10 +20,10 @@ namespace model {
 MemoryGeneratorConfig::MemoryGeneratorConfig()
 {
     m_Buffer_size = 0L;
-    m_Reads_per_sec = 0;
+    m_Reads_per_sec = 0L;
     m_Read_size = 0;
     m_Read_threads = 0;
-    m_Writes_per_sec = 0;
+    m_Writes_per_sec = 0L;
     m_Write_size = 0;
     m_Write_threads = 0;
     m_Pattern = "";
@@ -79,11 +79,11 @@ void MemoryGeneratorConfig::setBufferSize(int64_t value)
     m_Buffer_size = value;
     
 }
-int32_t MemoryGeneratorConfig::getReadsPerSec() const
+int64_t MemoryGeneratorConfig::getReadsPerSec() const
 {
     return m_Reads_per_sec;
 }
-void MemoryGeneratorConfig::setReadsPerSec(int32_t value)
+void MemoryGeneratorConfig::setReadsPerSec(int64_t value)
 {
     m_Reads_per_sec = value;
     
@@ -106,11 +106,11 @@ void MemoryGeneratorConfig::setReadThreads(int32_t value)
     m_Read_threads = value;
     
 }
-int32_t MemoryGeneratorConfig::getWritesPerSec() const
+int64_t MemoryGeneratorConfig::getWritesPerSec() const
 {
     return m_Writes_per_sec;
 }
-void MemoryGeneratorConfig::setWritesPerSec(int32_t value)
+void MemoryGeneratorConfig::setWritesPerSec(int64_t value)
 {
     m_Writes_per_sec = value;
     

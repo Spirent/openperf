@@ -56,8 +56,8 @@ public:
         /// <summary>
     /// Number of read operations to perform per second
     /// </summary>
-    int32_t getReadsPerSec() const;
-    void setReadsPerSec(int32_t value);
+    int64_t getReadsPerSec() const;
+    void setReadsPerSec(int64_t value);
         /// <summary>
     /// Number of bytes to use for each read operation
     /// </summary>
@@ -71,8 +71,8 @@ public:
         /// <summary>
     /// Number of write operations to perform per second
     /// </summary>
-    int32_t getWritesPerSec() const;
-    void setWritesPerSec(int32_t value);
+    int64_t getWritesPerSec() const;
+    void setWritesPerSec(int64_t value);
         /// <summary>
     /// Number of bytes to use for each write operation
     /// </summary>
@@ -92,13 +92,13 @@ public:
 protected:
     int64_t m_Buffer_size;
 
-    int32_t m_Reads_per_sec;
+    int64_t m_Reads_per_sec;
 
     int32_t m_Read_size;
 
     int32_t m_Read_threads;
 
-    int32_t m_Writes_per_sec;
+    int64_t m_Writes_per_sec;
 
     int32_t m_Write_size;
 
