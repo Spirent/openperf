@@ -321,11 +321,12 @@ definitions:
       buffer_size:
         type: integer
         description: Memory size constraint. The buffer can never be larger than the value specified (in bytes)
-        minimum: 64
         format: int64
+        minimum: 64
       reads_per_sec:
         type: integer
         description: Number of read operations to perform per second
+        format: int64
         minimum: 0
       read_size:
         type: integer
@@ -338,6 +339,7 @@ definitions:
       writes_per_sec:
         type: integer
         description: Number of write operations to perform per second
+        format: int64
         minimum: 0
       write_size:
         type: integer
