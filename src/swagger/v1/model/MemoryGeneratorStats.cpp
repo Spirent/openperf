@@ -23,12 +23,7 @@ MemoryGeneratorStats::MemoryGeneratorStats()
     m_Ops_actual = 0L;
     m_Bytes_target = 0L;
     m_Bytes_actual = 0L;
-    m_Io_errors = 0L;
     m_Latency_total = 0L;
-    m_Latency_min = 0L;
-    m_Latency_minIsSet = false;
-    m_Latency_max = 0L;
-    m_Latency_maxIsSet = false;
     
 }
 
@@ -49,16 +44,7 @@ nlohmann::json MemoryGeneratorStats::toJson() const
     val["ops_actual"] = m_Ops_actual;
     val["bytes_target"] = m_Bytes_target;
     val["bytes_actual"] = m_Bytes_actual;
-    val["io_errors"] = m_Io_errors;
     val["latency_total"] = m_Latency_total;
-    if(m_Latency_minIsSet)
-    {
-        val["latency_min"] = m_Latency_min;
-    }
-    if(m_Latency_maxIsSet)
-    {
-        val["latency_max"] = m_Latency_max;
-    }
     
 
     return val;
@@ -70,16 +56,7 @@ void MemoryGeneratorStats::fromJson(nlohmann::json& val)
     setOpsActual(val.at("ops_actual"));
     setBytesTarget(val.at("bytes_target"));
     setBytesActual(val.at("bytes_actual"));
-    setIoErrors(val.at("io_errors"));
     setLatencyTotal(val.at("latency_total"));
-    if(val.find("latency_min") != val.end())
-    {
-        setLatencyMin(val.at("latency_min"));
-    }
-    if(val.find("latency_max") != val.end())
-    {
-        setLatencyMax(val.at("latency_max"));
-    }
     
 }
 
@@ -120,15 +97,6 @@ void MemoryGeneratorStats::setBytesActual(int64_t value)
     m_Bytes_actual = value;
     
 }
-int64_t MemoryGeneratorStats::getIoErrors() const
-{
-    return m_Io_errors;
-}
-void MemoryGeneratorStats::setIoErrors(int64_t value)
-{
-    m_Io_errors = value;
-    
-}
 int64_t MemoryGeneratorStats::getLatencyTotal() const
 {
     return m_Latency_total;
@@ -137,40 +105,6 @@ void MemoryGeneratorStats::setLatencyTotal(int64_t value)
 {
     m_Latency_total = value;
     
-}
-int64_t MemoryGeneratorStats::getLatencyMin() const
-{
-    return m_Latency_min;
-}
-void MemoryGeneratorStats::setLatencyMin(int64_t value)
-{
-    m_Latency_min = value;
-    m_Latency_minIsSet = true;
-}
-bool MemoryGeneratorStats::latencyMinIsSet() const
-{
-    return m_Latency_minIsSet;
-}
-void MemoryGeneratorStats::unsetLatency_min()
-{
-    m_Latency_minIsSet = false;
-}
-int64_t MemoryGeneratorStats::getLatencyMax() const
-{
-    return m_Latency_max;
-}
-void MemoryGeneratorStats::setLatencyMax(int64_t value)
-{
-    m_Latency_max = value;
-    m_Latency_maxIsSet = true;
-}
-bool MemoryGeneratorStats::latencyMaxIsSet() const
-{
-    return m_Latency_maxIsSet;
-}
-void MemoryGeneratorStats::unsetLatency_max()
-{
-    m_Latency_maxIsSet = false;
 }
 
 }

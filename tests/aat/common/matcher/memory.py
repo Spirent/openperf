@@ -23,10 +23,7 @@ class _be_valid_memory_generator_stats(Matcher):
         expect(stats.ops_actual).to(be_a(int))
         expect(stats.bytes_target).to(be_a(int))
         expect(stats.bytes_actual).to(be_a(int))
-        expect(stats.io_errors).to(be_a(int))
         expect(stats.latency).to(be_a(int))
-        expect(stats.latency_min).to(be_a(int))
-        expect(stats.latency_max).to(be_a(int))
         return True, ['is valid Memory Generator Stats']
 
 class _be_valid_memory_generator_result(Matcher):
