@@ -421,28 +421,15 @@ definitions:
         type: integer
         description: The actual number of bytes read or written
         format: int64
-      io_errors:
-        type: integer
-        description: The number of io_errors observed during reading or writing
-        format: int64
       latency_total:
         type: integer
         description: The total amount of time required to perform all operations (in nanoseconds)
-        format: int64
-      latency_min:
-        type: integer
-        description: The minimum observed latency value (in nanoseconds)
-        format: int64
-      latency_max:
-        type: integer
-        description: The maximum observed latency value (in nanoseconds)
         format: int64
     required:
       - ops_target
       - ops_actual
       - bytes_target
       - bytes_actual
-      - io_errors
       - latency_total
 
   BulkStartMemoryGeneratorsRequest:

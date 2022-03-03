@@ -27,16 +27,6 @@ type MemoryGeneratorStats struct {
 	// Required: true
 	BytesTarget *int64 `json:"bytes_target"`
 
-	// The number of io_errors observed during reading or writing
-	// Required: true
-	IoErrors *int64 `json:"io_errors"`
-
-	// The maximum observed latency value (in nanoseconds)
-	LatencyMax int64 `json:"latency_max,omitempty"`
-
-	// The minimum observed latency value (in nanoseconds)
-	LatencyMin int64 `json:"latency_min,omitempty"`
-
 	// The total amount of time required to perform all operations (in nanoseconds)
 	// Required: true
 	LatencyTotal *int64 `json:"latency_total"`
@@ -59,10 +49,6 @@ func (m *MemoryGeneratorStats) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateBytesTarget(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateIoErrors(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -96,15 +82,6 @@ func (m *MemoryGeneratorStats) validateBytesActual(formats strfmt.Registry) erro
 func (m *MemoryGeneratorStats) validateBytesTarget(formats strfmt.Registry) error {
 
 	if err := validate.Required("bytes_target", "body", m.BytesTarget); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *MemoryGeneratorStats) validateIoErrors(formats strfmt.Registry) error {
-
-	if err := validate.Required("io_errors", "body", m.IoErrors); err != nil {
 		return err
 	}
 
