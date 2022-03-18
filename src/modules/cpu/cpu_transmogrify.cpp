@@ -390,7 +390,7 @@ to_swagger(const std::vector<generator::result::core_shard>& shards,
 {
     auto dst = std::make_shared<swagger::v1::model::CpuGeneratorStats>();
 
-    dst->setAvailable(to_nanoseconds(sum.available() * shards.size()).count());
+    dst->setAvailable(to_nanoseconds(sum.available()).count());
     dst->setError(to_nanoseconds(sum.error()).count());
     dst->setSteal(to_nanoseconds(sum.steal()).count());
     dst->setSystem(to_nanoseconds(sum.system).count());
