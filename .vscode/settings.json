@@ -1,0 +1,18 @@
+{
+    "editor.formatOnSave": true,
+    "clang-format.executable": "/usr/bin/clang-format-7",
+    "files.watcherExclude": {
+        "build/**": true,
+        "deps/**": true
+    },
+    "cSpell.words": [
+        "cpptools",
+        "devcontainer",
+        "ptrace",
+        "seccomp",
+        "xaver"
+    ],
+    "files.associations": {
+        "string_view": "cpp"
+    }
+}
