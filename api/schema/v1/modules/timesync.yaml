@@ -333,9 +333,23 @@ definitions:
         type: object
         description: NTP statistics
         properties:
+          last_rx_accepted:
+            type: string
+            description: the time and date of the last accepted NTP reply, in ISO8601 format
+            format: date-time
+          last_rx_ignored:
+            type: string
+            description: The time and date of the last ignored NTP reply, in ISO8601 format
+            format: date-time
           poll_period:
             type: integer
             description: Current NTP server poll period, in seconds
+            format: int64
+          rx_ignored:
+            type: integer
+            description: |
+              Received packets that were ignored due to an invalid origin timestamp or stratum,
+              e.g. a Kiss-o'-Death packet
             format: int64
           rx_packets:
             type: integer
@@ -351,6 +365,8 @@ definitions:
               Time source distance from a NTP reference clock, in network hops.
             format: int32
         required:
+          - poll_period
+          - rx_ignored
           - rx_packets
           - tx_packets
       system:

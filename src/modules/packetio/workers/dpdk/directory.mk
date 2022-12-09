@@ -16,6 +16,7 @@ PIO_WORKER_SOURCES += \
 	worker_client.cpp \
 	worker_controller.cpp \
 	worker_factory.cpp \
+	worker_gro.cpp \
 	worker_queues.cpp \
 	worker_transmogrify.cpp \
 	worker_tx_functions.cpp \

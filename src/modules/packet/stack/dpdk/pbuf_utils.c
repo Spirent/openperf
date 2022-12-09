@@ -4,6 +4,7 @@
 #include "lwip/netif.h"
 
 #include "packet/stack/dpdk/pbuf_utils.h"
+#include "packetio/drivers/dpdk/dpdk.h"
 
 #if RTE_MBUF_PRIV_ALIGN != MEM_ALIGNMENT
 #error "RTE_MBUF_PRIV_ALIGN and lwip's MEM_ALIGNMENT msut be equal"
@@ -53,7 +54,7 @@ struct pbuf* packet_stack_pbuf_synchronize(struct rte_mbuf* m_head)
         p->tot_len = m_chain_len;
         p->len = rte_pktmbuf_data_len(m);
         p->type_internal = (uint8_t)PBUF_POOL;
-        if (RTE_MBUF_HAS_EXTBUF(m) || (m->ol_flags & IND_ATTACHED_MBUF)) {
+        if (RTE_MBUF_HAS_EXTBUF(m) || (m->ol_flags & RTE_MBUF_F_INDIRECT)) {
             /* If mbuf data is external/indirect (e.g. mbuf was cloned for
              * multicast dispatch) the pbuf header is not contiguous to the pbuf
              * data.  Clearing this flag disables additional error checking.

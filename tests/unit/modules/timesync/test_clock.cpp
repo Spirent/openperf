@@ -71,7 +71,11 @@ do_update(const bintime& time, counter::ticks ticks, counter::hz freq)
     static auto last_scalar = 0UL;
     static auto nb_updates = 0;
 
-    if (nb_updates++ > 0) {
+    /*
+     * Skip the first proper update as the clock may make a large
+     * initial jump.
+     */
+    if (nb_updates++ > 1) {
         int64_t d_ticks = static_cast<int64_t>(ticks) - last_ticks;
         auto d_time = bintime{static_cast<time_t>(d_ticks / last_freq.count()),
                               (d_ticks % last_freq.count()) * last_scalar};

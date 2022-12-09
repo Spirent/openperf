@@ -8,6 +8,9 @@
 #include <algorithm>
 #include <cassert>
 
+#include "rte_config.h"
+#include "rte_memcpy.h"
+
 #include "lwip/tcp.h"
 #include "lwip/priv/tcp_priv.h"
 #include "packet/stack/dpdk/pbuf_utils.h"
@@ -79,8 +82,8 @@ pbuf_drop_at(struct pbuf* p_head, uint16_t offset, uint16_t length)
     uint16_t pbufs_freed = 0;
     auto flags = p_head->flags; /* we'll need these later */
     if (start == end) {
-        /* Drop bytes by shuffling the data around without moving the payload
-         * pointer */
+        /* Drop bytes by shuffling the data around without moving the
+         * payload pointer */
         memmove(reinterpret_cast<uint8_t*>(start->payload) + start_offset,
                 reinterpret_cast<uint8_t*>(start->payload) + start_offset
                     + length,
@@ -265,7 +268,7 @@ uint16_t packet_stack_gso_max_segment_length(const struct tcp_pcb* pcb)
 }
 
 uint16_t packet_stack_gso_segment_ack_partial(struct tcp_seg* seg,
-                                              uint16_t acked)
+                                              uint32_t acked)
 {
     LWIP_ERROR("(seg != NULL) && (acked < seg->len) (programmer violates API)",
                ((seg != nullptr) && (acked < seg->len)),
@@ -456,5 +459,11 @@ uint16_t packet_stack_gso_pbuf_copy(struct pbuf* p_head,
     }
 
     return (copied);
+}
+
+uint8_t packet_stack_gso_segment_count(const struct tcp_pcb* pcb,
+                                       uint32_t length)
+{
+    return (std::clamp((length + pcb->mss - 1) / pcb->mss, 1U, 127U));
 }
 }

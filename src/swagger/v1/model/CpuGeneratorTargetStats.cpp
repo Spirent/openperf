@@ -19,6 +19,8 @@ namespace model {
 
 CpuGeneratorTargetStats::CpuGeneratorTargetStats()
 {
+    m_Data_type = "";
+    m_Instruction_set = "";
     m_Operations = 0L;
     
 }
@@ -36,6 +38,8 @@ nlohmann::json CpuGeneratorTargetStats::toJson() const
 {
     nlohmann::json val = nlohmann::json::object();
 
+    val["data_type"] = ModelBase::toJson(m_Data_type);
+    val["instruction_set"] = ModelBase::toJson(m_Instruction_set);
     val["operations"] = m_Operations;
     
 
@@ -44,11 +48,31 @@ nlohmann::json CpuGeneratorTargetStats::toJson() const
 
 void CpuGeneratorTargetStats::fromJson(nlohmann::json& val)
 {
+    setDataType(val.at("data_type"));
+    setInstructionSet(val.at("instruction_set"));
     setOperations(val.at("operations"));
     
 }
 
 
+std::string CpuGeneratorTargetStats::getDataType() const
+{
+    return m_Data_type;
+}
+void CpuGeneratorTargetStats::setDataType(std::string value)
+{
+    m_Data_type = value;
+    
+}
+std::string CpuGeneratorTargetStats::getInstructionSet() const
+{
+    return m_Instruction_set;
+}
+void CpuGeneratorTargetStats::setInstructionSet(std::string value)
+{
+    m_Instruction_set = value;
+    
+}
 int64_t CpuGeneratorTargetStats::getOperations() const
 {
     return m_Operations;

@@ -181,6 +181,9 @@ with description('Memory Generator Module', 'memory') as self:
                 with description('by existing ID'):
                     with shared_context('delete generator'):
                         with it('deleted (204)'):
+                            gen = self._api.get_memory_generator(self._g7r.id)
+                            if gen.running:
+                                self._api.stop_memory_generator(self._g7r.id)
                             result = self._api.delete_memory_generator_with_http_info(
                                 self._g7r.id, _return_http_data_only=False)
                             expect(result[1]).to(equal(204))
@@ -206,9 +209,10 @@ with description('Memory Generator Module', 'memory') as self:
                     with description('running generator'):
                         with before.all:
                             model = memory_generator_model(
-                                self._api.api_client, running = True)
+                                self._api.api_client)
                             self._g7r = self._api.create_memory_generator(model)
                             expect(self._g7r).to(be_valid_memory_generator)
+                            self._api.start_memory_generator(self._g7r.id)
 
                         with it('running'):
                             result = self._api.get_memory_generator(self._g7r.id)
@@ -242,6 +246,9 @@ with description('Memory Generator Module', 'memory') as self:
                     with before.all:
                         self._result = self._api.start_memory_generator_with_http_info(
                             self._g7r.id, _return_http_data_only=False)
+
+                    with after.all:
+                        self._api.stop_memory_generator(self._g7r.id)
 
                     with shared_context('start generator'):
                         with it('is not running'):
@@ -299,10 +306,11 @@ with description('Memory Generator Module', 'memory') as self:
         with description('/memory-generators/{id}/stop'):
             with before.all:
                 model = memory_generator_model(
-                    self._api.api_client, running=True)
-                self._g7r = self._api.create_memory_generator(model)
-                expect(self._g7r).to(be_valid_memory_generator)
-                expect(wait_for_buffer_initialization_done(self._api, self._g7r.id, 10)).to(be_true)
+                    self._api.api_client)
+                gen = self._api.create_memory_generator(model)
+                expect(gen).to(be_valid_memory_generator)
+                self._api.start_memory_generator(gen.id)
+                self._g7r = self._api.get_memory_generator(gen.id)
 
             with after.all:
                 self._api.delete_memory_generator(self._g7r.id)
@@ -323,7 +331,7 @@ with description('Memory Generator Module', 'memory') as self:
                         expect(g7r.running).to(be_false)
 
                     with description('already stopped generator'):
-                        with it('bad request (400)'):
+                        with _it('bad request (400)'):
                             expr = lambda: self._api.stop_memory_generator(self._g7r.id)
                             expect(expr).to(raise_api_exception(400))
 
@@ -355,8 +363,9 @@ with description('Memory Generator Module', 'memory') as self:
                         request, _return_http_data_only=False)
 
                 with after.all:
-                    for g7r in self._result[0]:
-                        self._api.delete_memory_generator(g7r.id)
+                    self._api.bulk_delete_memory_generators(
+                        client.models.BulkDeleteMemoryGeneratorsRequest(
+                        [gen.id for gen in self._api.list_memory_generators()]))
 
                 with it('created (200)'):
                     expect(self._result[1]).to(equal(200))
@@ -389,6 +398,11 @@ with description('Memory Generator Module', 'memory') as self:
                     self._ids = []
                     self._model = memory_generator_model(
                         self._api.api_client, running=False)
+
+                with after.all:
+                    self._api.bulk_delete_memory_generators(
+                        client.models.BulkDeleteMemoryGeneratorsRequest(
+                        [gen.id for gen in self._api.list_memory_generators()]))
 
                 with shared_context('delete generators'):
                     with before.all:
@@ -426,7 +440,7 @@ with description('Memory Generator Module', 'memory') as self:
 
                 with description('with invalid ID'):
                     with before.all:
-                        self._ids = ['bad_id']
+                        self._ids = ['bad-id']
 
                     with included_context('delete generators'):
                         pass
@@ -448,9 +462,12 @@ with description('Memory Generator Module', 'memory') as self:
                         expect(wait_for_buffer_initialization_done(self._api, self._g8s[a].id, 10)).to(be_true)
 
                 with after.all:
-                    request = client.models.BulkDeleteMemoryGeneratorsRequest(
-                        [g7r.id for g7r in self._g8s])
-                    self._api.bulk_delete_memory_generators(request)
+                    self._api.bulk_stop_memory_generators(
+                        client.models.BulkStopMemoryGeneratorsRequest(
+                        [gen.id for gen in self._g8s]))
+                    self._api.bulk_delete_memory_generators_with_http_info(
+                        client.models.BulkDeleteCpuGeneratorsRequest(
+                        [gen.id for gen in self._g8s]))
 
                 with description('by existing IDs'):
                     with before.all:
@@ -458,6 +475,11 @@ with description('Memory Generator Module', 'memory') as self:
                             [g7r.id for g7r in self._g8s])
                         self._result = self._api.bulk_start_memory_generators_with_http_info(
                             request, _return_http_data_only=False)
+
+                    with after.all:
+                        self._api.bulk_stop_memory_generators(
+                            client.models.BulkStopMemoryGeneratorsRequest(
+                            [gen.id for gen in self._g8s]))
 
                     with it('is not running'):
                         for g7r in self._g8s:
@@ -495,16 +517,6 @@ with description('Memory Generator Module', 'memory') as self:
 
                 with description('with non-existant ID'):
                     with before.all:
-                        for num, g7r in enumerate(self._g8s, start=1):
-                            try:
-                                if (num % 2) == 0:
-                                    g7r.running = False
-                                    self._api.stop_memory_generator(g7r.id)
-                                else:
-                                    g7r.running = True
-                                    self._api.start_memory_generator(g7r.id)
-                            except Exception:
-                                pass
                         self._results_count = len(self._api.list_memory_generator_results())
 
                     with it('not found (404)'):
@@ -561,14 +573,22 @@ with description('Memory Generator Module', 'memory') as self:
                         expect(wait_for_buffer_initialization_done(self._api, self._g8s[a].id, 10)).to(be_true)
 
                 with after.all:
-                    request = client.models.BulkDeleteMemoryGeneratorsRequest(
-                        [g7r.id for g7r in self._g8s])
-                    self._api.bulk_delete_memory_generators(request)
+                    self._api.bulk_stop_memory_generators(
+                        client.models.BulkStopMemoryGeneratorsRequest(
+                        [gen.id for gen in self._g8s]))
+                    self._api.bulk_delete_memory_generators(
+                        client.models.BulkDeleteMemoryGeneratorsRequest(
+                        [gen.id for gen in self._g8s]))
 
                 with shared_context('stop generators'):
                     with before.all:
                         for g7r in self._g8s:
                             self._api.start_memory_generator(g7r.id)
+
+                    with after.all:
+                        self._api.bulk_stop_memory_generators(
+                            client.models.BulkStopMemoryGeneratorsRequest(
+                            [gen.id for gen in self._g8s]))
 
                     with it('all running'):
                         for g7r in self._g8s:
@@ -609,7 +629,7 @@ with description('Memory Generator Module', 'memory') as self:
 
                 with description('with invalid ID'):
                     with before.all:
-                        self._ids = ['bad_id']
+                        self._ids = ['bad-id']
 
                     with included_context('stop generators'):
                         pass

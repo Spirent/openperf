@@ -36,8 +36,8 @@ void check_contents(const packet_template& pt,
     std::for_each(std::begin(pt), std::end(pt), [&](const auto& hdr) {
         buffer.clear();
         std::copy_n(hdr, hdr_len, std::back_inserter(buffer));
-        auto match = 0;
-        auto mismatch = 0;
+        auto match = 0U;
+        auto mismatch = 0U;
         std::for_each(std::begin(pt), std::end(pt), [&](const auto& chk) {
             if (std::memcmp(chk, buffer.data(), hdr_len)) {
                 mismatch++;

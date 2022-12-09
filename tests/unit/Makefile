@@ -14,7 +14,7 @@ TEST_SRC_DIR := $(OP_ROOT)/tests/unit
 
 TEST_DEPENDS := catch
 TEST_SOURCES := test_main.cpp
-TEST_FLAGS :=
+TEST_FLAGS := -DCATCH_CONFIG_ENABLE_BENCHMARKING
 
 ###
 # Pull in test files

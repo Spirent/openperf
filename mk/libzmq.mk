@@ -24,7 +24,7 @@ OP_LDLIBS += -lzmq
 $(LIBZMQ_SRC_DIR)/configure:
 	cd $(LIBZMQ_SRC_DIR) && ./autogen.sh
 
-LIBZMQ_CONFIG_OPTS :=
+LIBZMQ_CONFIG_OPTS := --with-libgssapi_krb5=no
 ifeq ($(MODE),debug)
 	LIBZMQ_CONFIG_OPTS += --enable-debug
 endif

@@ -12,9 +12,7 @@
 #include "packetio/drivers/dpdk/arg_parser.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/driver.hpp"
-#include "packetio/drivers/dpdk/mbuf_rx_prbs.hpp"
-#include "packetio/drivers/dpdk/mbuf_signature.hpp"
-#include "packetio/drivers/dpdk/mbuf_tx.hpp"
+#include "packetio/drivers/dpdk/mbuf_metadata.hpp"
 #include "packetio/drivers/dpdk/port_info.hpp"
 #include "packetio/drivers/dpdk/topology_utils.hpp"
 #include "packetio/generic_port.hpp"
@@ -55,15 +53,15 @@ static inline void sanity_check_environment()
                                  "At least 2 CPU cores are required.");
     }
 
-    const auto misc_mask = config::misc_core_mask().value_or(core_mask{});
-    const auto rx_mask = config::rx_core_mask().value_or(core_mask{});
-    const auto tx_mask = config::tx_core_mask().value_or(core_mask{});
+    const auto misc_mask = config::misc_core_mask().value_or(core::cpuset{});
+    const auto rx_mask = config::rx_core_mask().value_or(core::cpuset{});
+    const auto tx_mask = config::tx_core_mask().value_or(core::cpuset{});
     const auto user_mask = misc_mask | rx_mask | tx_mask;
 
-    if (user_mask[rte_get_master_lcore()]) {
-        throw std::runtime_error("User specified mask, " + to_string(user_mask)
-                                 + ", conflicts with DPDK master core "
-                                 + std::to_string(rte_get_master_lcore()));
+    if (user_mask[rte_get_main_lcore()]) {
+        throw std::runtime_error("User specified mask, " + user_mask.to_string()
+                                 + ", conflicts with DPDK main core "
+                                 + std::to_string(rte_get_main_lcore()));
     }
 }
 
@@ -253,7 +251,8 @@ static void do_bootstrap()
 
     /* Remove all DPDK slave cores from our original affinity mask */
     int lcore_id = 0;
-    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
+    RTE_LCORE_FOREACH_WORKER(lcore_id)
+    {
         op_cpuset_set(cpuset.get(), lcore_id, false);
     }
 
@@ -303,17 +302,23 @@ template <typename ProcessType> driver<ProcessType>::driver()
                   std::end(m_ethdev_ports),
                   [](const auto& item) { log_port(item.first, item.second); });
 
-    /* Finally, setup mbuf signature/offload flags */
-    mbuf_signature_init();
-    mbuf_rx_prbs_init();
-    mbuf_tx_init();
+    /* Setup mbuf metadata flags and storage */
+    mbuf_metadata_init();
+
+    /* Finally, start all ports */
+    std::for_each(
+        std::begin(m_ethdev_ports),
+        std::end(m_ethdev_ports),
+        [this](const auto& pair) { m_process->start_port(pair.first); });
 }
 
 template <typename ProcessType> driver<ProcessType>::~driver()
 {
-    if (m_ethdev_ports.empty()) { return; }
-
-    stop_all_ports();
+    /* Stop all ports */
+    std::for_each(
+        std::begin(m_ethdev_ports),
+        std::end(m_ethdev_ports),
+        [this](const auto& pair) { m_process->stop_port(pair.first); });
 }
 
 template <typename ProcessType>
@@ -406,14 +411,16 @@ driver<ProcessType>::create_port(std::string_view id,
      * ergo, this name cannot change.
      */
     std::string name = "net_bonding" + std::to_string(bond_idx++);
+
     /**
      * Use the port ids to figure out the most common socket.  We'll use
-     * that as the socket id for the bonded port.
+     * that as the socket id for the bonded port. Unfortunately, the bond
+     * create function won't accept SOCKET_ID_ANY, so change it to 0 if
+     * necessary.
      */
-    int id_or_error =
-        rte_eth_bond_create(name.c_str(),
-                            BONDING_MODE_8023AD,
-                            topology::get_most_common_numa_node(port_indexes));
+    int node = topology::get_most_common_numa_node(port_indexes);
+    int id_or_error = rte_eth_bond_create(
+        name.c_str(), BONDING_MODE_8023AD, node == SOCKET_ID_ANY ? 0 : node);
     if (id_or_error < 0) {
         return tl::make_unexpected(
             "Failed to create bond port: "
@@ -479,22 +486,6 @@ driver<ProcessType>::delete_port(std::string_view id)
     m_bonded_ports.erase(port_idx);
     m_ethdev_ports.erase(port_idx);
     return {};
-}
-
-template <typename ProcessType> void driver<ProcessType>::start_all_ports()
-{
-    std::for_each(
-        std::begin(m_ethdev_ports),
-        std::end(m_ethdev_ports),
-        [this](const auto& pair) { m_process->start_port(pair.first); });
-}
-
-template <typename ProcessType> void driver<ProcessType>::stop_all_ports()
-{
-    std::for_each(
-        std::begin(m_ethdev_ports),
-        std::end(m_ethdev_ports),
-        [this](const auto& pair) { m_process->stop_port(pair.first); });
 }
 
 template <typename ProcessType> bool driver<ProcessType>::is_usable()

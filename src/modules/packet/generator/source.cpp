@@ -85,6 +85,16 @@ void source_result::start(size_t nb_flows)
 
 void source_result::stop() { m_active = false; }
 
+uint64_t source_result::dropped_packets() const { return (m_dropped.packets); }
+
+uint64_t source_result::dropped_octets() const { return (m_dropped.octets); }
+
+void source_result::update_drop_counters(uint16_t packets, size_t octets)
+{
+    m_dropped.packets += packets;
+    m_dropped.octets += octets;
+}
+
 source_helper make_source_helper(packetio::internal::api::client& client,
                                  std::string_view target_id,
                                  [[maybe_unused]] core::event_loop& loop)
@@ -170,17 +180,47 @@ api::protocol_counters_config source::protocol_counters() const
     return (m_protocols);
 }
 
+/*
+ * Calculate the expected transmit count based on the configured
+ * rate and actual transmit duration.
+ */
+static size_t expected_tx(const packets_per_hour& pph,
+                          const source_result* result)
+{
+    const auto& flows = result->flows();
+    assert(!flows.empty());
+
+    /*
+     * The last value has a timestamp iff we've made one full transmit
+     * pass through the flows.
+     */
+    if (!flows.back().last().has_value()) { return (0); }
+
+    auto first = flows.front().first().value();
+    auto last = flows.back().last().value();
+    auto duration = last - first;
+
+    /*
+     * XXX: packets/hour * nanoseconds --> overflow, hence, convert the units
+     * here to avoid overflows. Using milliseconds gives us a time limit of
+     * ~1400 days for 64 byte frames at 100 Gbps.
+     */
+    return (pph
+            * std::chrono::duration_cast<std::chrono::milliseconds>(duration));
+}
+
 bool source::active() const
 {
-    if (m_tx_limit && m_tx_limit.value() == m_tx_idx) {
-        if (auto* results = m_results.load(std::memory_order_relaxed)) {
-            results->stop();
-            m_results.store(nullptr, std::memory_order_relaxed);
-        }
+    auto* results = m_results.load(std::memory_order_relaxed);
+    if (m_tx_limit && results
+        && std::max(expected_tx(packet_rate(), results), m_tx_idx)
+               >= m_tx_limit.value()) {
+        results->stop();
+        m_results.store(nullptr, std::memory_order_relaxed);
         return (false);
     }
 
-    return (m_results.load(std::memory_order_relaxed) != nullptr);
+    return (results != nullptr);
 }
 
 bool source::uses_feature(packetio::packet::source_feature_flags flags) const
@@ -381,6 +421,13 @@ uint16_t source::transform(packetio::packet::packet_buffer* input[],
     }
 
     return (to_send);
+}
+
+void source::update_drop_counters(uint16_t packets, size_t octets) const
+{
+    if (auto* results = m_results.load(std::memory_order_relaxed)) {
+        results->update_drop_counters(packets, octets);
+    }
 }
 
 bool source::supports_learning() const

@@ -1,6 +1,7 @@
 #include "config/op_config_file.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/port_info.hpp"
+#include "packetio/drivers/dpdk/quirks.hpp"
 #include "packetio/drivers/dpdk/primary/arg_parser.hpp"
 #include "packetio/drivers/dpdk/primary/utils.hpp"
 
@@ -59,8 +60,11 @@ tl::expected<void, std::string> stop_port(uint16_t port_id)
                             })));
     }
 
-    /* No value returned */
-    rte_eth_dev_stop(port_id);
+    if (auto error = rte_eth_dev_stop(port_id)) {
+        return (tl::make_unexpected("Failed to stop port "
+                                    + std::to_string(port_id) + ":"
+                                    + rte_strerror(std::abs(error))));
+    }
 
     return {};
 }
@@ -97,26 +101,22 @@ static uint32_t eth_link_speed_flag(port::link_speed speed,
 
 static uint64_t lro_flag()
 {
-    auto disable_lro =
-        openperf::config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
-            op_packetio_dpdk_no_lro)
-            .value_or(false);
-    return (disable_lro ? 0 : DEV_RX_OFFLOAD_TCP_LRO);
+    return (config::dpdk_disable_lro() ? 0 : RTE_ETH_RX_OFFLOAD_TCP_LRO);
 }
 
 static uint64_t filter_rx_offloads(uint64_t rx_capa)
 {
     return (rx_capa
-            & (DEV_RX_OFFLOAD_CHECKSUM | DEV_RX_OFFLOAD_JUMBO_FRAME
-               | DEV_RX_OFFLOAD_SCATTER | lro_flag()));
+            & (RTE_ETH_RX_OFFLOAD_CHECKSUM | RTE_ETH_RX_OFFLOAD_SCATTER
+               | lro_flag()));
 }
 
 static constexpr uint64_t filter_tx_offloads(uint64_t tx_capa)
 {
     return (tx_capa
-            & (DEV_TX_OFFLOAD_IPV4_CKSUM | DEV_TX_OFFLOAD_UDP_CKSUM
-               | DEV_TX_OFFLOAD_TCP_CKSUM | DEV_TX_OFFLOAD_TCP_TSO
-               | DEV_TX_OFFLOAD_MULTI_SEGS));
+            & (RTE_ETH_TX_OFFLOAD_IPV4_CKSUM | RTE_ETH_TX_OFFLOAD_UDP_CKSUM
+               | RTE_ETH_TX_OFFLOAD_TCP_CKSUM | RTE_ETH_TX_OFFLOAD_TCP_TSO
+               | RTE_ETH_TX_OFFLOAD_MULTI_SEGS));
 }
 
 static rte_eth_conf make_rte_eth_conf(uint16_t port_id)
@@ -126,8 +126,8 @@ static rte_eth_conf make_rte_eth_conf(uint16_t port_id)
         .rxmode =
             {
                 .mq_mode = port_info::rx_mq_mode(port_id),
-                .max_rx_pkt_len = port_info::max_rx_pktlen(port_id),
-                .max_lro_pkt_size = port_info::max_lro_pkt_size(port_id),
+                .max_lro_pkt_size = port_info::max_lro_pkt_size(port_id)
+                                    - quirks::adjust_max_rx_pktlen(port_id),
                 .offloads = filter_rx_offloads(port_info::rx_offloads(port_id)),
             },
         .txmode =
@@ -145,7 +145,7 @@ static rte_eth_conf make_rte_eth_conf(uint16_t port_id)
         .tx_adv_conf = {},
         .fdir_conf = {},
         .intr_conf = {.lsc = !!port_info::lsc_interrupt(port_id),
-                      .rxq = !!port_info::rxq_interrupt(port_id)}};
+                      .rxq = !config::dpdk_disable_rx_irq()}};
 }
 
 static tl::expected<void, std::string>

@@ -7,8 +7,10 @@
 #include <unistd.h>
 
 #include "core/op_common.h"
+#include "core/op_cpuset.h"
 #include "core/op_log.h"
 #include "op_config_file.hpp"
+#include "op_config_utils.hpp"
 
 namespace openperf::config::file {
 
@@ -185,6 +187,16 @@ static void set_data_node_value(YAML::Node& node,
     case OP_OPTION_TYPE_NONE:
         node = true;
         break;
+    case OP_OPTION_TYPE_CPUSET_STRING: {
+        /* Just verify if the string is a valid cpuset */
+        auto s = std::string(opt_data);
+        if (auto set = op_cpuset_create_from_string(s.c_str())) {
+            op_cpuset_delete(set);
+            node = s;
+        } else {
+            OP_LOG(OP_LOG_ERROR, "Ignoring invalid cpu mask %s\n", s.c_str());
+        }
+    } break;
     case OP_OPTION_TYPE_STRING:
         node = std::string(opt_data);
         break;
@@ -419,12 +431,10 @@ int op_config_file_find(int argc, char* const argv[])
                 std::string(),
                 [&](const std::string& a, const std::string& b) -> std::string {
                     return (a
-                            + (a.length() == 0
-                                   ? ""
-                                   : unknown_nodes.size() == 2
-                                         ? " and "
-                                         : unknown_nodes.back() == b ? ", and "
-                                                                     : ". ")
+                            + (a.length() == 0             ? ""
+                               : unknown_nodes.size() == 2 ? " and "
+                               : unknown_nodes.back() == b ? ", and "
+                                                           : ". ")
                             + "\\\"" + b + "\\\"");
                 })
                 .c_str());

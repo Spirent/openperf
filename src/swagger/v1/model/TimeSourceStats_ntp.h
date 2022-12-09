@@ -21,6 +21,7 @@
 
 #include "ModelBase.h"
 
+#include <string>
 
 namespace swagger {
 namespace v1 {
@@ -48,13 +49,30 @@ public:
     /// TimeSourceStats_ntp members
 
     /// <summary>
+    /// the time and date of the last accepted NTP reply, in ISO8601 format
+    /// </summary>
+    std::string getLastRxAccepted() const;
+    void setLastRxAccepted(std::string value);
+    bool lastRxAcceptedIsSet() const;
+    void unsetLast_rx_accepted();
+    /// <summary>
+    /// The time and date of the last ignored NTP reply, in ISO8601 format
+    /// </summary>
+    std::string getLastRxIgnored() const;
+    void setLastRxIgnored(std::string value);
+    bool lastRxIgnoredIsSet() const;
+    void unsetLast_rx_ignored();
+    /// <summary>
     /// Current NTP server poll period, in seconds
     /// </summary>
     int64_t getPollPeriod() const;
     void setPollPeriod(int64_t value);
-    bool pollPeriodIsSet() const;
-    void unsetPoll_period();
-    /// <summary>
+        /// <summary>
+    /// Received packets that were ignored due to an invalid origin timestamp or stratum, e.g. a Kiss-o&#39;-Death packet 
+    /// </summary>
+    int64_t getRxIgnored() const;
+    void setRxIgnored(int64_t value);
+        /// <summary>
     /// Received packets
     /// </summary>
     int64_t getRxPackets() const;
@@ -73,8 +91,14 @@ public:
     void unsetStratum();
 
 protected:
+    std::string m_Last_rx_accepted;
+    bool m_Last_rx_acceptedIsSet;
+    std::string m_Last_rx_ignored;
+    bool m_Last_rx_ignoredIsSet;
     int64_t m_Poll_period;
-    bool m_Poll_periodIsSet;
+
+    int64_t m_Rx_ignored;
+
     int64_t m_Rx_packets;
 
     int64_t m_Tx_packets;

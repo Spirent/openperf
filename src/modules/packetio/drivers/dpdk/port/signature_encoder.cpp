@@ -1,4 +1,4 @@
-#include "packetio/drivers/dpdk/mbuf_signature.hpp"
+#include "packetio/drivers/dpdk/mbuf_metadata.hpp"
 #include "packetio/drivers/dpdk/port/signature_encoder.hpp"
 #include "packetio/drivers/dpdk/port/signature_utils.hpp"
 #include "spirent_pga/api.h"
@@ -21,7 +21,8 @@ static bool is_runt_ipv4_udp(const rte_mbuf* mbuf)
      * Use the checksum flags as a proxy for packet contents. Obviously,
      * this doesn't work if sources don't set these flags...
      */
-    static constexpr auto ol_flags = PKT_TX_IPV4 | PKT_TX_UDP_CKSUM;
+    static constexpr auto ol_flags =
+        RTE_MBUF_F_TX_IPV4 | RTE_MBUF_F_TX_UDP_CKSUM;
     return ((mbuf->ol_flags & ol_flags) == ol_flags
             && (rte_pktmbuf_pkt_len(mbuf) - mbuf->l2_len)
                    < min_ipv4_udp_payload_size);
@@ -122,7 +123,7 @@ static uint16_t encode_signatures(uint16_t port_id,
         std::for_each(packets + start, packets + end, [&](const auto& m) {
             const auto mbuf_octets = rte_pktmbuf_pkt_len(m) + ethernet_overhead;
 
-            if (mbuf_signature_avail(m)) {
+            if (mbuf_signature_is_set(m)) {
                 auto&& sig = mbuf_signature_get(m);
                 const auto ts =
                     (pga_timestamp_flag(sig.tx.flags)
@@ -133,8 +134,8 @@ static uint16_t encode_signatures(uint16_t port_id,
 
                 scratch.signatures.set(nb_sigs++,
                                        {to_signature<uint8_t>(m),
-                                        sig.sig_stream_id,
-                                        sig.sig_seq_num,
+                                        sig.stream_id,
+                                        sig.sequence_number,
                                         ts,
                                         sig.tx.flags});
             }
@@ -165,7 +166,7 @@ static uint16_t encode_signatures(uint16_t port_id,
             std::for_each(cursor, packets + end, [&](const auto& mbuf) {
                 if (is_runt_ipv4_udp(mbuf)) {
                     /* Clear UDP offload flag */
-                    mbuf->ol_flags &= ~PKT_TX_UDP_CKSUM;
+                    mbuf->ol_flags &= ~RTE_MBUF_F_TX_UDP_CKSUM;
 
                     /*
                      * Store data for checksum calculating and

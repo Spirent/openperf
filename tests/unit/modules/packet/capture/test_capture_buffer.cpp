@@ -120,25 +120,25 @@ std::unique_ptr<capture_buffer_reader> create_multi_capture_buffer_reader(
 size_t fill_capture_buffer_ipv4(capture_buffer& buffer,
                                 size_t packet_count,
                                 size_t payload_size,
-                                uint16_t start_id = 0)
+                                uint16_t start_id,
+                                uint64_t start_time)
 {
     mock_packet_buffer packet_buffer;
     std::vector<uint8_t> packet_data;
 
     packet_data.resize(calc_ipv4_packet_size(payload_size));
 
-    auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                   std::chrono::system_clock::now().time_since_epoch())
-                   .count();
-
-    create_ipv4_packet(
-        packet_buffer, &packet_data[0], packet_data.size(), payload_size, now);
+    create_ipv4_packet(packet_buffer,
+                       &packet_data[0],
+                       packet_data.size(),
+                       payload_size,
+                       start_time);
 
     std::array<struct packet_buffer*, 1> packet_buffers;
     packet_buffers[0] = reinterpret_cast<struct packet_buffer*>(&packet_buffer);
 
     for (size_t i = 0; i < packet_count; ++i) {
-        packet_buffer.rx_timestamp = now + i;
+        packet_buffer.rx_timestamp = start_time + i;
         auto ipv4 = reinterpret_cast<ipv4_hdr*>(
             reinterpret_cast<uint8_t*>(packet_buffer.data) + sizeof(eth_hdr));
         ipv4->packet_id = ntohs(start_id + i);
@@ -146,6 +146,18 @@ size_t fill_capture_buffer_ipv4(capture_buffer& buffer,
     }
 
     return packet_count;
+}
+
+size_t fill_capture_buffer_ipv4(capture_buffer& buffer,
+                                size_t packet_count,
+                                size_t payload_size,
+                                uint16_t start_id = 0)
+{
+    auto start_time = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                          std::chrono::system_clock::now().time_since_epoch())
+                          .count();
+    return fill_capture_buffer_ipv4(
+        buffer, packet_count, payload_size, start_id, start_time);
 }
 
 size_t
@@ -423,7 +435,7 @@ TEST_CASE("capture buffer", "[packet_capture]")
             REQUIRE(counted == packet_count);
         }
 
-        SECTION("write and read, trucated packets")
+        SECTION("write and read, truncated packets")
         {
             const size_t capture_max_packet_size = 1500;
             const size_t packet_size = 4096;
@@ -602,19 +614,28 @@ TEST_CASE("capture buffer", "[packet_capture]")
                 {0, 4000},
             };
 
+            auto start_time =
+                std::chrono::duration_cast<std::chrono::nanoseconds>(
+                    std::chrono::system_clock::now().time_since_epoch())
+                    .count();
+
             for (auto& range : ranges) {
                 INFO("range " << range.first << " to " << range.second);
                 std::uniform_int_distribution<size_t> dist(range.first,
                                                            range.second);
                 for (size_t i = 0; i < 2 * max_packets_in_buffer; ++i) {
                     const size_t payload_size = dist(gen);
-                    nwritten = fill_capture_buffer_ipv4(
-                        buffer, 1, payload_size, uint16_t(total_written));
+                    nwritten =
+                        fill_capture_buffer_ipv4(buffer,
+                                                 1,
+                                                 payload_size,
+                                                 uint16_t(total_written),
+                                                 start_time + total_written);
                     REQUIRE(nwritten == 1);
                     total_written += nwritten;
                 }
 
-                // Since packet sizes are randmon, don't really know what is
+                // Since packet sizes are random, don't really know what is
                 // currently in the buffer so can't do too much additional
                 // validation checks
 

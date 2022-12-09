@@ -75,6 +75,19 @@ def wait_for_nonzero_result(api, result_id, mode='rw', timeout=5.0):
     raise AssertionError('Failed waiting for nonzero %s result.  %s' % (mode, str(result)))
 
 
+def wait_for_nonzero_server_result(api, server_id, timeout=5.0):
+    sleep_time = 0.1
+    stop_time = time.time() + timeout
+    while time.time() <= stop_time:
+        server = api.get_network_server(server_id)
+        expect(server).to(be_valid_network_server)
+        if server.stats.bytes_received > 0:
+            return server
+        time.sleep(sleep_time)
+
+    raise AssertionError('Failed waiting for nonzero server result')
+
+
 with description('Network Generator Module', 'network') as self:
     with shared_context('network_module'):
         with before.all:
@@ -794,7 +807,7 @@ with description('Network Generator Module', 'network') as self:
 
                         self._api.stop_network_generator(g7r.id)
                         result = self._api.get_network_generator_result(self._result.id)
-                        server = self._api.get_network_server(self._server.id)
+                        server = wait_for_nonzero_server_result(self._api, self._server.id)
                         expect(server).to(be_valid_network_server)
                         expect(server.stats.connections).not_to(equal(0))
                         expect(server.stats.bytes_sent).not_to(equal(0))
@@ -818,7 +831,7 @@ with description('Network Generator Module', 'network') as self:
 
                         self._api.stop_network_generator(g7r.id)
                         result = self._api.get_network_generator_result(self._result.id)
-                        server = self._api.get_network_server(self._server.id)
+                        server = wait_for_nonzero_server_result(self._api, self._server.id)
                         expect(server).to(be_valid_network_server)
                         expect(server.stats.connections).not_to(equal(0))
                         expect(server.stats.bytes_received).not_to(equal(0))
@@ -867,7 +880,7 @@ with description('Network Generator Module', 'network') as self:
                         result2 = self._api.get_network_generator_result(self._result2.id)
                         expect(result2).to(be_valid_network_generator_result)
 
-                        server = self._api.get_network_server(self._server.id)
+                        server = wait_for_nonzero_server_result(self._api, self._server.id)
                         expect(server).to(be_valid_network_server)
                         expect(server.stats.connections).not_to(equal(0))
                         expect(server.stats.bytes_received).not_to(equal(0))
@@ -923,7 +936,7 @@ with description('Network Generator Module', 'network') as self:
                         write_result = self._api.get_network_generator_result(self._write_result.id)
                         expect(write_result).to(be_valid_network_generator_result)
 
-                        server = self._api.get_network_server(self._server.id)
+                        server = wait_for_nonzero_server_result(self._api, self._server.id)
                         expect(server).to(be_valid_network_server)
                         expect(server.stats.connections).not_to(equal(0))
                         expect(server.stats.bytes_received).not_to(equal(0))
@@ -979,7 +992,7 @@ with description('Network Generator Module', 'network') as self:
                         read_result = self._api.get_network_generator_result(self._read_result.id)
                         expect(read_result).to(be_valid_network_generator_result)
 
-                        server = self._api.get_network_server(self._server.id)
+                        server = wait_for_nonzero_server_result(self._api, self._server.id)
                         expect(server).to(be_valid_network_server)
                         expect(server.stats.connections).not_to(equal(0))
                         expect(server.stats.bytes_received).not_to(equal(0))

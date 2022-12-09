@@ -5,20 +5,19 @@
 
 #include "packetio/drivers/dpdk/arg_parser.hpp"
 #include "packetio/drivers/dpdk/topology_utils.hpp"
+#include "core/op_cpuset.hpp"
 #include "core/op_log.h"
 
 namespace openperf::packetio::dpdk::topology {
 
-using cores_by_id = std::map<unsigned, core_mask>;
+using cores_by_id = std::map<unsigned, core::cpuset>;
 using ports_by_id = std::map<unsigned, std::vector<unsigned>>;
 
-static core_mask dpdk_mask()
+static core::cpuset dpdk_mask()
 {
-    auto mask = core_mask{};
+    auto mask = core::cpuset{};
     auto lcore_id = 0U;
-    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
-        mask.set(lcore_id);
-    }
+    RTE_LCORE_FOREACH_WORKER(lcore_id) { mask.set(lcore_id); }
     return (mask);
 }
 
@@ -47,7 +46,8 @@ index_queue_distribute(const std::vector<uint16_t>& port_ids)
 
     cores_by_id nodes;
     unsigned lcore_id = 0;
-    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
+    RTE_LCORE_FOREACH_WORKER(lcore_id)
+    {
         if (lcore_id == stack_lcore || !mask[lcore_id]) continue;
         nodes[rte_lcore_to_socket_id(lcore_id)].set(lcore_id);
     }
@@ -83,13 +83,10 @@ index_queue_distribute(const std::vector<uint16_t>& port_ids)
                        std::string(),
                        [&](const std::string& a, unsigned b) -> std::string {
                            return (a
-                                   + (a.length() == 0
-                                          ? ""
-                                          : item.second.size() == 2
-                                                ? " and "
-                                                : item.second.back() == b
-                                                      ? ", and "
-                                                      : ", ")
+                                   + (a.length() == 0           ? ""
+                                      : item.second.size() == 2 ? " and "
+                                      : item.second.back() == b ? ", and "
+                                                                : ", ")
                                    + std::to_string(b));
                        })
                        .c_str());
@@ -147,7 +144,7 @@ index_queue_distribute(const std::vector<uint16_t>& port_ids)
     return (descriptors);
 }
 
-static core_mask get_misc_mask()
+static core::cpuset get_misc_mask()
 {
     /* If the user provided explicit cores, then use them */
     if (auto user_misc_mask = config::misc_core_mask()) {
@@ -184,7 +181,8 @@ std::optional<unsigned> get_stack_lcore_id()
     const auto misc_mask = get_misc_mask();
     cores_by_id nodes;
     int lcore_id = 0;
-    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
+    RTE_LCORE_FOREACH_WORKER(lcore_id)
+    {
         if (!misc_mask[lcore_id]) { continue; }
         nodes[rte_lcore_to_socket_id(lcore_id)].set(lcore_id);
     }

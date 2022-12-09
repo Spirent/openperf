@@ -8,7 +8,6 @@ Name | Type | Description | Notes
 **target** | **int** | The amount of target CPU time | 
 **system** | **int** | The amount of system time used, e.g. kernel or system calls | 
 **user** | **int** | The amount of user time used, e.g. openperf code | 
-**steal** | **int** | The amount of time the hypervisor reported our virtual cores were blocked | [optional] 
 **error** | **int** | The difference between intended and actual CPU utilization | 
 **targets** | [**list[CpuGeneratorTargetStats]**](CpuGeneratorTargetStats.md) | Statistics of the instruction sets (in the order they were specified in core configuration) | 
 

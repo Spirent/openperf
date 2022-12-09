@@ -9,11 +9,7 @@ namespace openperf::packetio::dpdk {
 
 static std::optional<int> get_queue_fd(uint16_t port_id, uint16_t queue_id)
 {
-    /* XXX: clean this up when function symbol is marked stable */
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     auto fd = rte_eth_dev_rx_intr_ctl_q_get_fd(port_id, queue_id);
-#pragma clang diagnostic pop
 
     if (fd == -1) return (std::nullopt);
     return (fd);

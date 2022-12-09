@@ -21,6 +21,7 @@
 
 #include "ModelBase.h"
 
+#include <string>
 
 namespace swagger {
 namespace v1 {
@@ -48,12 +49,26 @@ public:
     /// CpuGeneratorTargetStats members
 
     /// <summary>
+    /// CPU load target operation data type, actual for chosen instruction set
+    /// </summary>
+    std::string getDataType() const;
+    void setDataType(std::string value);
+        /// <summary>
+    /// CPU load instruction set
+    /// </summary>
+    std::string getInstructionSet() const;
+    void setInstructionSet(std::string value);
+        /// <summary>
     /// The total amount of finished instruction set operations
     /// </summary>
     int64_t getOperations() const;
     void setOperations(int64_t value);
     
 protected:
+    std::string m_Data_type;
+
+    std::string m_Instruction_set;
+
     int64_t m_Operations;
 
 };

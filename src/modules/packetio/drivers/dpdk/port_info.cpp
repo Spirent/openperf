@@ -5,6 +5,7 @@
 #include <net/if.h>
 
 #include "packetio/drivers/dpdk/port_info.hpp"
+#include "packetio/drivers/dpdk/quirks.hpp"
 
 namespace openperf::packetio::dpdk::port_info {
 
@@ -48,18 +49,22 @@ libpacket::type::mac_address mac_address(uint16_t port_id)
 
 uint32_t max_rx_pktlen(uint16_t port_id)
 {
-    /*
-     * XXX: The E1000 driver can't actually use the maximum value, 16383, it
-     * advertises. So, we just clamp the value here to prevent issues.
-     * If 9k frames are insufficient, adjust as necessary.
-     */
-    return (std::min(
-        9 * 1024U, get_info_field(port_id, &rte_eth_dev_info::max_rx_pktlen)));
+    return (
+        std::clamp(get_info_field(port_id, &rte_eth_dev_info::max_rx_pktlen),
+                   static_cast<uint32_t>(RTE_MBUF_DEFAULT_BUF_SIZE),
+                   quirks::sane_max_rx_pktlen(port_id)));
 }
 
 uint32_t max_lro_pkt_size(uint16_t port_id)
 {
-    return (get_info_field(port_id, &rte_eth_dev_info::max_lro_pkt_size));
+    /*
+     * If the driver doesn't property offload scatter, then we need
+     * to limit LRO size to the packet size in order to preserve
+     * fast packet processing.
+     */
+    return (rx_offloads(port_id) & RTE_ETH_RX_OFFLOAD_SCATTER
+                ? get_info_field(port_id, &rte_eth_dev_info::max_lro_pkt_size)
+                : max_rx_pktlen(port_id));
 }
 
 uint32_t max_mac_addrs(uint16_t port_id)
@@ -109,32 +114,26 @@ uint32_t max_speed(uint16_t port_id)
 
 uint64_t rx_offloads(uint16_t port_id)
 {
-    return (get_info_field(port_id, &rte_eth_dev_info::rx_offload_capa));
+    return (get_info_field(port_id, &rte_eth_dev_info::rx_offload_capa)
+            & ~quirks::slow_rx_offloads(port_id));
 }
 
 uint64_t tx_offloads(uint16_t port_id)
 {
-    auto driver = driver_name(port_id);
-    if (driver == driver_names::virtio) {
-        // virtio doesn't handle Tx TCP/UDP checksum offloads correctly
-        return 0;
-    }
-    return (get_info_field(port_id, &rte_eth_dev_info::tx_offload_capa));
+    return (get_info_field(port_id, &rte_eth_dev_info::tx_offload_capa)
+            & ~quirks::slow_tx_offloads(port_id));
 }
 
 uint64_t rss_offloads(uint16_t port_id)
 {
-    return (get_info_field(port_id, &rte_eth_dev_info::flow_type_rss_offloads));
+    return (rx_offloads(port_id) & RTE_ETH_RX_OFFLOAD_RSS_HASH ? get_info_field(
+                port_id, &rte_eth_dev_info::flow_type_rss_offloads)
+                                                               : 0);
 }
 
 enum rte_eth_rx_mq_mode rx_mq_mode(uint16_t port_id)
 {
-    auto driver = driver_name(port_id);
-    if (driver == driver_names::virtio) {
-        return ETH_MQ_RX_NONE;
-    } else {
-        return ETH_MQ_RX_RSS;
-    }
+    return (rx_queue_max(port_id) == 1 ? ETH_MQ_RX_NONE : ETH_MQ_RX_RSS);
 }
 
 uint16_t rx_queue_count(uint16_t port_id)

@@ -229,8 +229,8 @@ void handler::start_tvlp(const Rest::Request& request,
                     ok.error().begin(),
                     ok.error().end(),
                     std::string{},
-                    [](auto& acc, auto& s) { return acc += "; " + s; })
-                    .c_str());
+                    [](auto& acc, auto& s) { return acc += "; " + s; }),
+                request.body());
         }
 
         data.start_configuration = from_swagger(model);

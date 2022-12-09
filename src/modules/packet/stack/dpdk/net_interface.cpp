@@ -3,6 +3,8 @@
 
 #include "arpa/inet.h"
 
+#include "rte_malloc.h"
+
 #include "lwip/netifapi.h"
 #include "lwip/snmp.h"
 #if LWIP_IPV6
@@ -13,8 +15,8 @@
 #include "packet/stack/dpdk/offload_utils.hpp"
 #include "packet/stack/dpdk/net_interface.hpp"
 #include "packet/stack/dpdk/pbuf_utils.h"
-#include "packetio/drivers/dpdk/dpdk.h"
-#include "packetio/drivers/dpdk/mbuf_tx.hpp"
+//#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/mbuf_metadata.hpp"
 #include "packetio/drivers/dpdk/port_info.hpp"
 #if LWIP_IPV6
 #include "packet/stack/lwip/netifapi_ipv6.h"
@@ -63,15 +65,15 @@ static uint16_t to_checksum_check_flags(uint64_t rx_offloads)
      */
     uint16_t flags = netif_rx_chksum_mask;
 
-    if (rx_offloads & DEV_RX_OFFLOAD_IPV4_CKSUM) {
+    if (rx_offloads & RTE_ETH_RX_OFFLOAD_IPV4_CKSUM) {
         flags &= ~NETIF_CHECKSUM_CHECK_IP;
     }
 
-    if (rx_offloads & DEV_RX_OFFLOAD_UDP_CKSUM) {
+    if (rx_offloads & RTE_ETH_RX_OFFLOAD_UDP_CKSUM) {
         flags &= ~NETIF_CHECKSUM_CHECK_UDP;
     }
 
-    if (rx_offloads & DEV_RX_OFFLOAD_TCP_CKSUM) {
+    if (rx_offloads & RTE_ETH_RX_OFFLOAD_TCP_CKSUM) {
         flags &= ~NETIF_CHECKSUM_CHECK_TCP;
     }
 
@@ -86,15 +88,15 @@ static uint16_t to_checksum_gen_flags(uint64_t tx_offloads)
      * The netif flags control what the stack needs to check, so
      * start with all flags enabled and then disable what we can.
      */
-    if (tx_offloads & DEV_TX_OFFLOAD_IPV4_CKSUM) {
+    if (tx_offloads & RTE_ETH_TX_OFFLOAD_IPV4_CKSUM) {
         flags &= ~NETIF_CHECKSUM_GEN_IP;
     }
 
-    if (tx_offloads & DEV_TX_OFFLOAD_UDP_CKSUM) {
+    if (tx_offloads & RTE_ETH_TX_OFFLOAD_UDP_CKSUM) {
         flags &= ~NETIF_CHECKSUM_GEN_UDP;
     }
 
-    if (tx_offloads & DEV_TX_OFFLOAD_TCP_CKSUM) {
+    if (tx_offloads & RTE_ETH_TX_OFFLOAD_TCP_CKSUM) {
         flags &= ~NETIF_CHECKSUM_GEN_TCP;
     }
 
@@ -103,7 +105,7 @@ static uint16_t to_checksum_gen_flags(uint64_t tx_offloads)
 
 static uint32_t net_interface_max_gso_length(int port_id)
 {
-    return (port_info::tx_offloads(port_id) & DEV_TX_OFFLOAD_TCP_TSO
+    return (port_info::tx_offloads(port_id) & RTE_ETH_TX_OFFLOAD_TCP_TSO
                 ? port_info::tx_tso_segment_max(port_id) * TCP_MSS
                 : TCP_MSS);
 }
@@ -147,15 +149,15 @@ static err_t net_interface_rx(pbuf* p, netif* netif)
 
     /* Validate checksums; drop if invalid */
     auto* mbuf = packet_stack_pbuf_to_mbuf(p);
-    if (mbuf->ol_flags & PKT_RX_IP_CKSUM_MASK
-        && !(mbuf->ol_flags & PKT_RX_IP_CKSUM_GOOD)) {
+    if (mbuf->ol_flags & RTE_MBUF_F_RX_IP_CKSUM_MASK
+        && !(mbuf->ol_flags & RTE_MBUF_F_RX_IP_CKSUM_GOOD)) {
         IP_STATS_INC(ip.chkerr);
         pbuf_free(p);
         return (ERR_OK);
     }
 
-    if (mbuf->ol_flags & PKT_RX_L4_CKSUM_MASK
-        && !(mbuf->ol_flags & PKT_RX_L4_CKSUM_GOOD)) {
+    if (mbuf->ol_flags & RTE_MBUF_F_RX_L4_CKSUM_MASK
+        && !(mbuf->ol_flags & RTE_MBUF_F_RX_L4_CKSUM_GOOD)) {
         /* XXX: might not always be true? */
         assert(mbuf->packet_type);
 
@@ -617,8 +619,7 @@ err_t net_interface::handle_tx(struct pbuf* p)
     }
 
     /* Store the interface hwaddr in the mbuf so tx capture can use it */
-    mbuf_set_tx_sink(m_head);
-    mbuf_set_tx_hwaddr(m_head, m_netif.hwaddr);
+    mbuf_tx_sink_set(m_head, m_netif.hwaddr);
 
     rte_mbuf* pkts[] = {m_head};
     if (m_transmit(port_index(), 0, reinterpret_cast<void**>(pkts), 1) != 1) {

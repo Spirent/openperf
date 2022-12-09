@@ -10,6 +10,7 @@
  */
 
 #ifdef __cplusplus
+#include "core/op_cpuset.hpp"
 #include "core/op_event_loop.hpp"
 #include "core/op_init_factory.hpp"
 #include "core/op_list.hpp"

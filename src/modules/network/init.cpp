@@ -3,9 +3,8 @@
 
 #include <zmq.h>
 
-#include "config/op_config_file.hpp"
-#include "framework/core/op_core.h"
-#include "framework/core/op_thread.h"
+#include "arg_parser.hpp"
+#include "core/op_core.h"
 #include "server.hpp"
 
 namespace openperf::network {
@@ -44,21 +43,18 @@ struct service
         m_service = std::thread([this]() {
             op_thread_setname("op_network");
 
-            auto mask =
-                openperf::config::file::op_config_get_param<OP_OPTION_TYPE_HEX>(
-                    "modules.network.cpu-mask");
-            if (mask) {
-                if (auto res =
-                        op_thread_set_relative_affinity_mask(mask.value());
-                    res) {
-                    op_exit(
-                        "Applying Network module affinity mask failed! %s\n",
-                        std::strerror(res));
+            if (auto mask = config::core_mask()) {
+                if (auto error = core::cpuset_set_affinity(mask.value())) {
+                    OP_LOG(OP_LOG_ERROR,
+                           "Could not configure %s as core mask for network "
+                           "generator: %s\n",
+                           mask->to_string().c_str(),
+                           strerror(error));
+                } else {
+                    OP_LOG(OP_LOG_DEBUG,
+                           "Configured %s as core mask for network generator\n",
+                           mask->to_string().c_str());
                 }
-
-                OP_LOG(OP_LOG_DEBUG,
-                       "Network module been configured with cpu-mask: 0x%x",
-                       mask.value());
             }
 
             struct op_event_callbacks callbacks = {.on_read =

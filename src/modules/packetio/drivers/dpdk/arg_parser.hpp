@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "packetio/drivers/dpdk/core_mask.hpp"
+#include "core/op_cpuset.hpp"
 
 extern const char op_packetio_cpu_mask[];
 extern const char op_packetio_dpdk_misc_worker_mask[];
@@ -16,6 +16,7 @@ extern const char op_packetio_dpdk_options[];
 extern const char op_packetio_dpdk_port_ids[];
 extern const char op_packetio_dpdk_rx_worker_mask[];
 extern const char op_packetio_dpdk_tx_worker_mask[];
+extern const char op_packetio_dpdk_drop_tx_overruns[];
 
 namespace openperf::packetio::dpdk::config {
 
@@ -28,10 +29,10 @@ bool dpdk_disabled();
 std::map<uint16_t, std::string>
 dpdk_id_map(); /**< Retrieve a copy of port idx->id map */
 
-std::optional<core_mask> packetio_mask();
-std::optional<core_mask> misc_core_mask();
-std::optional<core_mask> rx_core_mask();
-std::optional<core_mask> tx_core_mask();
+std::optional<core::cpuset> packetio_mask();
+std::optional<core::cpuset> misc_core_mask();
+std::optional<core::cpuset> rx_core_mask();
+std::optional<core::cpuset> tx_core_mask();
 
 template <typename Container, typename Thing>
 bool contains(const Container& c, const Thing& t)
@@ -56,6 +57,10 @@ inline void add_dpdk_argument(std::vector<std::string>& args,
         args.back().append("." + std::string(input));
     }
 }
+
+bool dpdk_disable_lro();
+bool dpdk_disable_rx_irq();
+bool dpdk_drop_tx_overruns();
 
 } /* namespace openperf::packetio::dpdk::config */
 

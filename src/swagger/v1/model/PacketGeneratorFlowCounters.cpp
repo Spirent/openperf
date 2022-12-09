@@ -21,8 +21,12 @@ PacketGeneratorFlowCounters::PacketGeneratorFlowCounters()
 {
     m_Errors = 0L;
     m_Octets_actual = 0L;
+    m_Octets_dropped = 0L;
+    m_Octets_droppedIsSet = false;
     m_Octets_intended = 0L;
     m_Packets_actual = 0L;
+    m_Packets_dropped = 0L;
+    m_Packets_droppedIsSet = false;
     m_Packets_intended = 0L;
     m_Timestamp_first = "";
     m_Timestamp_firstIsSet = false;
@@ -46,8 +50,16 @@ nlohmann::json PacketGeneratorFlowCounters::toJson() const
 
     val["errors"] = m_Errors;
     val["octets_actual"] = m_Octets_actual;
+    if(m_Octets_droppedIsSet)
+    {
+        val["octets_dropped"] = m_Octets_dropped;
+    }
     val["octets_intended"] = m_Octets_intended;
     val["packets_actual"] = m_Packets_actual;
+    if(m_Packets_droppedIsSet)
+    {
+        val["packets_dropped"] = m_Packets_dropped;
+    }
     val["packets_intended"] = m_Packets_intended;
     if(m_Timestamp_firstIsSet)
     {
@@ -66,8 +78,16 @@ void PacketGeneratorFlowCounters::fromJson(nlohmann::json& val)
 {
     setErrors(val.at("errors"));
     setOctetsActual(val.at("octets_actual"));
+    if(val.find("octets_dropped") != val.end())
+    {
+        setOctetsDropped(val.at("octets_dropped"));
+    }
     setOctetsIntended(val.at("octets_intended"));
     setPacketsActual(val.at("packets_actual"));
+    if(val.find("packets_dropped") != val.end())
+    {
+        setPacketsDropped(val.at("packets_dropped"));
+    }
     setPacketsIntended(val.at("packets_intended"));
     if(val.find("timestamp_first") != val.end())
     {
@@ -101,6 +121,23 @@ void PacketGeneratorFlowCounters::setOctetsActual(int64_t value)
     m_Octets_actual = value;
     
 }
+int64_t PacketGeneratorFlowCounters::getOctetsDropped() const
+{
+    return m_Octets_dropped;
+}
+void PacketGeneratorFlowCounters::setOctetsDropped(int64_t value)
+{
+    m_Octets_dropped = value;
+    m_Octets_droppedIsSet = true;
+}
+bool PacketGeneratorFlowCounters::octetsDroppedIsSet() const
+{
+    return m_Octets_droppedIsSet;
+}
+void PacketGeneratorFlowCounters::unsetOctets_dropped()
+{
+    m_Octets_droppedIsSet = false;
+}
 int64_t PacketGeneratorFlowCounters::getOctetsIntended() const
 {
     return m_Octets_intended;
@@ -118,6 +155,23 @@ void PacketGeneratorFlowCounters::setPacketsActual(int64_t value)
 {
     m_Packets_actual = value;
     
+}
+int64_t PacketGeneratorFlowCounters::getPacketsDropped() const
+{
+    return m_Packets_dropped;
+}
+void PacketGeneratorFlowCounters::setPacketsDropped(int64_t value)
+{
+    m_Packets_dropped = value;
+    m_Packets_droppedIsSet = true;
+}
+bool PacketGeneratorFlowCounters::packetsDroppedIsSet() const
+{
+    return m_Packets_droppedIsSet;
+}
+void PacketGeneratorFlowCounters::unsetPackets_dropped()
+{
+    m_Packets_droppedIsSet = false;
 }
 int64_t PacketGeneratorFlowCounters::getPacketsIntended() const
 {

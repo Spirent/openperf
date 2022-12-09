@@ -7,10 +7,12 @@
 #include "lwip/snmp.h"
 #include "lwip/tcpip.h"
 
+#include "rte_errno.h"
+
 #include "packet/stack/dpdk/net_interface.hpp"
 #include "packet/stack/dpdk/pbuf_utils.h"
 #include "packet/stack/dpdk/tcpip_input.hpp"
-#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/mbuf_metadata.hpp"
 
 namespace openperf::packet::stack::dpdk {
 
@@ -38,8 +40,8 @@ void process_input_packets(void* arg)
 
         /* Inject each packet into the stack. */
         std::for_each(pbufs.data(), pbufs.data() + nb_pbufs, [&](auto* pbuf) {
-            auto* ifp = reinterpret_cast<netif*>(
-                packet_stack_pbuf_to_mbuf(pbuf)->userdata);
+            auto* ifp = packetio::dpdk::mbuf_tag_get<netif>(
+                packet_stack_pbuf_to_mbuf(pbuf));
             assert(ifp != nullptr);
             if (ifp->input(pbuf, ifp) != ERR_OK) {
                 MIB2_STATS_NETIF_INC_ATOMIC(ifp, ifindiscards);
@@ -82,7 +84,7 @@ uint16_t tcpip_input_queue::dequeue(pbuf* packets[], uint16_t max_packets)
 
 err_t tcpip_input_queue::inject(netif* ifp, rte_mbuf* packet)
 {
-    packet->userdata = ifp;
+    packetio::dpdk::mbuf_tag_set(packet, ifp);
 
     /* XXX: Important to synchronize in the worker thread context */
     if (rte_ring_enqueue(m_queue.get(), packet_stack_pbuf_synchronize(packet))

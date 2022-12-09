@@ -30,9 +30,6 @@ type CPUGeneratorCoreStats struct {
 	// Required: true
 	Error *int64 `json:"error"`
 
-	// The amount of time the hypervisor reported our virtual cores were blocked
-	Steal int64 `json:"steal,omitempty"`
-
 	// The amount of system time used, e.g. kernel or system calls
 	// Required: true
 	System *int64 `json:"system"`

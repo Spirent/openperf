@@ -39,10 +39,6 @@ public:
             tl::make_unexpected("Dummy driver does not support port deletion"));
     }
 
-    void start_all_ports() {}
-
-    void stop_all_ports() {}
-
     bool is_usable() { return (false); }
 };
 

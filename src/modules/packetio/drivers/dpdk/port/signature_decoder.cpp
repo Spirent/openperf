@@ -1,4 +1,5 @@
-#include "packetio/drivers/dpdk/mbuf_signature.hpp"
+#include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/mbuf_metadata.hpp"
 #include "packetio/drivers/dpdk/port/signature_decoder.hpp"
 #include "packetio/drivers/dpdk/port/signature_utils.hpp"
 #include "spirent_pga/api.h"

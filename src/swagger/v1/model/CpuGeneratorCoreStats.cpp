@@ -24,8 +24,6 @@ CpuGeneratorCoreStats::CpuGeneratorCoreStats()
     m_Target = 0L;
     m_System = 0L;
     m_User = 0L;
-    m_Steal = 0L;
-    m_StealIsSet = false;
     m_Error = 0L;
     
 }
@@ -48,10 +46,6 @@ nlohmann::json CpuGeneratorCoreStats::toJson() const
     val["target"] = m_Target;
     val["system"] = m_System;
     val["user"] = m_User;
-    if(m_StealIsSet)
-    {
-        val["steal"] = m_Steal;
-    }
     val["error"] = m_Error;
     {
         nlohmann::json jsonArray;
@@ -73,10 +67,6 @@ void CpuGeneratorCoreStats::fromJson(nlohmann::json& val)
     setTarget(val.at("target"));
     setSystem(val.at("system"));
     setUser(val.at("user"));
-    if(val.find("steal") != val.end())
-    {
-        setSteal(val.at("steal"));
-    }
     setError(val.at("error"));
     {
         m_Targets.clear();
@@ -145,23 +135,6 @@ void CpuGeneratorCoreStats::setUser(int64_t value)
 {
     m_User = value;
     
-}
-int64_t CpuGeneratorCoreStats::getSteal() const
-{
-    return m_Steal;
-}
-void CpuGeneratorCoreStats::setSteal(int64_t value)
-{
-    m_Steal = value;
-    m_StealIsSet = true;
-}
-bool CpuGeneratorCoreStats::stealIsSet() const
-{
-    return m_StealIsSet;
-}
-void CpuGeneratorCoreStats::unsetSteal()
-{
-    m_StealIsSet = false;
 }
 int64_t CpuGeneratorCoreStats::getError() const
 {

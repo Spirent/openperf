@@ -2,11 +2,13 @@
 #define _OP_DYNAMIC_THRESHOLD_HPP_
 
 #include <cinttypes>
+#include <stdexcept>
 
 namespace openperf::dynamic {
 
 enum class comparator {
-    EQUAL = 1,
+    NONE = 0,
+    EQUAL,
     GREATER_THAN,
     GREATER_OR_EQUAL,
     LESS_THAN,
@@ -16,7 +18,7 @@ enum class comparator {
 class threshold
 {
 private:
-    comparator m_comparator = comparator::EQUAL;
+    comparator m_comparator = comparator::NONE;
     double m_value = 0.0;
     uint64_t m_true = 0;
     uint64_t m_false = 0;
@@ -54,6 +56,8 @@ public:
         case comparator::LESS_OR_EQUAL:
             inc_counter(value <= m_value);
             break;
+        default:
+            throw std::domain_error("Illegal comparator value");
         }
     };
 

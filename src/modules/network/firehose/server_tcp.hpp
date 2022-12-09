@@ -2,6 +2,7 @@
 #define _OP_NETWORK_FIREHOSE_SERVER_TCP_HPP_
 
 #include <atomic>
+#include <optional>
 #include <thread>
 #include <vector>
 #include <map>

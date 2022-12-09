@@ -26,7 +26,7 @@ static int version_option_handler(int opt __attribute__((unused)),
             BUILD_VERSION,
             info.machine,
             info.sysname);
-    fprintf(output, "Copyright (C) 2019 Spirent Communications\n");
+    fprintf(output, "Copyright (C) 2022 Spirent Communications\n");
     exit(EXIT_SUCCESS);
 }
 

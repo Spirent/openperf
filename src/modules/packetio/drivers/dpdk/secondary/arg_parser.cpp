@@ -103,4 +103,8 @@ std::map<uint16_t, std::vector<uint16_t>> tx_port_queues()
     return (get_port_queues(op_packetio_dpdk_tx_queues));
 }
 
+bool dpdk_disable_lro() { return (true); }
+
+bool dpdk_disable_rx_irq() { return (true); }
+
 } // namespace openperf::packetio::dpdk::config

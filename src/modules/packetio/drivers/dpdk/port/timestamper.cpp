@@ -2,6 +2,7 @@
 
 #include "core/op_log.h"
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/mbuf_metadata.hpp"
 #include "packetio/drivers/dpdk/port/timestamper.hpp"
 #include "packetio/drivers/dpdk/port_info.hpp"
 #include "timesync/chrono.hpp"
@@ -58,12 +59,11 @@ static uint16_t timestamp_packets(uint16_t port_id,
     auto now = clock::now().time_since_epoch();
     auto rx_octets = 0U;
 
-    std::for_each(packets, packets + nb_packets, [&](auto& m) {
-        m->ol_flags |= PKT_RX_TIMESTAMP;
-        m->timestamp = (now
-                        + std::chrono::duration_cast<nanoseconds>(
-                            rx_octets * ps_per_octet))
-                           .count();
+    std::for_each(packets, packets + nb_packets, [&](auto* m) {
+        mbuf_timestamp_set(m,
+                           now
+                               + std::chrono::duration_cast<nanoseconds>(
+                                   rx_octets * ps_per_octet));
         rx_octets += rte_pktmbuf_pkt_len(m) + ethernet_overhead;
     });
 

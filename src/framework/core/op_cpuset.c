@@ -76,9 +76,10 @@ int op_cpuset_from_string(op_cpuset_t cpuset, const char* str)
             // Extract trailing characters to temp buffer
             strncpy(tmpstr, p + (nchars - xchars), xchars);
             tmpstr[xchars] = 0;
-            val = strtoull(tmpstr, 0, 16);
+            char* end = tmpstr;
+            val = strtoull(tmpstr, &end, 16);
             if (val == 0) {
-                if (errno == EINVAL) return -1;
+                if (errno == EINVAL || tmpstr == end) return -1;
             }
             op_cpuset_set_uint64(cpuset, bit_off, xbits, val);
             nchars -= xchars;
@@ -86,9 +87,10 @@ int op_cpuset_from_string(op_cpuset_t cpuset, const char* str)
         }
     } else {
         // Parse it as an integer
-        val = strtoull(str, 0, 0);
+        char* end = (char*)str;
+        val = strtoull(str, &end, 0);
         if (val == 0) {
-            if (errno == EINVAL) return -1;
+            if (errno == EINVAL || str == end) return -1;
         }
         op_cpuset_set_uint64(cpuset, 0, 64, val);
     }

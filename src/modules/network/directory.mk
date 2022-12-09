@@ -8,6 +8,7 @@ NETWORK_DEPENDS += api expected framework json pistache swagger_model \
 NETWORK_SOURCES += \
 	api_converters.cpp \
 	api_transmogrify.cpp \
+	arg_parser.cpp \
 	handler.cpp \
 	init.cpp \
 	server.cpp \

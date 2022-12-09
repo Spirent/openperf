@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   acceptance_tests:
     machine:
-      image: circleci/classic:latest
+      image: ubuntu-2004:202201-02
     steps:
       - attach_workspace:
           at: "~"

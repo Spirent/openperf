@@ -24,8 +24,6 @@ uint16_t tx_queue_default(uint16_t port_id)
     return (tx_queue_count(port_id));
 }
 
-bool lsc_interrupt(uint16_t port_id) { return (false); }
-
-bool rxq_interrupt(uint16_t) { return (false); }
+bool lsc_interrupt(uint16_t) { return (false); }
 
 } // namespace openperf::packetio::dpdk::port_info

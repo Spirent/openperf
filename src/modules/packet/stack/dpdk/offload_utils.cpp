@@ -40,13 +40,13 @@ void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu)
         auto ip4 =
             rte_pktmbuf_mtod_offset(mbuf, rte_ipv4_hdr*, hdr_lens.l2_len);
         ip4->hdr_checksum = 0;
-        ol_flags |= (PKT_TX_IP_CKSUM | PKT_TX_IPV4);
+        ol_flags |= (RTE_MBUF_F_TX_IP_CKSUM | RTE_MBUF_F_TX_IPV4);
         break;
     }
     case RTE_PTYPE_L3_IPV6:
     case RTE_PTYPE_L3_IPV6_EXT:
     case RTE_PTYPE_L3_IPV6_EXT_UNKNOWN:
-        ol_flags |= PKT_TX_IPV6;
+        ol_flags |= RTE_MBUF_F_TX_IPV6;
         break;
     }
 
@@ -55,9 +55,9 @@ void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu)
         auto ip = rte_pktmbuf_mtod_offset(mbuf, void*, hdr_lens.l2_len);
         auto udp = rte_pktmbuf_mtod_offset(
             mbuf, rte_udp_hdr*, hdr_lens.l2_len + hdr_lens.l3_len);
-        ol_flags |= PKT_TX_UDP_CKSUM;
+        ol_flags |= RTE_MBUF_F_TX_UDP_CKSUM;
         udp->dgram_cksum =
-            (ol_flags & PKT_TX_IPV4
+            (ol_flags & RTE_MBUF_F_TX_IPV4
                  ? rte_ipv4_phdr_cksum(reinterpret_cast<rte_ipv4_hdr*>(ip),
                                        ol_flags)
                  : rte_ipv6_phdr_cksum(reinterpret_cast<rte_ipv6_hdr*>(ip),
@@ -69,10 +69,10 @@ void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu)
         auto tcp = rte_pktmbuf_mtod_offset(
             mbuf, rte_tcp_hdr*, hdr_lens.l2_len + hdr_lens.l3_len);
         tso_segsz = mtu - hdr_lens.l3_len - tcp_header_length(tcp);
-        ol_flags |=
-            (rte_pktmbuf_pkt_len(mbuf) > mtu ? PKT_TX_TCP_SEG | PKT_TX_TCP_CKSUM
-                                             : PKT_TX_TCP_CKSUM);
-        tcp->cksum = (ol_flags & PKT_TX_IPV4
+        ol_flags |= (rte_pktmbuf_pkt_len(mbuf) > mtu
+                         ? RTE_MBUF_F_TX_TCP_SEG | RTE_MBUF_F_TX_TCP_CKSUM
+                         : RTE_MBUF_F_TX_TCP_CKSUM);
+        tcp->cksum = (ol_flags & RTE_MBUF_F_TX_IPV4
                           ? rte_ipv4_phdr_cksum(
                               reinterpret_cast<rte_ipv4_hdr*>(ip), ol_flags)
                           : rte_ipv6_phdr_cksum(
@@ -86,7 +86,7 @@ void set_tx_offload_metadata(rte_mbuf* mbuf, uint16_t mtu)
     mbuf->l2_len = hdr_lens.l2_len;
     mbuf->l3_len = hdr_lens.l3_len;
     mbuf->l4_len = hdr_lens.l4_len;
-    mbuf->tso_segsz = (ol_flags & PKT_TX_TCP_SEG ? tso_segsz : 0);
+    mbuf->tso_segsz = (ol_flags & RTE_MBUF_F_TX_TCP_SEG ? tso_segsz : 0);
 
     rte_mbuf_sanity_check(mbuf, true);
 }

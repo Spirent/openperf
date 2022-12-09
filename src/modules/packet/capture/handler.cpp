@@ -210,10 +210,9 @@ void set_optional_filter(const handler::request_type& request,
                          filter_map_ptr& filter,
                          filter_key_type key)
 {
-    if (auto query = request.query().get(std::string(to_key_name(key)));
-        !query.isEmpty()) {
+    if (auto query = request.query().get(std::string(to_key_name(key)))) {
         if (!filter) { filter = std::make_unique<filter_map_type>(); }
-        filter->emplace(key, query.get().data());
+        filter->emplace(key, query->data());
     }
 }
 
@@ -599,6 +598,7 @@ void handler::bulk_stop_captures(const request_type& request,
             request);
     if (!swagger_request) {
         response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
     }
 
     const auto& ids = swagger_request->getIds();
@@ -725,21 +725,21 @@ void handler::get_capture_result_pcap(const request_type& request,
         return;
     }
 
-    if (auto query = request.query().get("packet_start"); !query.isEmpty()) {
-        auto v = to_uint64(query.get());
+    if (auto query = request.query().get("packet_start")) {
+        auto v = to_uint64(query.value());
         if (!v) {
             auto err_msg =
-                "packet start value is not valid (" + query.get() + ")";
+                "packet start value is not valid (" + query.value() + ")";
             response.send(Http::Code::Bad_Request, err_msg);
             return;
         }
         packet_start = v.value();
     }
-    if (auto query = request.query().get("packet_end"); !query.isEmpty()) {
-        auto v = to_uint64(query.get());
+    if (auto query = request.query().get("packet_end")) {
+        auto v = to_uint64(query.value());
         if (!v) {
             auto err_msg =
-                "packet end value is not valid (" + query.get() + ")";
+                "packet end value is not valid (" + query.value() + ")";
             response.send(Http::Code::Bad_Request, err_msg);
             return;
         }
@@ -823,6 +823,7 @@ void handler::merge_captures_pcap(const request_type& request,
         parse_request<swagger::v1::model::GetPacketCapturesPcapConfig>(request);
     if (!swagger_request) {
         response.send(Http::Code::Bad_Request, swagger_request.error());
+        return;
     }
 
     const auto& ids = swagger_request->getIds();

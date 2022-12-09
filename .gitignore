@@ -7,5 +7,10 @@ build/
 # OSX cruft
 .DS_Store
 
+# vscode cruft
+.vscode/*.log
+
 # clang compiler database
 compile_commands.json
+
+

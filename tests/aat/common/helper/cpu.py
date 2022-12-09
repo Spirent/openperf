@@ -22,9 +22,10 @@ def config_model(method='cores'):
     config.method = method
 
     if method == 'cores':
+
         core_config_target = client.models.CpuGeneratorCoreConfigTargets()
         core_config_target.instruction_set = 'scalar'
-        core_config_target.data_type = 'float32';
+        core_config_target.data_type = 'float32'
         core_config_target.weight = 1
 
         core_config = client.models.CpuGeneratorCoreConfig()

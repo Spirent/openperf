@@ -80,11 +80,23 @@ void checksum_ipv4_pseudoheaders(const uint8_t* const ipv4_header_ptrs[],
 
 uint32_t checksum_data_aligned(const uint32_t data[], uint16_t length)
 {
-    uint64_t sum = std::accumulate(
-        data,
-        data + length,
-        uint64_t{0},
-        [](const auto& left, const auto& right) { return (left + right); });
+    /*
+     * Pro tip: Using 64 bit integers for checksums requires half the
+     * instructions compared to using 32 bit integers :)
+     */
+    const auto* data64 = reinterpret_cast<const uint64_t*>(data);
+    auto sum = std::accumulate(data64,
+                               data64 + length / 2,
+                               uint64_t{0},
+                               [](auto&& sum, const auto& value) {
+                                   sum += value;
+                                   sum += (sum < value); /* handle overflow */
+                                   return (sum);
+                               });
+
+    /* Don't forget possible trailing data */
+    if (length & 0x1) { sum += data[length - 1]; }
+
     return (fold64(sum));
 }
 

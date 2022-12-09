@@ -35,7 +35,7 @@ uint16_t packet_stack_gso_max_segment_length(const struct tcp_pcb*);
  * function should never fail.
  */
 uint16_t packet_stack_gso_segment_ack_partial(struct tcp_seg* seg,
-                                                uint16_t acked);
+                                                uint32_t acked);
 
 /**
  * Split a segment at the specified split value.
@@ -63,6 +63,12 @@ uint16_t packet_stack_gso_pbuf_copy(struct pbuf* p_head,
                                       uint16_t offset,
                                       const void* dataptr,
                                       uint16_t length);
+
+/**
+ * Calculate the minimum number of segments required to generate the
+ * specified data. Returned value will be clamped to [1, 127];
+ */
+uint8_t packet_stack_gso_segment_count(const struct tcp_pcb* pcb, uint32_t length);
 
 #ifdef __cplusplus
 }

@@ -145,23 +145,23 @@ static void set_optional_filter(const handler::request_type& request,
 {
     using namespace libpacket::type;
 
-    if (auto query = request.query().get(to_string(type)); !query.isEmpty()) {
+    if (auto query = request.query().get(to_string(type))) {
         if (!filter) { filter = std::make_unique<intf_filter_map_type>(); }
         switch (type) {
         case intf_filter_type::port_id:
-            filter->emplace(type, simple_url_decode(query.get().data()));
+            filter->emplace(type, simple_url_decode(query->data()));
             break;
         case intf_filter_type::eth_mac_address:
             filter->emplace(type,
-                            mac_address(simple_url_decode(query.get().data())));
+                            mac_address(simple_url_decode(query->data())));
             break;
         case intf_filter_type::ipv4_address:
-            filter->emplace(
-                type, ipv4_address(simple_url_decode(query.get().data())));
+            filter->emplace(type,
+                            ipv4_address(simple_url_decode(query->data())));
             break;
         case intf_filter_type::ipv6_address:
-            filter->emplace(
-                type, ipv6_address(simple_url_decode(query.get().data())));
+            filter->emplace(type,
+                            ipv6_address(simple_url_decode(query->data())));
             break;
         default:
             break; /* only type left is 'none' */

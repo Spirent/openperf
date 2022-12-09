@@ -3,7 +3,9 @@
 #include <vector>
 
 #include "core/op_core.h"
+#include "packetio/drivers/dpdk/arg_parser.hpp"
 #include "packetio/drivers/dpdk/dpdk.h"
+#include "packetio/drivers/dpdk/names.hpp"
 #include "packetio/drivers/dpdk/port_info.hpp"
 #include "packetio/drivers/dpdk/topology_utils.hpp"
 #include "packetio/workers/dpdk/event_loop_adapter.hpp"
@@ -32,7 +34,7 @@ static void launch_workers(void* context,
     };
 
     /* Launch a worker on every available core */
-    if (rte_eal_mp_remote_launch(worker::main, &args, SKIP_MASTER) != 0) {
+    if (rte_eal_mp_remote_launch(worker::main, &args, SKIP_MAIN) != 0) {
         throw std::runtime_error("DPDK worker core is busy!");
     }
 
@@ -80,10 +82,11 @@ static std::vector<queue::descriptor>
 filter_queue_descriptors(std::vector<queue::descriptor>&& q_descriptors)
 {
     /*
-     * XXX: If we have only one worker thread, then everything should use the
-     * direct transmit functions.  Hence, we don't need any tx queues.
+     * XXX: If we have only one worker thread or no stack thread, then
+     * everything should use the direct transmit functions.
+     * Hence, we don't need any tx queues.
      */
-    if (rte_lcore_count() <= 2) {
+    if (rte_lcore_count() <= 2 || !topology::get_stack_lcore_id()) {
         /* Filter out all tx queues; we don't need them */
         q_descriptors.erase(
             std::remove_if(begin(q_descriptors),
@@ -168,7 +171,8 @@ static void maybe_disable_rxq_tag_detection(const port::filter& filter)
 
 static void maybe_update_rxq_lro_mode(uint16_t port_index)
 {
-    if (port_info::rx_offloads(port_index) & DEV_RX_OFFLOAD_TCP_LRO) {
+    if (!config::dpdk_disable_lro()
+        && port_info::rx_offloads(port_index) & RTE_ETH_RX_OFFLOAD_TCP_LRO) {
         auto& queues = worker::port_queues::instance();
         auto& container = queues[port_index];
         for (uint16_t i = 0; i < container.rx_queues(); i++) {
@@ -181,13 +185,6 @@ static void maybe_update_rxq_lro_mode(uint16_t port_index)
             rxq->flags(rxq->flags() | rx_feature_flags::hardware_lro);
         }
     }
-}
-
-bool always_has_tx_sink(uint16_t port_index)
-{
-    // Always need tx sink callback when using net_ring driver
-    // This is used to clear the mbuf tx_sink flag so it is not seen on rx
-    return (port_info::driver_name(port_index) == driver_names::ring);
 }
 
 worker_controller::worker_controller(void* context,
@@ -209,7 +206,8 @@ worker_controller::worker_controller(void* context,
      * 2. Initialize the transmit worker load map.
      */
     unsigned lcore_id;
-    RTE_LCORE_FOREACH_SLAVE (lcore_id) {
+    RTE_LCORE_FOREACH_WORKER(lcore_id)
+    {
         m_recycler->writer_add_reader(lcore_id);
     }
 
@@ -251,7 +249,6 @@ worker_controller::worker_controller(void* context,
         portq_descriptors, m_tx_schedulers, m_tx_workers, queues));
 
     /* And start them */
-    m_driver.start_all_ports();
     m_workers->start(m_context, num_workers());
 }
 
@@ -260,7 +257,6 @@ worker_controller::~worker_controller()
     if (!m_workers) return;
 
     m_workers->stop(m_context, num_workers());
-    m_driver.stop_all_ports();
     m_recycler->writer_process_gc_callbacks();
     rte_eal_mp_wait_lcore();
     worker::port_queues::instance().unset();

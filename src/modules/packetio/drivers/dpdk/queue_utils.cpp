@@ -111,7 +111,7 @@ static __attribute__((const)) T distribute(T total, U buckets, V n)
     return (static_cast<T>(n < total % buckets ? base + 1 : base));
 }
 
-uint16_t offset_bit(const core_mask& mask, uint16_t offset)
+uint16_t offset_bit(const core::cpuset& mask, uint16_t offset)
 {
     assert(mask.count());
 
@@ -130,7 +130,7 @@ uint16_t offset_bit(const core_mask& mask, uint16_t offset)
 }
 
 uint16_t worker_id(const std::vector<worker_config>& workers,
-                   const core_mask& worker_mask,
+                   const core::cpuset& worker_mask,
                    uint16_t offset)
 {
     assert(workers.size() < std::numeric_limits<uint16_t>::max());
@@ -183,7 +183,7 @@ distribute_queues(const std::vector<uint16_t>& port_indexes, uint16_t worker_id)
 
 static std::vector<descriptor>
 distribute_queues(const std::vector<uint16_t>& port_indexes,
-                  const core_mask& worker_mask,
+                  const core::cpuset& worker_mask,
                   queue_direction dir)
 {
     assert(dir == queue_direction::RX || dir == queue_direction::TX);
@@ -272,12 +272,13 @@ template <typename T> uint16_t to_u16(T x)
         std::clamp(x, static_cast<T>(1), static_cast<T>(0xffff))));
 }
 
-static std::pair<core_mask, core_mask> unique_masks(const core_mask& mask)
+static std::pair<core::cpuset, core::cpuset>
+unique_masks(const core::cpuset& mask)
 {
     /* Check for explicit tx/rx masks that provide cores for the given mask
      */
-    auto rx_mask = config::rx_core_mask().value_or(core_mask{}) & mask;
-    auto tx_mask = config::tx_core_mask().value_or(core_mask{}) & mask;
+    auto rx_mask = config::rx_core_mask().value_or(core::cpuset{}) & mask;
+    auto tx_mask = config::tx_core_mask().value_or(core::cpuset{}) & mask;
 
     /* Figure out which cores still need to be assigned */
     const auto available = mask & (~rx_mask) & (~tx_mask);
@@ -317,7 +318,7 @@ static std::pair<core_mask, core_mask> unique_masks(const core_mask& mask)
 
 std::vector<descriptor>
 distribute_queues(const std::vector<uint16_t>& port_indexes,
-                  const core_mask& mask)
+                  const core::cpuset& mask)
 {
     /* With only 1 worker, no distribution is necessary */
     if (mask.count() == 1) {

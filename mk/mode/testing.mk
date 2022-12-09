@@ -8,7 +8,7 @@ OP_COPTS += -Os
 # Unfortunately, gcc doesn't support it and DPDK needs gcc for cross compiling.
 # Bummer.
 ifeq ($(ARCH), $(HOST_ARCH)) # native compile
-	OP_COPTS += -gline-tables-only
+	OP_COPTS += -gline-tables-only -fno-omit-frame-pointer
 else
 	OP_COPTS += -g
 endif

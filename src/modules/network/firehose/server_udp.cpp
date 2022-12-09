@@ -10,13 +10,13 @@
 #include "core/op_thread.h"
 #include "timesync/bintime.hpp"
 #include "utils/random.hpp"
-#include "server_udp.hpp"
+
+#include "network/arg_parser.hpp"
+#include "network/utils/network_sockaddr.hpp"
 #include "protocol.hpp"
+#include "server_udp.hpp"
 
-#include "../utils/network_sockaddr.hpp"
 namespace openperf::network::internal::firehose {
-
-constexpr auto default_operation_timeout_usec = 1000000;
 
 tl::expected<int, std::string> server_udp::new_server(
     int domain, in_port_t port, const std::optional<std::string>& interface)
@@ -97,12 +97,8 @@ tl::expected<int, std::string> server_udp::new_server(
         return tl::make_unexpected<std::string>(strerror(err));
     }
 
-    static auto timeout = std::chrono::microseconds(
-        openperf::config::file::op_config_get_param<OP_OPTION_TYPE_LONG>(
-            "modules.network.operation-timeout")
-            .value_or(default_operation_timeout_usec));
-
-    static auto read_timeout = timesync::to_timeval(timeout);
+    static auto read_timeout =
+        timesync::to_timeval(config::operation_timeout());
     if (m_driver->setsockopt(
             sock, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout))
         != 0) {
@@ -163,7 +159,8 @@ void server_udp::run_worker_thread()
         op_thread_setname("op_net_srv_w");
 
         ssize_t recv_or_err = 0;
-        connection_t conn = { .fd = m_fd, .state = STATE_WAITING, .bytes_left = 0};
+        connection_t conn = {
+            .fd = m_fd, .state = STATE_WAITING, .bytes_left = 0};
         sockaddr_storage client_storage;
         auto* client = reinterpret_cast<sockaddr*>(&client_storage);
         socklen_t client_length = sizeof(struct sockaddr_in6);

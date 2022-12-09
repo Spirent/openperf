@@ -31,20 +31,72 @@ class CpuGeneratorTargetStats(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'data_type': 'str',
+        'instruction_set': 'str',
         'operations': 'int'
     }
 
     attribute_map = {
+        'data_type': 'data_type',
+        'instruction_set': 'instruction_set',
         'operations': 'operations'
     }
 
-    def __init__(self, operations=None):  # noqa: E501
+    def __init__(self, data_type=None, instruction_set=None, operations=None):  # noqa: E501
         """CpuGeneratorTargetStats - a model defined in Swagger"""  # noqa: E501
 
+        self._data_type = None
+        self._instruction_set = None
         self._operations = None
         self.discriminator = None
 
+        self.data_type = data_type
+        self.instruction_set = instruction_set
         self.operations = operations
+
+    @property
+    def data_type(self):
+        """Gets the data_type of this CpuGeneratorTargetStats.  # noqa: E501
+
+        CPU load target operation data type, actual for chosen instruction set  # noqa: E501
+
+        :return: The data_type of this CpuGeneratorTargetStats.  # noqa: E501
+        :rtype: str
+        """
+        return self._data_type
+
+    @data_type.setter
+    def data_type(self, data_type):
+        """Sets the data_type of this CpuGeneratorTargetStats.
+
+        CPU load target operation data type, actual for chosen instruction set  # noqa: E501
+
+        :param data_type: The data_type of this CpuGeneratorTargetStats.  # noqa: E501
+        :type: str
+        """
+        self._data_type = data_type
+
+    @property
+    def instruction_set(self):
+        """Gets the instruction_set of this CpuGeneratorTargetStats.  # noqa: E501
+
+        CPU load instruction set  # noqa: E501
+
+        :return: The instruction_set of this CpuGeneratorTargetStats.  # noqa: E501
+        :rtype: str
+        """
+        return self._instruction_set
+
+    @instruction_set.setter
+    def instruction_set(self, instruction_set):
+        """Sets the instruction_set of this CpuGeneratorTargetStats.
+
+        CPU load instruction set  # noqa: E501
+
+        :param instruction_set: The instruction_set of this CpuGeneratorTargetStats.  # noqa: E501
+        :type: str
+        """
+        self._instruction_set = instruction_set
 
     @property
     def operations(self):

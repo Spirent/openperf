@@ -37,6 +37,7 @@ public:
     uint16_t max_packet_length() const;
     packet::packets_per_hour packet_rate() const;
     uint16_t pull(rte_mbuf* packets[], uint16_t count) const;
+    void update_drop_counters(uint16_t packets, size_t octets) const;
 };
 
 } // namespace openperf::packetio::dpdk

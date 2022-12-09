@@ -8,9 +8,10 @@ namespace openperf::api::client {
 
 using namespace Pistache;
 
-static auto internal_api_request(Http::RequestBuilder& request_builder,
-                                 const std::string& body,
-                                 duration_t timeout)
+static auto
+internal_api_request(Http::Experimental::RequestBuilder& request_builder,
+                     const std::string& body,
+                     duration_t timeout)
 {
     // clang-format off
     auto response = request_builder
@@ -48,7 +49,7 @@ static auto make_full_uri(std::string_view resource)
 std::pair<Http::Code, std::string> internal_api_get(std::string_view resource,
                                                     duration_t timeout)
 {
-    Http::Client client;
+    Http::Experimental::Client client;
     client.init();
     auto rb = client.get(make_full_uri(resource));
     auto result = internal_api_request(rb, "", timeout);
@@ -62,7 +63,7 @@ std::pair<Http::Code, std::string> internal_api_post(std::string_view resource,
                                                      const std::string& body,
                                                      duration_t timeout)
 {
-    Http::Client client;
+    Http::Experimental::Client client;
     client.init();
     auto rb = client.post(make_full_uri(resource));
     auto result = internal_api_request(rb, body, timeout);
@@ -75,7 +76,7 @@ std::pair<Http::Code, std::string> internal_api_post(std::string_view resource,
 std::pair<Http::Code, std::string> internal_api_del(std::string_view resource,
                                                     duration_t timeout)
 {
-    Http::Client client;
+    Http::Experimental::Client client;
     client.init();
     auto rb = client.del(make_full_uri(resource));
     auto result = internal_api_request(rb, "", timeout);

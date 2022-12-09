@@ -1,6 +1,10 @@
 #include "core/op_core.h"
 #include "config/op_config_file.hpp"
 
+const char op_network_mask[] = "modules.network.cpu-mask";
+const char op_network_driver[] = "modules.network.driver";
+const char op_network_op_timeout[] = "modules.network.operation-timeout";
+
 MAKE_OPTION_DATA(
     network,
     NULL,

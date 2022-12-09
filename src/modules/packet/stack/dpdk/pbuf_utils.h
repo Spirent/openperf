@@ -1,12 +1,12 @@
 #ifndef _OP_PACKET_STACK_DPDK_PBUF_UTILS_H_
 #define _OP_PACKET_STACK_DPDK_PBUF_UTILS_H_
 
-#include "lwip/pbuf.h"
-#include "packetio/drivers/dpdk/dpdk.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct rte_mbuf;
+struct pbuf;
 
 /* Translate a {pbuf,mbuf} pointer into a {mbuf, pbuf} pointer */
 struct pbuf* packet_stack_mbuf_to_pbuf(const struct rte_mbuf*);

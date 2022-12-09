@@ -147,8 +147,23 @@ func (m *TimeSourceStats) UnmarshalBinary(b []byte) error {
 // swagger:model TimeSourceStatsNtp
 type TimeSourceStatsNtp struct {
 
+	// the time and date of the last accepted NTP reply, in ISO8601 format
+	// Format: date-time
+	LastRxAccepted strfmt.DateTime `json:"last_rx_accepted,omitempty"`
+
+	// The time and date of the last ignored NTP reply, in ISO8601 format
+	// Format: date-time
+	LastRxIgnored strfmt.DateTime `json:"last_rx_ignored,omitempty"`
+
 	// Current NTP server poll period, in seconds
-	PollPeriod int64 `json:"poll_period,omitempty"`
+	// Required: true
+	PollPeriod *int64 `json:"poll_period"`
+
+	// Received packets that were ignored due to an invalid origin timestamp or stratum,
+	// e.g. a Kiss-o'-Death packet
+	//
+	// Required: true
+	RxIgnored *int64 `json:"rx_ignored"`
 
 	// Received packets
 	// Required: true
@@ -167,6 +182,22 @@ type TimeSourceStatsNtp struct {
 func (m *TimeSourceStatsNtp) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateLastRxAccepted(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateLastRxIgnored(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validatePollPeriod(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateRxIgnored(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateRxPackets(formats); err != nil {
 		res = append(res, err)
 	}
@@ -178,6 +209,48 @@ func (m *TimeSourceStatsNtp) Validate(formats strfmt.Registry) error {
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *TimeSourceStatsNtp) validateLastRxAccepted(formats strfmt.Registry) error {
+	if swag.IsZero(m.LastRxAccepted) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("ntp"+"."+"last_rx_accepted", "body", "date-time", m.LastRxAccepted.String(), formats); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *TimeSourceStatsNtp) validateLastRxIgnored(formats strfmt.Registry) error {
+	if swag.IsZero(m.LastRxIgnored) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("ntp"+"."+"last_rx_ignored", "body", "date-time", m.LastRxIgnored.String(), formats); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *TimeSourceStatsNtp) validatePollPeriod(formats strfmt.Registry) error {
+
+	if err := validate.Required("ntp"+"."+"poll_period", "body", m.PollPeriod); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *TimeSourceStatsNtp) validateRxIgnored(formats strfmt.Registry) error {
+
+	if err := validate.Required("ntp"+"."+"rx_ignored", "body", m.RxIgnored); err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -1,10 +1,12 @@
 #include <cinttypes>
+#include <future>
 #include <string>
 
 #include <arpa/inet.h>
 
 #include "core/op_log.h"
 #include "core/op_event_loop.hpp"
+#include "core/op_thread.h"
 #include "timesync/api.hpp"
 #include "timesync/clock.hpp"
 #include "timesync/ntp.hpp"
@@ -13,6 +15,9 @@
 namespace openperf::timesync::source {
 
 static constexpr auto poll_period_adjust = 4s;
+
+static constexpr auto dns_query_timeout = 10ms;
+static uint8_t thread_index = 0;
 
 static int handle_ntp_poll(const struct op_event_data* data, void* arg);
 
@@ -53,39 +58,96 @@ static in_port_t get_port(const struct addrinfo* ai)
                   : reinterpret_cast<sockaddr_in6*>(ai->ai_addr)->sin6_port));
 }
 
-std::pair<std::string, std::string> get_name_and_port(const struct addrinfo* ai)
+/*
+ * A wrapper around a function to allow async tasks to clean
+ * up after themselves, even if the original caller goes out of scope.
+ * Appropriated from the example described here:
+ * https://sean-parent.stlab.cc/2017/07/10/future-ruminations.html
+ */
+template <typename Signature, typename Function>
+auto cancelable_task(Function&& f)
 {
-    auto name = std::string{};
-    auto port = std::string{};
+    auto p = std::make_shared<std::packaged_task<Signature>>(
+        std::forward<Function>(f));
+    auto w = std::weak_ptr<std::packaged_task<Signature>>(p);
+    auto r = p->get_future();
 
-    name.resize(api::name_max_length);
-    port.resize(api::port_max_length);
+    return (std::make_pair(
+        [w_ = std::move(w)](auto&&... args) {
+            if (auto p = w_.lock()) {
+                (*p)(std::forward<decltype(args)>(args)...);
+            }
+        },
+        std::async(std::launch::async,
+                   [p_ = std::move(p), r_ = std::move(r)]() mutable {
+                       return (r_.get());
+                   })));
+}
 
-    if (getnameinfo(ai->ai_addr,
-                    ai->ai_addrlen,
-                    name.data(),
-                    name.size(),
-                    port.data(),
-                    port.size(),
-                    NI_NAMEREQD)
-        == 0) {
-        name.resize(strnlen(name.data(), name.capacity()));
-        port.resize(strnlen(port.data(), port.capacity()));
+using host_and_port = std::pair<std::string, std::string>;
 
-        return (std::make_pair(name, port));
-    }
-
-    /* Resolution failed for some reason; return the raw socket data */
+static host_and_port get_address_and_port(const struct addrinfo* ai)
+{
     static_assert(api::name_max_length > INET6_ADDRSTRLEN);
 
+    /* Decode the socket data into a name/port pair */
+    auto name = std::string(api::name_max_length, '\0');
     if (inet_ntop(
             ai->ai_family, get_address(ai), name.data(), ai->ai_addrlen)) {
         name.resize(strnlen(name.data(), name.capacity()));
         return (std::make_pair(name, std::to_string(get_port(ai))));
     }
 
-    /* All forms of resolution failed */
+    /* Decode failed! */
     return (std::make_pair("unknown", "unknown"));
+}
+
+static host_and_port get_name_and_port(const struct addrinfo* ai)
+{
+    static_assert(api::name_max_length > INET6_ADDRSTRLEN);
+
+    /*
+     * We have no way to explicitly state a DNS timeout, so kick off the
+     * resolution attempt in a separate thread. If the hostname takes too
+     * long to resolve, then just provide the raw socket data.
+     */
+    auto task_handle =
+        cancelable_task<std::optional<host_and_port>(const struct addrinfo*)>(
+            [](const struct addrinfo* ai) -> std::optional<host_and_port> {
+                op_thread_setname(
+                    ("op_nameinfo_" + std::to_string(thread_index++)).c_str());
+
+                auto name = std::string(api::name_max_length, '\0');
+                auto port = std::string(api::port_max_length, '\0');
+
+                if (getnameinfo(ai->ai_addr,
+                                ai->ai_addrlen,
+                                name.data(),
+                                name.size(),
+                                port.data(),
+                                port.size(),
+                                NI_NAMEREQD)
+                    == 0) {
+                    name.resize(strnlen(name.data(), name.capacity()));
+                    port.resize(strnlen(port.data(), port.capacity()));
+
+                    return (std::make_pair(name, port));
+                }
+
+                return (std::nullopt);
+            });
+
+    auto query_thread = std::thread(std::move(task_handle.first), ai);
+    query_thread.detach();
+
+    if (task_handle.second.wait_for(dns_query_timeout)
+            == std::future_status::ready
+        && task_handle.second.valid()) {
+        return (task_handle.second.get().value_or(get_address_and_port(ai)));
+    }
+
+    /* Resolution took too long; return the socket data */
+    return (get_address_and_port(ai));
 }
 
 /**
@@ -148,6 +210,7 @@ static int handle_ntp_reply(const struct op_event_data*, void* arg)
 
     auto buffer = std::array<std::byte, timesync::ntp::packet_size>();
     auto length = buffer.size();
+    auto now = chrono::realtime::now();
     while (auto rx_time = source->socket.recv(buffer.data(), length)) {
         assert(length <= buffer.size());
         auto reply = timesync::ntp::deserialize(buffer.data(), length);
@@ -155,12 +218,16 @@ static int handle_ntp_reply(const struct op_event_data*, void* arg)
         /* Skip replies we can't decode. */
         if (!reply) { continue; }
 
+        source->stats.rx++;
+
         /*
          * According to RFC 5905, if the stratum is 0, then the
          * reply is invalid and the server might be trying to tell
          * us something.
          */
         if (!reply->stratum) {
+            source->stats.rx_ignored++;
+            source->stats.last_rx_ignored = now;
             handle_invalid_ntp_reply(source, *reply);
             continue;
         }
@@ -171,6 +238,8 @@ static int handle_ntp_reply(const struct op_event_data*, void* arg)
          * we expect.
          */
         if (reply->origin != source->expected_origin) {
+            source->stats.rx_ignored++;
+            source->stats.last_rx_ignored = now;
             OP_LOG(OP_LOG_WARNING,
                    "Ignoring NTP reply with unrecognized origin timestamp, "
                    "%016" PRIx64 ".%016" PRIx64 "\n",
@@ -181,7 +250,7 @@ static int handle_ntp_reply(const struct op_event_data*, void* arg)
 
         // ntp::dump(stderr, *reply);
 
-        source->stats.rx++;
+        source->stats.last_rx_accepted = now;
         source->stats.stratum = reply->stratum;
         source->clock->update(
             source->last_tx, reply->receive, reply->transmit, *rx_time);
@@ -255,8 +324,11 @@ api::time_source_ntp to_time_source(const ntp& source)
     auto ntp = api::time_source_ntp{
         .config = config,
         .stats = {
+            .last_rx_accepted = source.stats.last_rx_accepted,
+            .last_rx_ignored = source.stats.last_rx_ignored,
             .poll_period = std::chrono::duration_cast<std::chrono::seconds>(
                 ntp_poll_delay(source.stats.tx, source.stats.poll_period)),
+            .rx_ignored = source.stats.rx_ignored,
             .rx_packets = source.stats.rx,
             .tx_packets = source.stats.tx,
             .stratum = source.stats.stratum}};

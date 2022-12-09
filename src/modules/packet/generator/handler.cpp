@@ -229,10 +229,9 @@ static void set_optional_filter(const handler::request_type& request,
                                 filter_map_ptr& filter,
                                 filter_type key)
 {
-    if (auto query = request.query().get(std::string(to_filter_name(key)));
-        !query.isEmpty()) {
+    if (auto query = request.query().get(std::string(to_filter_name(key)))) {
         if (!filter) { filter = std::make_unique<filter_map_type>(); }
-        filter->emplace(key, query.get().data());
+        filter->emplace(key, query->data());
     }
 }
 

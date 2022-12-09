@@ -116,6 +116,11 @@ TEST_CASE("rates", "[rate]")
         REQUIRE(r * std::chrono::seconds{60} == 600);
         REQUIRE(r * std::chrono::milliseconds{1000} == 10);
         REQUIRE(r * std::chrono::hours{1} == 600 * 60);
+
+        /* Multiplication is commutative */
+        REQUIRE(std::chrono::seconds{60} * r == 600);
+        REQUIRE(std::chrono::milliseconds{1000} * r == 10);
+        REQUIRE(std::chrono::hours{1} * r == 600 * 60);
     }
 
     SECTION("periods, ")

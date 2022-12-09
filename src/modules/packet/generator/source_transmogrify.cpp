@@ -65,10 +65,10 @@ static void populate_flow_counters(
 
     if (src.packet) {
         /* Calculate expected packets/octets */
-        auto exp_seq_packets = std::llround(
+        auto exp_seq_packets =
             result.parent().packet_rate()
-            * std::chrono::duration_cast<std::chrono::duration<double>>(
-                src.last_ - src.first_));
+            * std::chrono::duration_cast<std::chrono::milliseconds>(
+                src.last_ - src.first_);
 
         const auto& sequence = result.parent().sequence();
         auto exp_octets =
@@ -97,10 +97,10 @@ static void populate_counters(
          * Use the actual recorded duration and target rate to generate
          * expected packet/octet counts.
          */
-        auto exp_packets = std::llround(
+        auto exp_packets =
             rate
-            * std::chrono::duration_cast<std::chrono::duration<double>>(
-                src.last_ - src.first_));
+            * std::chrono::duration_cast<std::chrono::milliseconds>(
+                src.last_ - src.first_);
         auto exp_octets = sequence.sum_packet_lengths(exp_packets);
 
         dst->setOctetsIntended(exp_octets);
@@ -186,6 +186,8 @@ generator_result_ptr to_swagger(const core::uuid& id,
                       flow_counters,
                       result.parent().packet_rate(),
                       result.parent().sequence());
+    flow_counters->setOctetsDropped(result.dropped_octets());
+    flow_counters->setPacketsDropped(result.dropped_packets());
     dst->setFlowCounters(flow_counters);
 
     auto protocol_counters =

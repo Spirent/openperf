@@ -11,36 +11,36 @@ CPU_DEPENDS += \
 	versions
 
 CPU_SOURCES += \
-	api_converters.cpp \
+	api_strings.cpp \
 	api_transmogrify.cpp \
-	cpu_stat.cpp \
-	generator.cpp \
-	generator_stack.cpp \
+	arg_parser.cpp \
+	cpu_options.c \
+	cpu_transmogrify.cpp \
+	generator/coordinator.cpp \
+	generator/ispc/matrix.ispc \
+	generator/scalar/matrix.cpp \
+	generator/worker.cpp \
+	generator/worker_client.cpp \
+	generator/worker_transmogrify.cpp \
 	handler.cpp \
 	init.cpp \
 	server.cpp \
-	task_cpu.cpp \
-	task_cpu_system.cpp \
-	scalar/matrix.cpp \
-	cpu_options.c \
-	ispc/matrix.ispc
+	utils.cpp
 
 ifeq ($(ARCH),x86_64)
 	CPU_SOURCES += \
-		task_cpu_x86.cpp \
-		instruction_set_x86.cpp
-	CPU_TEST_SOURCES += instruction_set_x86.cpp
+		generator/instruction_set_x86.cpp
+	CPU_TEST_SOURCES += generator/instruction_set_x86.cpp
 endif
 
 ifeq ($(ARCH),aarch64)
 	CPU_SOURCES += \
-		task_cpu_aarch64.cpp \
-		instruction_set_aarch64.cpp
-	CPU_TEST_SOURCES += instruction_set_aarch64.cpp
+		generator/instruction_set_aarch64.cpp
+	CPU_TEST_SOURCES += generator/instruction_set_aarch64.cpp
 endif
 
-ifeq ($(PLATFORM), linux)
-	CPU_SOURCES += cpu_linux.cpp
+ifeq ($(PLATFORM),linux)
+	CPU_SOURCES += generator/system_stats_linux.cpp
 endif
 
 CPU_VERSIONED_FILES := init.cpp
@@ -54,5 +54,5 @@ $(CPU_OBJ_DIR)/init.o: OP_CPPFLAGS += \
 	-DBUILD_TIMESTAMP="\"$(TIMESTAMP)\""
 
 CPU_TEST_SOURCES += \
-	scalar/matrix.cpp \
-	ispc/matrix.ispc
+	generator/scalar/matrix.cpp \
+	generator/ispc/matrix.ispc

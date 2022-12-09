@@ -59,6 +59,13 @@ public:
     int64_t getOctetsActual() const;
     void setOctetsActual(int64_t value);
         /// <summary>
+    /// The total number of octets that were dropped due to overrunning the transmit queue. Transmit packet drops are not enabled by default and must be explicitly enabled. 
+    /// </summary>
+    int64_t getOctetsDropped() const;
+    void setOctetsDropped(int64_t value);
+    bool octetsDroppedIsSet() const;
+    void unsetOctets_dropped();
+    /// <summary>
     /// The total number of octets that should have been transmitted
     /// </summary>
     int64_t getOctetsIntended() const;
@@ -69,6 +76,13 @@ public:
     int64_t getPacketsActual() const;
     void setPacketsActual(int64_t value);
         /// <summary>
+    /// The total number of packets that were dropped due to overrunning the transmit queue. Transmit packet drops are not enabled by default and must be explicitly enabled. 
+    /// </summary>
+    int64_t getPacketsDropped() const;
+    void setPacketsDropped(int64_t value);
+    bool packetsDroppedIsSet() const;
+    void unsetPackets_dropped();
+    /// <summary>
     /// The total number of packets that should have been transmitted
     /// </summary>
     int64_t getPacketsIntended() const;
@@ -93,10 +107,14 @@ protected:
 
     int64_t m_Octets_actual;
 
+    int64_t m_Octets_dropped;
+    bool m_Octets_droppedIsSet;
     int64_t m_Octets_intended;
 
     int64_t m_Packets_actual;
 
+    int64_t m_Packets_dropped;
+    bool m_Packets_droppedIsSet;
     int64_t m_Packets_intended;
 
     std::string m_Timestamp_first;
