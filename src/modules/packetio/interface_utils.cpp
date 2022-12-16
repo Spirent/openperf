@@ -428,7 +428,12 @@ config_data make_config_data(const Interface& interface)
             to_return.protocols.emplace_back(from_swagger(protocol));
         }
 
-        if (config->filterIsSet()) { to_return.filter = config->getFilter(); }
+        if (config->rxFilterIsSet()) {
+            to_return.rx_filter = config->getRxFilter();
+        }
+        if (config->txFilterIsSet()) {
+            to_return.tx_filter = config->getTxFilter();
+        }
     }
 
     /* Set id field to what came in from the REST API */
@@ -678,8 +683,11 @@ make_swagger_interface_config(const generic_interface& intf)
             make_swagger_protocol_config(protocol, intf));
     }
 
-    if (const auto& filter = intf.config().filter) {
-        config->setFilter(filter.value());
+    if (const auto& filter = intf.config().rx_filter) {
+        config->setRxFilter(filter.value());
+    }
+    if (const auto& filter = intf.config().tx_filter) {
+        config->setTxFilter(filter.value());
     }
 
     return (config);
@@ -728,10 +736,16 @@ bool is_valid(const Interface& interface, std::vector<std::string>& errors)
         }
 
         /* Check the BPF filter, if present. */
-        if (if_config->filterIsSet()
+        if (if_config->rxFilterIsSet()
             && !openperf::packet::bpf::bpf_validate_filter(
-                if_config->getFilter())) {
-            errors.emplace_back("BPF filter is invalid.");
+                if_config->getRxFilter())) {
+            errors.emplace_back("Rx BPF filter is invalid.");
+            return (false);
+        }
+        if (if_config->txFilterIsSet()
+            && !openperf::packet::bpf::bpf_validate_filter(
+                if_config->getTxFilter())) {
+            errors.emplace_back("Tx BPF filter is invalid.");
             return (false);
         }
     }

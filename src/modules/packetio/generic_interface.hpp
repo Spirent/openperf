@@ -110,7 +110,8 @@ using protocol_config = std::variant<std::monostate,
 struct config_data
 {
     std::vector<protocol_config> protocols;
-    std::optional<std::string> filter;
+    std::optional<std::string> rx_filter;
+    std::optional<std::string> tx_filter;
     std::string port_id;
     std::string id;
 };

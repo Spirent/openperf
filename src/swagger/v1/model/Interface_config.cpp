@@ -19,8 +19,10 @@ namespace model {
 
 Interface_config::Interface_config()
 {
-    m_Filter = "";
-    m_FilterIsSet = false;
+    m_Rx_filter = "";
+    m_Rx_filterIsSet = false;
+    m_Tx_filter = "";
+    m_Tx_filterIsSet = false;
     
 }
 
@@ -45,9 +47,13 @@ nlohmann::json Interface_config::toJson() const
         }
         val["protocols"] = jsonArray;
             }
-    if(m_FilterIsSet)
+    if(m_Rx_filterIsSet)
     {
-        val["filter"] = ModelBase::toJson(m_Filter);
+        val["rx_filter"] = ModelBase::toJson(m_Rx_filter);
+    }
+    if(m_Tx_filterIsSet)
+    {
+        val["tx_filter"] = ModelBase::toJson(m_Tx_filter);
     }
     
 
@@ -75,9 +81,14 @@ void Interface_config::fromJson(nlohmann::json& val)
             
         }
     }
-    if(val.find("filter") != val.end())
+    if(val.find("rx_filter") != val.end())
     {
-        setFilter(val.at("filter"));
+        setRxFilter(val.at("rx_filter"));
+        
+    }
+    if(val.find("tx_filter") != val.end())
+    {
+        setTxFilter(val.at("tx_filter"));
         
     }
     
@@ -88,22 +99,39 @@ std::vector<std::shared_ptr<InterfaceProtocolConfig>>& Interface_config::getProt
 {
     return m_Protocols;
 }
-std::string Interface_config::getFilter() const
+std::string Interface_config::getRxFilter() const
 {
-    return m_Filter;
+    return m_Rx_filter;
 }
-void Interface_config::setFilter(std::string value)
+void Interface_config::setRxFilter(std::string value)
 {
-    m_Filter = value;
-    m_FilterIsSet = true;
+    m_Rx_filter = value;
+    m_Rx_filterIsSet = true;
 }
-bool Interface_config::filterIsSet() const
+bool Interface_config::rxFilterIsSet() const
 {
-    return m_FilterIsSet;
+    return m_Rx_filterIsSet;
 }
-void Interface_config::unsetFilter()
+void Interface_config::unsetRx_filter()
 {
-    m_FilterIsSet = false;
+    m_Rx_filterIsSet = false;
+}
+std::string Interface_config::getTxFilter() const
+{
+    return m_Tx_filter;
+}
+void Interface_config::setTxFilter(std::string value)
+{
+    m_Tx_filter = value;
+    m_Tx_filterIsSet = true;
+}
+bool Interface_config::txFilterIsSet() const
+{
+    return m_Tx_filterIsSet;
+}
+void Interface_config::unsetTx_filter()
+{
+    m_Tx_filterIsSet = false;
 }
 
 }

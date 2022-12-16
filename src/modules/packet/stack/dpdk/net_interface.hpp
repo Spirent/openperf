@@ -57,7 +57,8 @@ private:
     const unsigned m_max_gso_length;
     const packetio::interface::config_data m_config;
     const packetio::workers::transmit_function m_transmit;
-    const packet_filter m_filter;
+    const packet_filter m_rx_filter;
+    const packet_filter m_tx_filter;
 
     netif m_netif;
 };

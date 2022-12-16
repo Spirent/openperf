@@ -15,7 +15,7 @@
 #include "packet/stack/dpdk/offload_utils.hpp"
 #include "packet/stack/dpdk/net_interface.hpp"
 #include "packet/stack/dpdk/pbuf_utils.h"
-//#include "packetio/drivers/dpdk/dpdk.h"
+// #include "packetio/drivers/dpdk/dpdk.h"
 #include "packetio/drivers/dpdk/mbuf_metadata.hpp"
 #include "packetio/drivers/dpdk/port_info.hpp"
 #if LWIP_IPV6
@@ -459,7 +459,8 @@ net_interface::net_interface(std::string_view id,
     , m_max_gso_length(net_interface_max_gso_length(port_index))
     , m_config(config)
     , m_transmit(tx)
-    , m_filter(config.filter)
+    , m_rx_filter(config.rx_filter)
+    , m_tx_filter(config.tx_filter)
 {
     m_netif.state = this;
 
@@ -531,7 +532,7 @@ void net_interface::unconfigure()
 
 bool net_interface::accept(const rte_mbuf* packet) const
 {
-    return (m_filter.accept(packet));
+    return (m_rx_filter.accept(packet));
 }
 
 bool net_interface::is_up() const
@@ -609,6 +610,12 @@ err_t net_interface::handle_tx(struct pbuf* p)
 
     if (!m_head) { return ERR_BUF; }
 
+    /* Store the interface hwaddr in the mbuf so tx capture can use it */
+    mbuf_tx_sink_set(m_head, m_netif.hwaddr);
+
+    /* Drop packets not matching the Tx filter. */
+    if (!m_tx_filter.accept(m_head)) { return ERR_RTE; }
+
     for (auto m = m_head; m != nullptr; m = m->next) {
         rte_mbuf_refcnt_update(m, 1);
     }
@@ -617,9 +624,6 @@ err_t net_interface::handle_tx(struct pbuf* p)
     if (~m_netif.chksum_flags & netif_tx_chksum_mask) {
         set_tx_offload_metadata(m_head, m_netif.mtu);
     }
-
-    /* Store the interface hwaddr in the mbuf so tx capture can use it */
-    mbuf_tx_sink_set(m_head, m_netif.hwaddr);
 
     rte_mbuf* pkts[] = {m_head};
     if (m_transmit(port_index(), 0, reinterpret_cast<void**>(pkts), 1) != 1) {
