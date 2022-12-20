@@ -31,20 +31,30 @@ class InterfaceConfig(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'protocols': 'list[InterfaceProtocolConfig]'
+        'protocols': 'list[InterfaceProtocolConfig]',
+        'rx_filter': 'str',
+        'tx_filter': 'str'
     }
 
     attribute_map = {
-        'protocols': 'protocols'
+        'protocols': 'protocols',
+        'rx_filter': 'rx_filter',
+        'tx_filter': 'tx_filter'
     }
 
-    def __init__(self, protocols=None):  # noqa: E501
+    def __init__(self, protocols=None, rx_filter=None, tx_filter=None):  # noqa: E501
         """InterfaceConfig - a model defined in Swagger"""  # noqa: E501
 
         self._protocols = None
+        self._rx_filter = None
+        self._tx_filter = None
         self.discriminator = None
 
         self.protocols = protocols
+        if rx_filter is not None:
+            self.rx_filter = rx_filter
+        if tx_filter is not None:
+            self.tx_filter = tx_filter
 
     @property
     def protocols(self):
@@ -67,6 +77,50 @@ class InterfaceConfig(object):
         :type: list[InterfaceProtocolConfig]
         """
         self._protocols = protocols
+
+    @property
+    def rx_filter(self):
+        """Gets the rx_filter of this InterfaceConfig.  # noqa: E501
+
+        Berkley Packet Filter (BPF) rules that matches input packets for this interface. An empty rule, the default, matches all packets.   # noqa: E501
+
+        :return: The rx_filter of this InterfaceConfig.  # noqa: E501
+        :rtype: str
+        """
+        return self._rx_filter
+
+    @rx_filter.setter
+    def rx_filter(self, rx_filter):
+        """Sets the rx_filter of this InterfaceConfig.
+
+        Berkley Packet Filter (BPF) rules that matches input packets for this interface. An empty rule, the default, matches all packets.   # noqa: E501
+
+        :param rx_filter: The rx_filter of this InterfaceConfig.  # noqa: E501
+        :type: str
+        """
+        self._rx_filter = rx_filter
+
+    @property
+    def tx_filter(self):
+        """Gets the tx_filter of this InterfaceConfig.  # noqa: E501
+
+        Berkley Packet Filter (BPF) rules that matches output packets for this interface. An empty rule, the default, matches all packets.   # noqa: E501
+
+        :return: The tx_filter of this InterfaceConfig.  # noqa: E501
+        :rtype: str
+        """
+        return self._tx_filter
+
+    @tx_filter.setter
+    def tx_filter(self, tx_filter):
+        """Sets the tx_filter of this InterfaceConfig.
+
+        Berkley Packet Filter (BPF) rules that matches output packets for this interface. An empty rule, the default, matches all packets.   # noqa: E501
+
+        :param tx_filter: The tx_filter of this InterfaceConfig.  # noqa: E501
+        :type: str
+        """
+        self._tx_filter = tx_filter
 
     def to_dict(self):
         """Returns the model properties as a dict"""

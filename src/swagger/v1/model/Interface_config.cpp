@@ -19,6 +19,10 @@ namespace model {
 
 Interface_config::Interface_config()
 {
+    m_Rx_filter = "";
+    m_Rx_filterIsSet = false;
+    m_Tx_filter = "";
+    m_Tx_filterIsSet = false;
     
 }
 
@@ -43,6 +47,14 @@ nlohmann::json Interface_config::toJson() const
         }
         val["protocols"] = jsonArray;
             }
+    if(m_Rx_filterIsSet)
+    {
+        val["rx_filter"] = ModelBase::toJson(m_Rx_filter);
+    }
+    if(m_Tx_filterIsSet)
+    {
+        val["tx_filter"] = ModelBase::toJson(m_Tx_filter);
+    }
     
 
     return val;
@@ -69,6 +81,16 @@ void Interface_config::fromJson(nlohmann::json& val)
             
         }
     }
+    if(val.find("rx_filter") != val.end())
+    {
+        setRxFilter(val.at("rx_filter"));
+        
+    }
+    if(val.find("tx_filter") != val.end())
+    {
+        setTxFilter(val.at("tx_filter"));
+        
+    }
     
 }
 
@@ -76,6 +98,40 @@ void Interface_config::fromJson(nlohmann::json& val)
 std::vector<std::shared_ptr<InterfaceProtocolConfig>>& Interface_config::getProtocols()
 {
     return m_Protocols;
+}
+std::string Interface_config::getRxFilter() const
+{
+    return m_Rx_filter;
+}
+void Interface_config::setRxFilter(std::string value)
+{
+    m_Rx_filter = value;
+    m_Rx_filterIsSet = true;
+}
+bool Interface_config::rxFilterIsSet() const
+{
+    return m_Rx_filterIsSet;
+}
+void Interface_config::unsetRx_filter()
+{
+    m_Rx_filterIsSet = false;
+}
+std::string Interface_config::getTxFilter() const
+{
+    return m_Tx_filter;
+}
+void Interface_config::setTxFilter(std::string value)
+{
+    m_Tx_filter = value;
+    m_Tx_filterIsSet = true;
+}
+bool Interface_config::txFilterIsSet() const
+{
+    return m_Tx_filterIsSet;
+}
+void Interface_config::unsetTx_filter()
+{
+    m_Tx_filterIsSet = false;
 }
 
 }

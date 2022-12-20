@@ -6,10 +6,12 @@
 
 #include "lwip/netif.h"
 
+#include "packet/stack/dpdk/packet_filter.hpp"
 #include "packetio/generic_interface.hpp"
 #include "packetio/generic_workers.hpp"
 
 struct pbuf;
+struct rte_mbuf;
 
 namespace openperf::packet::stack::dpdk {
 
@@ -39,6 +41,7 @@ public:
 
     void handle_link_state_change(bool link_up);
 
+    bool accept(const rte_mbuf* mbuf) const;
     bool is_up() const;
     void up();
     void down();
@@ -54,6 +57,8 @@ private:
     const unsigned m_max_gso_length;
     const packetio::interface::config_data m_config;
     const packetio::workers::transmit_function m_transmit;
+    const packet_filter m_rx_filter;
+    const packet_filter m_tx_filter;
 
     netif m_netif;
 };

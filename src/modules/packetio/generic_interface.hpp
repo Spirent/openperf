@@ -110,6 +110,8 @@ using protocol_config = std::variant<std::monostate,
 struct config_data
 {
     std::vector<protocol_config> protocols;
+    std::optional<std::string> rx_filter;
+    std::optional<std::string> tx_filter;
     std::string port_id;
     std::string id;
 };
@@ -156,7 +158,7 @@ public:
 
     std::optional<uint8_t> ipv6_scope() const { return m_self->ipv6_scope(); }
 
-    const std::optional<std::string> ipv6_linklocal_address() const
+    std::optional<std::string> ipv6_linklocal_address() const
     {
         return m_self->ipv6_linklocal_address();
     }

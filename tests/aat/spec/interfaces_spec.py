@@ -546,6 +546,38 @@ with description('Interfaces,', 'interfaces') as self:
                         self.intf.config.protocols[0].eth.mac_address='00:00:00:00:00:01'
                         expect(lambda: self.api.create_interface(self.intf)).to(raise_api_exception(400))
 
+            with description('BPF Filter,'):
+                with before.each:
+                    self.intf.config.protocols = make_interface_protocols([
+                        client.models.InterfaceProtocolConfigEth(mac_address='00:01:5c:a1:ab:1e'),
+                        client.models.InterfaceProtocolConfigIpv4()
+                    ])
+                    self.intf.config.protocols[1].ipv4.method='auto'
+
+                with description('valid rx filter,'):
+                    with it('succeeds'):
+                        self.intf.config.rx_filter = 'tcp dst portrange 1024-65535'
+                        intf = self.api.create_interface(self.intf)
+                        expect(intf).to(be_valid_interface)
+                        self.cleanup = intf
+
+                with description('valid tx filter,'):
+                    with it('succeeds'):
+                        self.intf.config.tx_filter = 'not((arp && arp[6:2]==2) || (icmp6[icmp6type]==icmp6-neighboradvert))'
+                        intf = self.api.create_interface(self.intf)
+                        expect(intf).to(be_valid_interface)
+                        self.cleanup = intf
+
+                with description('invalid rx filter,'):
+                    with it('returns 400'):
+                        self.intf.config.rx_filter = 'not a valid filter'
+                        expect(lambda: self.api.create_interface(self.intf)).to(raise_api_exception(400))
+
+                with description('invalid tx filter,'):
+                    with it('returns 400'):
+                        self.intf.config.tx_filter = 'not a valid filter'
+                        expect(lambda: self.api.create_interface(self.intf)).to(raise_api_exception(400))
+
         with description('update,'):
             with description('valid interface,'):
                 with before.each:

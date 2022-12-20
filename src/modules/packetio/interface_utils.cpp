@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 
 #include "swagger/v1/model/Interface.h"
+#include "packet/bpf/bpf.hpp"
 #include "packetio/generic_interface.hpp"
 #include "utils/overloaded_visitor.hpp"
 #include "core/op_log.h"
@@ -426,6 +427,13 @@ config_data make_config_data(const Interface& interface)
         for (auto& protocol : config->getProtocols()) {
             to_return.protocols.emplace_back(from_swagger(protocol));
         }
+
+        if (config->rxFilterIsSet()) {
+            to_return.rx_filter = config->getRxFilter();
+        }
+        if (config->txFilterIsSet()) {
+            to_return.tx_filter = config->getTxFilter();
+        }
     }
 
     /* Set id field to what came in from the REST API */
@@ -674,6 +682,14 @@ make_swagger_interface_config(const generic_interface& intf)
         config->getProtocols().emplace_back(
             make_swagger_protocol_config(protocol, intf));
     }
+
+    if (const auto& filter = intf.config().rx_filter) {
+        config->setRxFilter(filter.value());
+    }
+    if (const auto& filter = intf.config().tx_filter) {
+        config->setTxFilter(filter.value());
+    }
+
     return (config);
 }
 
@@ -718,6 +734,20 @@ bool is_valid(const Interface& interface, std::vector<std::string>& errors)
                 return (false);
             }
         }
+
+        /* Check the BPF filter, if present. */
+        if (if_config->rxFilterIsSet()
+            && !openperf::packet::bpf::bpf_validate_filter(
+                if_config->getRxFilter())) {
+            errors.emplace_back("Rx BPF filter is invalid.");
+            return (false);
+        }
+        if (if_config->txFilterIsSet()
+            && !openperf::packet::bpf::bpf_validate_filter(
+                if_config->getTxFilter())) {
+            errors.emplace_back("Tx BPF filter is invalid.");
+            return (false);
+        }
     }
 
     /* Set id field to what came in from the REST API */
@@ -729,3 +759,18 @@ bool is_valid(const Interface& interface, std::vector<std::string>& errors)
 }
 
 } // namespace openperf::packetio::interface
+
+namespace openperf::packet::bpf {
+
+/*
+ * Provide a stub symbol for BPF filter validation. This breaks the dependency
+ * on the packet_bpf module which provides a working version of the function.
+ * Any code that uses interfaces should be dependent on that module, and hence
+ * pull in the working version.
+ */
+__attribute__((weak)) bool bpf_validate_filter(std::string_view)
+{
+    return (true);
+}
+
+} // namespace openperf::packet::bpf

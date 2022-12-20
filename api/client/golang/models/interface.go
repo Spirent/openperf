@@ -191,6 +191,16 @@ type InterfaceConfig struct {
 	// Required: true
 	// Min Items: 1
 	Protocols []*InterfaceProtocolConfig `json:"protocols"`
+
+	// Berkley Packet Filter (BPF) rules that matches input packets for this
+	// interface. An empty rule, the default, matches all packets.
+	//
+	RxFilter string `json:"rx_filter,omitempty"`
+
+	// Berkley Packet Filter (BPF) rules that matches output packets for this
+	// interface. An empty rule, the default, matches all packets.
+	//
+	TxFilter string `json:"tx_filter,omitempty"`
 }
 
 // Validate validates this interface config
