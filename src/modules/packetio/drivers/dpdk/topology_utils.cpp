@@ -17,8 +17,26 @@ static core::cpuset dpdk_mask()
 {
     auto mask = core::cpuset{};
     auto lcore_id = 0U;
-    RTE_LCORE_FOREACH_WORKER(lcore_id) { mask.set(lcore_id); }
+    RTE_LCORE_FOREACH_WORKER(lcore_id)
+    {
+        auto lcore_mask = get_lcore_cpuset(lcore_id);
+        mask |= lcore_mask;
+    }
     return (mask);
+}
+
+core::cpuset get_lcore_cpuset(unsigned lcore_id)
+{
+    auto mask = core::cpuset{};
+#ifdef RTE_HAS_CPUSET
+    auto lcore_cpuset = rte_lcore_cpuset(lcore_id);
+    for (int i = 0; i < CPU_SETSIZE; i++) {
+        if (CPU_ISSET(i, &lcore_cpuset)) { mask.set(i, true); }
+    }
+#else
+    mask.set(lcore_id, true);
+#endif
+    return mask;
 }
 
 /*

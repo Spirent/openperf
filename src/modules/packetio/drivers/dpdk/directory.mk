@@ -24,6 +24,9 @@ PIO_DRIVER_SOURCES += \
 	quirks.cpp \
 	topology_utils.cpp
 
+# ALLOW_EXPERIMENTAL_API is required for rte_lcore_cpuset()
+$(PIO_OBJ_DIR)/drivers/dpdk/topology_utils.o: OP_CPPFLAGS += -DALLOW_EXPERIMENTAL_API
+
 ifeq ($(OP_PACKETIO_DPDK_PROCESS_TYPE),primary)
 	PIO_DRIVER_SOURCES += \
 		primary/arg_parser.cpp \

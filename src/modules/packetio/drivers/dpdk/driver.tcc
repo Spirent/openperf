@@ -5,7 +5,7 @@
 #include <sched.h>
 
 #include "config/op_config_utils.hpp"
-#include "core/op_cpuset.h"
+#include "core/op_cpuset.hpp"
 #include "core/op_log.h"
 #include "core/op_thread.h"
 #include "core/op_uuid.hpp"
@@ -224,15 +224,6 @@ static void bootstrap()
     }
 }
 
-using cpuset_type = std::remove_pointer_t<op_cpuset_t>;
-
-struct cpuset_deleter
-{
-    void operator()(cpuset_type* cpuset) const { op_cpuset_delete(cpuset); }
-};
-
-using cpuset_ptr = std::unique_ptr<cpuset_type, cpuset_deleter>;
-
 static void do_bootstrap()
 {
     /*
@@ -241,11 +232,8 @@ static void do_bootstrap()
      * to launch other threads, we need to restore the original
      * thread affinity mask.
      */
-    auto cpuset = cpuset_ptr{op_cpuset_create()};
-    if (auto error = op_thread_get_affinity_mask(cpuset.get())) {
-        throw std::runtime_error("Could not retrieve CPU affinity mask: "
-                                 + std::string(strerror(error)));
-    }
+    auto cpuset = core::cpuset_get_affinity();
+    auto cpuset_saved = cpuset;
 
     bootstrap();
 
@@ -253,11 +241,24 @@ static void do_bootstrap()
     int lcore_id = 0;
     RTE_LCORE_FOREACH_WORKER(lcore_id)
     {
-        op_cpuset_set(cpuset.get(), lcore_id, false);
+        auto lcore_cpuset = topology::get_lcore_cpuset(lcore_id);
+        OP_LOG(OP_LOG_DEBUG,
+               "DPDK lcore %d cpuset %s",
+               lcore_id,
+               lcore_cpuset.to_string().c_str());
+        if (cpuset_saved == cpuset) {
+            continue; // skip lcore if using all cores (it is not pinned)
+        }
+        cpuset &= ~lcore_cpuset;
     }
 
+    /* Restore original cpuset if workers are using all cores */
+    if (cpuset.none()) { cpuset = cpuset_saved; }
+
+    OP_LOG(OP_LOG_DEBUG, "Non DPDK cpuset %s", cpuset.to_string().c_str());
+
     /* Now restore the original cpu mask less the DPDK slave cores */
-    if (auto error = op_thread_set_affinity_mask(cpuset.get())) {
+    if (auto error = core::cpuset_set_affinity(cpuset)) {
         throw std::runtime_error("Could not set CPU affinity mask: "
                                  + std::string(strerror(error)));
     }

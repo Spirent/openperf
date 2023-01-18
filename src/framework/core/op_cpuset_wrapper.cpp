@@ -184,7 +184,10 @@ int cpuset_set_affinity(const cpuset& set)
 cpuset cpuset_get_affinity()
 {
     auto set = cpuset();
-    op_thread_get_affinity_mask(set.data());
+    if (auto error = op_thread_get_affinity_mask(set.data())) {
+        throw std::runtime_error("Could not retrieve CPU affinity mask: "
+                                 + std::string(strerror(error)));
+    }
     return (set);
 }
 
