@@ -246,7 +246,7 @@ static void do_bootstrap()
                "DPDK lcore %d cpuset %s",
                lcore_id,
                lcore_cpuset.to_string().c_str());
-        if (cpuset_saved == cpuset) {
+        if (lcore_cpuset == cpuset_saved) {
             continue; // skip lcore if using all cores (it is not pinned)
         }
         cpuset &= ~lcore_cpuset;
