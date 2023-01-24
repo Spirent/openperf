@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <unordered_map>
 
+#include "core/op_cpuset.hpp"
 #include "packetio/drivers/dpdk/port_info.hpp"
 #include "packetio/drivers/dpdk/queue_utils.hpp"
 
@@ -17,6 +18,11 @@ namespace openperf::packetio::dpdk::topology {
 std::optional<unsigned> get_stack_lcore_id();
 
 std::vector<uint16_t> get_ports();
+
+/**
+ * Get the cpuset used for the specified lcore ID.
+ */
+core::cpuset get_lcore_cpuset(unsigned lcore_id);
 
 /**
  * Use the port queue counts to generate a vector of queue

@@ -19,8 +19,47 @@ static rte_mempool* memp_mempools[RTE_MAX_NUMA_NODES] = {};
 
 void packet_stack_memp_initialize()
 {
+    struct rte_mempool* default_mempool = nullptr;
+
     for (auto i = 0; i < RTE_MAX_NUMA_NODES; ++i) {
         memp_mempools[i] = openperf::packetio::dpdk::mempool::get_default(i);
+        if (!default_mempool && memp_mempools[i]) {
+            default_mempool = memp_mempools[i];
+        }
+    }
+
+    // Verify default memory pool was found
+    if (!default_mempool) {
+        OP_LOG(OP_LOG_ERROR,
+               "Unable to locate any mempools for the TCP/IP stack");
+        return;
+    }
+
+    // Ideally the NUMA node for the CPUs and devices will be the same, however
+    // due to misconfiguration or system resource limitations, this may not be
+    // true.  Therefore need to verify that there is a valid mempool for all
+    // lcore workers. If there is no valid mempool, then use the default
+    // mempool.
+    unsigned int lcore_id;
+    RTE_LCORE_FOREACH_WORKER(lcore_id)
+    {
+        auto socket_id = rte_lcore_to_socket_id(lcore_id);
+        if (socket_id == static_cast<unsigned>(SOCKET_ID_ANY)) {
+            socket_id = 0;
+            OP_LOG(OP_LOG_INFO,
+                   "lcore %u is not bound to a NUMA socket.  "
+                   "Using NUMA %u mempool by default for the TCP/IP stack.",
+                   lcore_id,
+                   socket_id);
+        }
+        if (!memp_mempools[socket_id]) {
+            OP_LOG(OP_LOG_WARNING,
+                   "No NUMA mempool for NUMA %u.  "
+                   "Using mempool %s instead for the TCP/IP stack.",
+                   socket_id,
+                   default_mempool->name);
+            memp_mempools[socket_id] = default_mempool;
+        }
     }
 }
 
@@ -92,8 +131,14 @@ int64_t packet_stack_memp_pool_used(const struct memp_desc* mem)
 
 struct pbuf* packet_stack_pbuf_alloc()
 {
-    return (packet_stack_mbuf_to_pbuf(
-        rte_pktmbuf_alloc(memp_mempools[rte_socket_id()])));
+    auto socket_id = rte_socket_id();
+    if (socket_id == static_cast<unsigned>(SOCKET_ID_ANY)) {
+        // Default to NUMA node 0 when socket ID is not set
+        // Socket ID is not set when lcore cpu set spans NUMA nodes
+        socket_id = 0;
+    }
+    return (
+        packet_stack_mbuf_to_pbuf(rte_pktmbuf_alloc(memp_mempools[socket_id])));
 }
 
 void packet_stack_pbuf_free(struct pbuf* p)
