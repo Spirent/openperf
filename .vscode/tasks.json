@@ -4,12 +4,30 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "openperf: Build",
+            "label": "openperf: Build All (Test)",
             "type": "shell",
             "command": "make all",
             "group": {
                 "kind": "build",
                 "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "openperf: Build All (Release)",
+            "type": "shell",
+            "command": "make MODE=release all",
+            "group": {
+                "kind": "build",
+                "isDefault": false
             },
             "presentation": {
                 "echo": true,
@@ -130,9 +148,27 @@
             "problemMatcher": []
         },
         {
-            "label": "openperf: Clean",
+            "label": "openperf: Clean (Test)",
             "type": "shell",
             "command": "make clean",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "openperf: Clean (Release)",
+            "type": "shell",
+            "command": "make MODE=release clean",
             "group": {
                 "kind": "build",
                 "isDefault": true
