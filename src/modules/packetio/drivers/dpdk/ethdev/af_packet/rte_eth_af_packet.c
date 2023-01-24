@@ -28,6 +28,19 @@
 #include <unistd.h>
 #include <poll.h>
 
+/* This is a modified version of the DPDK 21.11 af_packet driver
+ * drivers/net/af_packet/rte_eth_af_packet.c
+ *
+ * The af_packet driver was modified to work better in container environments.
+ * Support was added for rx interrupts to reduce CPU usage from rx polling and
+ * the socket memory mmap() is retried without MAP_LOCKED so that the IPC_LOCK
+ * capability is optional.
+ *
+ * Changes to the DPDK driver are enclosed in #ifdef OP_AF_PACKET
+ * to make them easier to identify.
+ */
+#define OP_AF_PACKET
+
 #define ETH_AF_PACKET_IFACE_ARG		"iface"
 #define ETH_AF_PACKET_NUM_Q_ARG		"qpairs"
 #define ETH_AF_PACKET_BLOCKSIZE_ARG	"blocksz"
@@ -80,6 +93,10 @@ struct pmd_internals {
 	struct pkt_rx_queue *rx_queue;
 	struct pkt_tx_queue *tx_queue;
 	uint8_t vlan_strip;
+
+#ifdef OP_AF_PACKET
+	struct rte_intr_handle *intr_handle;
+#endif
 };
 
 static const char *valid_arguments[] = {
@@ -99,6 +116,20 @@ static struct rte_eth_link pmd_link = {
 	.link_autoneg = RTE_ETH_LINK_FIXED,
 };
 
+#ifdef OP_AF_PACKET
+
+RTE_LOG_REGISTER_DEFAULT(op_af_packet_logtype, NOTICE);
+
+#define PMD_LOG(level, fmt, args...) \
+	rte_log(RTE_LOG_ ## level, op_af_packet_logtype, \
+		"%s(): " fmt "\n", __func__, ##args)
+
+#define PMD_LOG_ERRNO(level, fmt, args...) \
+	rte_log(RTE_LOG_ ## level, op_af_packet_logtype, \
+		"%s(): " fmt ":%s\n", __func__, ##args, strerror(errno))
+
+#else
+
 RTE_LOG_REGISTER_DEFAULT(af_packet_logtype, NOTICE);
 
 #define PMD_LOG(level, fmt, args...) \
@@ -108,6 +139,99 @@ RTE_LOG_REGISTER_DEFAULT(af_packet_logtype, NOTICE);
 #define PMD_LOG_ERRNO(level, fmt, args...) \
 	rte_log(RTE_LOG_ ## level, af_packet_logtype, \
 		"%s(): " fmt ":%s\n", __func__, ##args, strerror(errno))
+
+#endif /* OP_AF_PACKET */
+
+#ifdef OP_AF_PACKET
+
+static int
+eth_dev_rx_queue_intr_enable(struct rte_eth_dev *dev __rte_unused, uint16_t rxq __rte_unused)
+{
+    // Driver is using the rx socket fd for "interrupt" signalling so
+    // it is always enabled.
+    return 0;
+}
+
+static int
+eth_dev_rx_queue_intr_disable(struct rte_eth_dev *dev __rte_unused, uint16_t rxq __rte_unused)
+{
+    // Driver is using the rx socket fd for "interrupt" signalling so
+    // it is always enabled.
+    return 0;
+}
+
+static void
+af_packet_rx_intr_vec_uninstall(struct rte_eth_dev *dev)
+{
+	struct pmd_internals *internals = dev->data->dev_private;
+	struct rte_intr_handle *intr_handle = internals->intr_handle;
+
+	if (intr_handle) {
+		rte_intr_free_epoll_fd(intr_handle);
+		rte_intr_vec_list_free(intr_handle);
+		rte_intr_nb_efd_set(intr_handle, 0);
+	}
+}
+
+static int
+af_packet_rx_intr_vec_install(struct rte_eth_dev *dev)
+{
+	struct pmd_internals *internals = dev->data->dev_private;
+	struct rte_intr_handle *intr_handle = internals->intr_handle;
+	unsigned int nq = RTE_MIN(dev->data->nb_rx_queues, (uint32_t)RTE_MAX_RXTX_INTR_VEC_ID);
+	unsigned int q;
+	unsigned int count = 0;
+
+	if (!dev->data->dev_conf.intr_conf.rxq)
+		return 0;
+
+	if (!intr_handle) {
+		PMD_LOG(ERR, "No intr_handle object");
+		return -1;
+	}
+
+	if (rte_intr_vec_list_alloc(intr_handle, NULL, nq)) {
+		PMD_LOG(ERR, "Failed to alloc interrupt vector");
+		return -rte_errno;
+	}
+
+	for (q = 0; q < nq; ++q) {
+		struct pkt_rx_queue *rxq = &internals->rx_queue[q];
+		if (!rxq || rxq->sockfd == -1) {
+			/* Use invalid intr_vec[] index to disable entry. */
+			if (rte_intr_vec_list_index_set(intr_handle, q,
+				RTE_INTR_VEC_RXTX_OFFSET + RTE_MAX_RXTX_INTR_VEC_ID))
+				return -rte_errno;
+			continue;
+		}
+
+		// DPDK subtracts RTE_INTR_VEC_RXTX_OFFSET to get tx/rx offset
+		// so need to add it here.
+		if (rte_intr_vec_list_index_set(intr_handle, q, RTE_INTR_VEC_RXTX_OFFSET + count)) {
+			return -rte_errno;
+		}
+		if (rte_intr_efds_index_set(intr_handle, count, rxq->sockfd)) {
+			return -rte_errno;
+		}
+		count++;
+	}
+	if (!count)
+		af_packet_rx_intr_vec_uninstall(dev);
+	else if (rte_intr_nb_efd_set(intr_handle, count))
+		return -rte_errno;
+	return 0;
+}
+
+static
+int eth_dev_intr_configure(struct rte_eth_dev *dev, int enable)
+{
+	af_packet_rx_intr_vec_uninstall(dev);
+	if (enable)
+		return af_packet_rx_intr_vec_install(dev);
+	return 0;
+}
+
+#endif /* OP_AF_PACKET */
 
 static uint16_t
 eth_af_packet_rx(void *queue, struct rte_mbuf **bufs, uint16_t nb_pkts)
@@ -343,6 +467,11 @@ eth_dev_stop(struct rte_eth_dev *dev)
 	}
 
 	dev->data->dev_link.link_status = RTE_ETH_LINK_DOWN;
+
+#ifdef OP_AF_PACKET
+	eth_dev_intr_configure(dev, 0);
+#endif
+
 	return 0;
 }
 
@@ -354,6 +483,11 @@ eth_dev_configure(struct rte_eth_dev *dev __rte_unused)
 	struct pmd_internals *internals = dev->data->dev_private;
 
 	internals->vlan_strip = !!(rxmode->offloads & RTE_ETH_RX_OFFLOAD_VLAN_STRIP);
+
+#ifdef OP_AF_PACKET
+	eth_dev_intr_configure(dev, 1);
+#endif
+
 	return 0;
 }
 
@@ -457,6 +591,14 @@ eth_dev_close(struct rte_eth_dev *dev)
 
 	/* mac_addrs must not be freed alone because part of dev_private */
 	dev->data->mac_addrs = NULL;
+
+#ifdef OP_AF_PACKET
+	if (internals->intr_handle) {
+		rte_intr_instance_free(internals->intr_handle);
+		internals->intr_handle = NULL;
+	}
+#endif
+
 	return 0;
 }
 
@@ -623,6 +765,10 @@ static const struct eth_dev_ops ops = {
 	.promiscuous_disable = eth_dev_promiscuous_disable,
 	.rx_queue_setup = eth_rx_queue_setup,
 	.tx_queue_setup = eth_tx_queue_setup,
+#ifdef OP_AF_PACKET
+	.rx_queue_intr_enable = eth_dev_rx_queue_intr_enable,
+	.rx_queue_intr_disable = eth_dev_rx_queue_intr_disable,
+#endif
 	.link_update = eth_link_update,
 	.stats_get = eth_stats_get,
 	.stats_reset = eth_stats_reset,
@@ -830,6 +976,17 @@ rte_pmd_init_internals(struct rte_vdev_device *dev,
 		rx_queue->map = mmap(NULL, 2 * req->tp_block_size * req->tp_block_nr,
 				    PROT_READ | PROT_WRITE, MAP_SHARED | MAP_LOCKED,
 				    qsockfd, 0);
+#ifdef OP_AF_PACKET
+		if (rx_queue->map == MAP_FAILED) {
+			PMD_LOG_ERRNO(INFO,
+				"%s: call to mmap failed on AF_PACKET socket for %s.  Trying again without MAP_LOCKED.",
+				name, pair->value);
+			/* Try again without MAP_LOCKED */
+			rx_queue->map = mmap(NULL, 2 * req->tp_block_size * req->tp_block_nr,
+						PROT_READ | PROT_WRITE, MAP_SHARED,
+						qsockfd, 0);
+		}
+#endif
 		if (rx_queue->map == MAP_FAILED) {
 			PMD_LOG_ERRNO(ERR,
 				"%s: call to mmap failed on AF_PACKET socket for %s",
@@ -886,6 +1043,16 @@ rte_pmd_init_internals(struct rte_vdev_device *dev,
 #endif
 	}
 
+#ifdef OP_AF_PACKET
+	(*internals)->intr_handle = rte_intr_instance_alloc(RTE_INTR_INSTANCE_F_PRIVATE);
+	if ((*internals)->intr_handle == NULL) {
+		PMD_LOG(ERR, "Failed to allocate intr handle");
+		goto error;
+	}
+	rte_intr_type_set((*internals)->intr_handle, RTE_INTR_HANDLE_VDEV);
+	rte_intr_fd_set((*internals)->intr_handle, -1);
+#endif
+
 	/* reserve an ethdev entry */
 	*eth_dev = rte_eth_vdev_allocate(dev, 0);
 	if (*eth_dev == NULL)
@@ -910,6 +1077,10 @@ rte_pmd_init_internals(struct rte_vdev_device *dev,
 	data->dev_flags |= RTE_ETH_DEV_AUTOFILL_QUEUE_XSTATS;
 
 	(*eth_dev)->dev_ops = &ops;
+
+#ifdef OP_AF_PACKET
+	(*eth_dev)->intr_handle = (*internals)->intr_handle;
+#endif
 
 	return 0;
 
@@ -1127,6 +1298,18 @@ static struct rte_vdev_driver pmd_af_packet_drv = {
 	.remove = rte_pmd_af_packet_remove,
 };
 
+#ifdef OP_AF_PACKET
+RTE_PMD_REGISTER_VDEV(net_op_af_packet, pmd_af_packet_drv);
+RTE_PMD_REGISTER_ALIAS(net_op_af_packet, eth_op_af_packet);
+RTE_PMD_REGISTER_PARAM_STRING(net_op_af_packet,
+	"iface=<string> "
+	"qpairs=<int> "
+	"blocksz=<int> "
+	"framesz=<int> "
+	"framecnt=<int> "
+	"qdisc_bypass=<0|1>");
+
+#else
 RTE_PMD_REGISTER_VDEV(net_af_packet, pmd_af_packet_drv);
 RTE_PMD_REGISTER_ALIAS(net_af_packet, eth_af_packet);
 RTE_PMD_REGISTER_PARAM_STRING(net_af_packet,
@@ -1136,3 +1319,4 @@ RTE_PMD_REGISTER_PARAM_STRING(net_af_packet,
 	"framesz=<int> "
 	"framecnt=<int> "
 	"qdisc_bypass=<0|1>");
+#endif /* OP_AF_PACKET */

@@ -51,3 +51,5 @@ else ifeq ($(OP_PACKETIO_DPDK_PROCESS_TYPE),secondary)
 else
 	$(error unsupported DPDK process type $(OP_PACKETIO_DPDK_PROCESS_TYPE))
 endif
+
+include $(PIO_DRIVER_DIR)/ethdev/directory.mk
