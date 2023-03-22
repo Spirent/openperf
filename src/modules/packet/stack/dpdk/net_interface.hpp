@@ -15,6 +15,14 @@ struct rte_mbuf;
 
 namespace openperf::packet::stack::dpdk {
 
+struct netif_ext
+{
+    // lwip doesn't support IPv6 prefix length or default gateway, so these need
+    // to be stored outside of the netif
+    std::array<uint8_t, LWIP_IPV6_NUM_ADDRESSES> ip6_address_prefix_len;
+    std::optional<ip6_addr_t> ip6_gateway;
+};
+
 class net_interface
 {
 public:
@@ -48,6 +56,8 @@ public:
 
     err_t handle_tx(struct pbuf*);
 
+    friend netif_ext& get_netif_ext(netif*);
+
 private:
     void configure();
     void unconfigure();
@@ -61,9 +71,12 @@ private:
     const packet_filter m_tx_filter;
 
     netif m_netif;
+    netif_ext m_netif_ext;
 };
 
 const net_interface& to_interface(netif*);
+
+netif_ext& get_netif_ext(netif*);
 
 } // namespace openperf::packet::stack::dpdk
 

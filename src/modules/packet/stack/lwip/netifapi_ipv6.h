@@ -15,11 +15,16 @@ err_t netifapi_netif_create_ip6_linklocal_address(struct netif* netif,
 
 err_t netifapi_netif_add_ip6_address(struct netif* netif,
                                      const ip6_addr_t* ipaddr,
+                                     u8_t prefix_len,
                                      s8_t* chosen_idx);
 
-err_t netifapi_netif_ip6_addr_set(struct netif* netif,
+err_t netifapi_netif_set_ip6_address(struct netif* netif,
                                   s8_t addr_idx,
-                                  const ip6_addr_t* ipaddr);
+                                  const ip6_addr_t* ipaddr,
+                                  u8_t prefix_len);
+
+err_t netifapi_netif_set_ip6_gateway(struct netif* netif,
+                                     const ip6_addr_t* gateway);
 
 err_t netifapi_dhcp6_enable_stateless(struct netif* netif);
 
