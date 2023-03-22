@@ -1663,7 +1663,7 @@ nd6_is_prefix_in_netif(const ip6_addr_t *ip6addr, struct netif *netif)
   for (i = 0; i < LWIP_IPV6_NUM_ADDRESSES; i++) {
     if (ip6_addr_isvalid(netif_ip6_addr_state(netif, i)) &&
         netif_ip6_addr_isstatic(netif, i) &&
-        ip6_addr_netcmp(ip6addr, netif_ip6_addr(netif, i))) {
+        ip6_addr_netcmp_prefix(ip6addr, netif_ip6_addr(netif, i), netif_ip6_prefix_len(netif, i))) {
       return 1;
     }
   }
@@ -1937,8 +1937,16 @@ nd6_new_onlink_prefix(const ip6_addr_t *prefix, struct netif *netif)
  *         suitable next hop was found, ERR_MEM if no cache entry
  *         could be created
  */
-/* XXX: OpenPerf modified this function to remove "static" qualifier */
-s8_t nd6_get_next_hop_entry(const ip6_addr_t *ip6addr, struct netif *netif)
+/* XXX: OpenPerf modified this function to remove the "static" qualifier and added
+ *      probe option to force sending a neighbor solicitation message.  The probe
+ *      is used to avoid issues with stale neighbor information.
+ */
+static s8_t nd6_get_next_hop_entry(const ip6_addr_t *ip6addr, struct netif *netif)
+{
+  return nd6_get_next_hop_entry_probe(ip6addr, netif, 0);
+}
+
+s8_t nd6_get_next_hop_entry_probe(const ip6_addr_t *ip6addr, struct netif *netif, int probe)
 {
 #ifdef LWIP_HOOK_ND6_GET_GW
   const ip6_addr_t *next_hop_addr;
@@ -1996,17 +2004,23 @@ s8_t nd6_get_next_hop_entry(const ip6_addr_t *ip6addr, struct netif *netif)
         /* Next hop for destination provided by hook function. */
         destination_cache[nd6_cached_destination_index].pmtu = netif->mtu;
         ip6_addr_set(&destination_cache[nd6_cached_destination_index].next_hop_addr, next_hop_addr);
+        // FIXME: !!!
 #endif /* LWIP_HOOK_ND6_GET_GW */
       } else {
+        const ip6_addr_t *next_hop_addr;
         /* We need to select a router. */
         i = nd6_select_router(ip6addr, netif);
-        if (i < 0) {
-          /* No router found. */
+        if (i >= 0) {
+          destination_cache[nd6_cached_destination_index].pmtu = netif_mtu6(netif); /* Start with netif mtu, correct through ICMPv6 if necessary */
+          ip6_addr_copy(destination_cache[nd6_cached_destination_index].next_hop_addr, default_router_list[i].neighbor_entry->next_hop_address);
+        } else if ((next_hop_addr = netif_ip6_gateway_addr(netif)) != NULL) {
+          destination_cache[nd6_cached_destination_index].pmtu = netif_mtu6(netif);
+          ip6_addr_set(&destination_cache[nd6_cached_destination_index].next_hop_addr, next_hop_addr);
+        } else {
+          /* No route found. */
           ip6_addr_set_any(&(destination_cache[nd6_cached_destination_index].destination_addr));
           return ERR_RTE;
         }
-        destination_cache[nd6_cached_destination_index].pmtu = netif_mtu6(netif); /* Start with netif mtu, correct through ICMPv6 if necessary */
-        ip6_addr_copy(destination_cache[nd6_cached_destination_index].next_hop_addr, default_router_list[i].neighbor_entry->next_hop_address);
       }
     }
   }
@@ -2048,7 +2062,16 @@ s8_t nd6_get_next_hop_entry(const ip6_addr_t *ip6addr, struct netif *netif)
       neighbor_cache[i].state = ND6_INCOMPLETE;
       neighbor_cache[i].counter.probes_sent = 1;
       nd6_send_neighbor_cache_probe(&neighbor_cache[i], ND6_SEND_FLAG_MULTICAST_DEST);
+
+      probe = 0; /* Clear probe flag.  Probe is not needed for new entries. */
     }
+  }
+
+  if (probe) {
+    /* Send neighbor solicit message for existing entries. */
+    neighbor_cache[nd6_cached_neighbor_index].state = ND6_PROBE;
+    neighbor_cache[nd6_cached_neighbor_index].counter.probes_sent = 1;
+    nd6_send_neighbor_cache_probe(&neighbor_cache[nd6_cached_neighbor_index], ND6_SEND_FLAG_MULTICAST_DEST);
   }
 
   /* Reset this destination's age. */
@@ -2466,7 +2489,7 @@ nd6_restart_netif(struct netif *netif)
  * @return 1 on valid index, 0 otherwise
  */
 int
-neighbor_cache_get_entry(size_t i, ip6_addr_t **ipaddr, u8_t **lladdr_ret)
+neighbor_cache_get_entry(size_t i, ip6_addr_t **ipaddr, u8_t **lladdr_ret, u8_t *state)
 {
   LWIP_ASSERT("ipaddr != NULL", ipaddr != NULL);
   LWIP_ASSERT("lladdr_ret != NULL", lladdr_ret != NULL);
@@ -2474,6 +2497,7 @@ neighbor_cache_get_entry(size_t i, ip6_addr_t **ipaddr, u8_t **lladdr_ret)
   if ((i < LWIP_ND6_NUM_NEIGHBORS) && (neighbor_cache[i].state > ND6_NO_ENTRY)) {
     *ipaddr = &neighbor_cache[i].next_hop_address;
     *lladdr_ret = neighbor_cache[i].lladdr;
+    if (state) *state = neighbor_cache[i].state;
     return 1;
   } else {
     return 0;

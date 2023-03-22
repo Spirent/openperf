@@ -19,6 +19,23 @@ static constexpr int max_poll_count = 30;
 static constexpr int ND_NEIGHBOR_CACHE_NO_ENTRY =
     -127; // -1 and -4 are already used to signal other errors by LwIP.
 
+// XXX: In an ideal world this would be constexpr.
+// But, the underlying std::array type doesn't zero out POD values.
+// So there's no guarantee that the MAC would end up as "00:00:00:00:00:00" for
+// all platforms/compilers.
+static const libpacket::type::mac_address unspecified_mac =
+    libpacket::type::mac_address("00:00:00:00:00:00");
+
+// NDP neighbor cache entry states (from lwip nd6_priv.h)
+enum nd6_neighbor_cache_entry_state {
+    ND6_NO_ENTRY = 0,
+    ND6_INCOMPLETE,
+    ND6_REACHABLE,
+    ND6_STALE,
+    ND6_DELAY,
+    ND6_PROBE
+};
+
 bool all_addresses_resolved(const learning_results& results)
 {
     auto ipv4_resolved = std::all_of(
@@ -105,12 +122,17 @@ get_nd_cache_entry(int cache_entry_index)
 {
     ip6_addr_t* ip_addr = nullptr;
     u8_t* ll_addr = nullptr;
+    u8_t state;
 
-    if (neighbor_cache_get_entry(cache_entry_index, &ip_addr, &ll_addr)) {
+    // Don't use MAC in INCOMPLETE, STALE, DELAY or PROBE states
+    if (neighbor_cache_get_entry(
+            cache_entry_index, &ip_addr, &ll_addr, &state)) {
         auto next_hop = make_libpacket_address(*ip_addr);
 
-        return (std::make_optional(
-            std::make_pair(next_hop, libpacket::type::mac_address(ll_addr))));
+        return (std::make_optional(std::make_pair(
+            next_hop,
+            (state == ND6_REACHABLE) ? libpacket::type::mac_address(ll_addr)
+                                     : unspecified_mac)));
     }
 
     return (std::nullopt);
@@ -155,7 +177,7 @@ static err_t send_ipv6_learning_requests(start_learning_params& slp)
                    "Sending ND request for IP: %s\n",
                    to_string(addr_pair.first).c_str());
 
-            auto result = nd6_get_next_hop_entry(&target, slp.intf);
+            auto result = nd6_get_next_hop_entry_probe(&target, slp.intf, 1);
 
             switch (result) {
             case ERR_RTE:
@@ -377,13 +399,6 @@ static void check_arp_cache(check_learning_params& clp)
             reinterpret_cast<const uint8_t*>(entryMacPtr->addr));
     }
 }
-
-// XXX: In an ideal world this would be constexpr.
-// But, the underlying std::array type doesn't zero out POD values.
-// So there's no guarantee that the MAC would end up as "00:00:00:00:00:00" for
-// all platforms/compilers.
-static const libpacket::type::mac_address unspecified_mac =
-    libpacket::type::mac_address("00:00:00:00:00:00");
 
 static void check_nd_cache(check_learning_params& slp)
 {

@@ -145,6 +145,13 @@ static void validate(const ipv6_static_protocol_config& config,
             errors.emplace_back("Cannot use multicast address ("
                                 + to_string(*config.gateway)
                                 + ") for gateway.");
+        } else if (is_linklocal(*config.gateway)) {
+            if (!config.link_local_address) {
+                errors.emplace_back(
+                    "Cannot use link local address ("
+                    + to_string(*config.gateway)
+                    + ") for gateway without link local interface address.");
+            }
         } else if (ipv6_network(*config.gateway, config.prefix_length)
                    != ipv6_network(config.address, config.prefix_length)) {
             errors.emplace_back(

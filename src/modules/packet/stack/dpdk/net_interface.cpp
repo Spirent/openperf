@@ -20,6 +20,7 @@
 #include "packetio/drivers/dpdk/port_info.hpp"
 #if LWIP_IPV6
 #include "packet/stack/lwip/netifapi_ipv6.h"
+#include "packet/stack/lwip/nd6_op.h"
 #endif
 #include "packet/stack/lwip/netifapi_utils.h"
 #if LWIP_PACKET
@@ -351,12 +352,27 @@ static err_t configure_ipv6_interface_link_local_address(
         std::copy_n(addr->data(),
                     addr->size(),
                     reinterpret_cast<uint8_t*>(ip6_addr.addr));
-        err_t err = netifapi_netif_add_ip6_address(&netif, &ip6_addr, nullptr);
+        err_t err =
+            netifapi_netif_add_ip6_address(&netif, &ip6_addr, 64, nullptr);
         return err;
     } else {
         /* Add auto link local IPv6 address */
         return netifapi_netif_create_ip6_linklocal_address(&netif, 1);
     }
+}
+
+static err_t configure_ipv6_interface_gateway_address(
+    netif& netif, const std::optional<libpacket::type::ipv6_address>& addr)
+{
+    if (addr) {
+        struct ip6_addr ip6_addr;
+        std::copy_n(addr->data(),
+                    addr->size(),
+                    reinterpret_cast<uint8_t*>(ip6_addr.addr));
+        ip6_addr.zone = IP6_NO_ZONE;
+        return netifapi_netif_set_ip6_gateway(&netif, &ip6_addr);
+    }
+    return 0;
 }
 
 static err_t configure_ipv6_interface(
@@ -378,11 +394,12 @@ static err_t configure_ipv6_interface(
                                 config.address.size(),
                                 reinterpret_cast<uint8_t*>(address.addr));
                     netif_error = netifapi_netif_add_ip6_address(
-                        &netif, &address, nullptr);
-                    // TODO:
-                    //   LWPIP doesn't support
-                    //     IPv6 gateway (no route table)
-                    //     Prefix lengtth (always uses /64)
+                        &netif, &address, config.prefix_length, nullptr);
+                    if (netif_error != ERR_OK) return;
+
+                    netif_error = configure_ipv6_interface_gateway_address(
+                        netif, config.gateway);
+                    if (netif_error != ERR_OK) return;
                 },
                 [&](const packetio::interface::ipv6_auto_protocol_config&
                         config) {
@@ -660,4 +677,45 @@ const net_interface& to_interface(netif* ifp)
     return *(reinterpret_cast<net_interface*>(ifp->state));
 }
 
+netif_ext& get_netif_ext(netif* ifp)
+{
+    auto& ni = *(reinterpret_cast<net_interface*>(ifp->state));
+    return ni.m_netif_ext;
+}
+
 } // namespace openperf::packet::stack::dpdk
+
+u8_t netif_ip6_prefix_len(netif* netif, int idx)
+{
+    auto& data = openperf::packet::stack::dpdk::get_netif_ext(netif);
+    u8_t prefix_len = data.ip6_address_prefix_len[idx];
+    /* Default prefix length is 64 */
+    return prefix_len ? prefix_len : 64;
+}
+
+void netif_set_ip6_prefix_len(netif* netif, int idx, u8_t prefix_len)
+{
+    auto& data = openperf::packet::stack::dpdk::get_netif_ext(netif);
+    data.ip6_address_prefix_len[idx] = prefix_len;
+}
+
+const ip6_addr_t* netif_ip6_gateway_addr(netif* netif)
+{
+    auto& data = openperf::packet::stack::dpdk::get_netif_ext(netif);
+    if (!data.ip6_gateway) return nullptr;
+    return &(*data.ip6_gateway);
+}
+
+void netif_set_ip6_gateway_addr(netif* netif, const ip6_addr_t* addr)
+{
+    auto& data = openperf::packet::stack::dpdk::get_netif_ext(netif);
+    if (ip6_addr_isany(addr)) {
+        data.ip6_gateway = {};
+    } else {
+        data.ip6_gateway = *addr;
+        if (data.ip6_gateway->zone == IP6_NO_ZONE) {
+            // Set gateway zone if required (i.e. link local address)
+            ip6_addr_assign_zone(&*data.ip6_gateway, IP6_UNICAST, netif);
+        }
+    }
+}

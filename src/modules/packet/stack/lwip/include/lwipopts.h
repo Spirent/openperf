@@ -130,6 +130,10 @@
 #define LWIP_ND6_NUM_NEIGHBORS 127
 #define LWIP_ND6_NUM_DESTINATIONS 127
 
+/* Number of entries in IPv6 default router cache.
+ * The cache is used for all interfaces so probably want at least 1 router per interface.
+ */
+#define LWIP_ND6_NUM_ROUTERS 16
 /*
  * Debugging options
  * Enable the next three options plus whatever content you want.
