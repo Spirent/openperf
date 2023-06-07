@@ -21,14 +21,19 @@ DPDK_INC_DIR := $(DPDK_TGT_DIR)/include
 DPDK_LIB_DIR := $(DPDK_TGT_DIR)/lib
 
 DPDK_DRIVERS := \
+	bus/vmbus \
+	common/iavf \
 	mempool/bucket \
 	mempool/ring \
 	mempool/stack \
 	net/af_packet \
 	net/bonding \
 	net/e1000 \
+	net/ena \
+	net/iavf \
 	net/i40e \
 	net/ixgbe \
+	net/netvsc \
 	net/ring \
 	net/virtio \
 	net/vmxnet3
