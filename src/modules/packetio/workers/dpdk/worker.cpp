@@ -588,6 +588,19 @@ uint16_t worker_transmit(const fib* fib,
 {
     tx_sink_burst_dispatch(fib, port_id, packets, nb_packets);
 
+    auto nb_prep = rte_eth_tx_prepare(port_id, queue_id, packets, nb_packets);
+    if (nb_prep != nb_packets) {
+        OP_LOG(OP_LOG_DEBUG,
+               "Failed preparing packets on %u:%u.  Prepared %u of %u packets. "
+               " %s.\n",
+               port_id,
+               queue_id,
+               nb_prep,
+               nb_packets,
+               rte_strerror(rte_errno));
+        return 0;
+    }
+
     auto sent = rte_eth_tx_burst(port_id, queue_id, packets, nb_packets);
 
     OP_LOG(OP_LOG_TRACE,

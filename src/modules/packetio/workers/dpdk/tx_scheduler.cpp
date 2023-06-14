@@ -300,6 +300,24 @@ static uint16_t do_transmit(uint16_t port_idx,
         /* Grab a burst of packets and attempt to transmit them. */
         auto to_send = source->pull(outgoing.data(), loop_burst);
         total_to_send += to_send;
+
+        auto nb_prep =
+            rte_eth_tx_prepare(port_idx, queue_idx, outgoing.data(), to_send);
+        if (nb_prep != to_send) {
+            OP_LOG(OP_LOG_DEBUG,
+                   "Failed preparing packets on %u:%u.  Prepared %u of %u "
+                   "packets.  %s.\n",
+                   port_idx,
+                   queue_idx,
+                   nb_prep,
+                   to_send,
+                   rte_strerror(rte_errno));
+            std::copy(outgoing.begin(),
+                      outgoing.begin() + to_send,
+                      std::back_inserter(untransmitted));
+            break;
+        }
+
         auto sent =
             rte_eth_tx_burst(port_idx, queue_idx, outgoing.data(), to_send);
 
@@ -458,6 +476,21 @@ tx_scheduler::on_timeout(const schedule::state_blocked& blocked)
     }
 
     auto to_send = m_buffer.size();
+
+    auto nb_prep =
+        rte_eth_tx_prepare(port_id(), queue_id(), m_buffer.data(), to_send);
+    if (nb_prep != to_send) {
+        OP_LOG(OP_LOG_DEBUG,
+               "Failed preparing packets on %u:%u.  Prepared %hu of %lu "
+               "packets.  %s.\n",
+               port_id(),
+               queue_id(),
+               nb_prep,
+               to_send,
+               rte_strerror(rte_errno));
+        return (std::nullopt);
+    }
+
     auto sent =
         rte_eth_tx_burst(port_id(), queue_id(), m_buffer.data(), to_send);
     if (sent < to_send) {
