@@ -151,69 +151,79 @@ make_stack_address(const libpacket::type::ipv6_address& libpacket_address)
     return (to_return);
 }
 
+static err_t
+start_ipv6_next_hop_probe(netif* intf,
+                          const libpacket::type::ipv6_address& address,
+                          ipv6_nd_result& nd_result)
+{
+    auto target = make_stack_address(address);
+
+    ip6_addr_assign_zone(&target, IP6_UNICAST, intf);
+
+    OP_LOG(OP_LOG_TRACE,
+           "Sending ND request for IP: %s\n",
+           to_string(address).c_str());
+
+    auto result = nd6_get_next_hop_entry_probe(&target, intf, 1);
+
+    switch (result) {
+    case ERR_RTE:
+        // no route found. not an error but don't populate anything
+        // further.
+        nd_result.neighbor_cache_offset = result;
+        return ERR_OK;
+    case ERR_MEM:
+        // could not allocate memory neighbor or destination cache.
+        // definite error.
+        return result;
+    default:
+        // keep going; no error
+        break;
+    }
+
+    // Grab the next hop address for result and sanity checking
+    // purposes.
+    auto neighbor_entry = get_nd_cache_entry(result);
+    if (!neighbor_entry) {
+        OP_LOG(OP_LOG_ERROR,
+               "Could not find neighbor cache entry at index %d that "
+               "we just created!",
+               result);
+        return ERR_OK;
+    }
+
+    // Keep track of where in the neighbor/destination cache
+    // this entry is at.
+    nd_result.neighbor_cache_offset = result;
+
+    nd_result.next_hop_address =
+        std::get<libpacket::type::ipv6_address>(*neighbor_entry);
+
+    return ERR_OK;
+}
+
 static err_t send_ipv6_learning_requests(start_learning_params& slp)
 {
     // start_learning_params contains a unique list of IP addresses to learn.
     // For IPv6 the stack performs "routing" (i.e. on/off link decisions.)
 
     err_t overall_result = ERR_OK;
-    std::for_each(
-        slp.to_learn.ipv6.begin(),
-        slp.to_learn.ipv6.end(),
-        [&](auto& addr_pair) {
-            // If we've already had an error don't bother trying to learn this
-            // address.
-            if (overall_result != ERR_OK) { return; }
+    std::for_each(slp.to_learn.ipv6.begin(),
+                  slp.to_learn.ipv6.end(),
+                  [&](auto& addr_pair) {
+                      // If we've already had an error don't bother trying to
+                      // learn this address.
+                      if (overall_result != ERR_OK) { return; }
 
-            // Is this entry unresolved?
-            // Don't repeat learning for addresses we've already resolved.
-            if (addr_pair.second.next_hop_mac) { return; }
+                      // Is this entry unresolved?
+                      // Don't repeat learning for addresses we've already
+                      // resolved.
+                      if (addr_pair.second.next_hop_mac) { return; }
 
-            auto target = make_stack_address(addr_pair.first);
-
-            ip6_addr_assign_zone(&target, IP6_UNICAST, slp.intf);
-
-            OP_LOG(OP_LOG_TRACE,
-                   "Sending ND request for IP: %s\n",
-                   to_string(addr_pair.first).c_str());
-
-            auto result = nd6_get_next_hop_entry_probe(&target, slp.intf, 1);
-
-            switch (result) {
-            case ERR_RTE:
-                // no route found. not an error but don't populate anything
-                // further.
-                addr_pair.second.neighbor_cache_offset = result;
-                return;
-            case ERR_MEM:
-                // could not allocate memory neighbor or destination cache.
-                // definite error.
-                overall_result = result;
-                return;
-            default:
-                // keep going; no error
-                [[fallthrough]];
-            }
-
-            // Grab the next hop address for result and sanity checking
-            // purposes.
-            auto neighbor_entry = get_nd_cache_entry(result);
-            if (!neighbor_entry) {
-                OP_LOG(OP_LOG_ERROR,
-                       "Could not find neighbor cache entry at index %d that "
-                       "we just created!",
-                       result);
-
-                return;
-            }
-
-            // Keep track of where in the neighbor/destination cache
-            // this entry is at.
-            addr_pair.second.neighbor_cache_offset = result;
-
-            addr_pair.second.next_hop_address =
-                std::get<libpacket::type::ipv6_address>(*neighbor_entry);
-        });
+                      auto result = start_ipv6_next_hop_probe(
+                          slp.intf, addr_pair.first, addr_pair.second);
+                      if (result) { overall_result = result; }
+                  });
 
     return (overall_result);
 }
@@ -365,6 +375,7 @@ bool learning_state_machine::start_status_polling()
 // Structure that gets "passed" to the stack thread via tcpip_callback.
 struct check_learning_params
 {
+    netif* intf = nullptr; // lwip interface to use.
     learning_results& results;
     std::promise<void> barrier;
 };
@@ -405,7 +416,7 @@ static void check_nd_cache(check_learning_params& slp)
     std::for_each(
         slp.results.ipv6.begin(),
         slp.results.ipv6.end(),
-        [](auto& ipv6_result) {
+        [&](auto& ipv6_result) {
             // Is this entry already resolved?
             if (ipv6_result.second.next_hop_mac.has_value()) { return; }
 
@@ -442,6 +453,14 @@ static void check_nd_cache(check_learning_params& slp)
                         ipv6_result.second.next_hop_mac = mac_address;
                     }
                 }
+            } else {
+                // ND probe is not running anymore but the address is not
+                // resolved. Probe is normally only 3 packets, but it should
+                // be longer for learning so restart the probe if it timed out.
+                if (slp.intf) {
+                    start_ipv6_next_hop_probe(
+                        slp.intf, ipv6_result.first, ipv6_result.second);
+                }
             }
         });
 }
@@ -459,7 +478,10 @@ static void check_learning_caches(void* arg)
 
 int learning_state_machine::check_learning()
 {
-    // Are there results to check?
+    // Do we have a valid interface to learn on?
+    auto* intf =
+        const_cast<netif*>(std::any_cast<const netif*>(m_interface.data()));
+
     if (m_results.ipv4.empty() && m_results.ipv6.empty()) { return (-1); }
 
     // Are we in the process of learning?
@@ -472,7 +494,7 @@ int learning_state_machine::check_learning()
         return (-1);
     }
 
-    check_learning_params clp = {.results = this->m_results};
+    check_learning_params clp = {.intf = intf, .results = this->m_results};
     auto barrier = clp.barrier.get_future();
 
     // tcpip_callback executes the given function in the stack thread passing it
