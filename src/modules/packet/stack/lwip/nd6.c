@@ -2008,18 +2008,25 @@ s8_t nd6_get_next_hop_entry_probe(const ip6_addr_t *ip6addr, struct netif *netif
 #endif /* LWIP_HOOK_ND6_GET_GW */
       } else {
         const ip6_addr_t *next_hop_addr;
-        /* We need to select a router. */
-        i = nd6_select_router(ip6addr, netif);
-        if (i >= 0) {
-          destination_cache[nd6_cached_destination_index].pmtu = netif_mtu6(netif); /* Start with netif mtu, correct through ICMPv6 if necessary */
-          ip6_addr_copy(destination_cache[nd6_cached_destination_index].next_hop_addr, default_router_list[i].neighbor_entry->next_hop_address);
-        } else if ((next_hop_addr = netif_ip6_gateway_addr(netif)) != NULL) {
+        if ((next_hop_addr = netif_ip6_gateway_addr(netif)) != NULL) {
+          /* A configured gateway address nas precedence over a discovered router.
+           * This provides more flexibility becuase not configuring the gateway provides
+           * the original behavior and the current lwip nd6_select_router() does
+           * not check IP prefixes.
+           */
           destination_cache[nd6_cached_destination_index].pmtu = netif_mtu6(netif);
           ip6_addr_set(&destination_cache[nd6_cached_destination_index].next_hop_addr, next_hop_addr);
         } else {
-          /* No route found. */
-          ip6_addr_set_any(&(destination_cache[nd6_cached_destination_index].destination_addr));
-          return ERR_RTE;
+          /* We need to select a router. */
+          i = nd6_select_router(ip6addr, netif);
+          if (i >= 0) {
+            destination_cache[nd6_cached_destination_index].pmtu = netif_mtu6(netif); /* Start with netif mtu, correct through ICMPv6 if necessary */
+            ip6_addr_copy(destination_cache[nd6_cached_destination_index].next_hop_addr, default_router_list[i].neighbor_entry->next_hop_address);
+          } else {
+            /* No route found. */
+            ip6_addr_set_any(&(destination_cache[nd6_cached_destination_index].destination_addr));
+            return ERR_RTE;
+          }
         }
       }
     }
