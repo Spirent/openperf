@@ -24,6 +24,7 @@ libpacket::type::mac_address mac_address(uint16_t port_id);
 uint32_t speeds(uint16_t port_id);
 uint32_t max_speed(uint16_t port_id);
 uint32_t max_rx_pktlen(uint16_t port_id);
+uint32_t default_rx_mtu(uint16_t port_id);
 uint32_t max_lro_pkt_size(uint16_t port_id);
 uint32_t max_mac_addrs(uint16_t port_id);
 
