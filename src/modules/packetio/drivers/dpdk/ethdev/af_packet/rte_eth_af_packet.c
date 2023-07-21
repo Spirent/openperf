@@ -47,6 +47,11 @@
 #define ETH_AF_PACKET_FRAMESIZE_ARG	"framesz"
 #define ETH_AF_PACKET_FRAMECOUNT_ARG	"framecnt"
 #define ETH_AF_PACKET_QDISC_BYPASS_ARG	"qdisc_bypass"
+#ifdef OP_AF_PACKET
+#define ETH_AF_PACKET_IFACE_CONFIG_ARG "iface_config"
+
+#define OP_AF_PACKET_ETHER_OVERHEAD (RTE_ETHER_HDR_LEN + RTE_VLAN_HLEN + RTE_ETHER_CRC_LEN)
+#endif
 
 #define DFLT_FRAME_SIZE		(1 << 11)
 #define DFLT_FRAME_COUNT	(1 << 9)
@@ -95,6 +100,8 @@ struct pmd_internals {
 	uint8_t vlan_strip;
 
 #ifdef OP_AF_PACKET
+	uint8_t iface_config;
+	uint32_t max_rx_pktlen;
 	struct rte_intr_handle *intr_handle;
 #endif
 };
@@ -106,6 +113,9 @@ static const char *valid_arguments[] = {
 	ETH_AF_PACKET_FRAMESIZE_ARG,
 	ETH_AF_PACKET_FRAMECOUNT_ARG,
 	ETH_AF_PACKET_QDISC_BYPASS_ARG,
+#ifdef OP_AF_PACKET
+	ETH_AF_PACKET_IFACE_CONFIG_ARG,
+#endif
 	NULL
 };
 
@@ -245,6 +255,9 @@ eth_af_packet_rx(void *queue, struct rte_mbuf **bufs, uint16_t nb_pkts)
 	unsigned long num_rx_bytes = 0;
 	unsigned int framecount, framenum;
 
+#ifdef OP_AF_PACKET
+	unsigned int max_frame_size = rte_pktmbuf_data_room_size(pkt_q->mb_pool) - RTE_PKTMBUF_HEADROOM;
+#endif
 	if (unlikely(nb_pkts == 0))
 		return 0;
 
@@ -259,6 +272,25 @@ eth_af_packet_rx(void *queue, struct rte_mbuf **bufs, uint16_t nb_pkts)
 		ppd = (struct tpacket2_hdr *) pkt_q->rd[framenum].iov_base;
 		if ((ppd->tp_status & TP_STATUS_USER) == 0)
 			break;
+
+#ifdef OP_AF_PACKET
+		if (ppd->tp_snaplen > max_frame_size) {
+			/* Packet is too large, so skip it */
+			static int oversize_warn = 0;
+			if (oversize_warn < 10) {
+				PMD_LOG(ERR, "Received frame too large for mbuf_pool.  %u > %u", ppd->tp_snaplen, max_frame_size);
+				if ((++oversize_warn) >= 10) {
+					PMD_LOG(ERR, "Too many received frame too large errors.  Disabling output.");
+				}
+			}
+
+			/* release incoming frame and advance ring buffer */
+			ppd->tp_status = TP_STATUS_KERNEL;
+			if (++framenum >= framecount)
+				framenum = 0;
+			continue;
+		}
+#endif
 
 		/* allocate the next mbuf */
 		mbuf = rte_pktmbuf_alloc(pkt_q->mb_pool);
@@ -508,6 +540,11 @@ eth_dev_info(struct rte_eth_dev *dev, struct rte_eth_dev_info *dev_info)
 		RTE_ETH_TX_OFFLOAD_VLAN_INSERT;
 	dev_info->rx_offload_capa = RTE_ETH_RX_OFFLOAD_VLAN_STRIP;
 
+#ifdef OP_AF_PACKET
+	dev_info->max_rx_pktlen = internals->max_rx_pktlen;
+	dev_info->max_mtu = internals->max_rx_pktlen - OP_AF_PACKET_ETHER_OVERHEAD - RTE_PKTMBUF_HEADROOM;
+#endif
+
 	return 0;
 }
 
@@ -631,12 +668,29 @@ eth_rx_queue_setup(struct rte_eth_dev *dev,
 	data_size = internals->req.tp_frame_size;
 	data_size -= TPACKET2_HDRLEN - sizeof(struct sockaddr_ll);
 
+#ifndef OP_AF_PACKET
 	if (data_size > buf_size) {
 		PMD_LOG(ERR,
 			"%s: %d bytes will not fit in mbuf (%d bytes)",
 			dev->device->name, data_size, buf_size);
 		return -ENOMEM;
 	}
+#else
+	{
+		/* It is okay to have a mbuf pool which is smaller than the tp_frame_size
+		 * eth_af_packet_rx() will throw away frames which are too large for mbufs.
+		 */
+		unsigned int max_frame_size = (dev->data->mtu + OP_AF_PACKET_ETHER_OVERHEAD);
+		if (max_frame_size > buf_size) {
+			PMD_LOG(ERR, "%s: mbuf_pool buffer size %d is too small for MTU %" PRIu16,
+			        dev->device->name, buf_size, dev->data->mtu);
+		}
+		if (max_frame_size > data_size) {
+			PMD_LOG(ERR, "%s: tpacket buffer size %d is too small for MTU %" PRIu16,
+			        dev->device->name, data_size, dev->data->mtu);
+		}
+	}
+#endif
 
 	dev->data->rx_queues[rx_queue_id] = pkt_q;
 	pkt_q->in_port = dev->data->port_id;
@@ -672,6 +726,14 @@ eth_dev_mtu_set(struct rte_eth_dev *dev, uint16_t mtu)
 	if (mtu > data_size)
 		return -EINVAL;
 
+#ifdef OP_AF_PACKET
+	if (!internals->iface_config)
+	{
+		PMD_LOG(DEBUG, "Setting MTU to %" PRIu16 " is not allowed.", mtu);
+		return 0;
+	}
+#endif
+
 	s = socket(PF_INET, SOCK_DGRAM, 0);
 	if (s < 0)
 		return -EINVAL;
@@ -693,6 +755,14 @@ eth_dev_macaddr_set(struct rte_eth_dev *dev, struct rte_ether_addr *addr)
 	struct ifreq ifr = { };
 	int sockfd = internals->rx_queue[0].sockfd;
 	int ret;
+
+#ifdef OP_AF_PACKET
+	if (!internals->iface_config)
+	{
+		PMD_LOG(DEBUG, "Setting MAC address is not allowed.");
+		return 0;
+	}
+#endif
 
 	if (sockfd == -1) {
 		PMD_LOG(ERR, "receive socket not found");
@@ -743,6 +813,13 @@ static int
 eth_dev_promiscuous_enable(struct rte_eth_dev *dev)
 {
 	struct pmd_internals *internals = dev->data->dev_private;
+#ifdef OP_AF_PACKET
+	if (!internals->iface_config)
+	{
+		PMD_LOG(DEBUG, "Changing promiscuous mode is not allowed.");
+		return 0;
+	}
+#endif
 
 	return eth_dev_change_flags(internals->if_name, IFF_PROMISC, ~0);
 }
@@ -751,6 +828,13 @@ static int
 eth_dev_promiscuous_disable(struct rte_eth_dev *dev)
 {
 	struct pmd_internals *internals = dev->data->dev_private;
+#ifdef OP_AF_PACKET
+	if (!internals->iface_config)
+	{
+		PMD_LOG(DEBUG, "Changing promiscuous mode is not allowed.");
+		return 0;
+	}
+#endif
 
 	return eth_dev_change_flags(internals->if_name, 0, ~IFF_PROMISC);
 }
@@ -804,7 +888,10 @@ rte_pmd_init_internals(struct rte_vdev_device *dev,
                        unsigned int blockcnt,
                        unsigned int framesize,
                        unsigned int framecnt,
-		       unsigned int qdisc_bypass,
+                       unsigned int qdisc_bypass,
+#ifdef OP_AF_PACKET
+                       unsigned int iface_config,
+#endif
                        struct pmd_internals **internals,
                        struct rte_eth_dev **eth_dev,
                        struct rte_kvargs *kvlist)
@@ -1046,6 +1133,9 @@ rte_pmd_init_internals(struct rte_vdev_device *dev,
 	}
 
 #ifdef OP_AF_PACKET
+	(*internals)->iface_config = iface_config;
+	(*internals)->max_rx_pktlen = (framesize - (TPACKET2_HDRLEN - sizeof(struct sockaddr_ll))) + RTE_PKTMBUF_HEADROOM;
+
 	(*internals)->intr_handle = rte_intr_instance_alloc(RTE_INTR_INSTANCE_F_PRIVATE);
 	if ((*internals)->intr_handle == NULL) {
 		PMD_LOG(ERR, "Failed to allocate intr handle");
@@ -1124,6 +1214,9 @@ rte_eth_from_packet(struct rte_vdev_device *dev,
 	unsigned int framecount = DFLT_FRAME_COUNT;
 	unsigned int qpairs = 1;
 	unsigned int qdisc_bypass = 1;
+#ifdef OP_AF_PACKET
+	unsigned int iface_config = 1;
+#endif
 
 	/* do some parameter checking */
 	if (*sockfd < 0)
@@ -1186,6 +1279,12 @@ rte_eth_from_packet(struct rte_vdev_device *dev,
 			}
 			continue;
 		}
+#ifdef OP_AF_PACKET
+		if (strstr(pair->key, ETH_AF_PACKET_IFACE_CONFIG_ARG) != NULL) {
+			iface_config = atoi(pair->value);
+			continue;
+		}
+#endif
 	}
 
 	if (framesize > blocksize) {
@@ -1207,11 +1306,19 @@ rte_eth_from_packet(struct rte_vdev_device *dev,
 	PMD_LOG(INFO, "%s:\tblock count %d", name, blockcount);
 	PMD_LOG(INFO, "%s:\tframe size %d", name, framesize);
 	PMD_LOG(INFO, "%s:\tframe count %d", name, framecount);
+#ifdef OP_AF_PACKET
+	PMD_LOG(INFO, "%s:\tallow interface configuration %d", name, iface_config);
+	if (!iface_config)
+		PMD_LOG(WARNING, "%s: kernel interface configuration is disabled", name);
+#endif
 
 	if (rte_pmd_init_internals(dev, *sockfd, qpairs,
 				   blocksize, blockcount,
 				   framesize, framecount,
 				   qdisc_bypass,
+#ifdef OP_AF_PACKET
+				   iface_config,
+#endif
 				   &internals, &eth_dev,
 				   kvlist) < 0)
 		return -1;
@@ -1309,7 +1416,8 @@ RTE_PMD_REGISTER_PARAM_STRING(net_op_af_packet,
 	"blocksz=<int> "
 	"framesz=<int> "
 	"framecnt=<int> "
-	"qdisc_bypass=<0|1>");
+	"qdisc_bypass=<0|1> "
+	"iface_config=<0|1>");
 
 #else
 RTE_PMD_REGISTER_VDEV(net_af_packet, pmd_af_packet_drv);

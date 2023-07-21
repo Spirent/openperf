@@ -125,7 +125,7 @@ static rte_eth_conf make_rte_eth_conf(uint16_t port_id)
         .link_speeds = ETH_LINK_SPEED_AUTONEG,
         .rxmode =
             {
-                .mtu = port_info::default_rx_mtu(port_id),
+                .mtu = port_info::max_mtu(port_id),
                 .mq_mode = port_info::rx_mq_mode(port_id),
                 .max_lro_pkt_size = port_info::max_lro_pkt_size(port_id)
                                     - quirks::adjust_max_rx_pktlen(port_id),
