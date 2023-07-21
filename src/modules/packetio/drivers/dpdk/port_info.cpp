@@ -67,14 +67,14 @@ uint32_t max_lro_pkt_size(uint16_t port_id)
                 : max_rx_pktlen(port_id));
 }
 
-uint32_t default_rx_mtu(uint16_t port_id)
+uint32_t max_mtu(uint16_t port_id)
 {
-    /*
-     * Some drivers require configuring MTU to receive jumbo packets.
-     */
-    auto max_len = port_info::max_rx_pktlen(port_id);
-    if (max_len >= RTE_ETHER_HDR_LEN) max_len -= RTE_ETHER_HDR_LEN;
-    return std::max(max_len, static_cast<uint32_t>(RTE_ETHER_MIN_MTU));
+    uint32_t eth_size = (RTE_ETHER_HDR_LEN + RTE_ETHER_CRC_LEN + RTE_VLAN_HLEN);
+    return (
+        std::clamp(static_cast<uint32_t>(
+                       get_info_field(port_id, &rte_eth_dev_info::max_mtu)),
+                   static_cast<uint32_t>(RTE_ETHER_MIN_MTU),
+                   max_rx_pktlen(port_id) - eth_size - RTE_PKTMBUF_HEADROOM));
 }
 
 uint32_t max_mac_addrs(uint16_t port_id)
