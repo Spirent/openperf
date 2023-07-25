@@ -186,8 +186,8 @@ void handler::list_interfaces(const request_type& request,
 {
     if (!check_server()) {
         // Return empty list if not supported
-        auto ports = nlohmann::json::array();
-        response.send(Http::Code::Ok, ports.dump());
+        auto empty_list = nlohmann::json::array();
+        response.send(Http::Code::Ok, empty_list.dump());
         return;
     }
 
@@ -482,8 +482,8 @@ void handler::list_stacks(const request_type&, response_type response)
 {
     if (auto server_ok = check_server(); !server_ok) {
         // Return empty list if not supported
-        auto ports = nlohmann::json::array();
-        response.send(Http::Code::Ok, ports.dump());
+        auto empty_list = nlohmann::json::array();
+        response.send(Http::Code::Ok, empty_list.dump());
         return;
     }
 
