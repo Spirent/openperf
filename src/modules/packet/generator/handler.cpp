@@ -252,8 +252,8 @@ void handler::list_generators(const request_type& request,
 {
     if (!check_server()) {
         // Return empty list if not supported
-        auto ports = nlohmann::json::array();
-        response.send(Http::Code::Ok, ports.dump());
+        auto empty_list = nlohmann::json::array();
+        response.send(Http::Code::Ok, empty_list.dump());
         return;
     }
 
@@ -773,8 +773,8 @@ void handler::list_generator_results(const request_type& request,
 {
     if (!check_server()) {
         // Return empty list if not supported
-        auto ports = nlohmann::json::array();
-        response.send(Http::Code::Ok, ports.dump());
+        auto empty_list = nlohmann::json::array();
+        response.send(Http::Code::Ok, empty_list.dump());
         return;
     }
 
@@ -873,8 +873,8 @@ void handler::list_tx_flows(const request_type& request, response_type response)
 {
     if (!check_server()) {
         // Return empty list if not supported
-        auto ports = nlohmann::json::array();
-        response.send(Http::Code::Ok, ports.dump());
+        auto empty_list = nlohmann::json::array();
+        response.send(Http::Code::Ok, empty_list.dump());
         return;
     }
 

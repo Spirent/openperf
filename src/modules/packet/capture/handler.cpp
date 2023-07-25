@@ -232,8 +232,8 @@ void handler::list_captures(const request_type& request, response_type response)
 {
     if (!check_server()) {
         // Return empty list if not supported
-        auto ports = nlohmann::json::array();
-        response.send(Http::Code::Ok, ports.dump());
+        auto empty_list = nlohmann::json::array();
+        response.send(Http::Code::Ok, empty_list.dump());
         return;
     }
 
@@ -708,8 +708,8 @@ void handler::list_capture_results(const request_type& request,
 {
     if (!check_server()) {
         // Return empty list if not supported
-        auto ports = nlohmann::json::array();
-        response.send(Http::Code::Ok, ports.dump());
+        auto empty_list = nlohmann::json::array();
+        response.send(Http::Code::Ok, empty_list.dump());
         return;
     }
 
