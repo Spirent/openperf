@@ -8,6 +8,7 @@
 #include "message/serialized_message.hpp"
 #include "packet/capture/api.hpp"
 #include "packet/capture/pcap_transfer.hpp"
+#include "packetio/init.hpp"
 
 #include "swagger/converters/packet_capture.hpp"
 #include "swagger/v1/model/BulkCreatePacketCapturesResponse.h"
@@ -30,6 +31,8 @@ public:
 
     using request_type = Pistache::Rest::Request;
     using response_type = Pistache::Http::ResponseWriter;
+
+    tl::expected<void, std::string> check_server() const;
 
     /* Capture operations */
     void list_captures(const request_type& request, response_type response);
@@ -216,8 +219,24 @@ void set_optional_filter(const handler::request_type& request,
     }
 }
 
+tl::expected<void, std::string> handler::check_server() const
+{
+    if (!openperf::packetio::is_enabled()) {
+        return (tl::make_unexpected("PacketIO is not enabled."));
+    }
+
+    return {};
+}
+
 void handler::list_captures(const request_type& request, response_type response)
 {
+    if (!check_server()) {
+        // Return empty list if not supported
+        auto ports = nlohmann::json::array();
+        response.send(Http::Code::Ok, ports.dump());
+        return;
+    }
+
     auto api_request = request_list_captures{};
 
     set_optional_filter(
@@ -270,6 +289,11 @@ parse_create_capture(const handler::request_type& request)
 void handler::create_captures(const request_type& request,
                               response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto capture = parse_create_capture(request);
     if (!capture) {
         response.send(Http::Code::Bad_Request, capture.error());
@@ -317,6 +341,11 @@ void handler::create_captures(const request_type& request,
 
 void handler::delete_captures(const request_type&, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto api_reply = submit_request(m_socket.get(), request_delete_captures{});
 
     if (auto reply = std::get_if<reply_ok>(&api_reply)) {
@@ -328,6 +357,11 @@ void handler::delete_captures(const request_type&, response_type response)
 
 void handler::get_capture(const request_type& request, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -349,6 +383,11 @@ void handler::get_capture(const request_type& request, response_type response)
 void handler::delete_capture(const request_type& request,
                              response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -366,6 +405,11 @@ void handler::delete_capture(const request_type& request,
 
 void handler::start_capture(const request_type& request, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -393,6 +437,11 @@ void handler::start_capture(const request_type& request, response_type response)
 
 void handler::stop_capture(const request_type& request, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -427,6 +476,11 @@ parse_bulk_create_captures(const handler::request_type& request)
 void handler::bulk_create_captures(const request_type& request,
                                    response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto api_request = parse_bulk_create_captures(request);
     if (!api_request) {
         response.send(Http::Code::Bad_Request, api_request.error());
@@ -496,6 +550,11 @@ tl::expected<T, std::string> parse_request(const handler::request_type& request)
 void handler::bulk_delete_captures(const request_type& request,
                                    response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto swagger_request =
         parse_request<swagger::v1::model::BulkDeletePacketCapturesRequest>(
             request);
@@ -540,6 +599,11 @@ void handler::bulk_delete_captures(const request_type& request,
 void handler::bulk_start_captures(const request_type& request,
                                   response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto swagger_request =
         parse_request<swagger::v1::model::BulkStartPacketCapturesRequest>(
             request);
@@ -593,6 +657,11 @@ void handler::bulk_start_captures(const request_type& request,
 void handler::bulk_stop_captures(const request_type& request,
                                  response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto swagger_request =
         parse_request<swagger::v1::model::BulkStopPacketCapturesRequest>(
             request);
@@ -637,6 +706,13 @@ void handler::bulk_stop_captures(const request_type& request,
 void handler::list_capture_results(const request_type& request,
                                    response_type response)
 {
+    if (!check_server()) {
+        // Return empty list if not supported
+        auto ports = nlohmann::json::array();
+        response.send(Http::Code::Ok, ports.dump());
+        return;
+    }
+
     auto api_request = request_list_capture_results{};
 
     set_optional_filter(
@@ -663,6 +739,11 @@ void handler::list_capture_results(const request_type& request,
 void handler::delete_capture_results(const request_type&,
                                      response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto api_reply =
         submit_request(m_socket.get(), request_delete_capture_results{});
 
@@ -676,6 +757,11 @@ void handler::delete_capture_results(const request_type&,
 void handler::get_capture_result(const request_type& request,
                                  response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -699,6 +785,11 @@ void handler::get_capture_result(const request_type& request,
 void handler::delete_capture_result(const request_type& request,
                                     response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -718,6 +809,11 @@ void handler::delete_capture_result(const request_type& request,
 void handler::get_capture_result_pcap(const request_type& request,
                                       response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     uint64_t packet_start = 0, packet_end = UINT64_MAX;
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
@@ -783,6 +879,11 @@ void handler::get_capture_result_pcap(const request_type& request,
 void handler::get_capture_result_live(const request_type& request,
                                       response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -819,6 +920,11 @@ void handler::get_capture_result_live(const request_type& request,
 void handler::merge_captures_pcap(const request_type& request,
                                   response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto swagger_request =
         parse_request<swagger::v1::model::GetPacketCapturesPcapConfig>(request);
     if (!swagger_request) {
