@@ -6,6 +6,7 @@
 #include "core/op_core.h"
 #include "message/serialized_message.hpp"
 #include "packet/generator/api.hpp"
+#include "packetio/init.hpp"
 
 #include "swagger/converters/packet_generator.hpp"
 #include "swagger/v1/model/BulkCreatePacketGeneratorsResponse.h"
@@ -107,6 +108,8 @@ public:
 
     using request_type = Pistache::Rest::Request;
     using response_type = Pistache::Http::ResponseWriter;
+
+    tl::expected<void, std::string> check_server() const;
 
     /* Generator operations */
     void list_generators(const request_type& request, response_type response);
@@ -235,9 +238,25 @@ static void set_optional_filter(const handler::request_type& request,
     }
 }
 
+tl::expected<void, std::string> handler::check_server() const
+{
+    if (!openperf::packetio::is_enabled()) {
+        return (tl::make_unexpected("PacketIO is not enabled."));
+    }
+
+    return {};
+}
+
 void handler::list_generators(const request_type& request,
                               response_type response)
 {
+    if (!check_server()) {
+        // Return empty list if not supported
+        auto ports = nlohmann::json::array();
+        response.send(Http::Code::Ok, ports.dump());
+        return;
+    }
+
     auto api_request = request_list_generators{};
 
     set_optional_filter(request, api_request.filter, filter_type::target_id);
@@ -306,6 +325,11 @@ parse_create_generator_request(const handler::request_type& request)
 void handler::create_generators(const request_type& request,
                                 response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto generator = parse_create_generator_request(request);
     if (!generator) {
         response.send(Http::Code::Bad_Request, generator.error());
@@ -354,6 +378,11 @@ void handler::create_generators(const request_type& request,
 
 void handler::delete_generators(const request_type&, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto api_reply =
         submit_request(m_socket.get(), request_delete_generators{});
 
@@ -366,6 +395,11 @@ void handler::delete_generators(const request_type&, response_type response)
 
 void handler::get_generator(const request_type& request, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -388,6 +422,11 @@ void handler::get_generator(const request_type& request, response_type response)
 void handler::delete_generator(const request_type& request,
                                response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -407,6 +446,11 @@ void handler::delete_generator(const request_type& request,
 void handler::start_generator(const request_type& request,
                               response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -436,6 +480,11 @@ void handler::start_generator(const request_type& request,
 void handler::stop_generator(const request_type& request,
                              response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -470,6 +519,11 @@ parse_bulk_create_generators(const handler::request_type& request)
 void handler::bulk_create_generators(const request_type& request,
                                      response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto api_request = parse_bulk_create_generators(request);
     if (!api_request) {
         response.send(Http::Code::Bad_Request, api_request.error());
@@ -525,6 +579,11 @@ void handler::bulk_create_generators(const request_type& request,
 void handler::bulk_delete_generators(const request_type& request,
                                      response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto swagger_request =
         parse_request<swagger::v1::model::BulkDeletePacketGeneratorsRequest>(
             request);
@@ -569,6 +628,11 @@ void handler::bulk_delete_generators(const request_type& request,
 void handler::bulk_start_generators(const request_type& request,
                                     response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto swagger_request =
         parse_request<swagger::v1::model::BulkStartPacketGeneratorsRequest>(
             request);
@@ -619,6 +683,11 @@ void handler::bulk_start_generators(const request_type& request,
 void handler::bulk_stop_generators(const request_type& request,
                                    response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto swagger_request =
         parse_request<swagger::v1::model::BulkStopPacketGeneratorsRequest>(
             request);
@@ -663,6 +732,11 @@ void handler::bulk_stop_generators(const request_type& request,
 void handler::toggle_generators(const request_type& request,
                                 response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto toggle =
         parse_request<swagger::v1::model::TogglePacketGeneratorsRequest>(
             request);
@@ -697,6 +771,13 @@ void handler::toggle_generators(const request_type& request,
 void handler::list_generator_results(const request_type& request,
                                      response_type response)
 {
+    if (!check_server()) {
+        // Return empty list if not supported
+        auto ports = nlohmann::json::array();
+        response.send(Http::Code::Ok, ports.dump());
+        return;
+    }
+
     auto api_request = request_list_generator_results{};
 
     set_optional_filter(request, api_request.filter, filter_type::generator_id);
@@ -721,6 +802,11 @@ void handler::list_generator_results(const request_type& request,
 void handler::delete_generator_results(const request_type&,
                                        response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto api_reply =
         submit_request(m_socket.get(), request_delete_generator_results{});
 
@@ -734,6 +820,11 @@ void handler::delete_generator_results(const request_type&,
 void handler::get_generator_result(const request_type& request,
                                    response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -757,6 +848,11 @@ void handler::get_generator_result(const request_type& request,
 void handler::delete_generator_result(const request_type& request,
                                       response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -775,6 +871,13 @@ void handler::delete_generator_result(const request_type& request,
 
 void handler::list_tx_flows(const request_type& request, response_type response)
 {
+    if (!check_server()) {
+        // Return empty list if not supported
+        auto ports = nlohmann::json::array();
+        response.send(Http::Code::Ok, ports.dump());
+        return;
+    }
+
     auto api_request = request_list_tx_flows{};
 
     set_optional_filter(request, api_request.filter, filter_type::generator_id);
@@ -798,6 +901,11 @@ void handler::list_tx_flows(const request_type& request, response_type response)
 
 void handler::get_tx_flow(const request_type& request, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -818,6 +926,11 @@ void handler::get_tx_flow(const request_type& request, response_type response)
 void handler::get_learning_results(const request_type& request,
                                    response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -839,6 +952,11 @@ void handler::get_learning_results(const request_type& request,
 void handler::retry_learning(const request_type& request,
                              response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -857,6 +975,11 @@ void handler::retry_learning(const request_type& request,
 void handler::start_learning(const request_type& request,
                              response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -874,6 +997,11 @@ void handler::start_learning(const request_type& request,
 
 void handler::stop_learning(const request_type& request, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());

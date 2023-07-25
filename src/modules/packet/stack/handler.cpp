@@ -7,6 +7,7 @@
 #include "message/serialized_message.hpp"
 #include "packet/stack/api.hpp"
 #include "packetio/generic_interface.hpp"
+#include "packetio/init.hpp"
 
 #include "swagger/converters/packet_stack.hpp"
 #include "swagger/v1/model/BulkCreateInterfacesRequest.h"
@@ -24,6 +25,8 @@ public:
 
     using request_type = Pistache::Rest::Request;
     using response_type = Pistache::Http::ResponseWriter;
+
+    tl::expected<void, std::string> check_server() const;
 
     void list_interfaces(const request_type& request, response_type response);
     void create_interface(const request_type& request, response_type response);
@@ -169,9 +172,25 @@ static void set_optional_filter(const handler::request_type& request,
     }
 }
 
+tl::expected<void, std::string> handler::check_server() const
+{
+    if (!openperf::packetio::is_enabled()) {
+        return (tl::make_unexpected("PacketIO is not enabled."));
+    }
+
+    return {};
+}
+
 void handler::list_interfaces(const request_type& request,
                               response_type response)
 {
+    if (!check_server()) {
+        // Return empty list if not supported
+        auto ports = nlohmann::json::array();
+        response.send(Http::Code::Ok, ports.dump());
+        return;
+    }
+
     auto api_request = request_list_interfaces{};
 
     /*
@@ -228,6 +247,11 @@ parse_create_interface(const handler::request_type& request)
 void handler::create_interface(const request_type& request,
                                response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto intf = parse_create_interface(request);
     if (!intf) {
         response.send(Http::Code::Bad_Request, intf.error());
@@ -271,6 +295,11 @@ void handler::create_interface(const request_type& request,
 
 void handler::get_interface(const request_type& request, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
@@ -292,6 +321,11 @@ void handler::get_interface(const request_type& request, response_type response)
 void handler::delete_interface(const request_type& request,
                                response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     OP_LOG(OP_LOG_DEBUG, "delete interface\n");
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
@@ -329,6 +363,11 @@ parse_bulk_create_interfaces(const handler::request_type& request)
 void handler::bulk_create_interfaces(const request_type& request,
                                      response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto api_request = parse_bulk_create_interfaces(request);
     if (!api_request) {
         response.send(Http::Code::Bad_Request, api_request.error());
@@ -400,6 +439,11 @@ tl::expected<T, std::string> parse_request(const handler::request_type& request)
 void handler::bulk_delete_interfaces(const request_type& request,
                                      response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto swagger_request =
         parse_request<swagger::v1::model::BulkDeleteInterfacesRequest>(request);
     if (!swagger_request) {
@@ -436,6 +480,13 @@ void handler::bulk_delete_interfaces(const request_type& request,
 
 void handler::list_stacks(const request_type&, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        // Return empty list if not supported
+        auto ports = nlohmann::json::array();
+        response.send(Http::Code::Ok, ports.dump());
+        return;
+    }
+
     auto api_reply = submit_request(m_socket.get(), request_list_stacks{});
 
     if (auto reply = std::get_if<reply_stacks>(&api_reply)) {
@@ -453,6 +504,11 @@ void handler::list_stacks(const request_type&, response_type response)
 
 void handler::get_stack(const request_type& request, response_type response)
 {
+    if (auto server_ok = check_server(); !server_ok) {
+        response.send(Http::Code::Method_Not_Allowed, server_ok.error());
+        return;
+    }
+
     auto id = request.param(":id").as<std::string>();
     if (auto res = config::op_config_validate_id_string(id); !res) {
         response.send(Http::Code::Not_Found, res.error());
