@@ -38,7 +38,19 @@ struct service
 
     bool init(void* context)
     {
-        m_driver = driver::make();
+        try {
+            m_driver = driver::make();
+        } catch (const std::exception& e) {
+            OP_LOG(OP_LOG_CRITICAL,
+                   "Failed to initialize PacketIO driver.  %s",
+                   e.what());
+            // Exit process if driver throws an exception.
+            // This was added to allow restarting the process and trying again.
+            // Note: sleep() allows final log message to get logged
+            sleep(1);
+            exit(EXIT_FAILURE);
+        }
+
         if (!m_driver->is_usable()) {
             OP_LOG(OP_LOG_WARNING,
                    "No usable PacketIO driver available; skipping "

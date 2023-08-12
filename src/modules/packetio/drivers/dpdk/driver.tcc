@@ -275,13 +275,20 @@ template <typename ProcessType> driver<ProcessType>::driver()
     /* Generate our map of port ids/indexes */
     auto port_indexes = topology::get_ports();
     auto port_ids = config::dpdk_id_map();
-
-    /* Drop any configured ports we don't know about */
+    auto ports_required = config::dpdk_ports_required();
+    
+    /* Verify configured ports exist */
     for (auto it = std::begin(port_ids); it != std::end(port_ids);) {
         if (std::find(
                 std::begin(port_indexes), std::end(port_indexes), it->first)
             == std::end(port_indexes)) {
-            port_ids.erase(it++);
+            if (ports_required) {
+                /* Raise exception and exit if ports are required and port is missing */
+                throw std::runtime_error("DPDK port " + std::to_string(it->first) + " not found");
+            } else {
+                /* Drop any configured ports we don't know about */
+                port_ids.erase(it++);
+            }
         } else {
             ++it;
         }

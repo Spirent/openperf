@@ -176,6 +176,16 @@ std::map<uint16_t, std::string> dpdk_id_map()
     return (to_return);
 }
 
+bool dpdk_ports_required()
+{
+    static const auto required =
+        config::file::op_config_get_param<OP_OPTION_TYPE_NONE>(
+            op_packetio_dpdk_ports_required)
+            .value_or(false);
+
+    return (required);
+}
+
 static std::optional<core::cpuset> get_mask_argument(std::string_view name)
 {
     if (const auto mask =
