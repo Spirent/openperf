@@ -7,6 +7,7 @@ const char op_packetio_dpdk_misc_worker_mask[] =
 const char op_packetio_dpdk_no_init[] = "modules.packetio.dpdk.no-init";
 const char op_packetio_dpdk_options[] = "modules.packetio.dpdk.options";
 const char op_packetio_dpdk_port_ids[] = "modules.packetio.dpdk.port-ids";
+const char op_packetio_dpdk_ports_required[] = "modules.packetio.dpdk.ports-required";
 const char op_packetio_dpdk_rx_worker_mask[] =
     "modules.packetio.dpdk.rx-worker-mask";
 const char op_packetio_dpdk_tx_worker_mask[] =
@@ -34,6 +35,10 @@ MAKE_OPTION_DATA(
              op_packetio_dpdk_port_ids,
              0,
              OP_OPTION_TYPE_MAP),
+    MAKE_OPT("require DPDK ports are present, if not found then exit.",
+             op_packetio_dpdk_ports_required,
+             0,
+             OP_OPTION_TYPE_NONE),
     MAKE_OPT("skip DPDK initialization",
              op_packetio_dpdk_no_init,
              0,

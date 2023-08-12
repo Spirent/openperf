@@ -14,6 +14,7 @@ extern const char op_packetio_dpdk_misc_worker_mask[];
 extern const char op_packetio_dpdk_no_init[];
 extern const char op_packetio_dpdk_options[];
 extern const char op_packetio_dpdk_port_ids[];
+extern const char op_packetio_dpdk_ports_required[];
 extern const char op_packetio_dpdk_rx_worker_mask[];
 extern const char op_packetio_dpdk_tx_worker_mask[];
 extern const char op_packetio_dpdk_drop_tx_overruns[];
@@ -28,6 +29,8 @@ bool dpdk_disabled();
 
 std::map<uint16_t, std::string>
 dpdk_id_map(); /**< Retrieve a copy of port idx->id map */
+
+bool dpdk_ports_required();
 
 std::optional<core::cpuset> packetio_mask();
 std::optional<core::cpuset> misc_core_mask();
