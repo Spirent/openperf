@@ -246,7 +246,9 @@ int eth_dev_intr_configure(struct rte_eth_dev *dev, int enable)
 static uint16_t
 eth_af_packet_rx(void *queue, struct rte_mbuf **bufs, uint16_t nb_pkts)
 {
+#ifndef OP_AF_PACKET
 	unsigned i;
+#endif
 	struct tpacket2_hdr *ppd;
 	struct rte_mbuf *mbuf;
 	uint8_t *pbuf;
@@ -267,13 +269,13 @@ eth_af_packet_rx(void *queue, struct rte_mbuf **bufs, uint16_t nb_pkts)
 	 */
 	framecount = pkt_q->framecount;
 	framenum = pkt_q->framenum;
-	for (i = 0; i < nb_pkts; i++) {
+#ifdef OP_AF_PACKET
+	while(num_rx < nb_pkts) {
 		/* point at the next incoming frame */
 		ppd = (struct tpacket2_hdr *) pkt_q->rd[framenum].iov_base;
 		if ((ppd->tp_status & TP_STATUS_USER) == 0)
 			break;
 
-#ifdef OP_AF_PACKET
 		if (ppd->tp_snaplen > max_frame_size) {
 			/* Packet is too large, so skip it */
 			static int oversize_warn = 0;
@@ -290,7 +292,43 @@ eth_af_packet_rx(void *queue, struct rte_mbuf **bufs, uint16_t nb_pkts)
 				framenum = 0;
 			continue;
 		}
-#endif
+
+		/* allocate the next mbuf */
+		mbuf = rte_pktmbuf_alloc(pkt_q->mb_pool);
+		if (unlikely(mbuf == NULL))
+			break;
+
+		/* packet will fit in the mbuf, go ahead and receive it */
+		rte_pktmbuf_pkt_len(mbuf) = rte_pktmbuf_data_len(mbuf) = ppd->tp_snaplen;
+		pbuf = (uint8_t *) ppd + ppd->tp_mac;
+		memcpy(rte_pktmbuf_mtod(mbuf, void *), pbuf, rte_pktmbuf_data_len(mbuf));
+
+		/* check for vlan info */
+		if (ppd->tp_status & TP_STATUS_VLAN_VALID) {
+			mbuf->vlan_tci = ppd->tp_vlan_tci;
+			mbuf->ol_flags |= (RTE_MBUF_F_RX_VLAN | RTE_MBUF_F_RX_VLAN_STRIPPED);
+
+			if (!pkt_q->vlan_strip && rte_vlan_insert(&mbuf))
+				PMD_LOG(ERR, "Failed to reinsert VLAN tag");
+		}
+
+		/* release incoming frame and advance ring buffer */
+		ppd->tp_status = TP_STATUS_KERNEL;
+		if (++framenum >= framecount)
+			framenum = 0;
+		mbuf->port = pkt_q->in_port;
+
+		/* account for the receive frame */
+		bufs[num_rx] = mbuf;
+		num_rx++;
+		num_rx_bytes += mbuf->pkt_len;
+	}
+#else
+	for (i = 0; i < nb_pkts; i++) {
+		/* point at the next incoming frame */
+		ppd = (struct tpacket2_hdr *) pkt_q->rd[framenum].iov_base;
+		if ((ppd->tp_status & TP_STATUS_USER) == 0)
+			break;
 
 		/* allocate the next mbuf */
 		mbuf = rte_pktmbuf_alloc(pkt_q->mb_pool);
@@ -322,6 +360,8 @@ eth_af_packet_rx(void *queue, struct rte_mbuf **bufs, uint16_t nb_pkts)
 		num_rx++;
 		num_rx_bytes += mbuf->pkt_len;
 	}
+#endif
+
 	pkt_q->framenum = framenum;
 	pkt_q->rx_pkts += num_rx;
 	pkt_q->rx_bytes += num_rx_bytes;
