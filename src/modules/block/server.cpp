@@ -114,8 +114,7 @@ reply_msg server::handle_request(const request_block_file_bulk_add& request)
     // All-or-nothing behavior
     auto reply = reply_block_files{};
 
-    auto remove_created_items = [&]() -> auto
-    {
+    auto remove_created_items = [&]() -> auto {
         for (const auto& item : reply.files) {
             m_file_stack->delete_block_file(item->id());
         }
@@ -221,8 +220,7 @@ server::handle_request(const request_block_generator_bulk_add& request)
     // All-or-nothing behavior
     auto reply = reply_block_generators{};
 
-    auto remove_created_items = [&]() -> auto
-    {
+    auto remove_created_items = [&]() -> auto {
         for (const auto& item : reply.generators) {
             m_generator_stack->delete_block_generator(item->id());
         }
