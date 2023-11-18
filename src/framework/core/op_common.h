@@ -169,6 +169,8 @@ OP_ALIGNED(unsigned long long, ull)
         }                                       \
     } while (0)
 
+    void op_init_crash_handler();
+
 #ifdef __cplusplus
 }
 #endif
