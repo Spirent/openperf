@@ -4,6 +4,7 @@ FW_LDLIBS += -pthread -lstdc++fs
 FW_SOURCES += \
 	core/op_cpuset.c \
 	core/op_cpuset_wrapper.cpp \
+	core/op_crash_handler.c \
 	core/op_event_loop_utils.c \
 	core/op_init.c \
 	core/op_log.c \

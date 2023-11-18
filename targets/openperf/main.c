@@ -13,6 +13,9 @@ int main(int argc, char* argv[])
 {
     op_thread_setname("op_main");
 
+    /* Install crash handler */
+    op_init_crash_handler();
+
     /* Block child threads from intercepting SIGINT or SIGTERM */
     sigset_t newset, oldset;
     sigemptyset(&newset);
