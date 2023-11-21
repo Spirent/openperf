@@ -135,17 +135,30 @@ block_generator::start(const dynamic::configuration& config)
     return start();
 }
 
+void block_generator::set_task_stopping(bool stopping)
+{
+    auto tasks = m_controller.get_tasks();
+    for (auto task : tasks) {
+        auto bt = dynamic_cast<block_task*>(task);
+        if (bt) bt->set_stopping(stopping);
+    }
+}
+
 void block_generator::stop()
 {
     if (!m_running) return;
 
+    set_task_stopping(true);
     m_controller.pause();
+    set_task_stopping(false);
     m_running = false;
 }
 
 void block_generator::config(const model::block_generator_config& value)
 {
+    set_task_stopping(true);
     m_controller.pause();
+    set_task_stopping(false);
     m_controller.clear();
     reset();
 
@@ -224,7 +237,9 @@ block_generator::block_result_ptr block_generator::statistics() const
 
 void block_generator::reset()
 {
+    set_task_stopping(true);
     m_controller.pause();
+    set_task_stopping(false);
     m_controller.reset();
     m_dynamic.reset();
 

@@ -114,7 +114,7 @@ task_stat_t block_task::spin()
             std::chrono::nanoseconds(std::nano::den / ops_per_sec)
             * worker_spin_stat.ops_actual;
 
-    } while ((m_operation_timestamp < cur_time)
+    } while ((m_operation_timestamp < cur_time) && !m_stopping
              && (cur_time <= loop_start_ts + TASK_SPIN_THRESHOLD));
 
     stat.updated = realtime::now();
@@ -145,6 +145,8 @@ task_stat_t block_task::worker_spin(uint64_t nb_ops,
     size_t pending_ops = 0;
     auto queue_depth =
         std::min(m_task_config.queue_depth, static_cast<size_t>(nb_ops));
+    bool cancelled = false;
+
     for (size_t i = 0; i < queue_depth; ++i) {
         auto& aio_op = m_aio_ops[i];
         op_conf.offset = m_pattern.generate();
@@ -163,6 +165,25 @@ task_stat_t block_task::worker_spin(uint64_t nb_ops,
     }
 
     while (pending_ops) {
+        if (m_stopping && !cancelled && ref_clock::now() >= deadline) {
+            /*
+             * The block generator is being stopped.
+             * Cancel all pending requests and don't count them as errors.
+             * This allow the block generator to stop faster.
+             *
+             * This was added because there were cases under heavy load
+             * where block IO could take a long time to complete when
+             * writing large block sizes.
+             */
+            if (aio_cancel(m_task_config.fd, nullptr) == -1) {
+                OP_LOG(OP_LOG_ERROR,
+                       "Could not cancel pending AIO operations: %s\n",
+                       strerror(errno));
+            } else {
+                cancelled = true;
+            }
+        }
+
         if (wait_for_aio_ops(m_aio_ops, queue_depth) != 0) {
             /*
              * Eek!  Waiting failed, so cancel pending operations.
@@ -173,7 +194,7 @@ task_stat_t block_task::worker_spin(uint64_t nb_ops,
              */
             if (aio_cancel(m_task_config.fd, nullptr) == -1) {
                 OP_LOG(OP_LOG_ERROR,
-                       "Could not cancel pending AIO operatons: %s\n",
+                       "Could not cancel pending AIO operations: %s\n",
                        strerror(errno));
             }
         }
@@ -203,6 +224,14 @@ task_stat_t block_task::worker_spin(uint64_t nb_ops,
                             : op_ns;
                     break;
                 }
+                case CANCELLED:
+                    if (!m_stopping) {
+                        // Don't count cancelled operations as errors when
+                        // stopping
+                        stat.ops_actual++;
+                        stat.errors++;
+                    }
+                    break;
                 case FAILED:
                     stat.ops_actual++;
                     stat.errors++;
@@ -217,7 +246,7 @@ task_stat_t block_task::worker_spin(uint64_t nb_ops,
                 /* if we haven't hit our total or deadline, then fire off
                  * another op */
                 // if ((total_ops + pending_ops) >= queue_depth
-                if ((stat.ops_actual + pending_ops) >= queue_depth
+                if ((stat.ops_actual + pending_ops) >= queue_depth || m_stopping
                     || ref_clock::now() >= deadline
                     || submit_aio_op(op_conf, aio_op) != 0) {
                     // if any condition is true, we have one less pending op
@@ -319,6 +348,7 @@ int block_task::submit_aio_op(const operation_config& op_config,
             OP_LOG(OP_LOG_ERROR,
                    "Could not queue AIO operation: %s\n",
                    strerror(errno));
+            op_state.state = FAILED;
         }
         return -errno;
     }
@@ -379,8 +409,15 @@ int block_task::complete_aio_op(struct operation_state& aio_op)
         /* Still waiting */
         break;
     case ECANCELED:
+        /* AIO operation cancelled */
+        aio_return(aiocb); /* free resources */
+        aio_op.stop = ref_clock::now();
+        aio_op.io_bytes = 0;
+        aio_op.state = CANCELLED;
+        err = 0;
+        break;
     default:
-        /* could be canceled or error; we don't make a distinction */
+        /* AIO operation failed */
         aio_return(aiocb); /* free resources */
         aio_op.stop = ref_clock::now();
         aio_op.io_bytes = 0;

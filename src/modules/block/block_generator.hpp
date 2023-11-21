@@ -72,6 +72,7 @@ private:
     void update_resource(const std::string&);
     task_config_t make_task_config(const model::block_generator_config&,
                                    task_operation);
+    void set_task_stopping(bool stopping);
 };
 
 } // namespace generator

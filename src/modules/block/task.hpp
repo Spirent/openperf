@@ -76,6 +76,7 @@ class block_task : public framework::generator::task<task_stat_t>
         PENDING,
         COMPLETE,
         FAILED,
+        CANCELLED,
     };
 
     struct operation_state
@@ -96,6 +97,7 @@ private:
     std::vector<uint8_t> m_buf;
     pattern_generator m_pattern;
     ref_clock::time_point m_operation_timestamp;
+    std::atomic_bool m_stopping;
 
 public:
     block_task(const task_config_t&);
@@ -104,6 +106,10 @@ public:
 
     task_stat_t spin() override;
     void reset() override;
+
+    void set_stopping(bool stopping) { m_stopping = stopping; }
+
+    bool get_stopping() const { return m_stopping; }
 
 private:
     void config(const task_config_t&);
