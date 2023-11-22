@@ -101,7 +101,15 @@ block_generator::block_generator(
             break;
         }
 
-        m_dynamic.add(m_stat);
+        // dynamic::spool::add() will update all configured dynamic results so
+        // it must include updates for both the read and write threads otherwise
+        // the rate threshold will detect the rate is zero.
+        m_dynamic_op_mask |= 1 << static_cast<int>(stat.operation);
+        if ((m_dynamic_op_mask & m_op_mask) == m_op_mask) {
+            m_dynamic.add(m_stat);
+            m_dynamic_op_mask = 0;
+        }
+
         m_stat_ptr = &m_stat;
     });
 
@@ -162,11 +170,15 @@ void block_generator::config(const model::block_generator_config& value)
     m_controller.clear();
     reset();
 
+    m_op_mask = 0;
+    m_dynamic_op_mask = 0;
+
     if (value.reads_per_sec && value.read_size) {
         auto task = std::make_unique<block_task>(
             make_task_config(value, task_operation::READ));
         m_controller.add(
             task, NAME_PREFIX + std::to_string(m_serial_number) + "_read");
+        m_op_mask |= 1 << static_cast<int>(task_operation::READ);
     }
 
     if (value.writes_per_sec && value.write_size) {
@@ -174,6 +186,7 @@ void block_generator::config(const model::block_generator_config& value)
             make_task_config(value, task_operation::WRITE));
         m_controller.add(
             task, NAME_PREFIX + std::to_string(m_serial_number) + "_write");
+        m_op_mask |= 1 << static_cast<int>(task_operation::WRITE);
     }
 
     if (m_running) m_controller.resume();

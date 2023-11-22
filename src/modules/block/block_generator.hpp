@@ -52,6 +52,9 @@ private:
     dynamic::spool<block_stat> m_dynamic;
     framework::generator::controller m_controller;
 
+    uint32_t m_op_mask = 0;
+    uint32_t m_dynamic_op_mask = 0;
+
 public:
     block_generator(const model::block_generator& generator_model,
                     const std::vector<virtual_device_stack*>& vdev_stack_list);
