@@ -323,7 +323,15 @@ template <typename T> using remove_cvref_t = typename remove_cvref<T>::type;
 
 int coordinator::do_load_update()
 {
-    assert(m_results);
+    if (!m_results) {
+        // Prevent crash by validating m_results is still valid.
+
+        // Originally event_loop del() did not prevent callbacks from pending
+        // events. This should not happen anymore.
+        OP_LOG(OP_LOG_ERROR, "do_load_update called with no active results");
+        return 0;
+    }
+
     assert(m_prev_sum);
 
     m_results->do_dynamic_update();

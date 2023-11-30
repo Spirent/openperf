@@ -23,11 +23,14 @@ enum op_event_type {
     OP_EVENT_TYPE_TIMER,
 };
 
+#define OP_EVENT_DELETED (1 << 0)
+
 struct op_event
 {
     struct op_event_data data;
     struct op_event_callbacks callbacks;
     void* arg;
+    int flags;
     SLIST_ENTRY(op_event) events_link;
     SLIST_ENTRY(op_event) update_link;
     SLIST_ENTRY(op_event) remove_link;
@@ -459,6 +462,7 @@ int op_event_loop_del_fd(struct op_event_loop* loop, int fd)
 {
     struct op_event* event = op_event_loop_find(loop, fd);
     if (!event) { return (-EINVAL); }
+    event->flags |= OP_EVENT_DELETED;
     SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
     return (0);
 }
@@ -467,6 +471,7 @@ int op_event_loop_del_zmq(struct op_event_loop* loop, void* socket)
 {
     struct op_event* event = op_event_loop_find(loop, socket);
     if (!event) { return (-EINVAL); }
+    event->flags |= OP_EVENT_DELETED;
     SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
     return (0);
 }
@@ -475,6 +480,7 @@ int op_event_loop_del_timer(struct op_event_loop* loop, uint32_t timeout_id)
 {
     struct op_event* event = op_event_loop_find(loop, timeout_id);
     if (!event) { return (-EINVAL); }
+    event->flags |= OP_EVENT_DELETED;
     SLIST_INSERT_IF_MISSING(&loop->remove_list, event, remove_link);
     return (0);
 }
@@ -546,6 +552,11 @@ int _do_event_handling(struct op_event_loop* loop,
     for (size_t i = 0; i < nb_events; i++) {
         struct kevent* kev = &kevents[i];
         struct op_event* event = (struct op_event*)kev->udata;
+
+        if (event->flags & OP_EVENT_DELETED) {
+            /* Don't call event handlers when event is being removed. */
+            continue;
+        }
 
         switch (kev->filter) {
         case EVFILT_READ:
