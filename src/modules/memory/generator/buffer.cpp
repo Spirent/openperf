@@ -3,6 +3,7 @@
 #include <new>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "sys/mman.h"
 
@@ -31,6 +32,26 @@ buffer::buffer(size_t size)
         OP_LOG(OP_LOG_WARNING,
                "Could not lock memory buffer; do you need to increase your "
                "resource limit?\n");
+
+        /* If can't lock memory, then touch the memory to ensure it is allocated and paged in.
+         *
+         * Without doing this, read-only tests may see very high read rates.  This is probably
+         * because RAM is not actually being accessed and only CPU cache being used.
+         * The kernel may be be doing memory compression or may not be allocating memory
+         * because it is never written to.
+         */
+        if (auto error = madvise(m_data, size, MADV_WILLNEED)) {
+            OP_LOG(OP_LOG_ERROR,
+                   "madvise failed (%zu bytes @ %p): %s\n",
+                   size,
+                   m_data,
+                   strerror(errno));
+        }
+        const size_t block_size = 8192;
+        std::vector<uint8_t> tmp(block_size, 0);
+        for (size_t i = 0; i < size; i += block_size) {
+            std::memcpy(m_data + i, tmp.data(), std::min(size - i, tmp.size()));
+        }
     }
 
     OP_LOG(OP_LOG_DEBUG,
