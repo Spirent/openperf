@@ -31,6 +31,22 @@ buffer::buffer(size_t size)
         OP_LOG(OP_LOG_WARNING,
                "Could not lock memory buffer; do you need to increase your "
                "resource limit?\n");
+
+        /* If memory can't be locked, then touch it to ensure it is allocated and paged in.
+         *
+         * Without doing this, read-only tests may have very high read rates.  This is probably
+         * because RAM is not actually being accessed.
+         * The kernel may be doing memory compression or may not be allocating memory
+         * (sparse allocation) because the memory is never written to.
+         */
+        if (auto error = madvise(m_data, size, MADV_WILLNEED)) {
+            OP_LOG(OP_LOG_ERROR,
+                   "madvise failed (%zu bytes @ %p): %s\n",
+                   size,
+                   m_data,
+                   strerror(errno));
+        }
+        std::memset(m_data, 0, size);
     }
 
     OP_LOG(OP_LOG_DEBUG,
