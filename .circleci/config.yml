@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   acceptance_tests:
     machine:
-      image: ubuntu-2004:202201-02
+      image: ubuntu-2404:2024.11.1
     steps:
       - attach_workspace:
           at: "~"
