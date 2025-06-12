@@ -25,7 +25,7 @@
 	url = https://github.com/arximboldi/immer.git
 [submodule "deps/digestible"]
 	path = deps/digestible
-	url = https://github.com/SpirentOrion/digestible.git
+	url = https://github.com/Spirent/digestible.git
 [submodule "deps/range-v3"]
 	path = deps/range-v3
 	url = https://github.com/ericniebler/range-v3.git
