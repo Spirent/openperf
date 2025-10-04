@@ -21,7 +21,7 @@ type PacketGeneratorLearningResultIPV4 struct {
 
 	// IPv4 address.
 	// Required: true
-	// Pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$
+	// Pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$
 	IPAddress *string `json:"ip_address"`
 
 	// MAC address of associated IPv4 address.
@@ -48,7 +48,7 @@ func (m *PacketGeneratorLearningResultIPV4) validateIPAddress(formats strfmt.Reg
 		return err
 	}
 
-	if err := validate.Pattern("ip_address", "body", *m.IPAddress, `^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$`); err != nil {
+	if err := validate.Pattern("ip_address", "body", *m.IPAddress, `^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$`); err != nil {
 		return err
 	}
 

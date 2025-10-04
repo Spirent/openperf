@@ -32,7 +32,7 @@ definitions:
         type: integer
       destination:
         description: IPv4 destination address
-        pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$
+        pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$
         type: string
       dscp:
         description: IPv4 dscp
@@ -87,7 +87,7 @@ definitions:
         type: integer
       source:
         description: IPv4 source address
-        pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$
+        pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$
         type: string
       time_to_live:
         default: 64

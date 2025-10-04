@@ -27,7 +27,7 @@ type PacketProtocolIPV4 struct {
 	Checksum *int32 `json:"checksum,omitempty"`
 
 	// IPv4 destination address
-	// Pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$
+	// Pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$
 	Destination string `json:"destination,omitempty"`
 
 	// IPv4 dscp
@@ -65,7 +65,7 @@ type PacketProtocolIPV4 struct {
 	Protocol *int32 `json:"protocol,omitempty"`
 
 	// IPv4 source address
-	// Pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$
+	// Pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$
 	Source string `json:"source,omitempty"`
 
 	// IPv4 time to live
@@ -167,7 +167,7 @@ func (m *PacketProtocolIPV4) validateDestination(formats strfmt.Registry) error 
 		return nil
 	}
 
-	if err := validate.Pattern("destination", "body", m.Destination, `^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$`); err != nil {
+	if err := validate.Pattern("destination", "body", m.Destination, `^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$`); err != nil {
 		return err
 	}
 
@@ -351,7 +351,7 @@ func (m *PacketProtocolIPV4) validateSource(formats strfmt.Registry) error {
 		return nil
 	}
 
-	if err := validate.Pattern("source", "body", m.Source, `^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$`); err != nil {
+	if err := validate.Pattern("source", "body", m.Source, `^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$`); err != nil {
 		return err
 	}
 

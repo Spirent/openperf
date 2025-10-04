@@ -59,7 +59,7 @@ func (m *TrafficProtocolIPV4Modifier) validateList(formats strfmt.Registry) erro
 
 	for i := 0; i < len(m.List); i++ {
 
-		if err := validate.Pattern("list"+"."+strconv.Itoa(i), "body", m.List[i], `^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$`); err != nil {
+		if err := validate.Pattern("list"+"."+strconv.Itoa(i), "body", m.List[i], `^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$`); err != nil {
 			return err
 		}
 
@@ -146,11 +146,11 @@ type TrafficProtocolIPV4ModifierSequence struct {
 
 	// First IPv4 address in the sequence
 	// Required: true
-	// Pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$
+	// Pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$
 	Start *string `json:"start"`
 
 	// Last IPv4 address in the sequence
-	// Pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$
+	// Pattern: ^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$
 	Stop string `json:"stop,omitempty"`
 }
 
@@ -200,7 +200,7 @@ func (m *TrafficProtocolIPV4ModifierSequence) validateSkip(formats strfmt.Regist
 
 	for i := 0; i < len(m.Skip); i++ {
 
-		if err := validate.Pattern("sequence"+"."+"skip"+"."+strconv.Itoa(i), "body", m.Skip[i], `^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$`); err != nil {
+		if err := validate.Pattern("sequence"+"."+"skip"+"."+strconv.Itoa(i), "body", m.Skip[i], `^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$`); err != nil {
 			return err
 		}
 
@@ -215,7 +215,7 @@ func (m *TrafficProtocolIPV4ModifierSequence) validateStart(formats strfmt.Regis
 		return err
 	}
 
-	if err := validate.Pattern("sequence"+"."+"start", "body", *m.Start, `^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$`); err != nil {
+	if err := validate.Pattern("sequence"+"."+"start", "body", *m.Start, `^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$`); err != nil {
 		return err
 	}
 
@@ -227,7 +227,7 @@ func (m *TrafficProtocolIPV4ModifierSequence) validateStop(formats strfmt.Regist
 		return nil
 	}
 
-	if err := validate.Pattern("sequence"+"."+"stop", "body", m.Stop, `^((25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[1-9]?[0-9])$`); err != nil {
+	if err := validate.Pattern("sequence"+"."+"stop", "body", m.Stop, `^((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$`); err != nil {
 		return err
 	}
 
