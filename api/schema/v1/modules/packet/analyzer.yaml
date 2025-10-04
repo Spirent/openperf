@@ -558,22 +558,18 @@ definitions:
         type: integer
         description: Minimum value
         format: int64
-        minimum: 0
       max:
         type: integer
         description: Maximum value
         format: int64
-        minimum: 0
       total:
         type: integer
         description: Sum of all received values
         format: int64
-        minimum: 0
       std_dev:
         type: integer
         description: Standard deviation of received values
         format: int64
-        minimum: 0
     required:
       - total
 

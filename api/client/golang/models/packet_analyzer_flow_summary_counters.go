@@ -20,38 +20,22 @@ import (
 type PacketAnalyzerFlowSummaryCounters struct {
 
 	// Maximum value
-	// Minimum: 0
-	Max *int64 `json:"max,omitempty"`
+	Max int64 `json:"max,omitempty"`
 
 	// Minimum value
-	// Minimum: 0
-	Min *int64 `json:"min,omitempty"`
+	Min int64 `json:"min,omitempty"`
 
 	// Standard deviation of received values
-	// Minimum: 0
-	StdDev *int64 `json:"std_dev,omitempty"`
+	StdDev int64 `json:"std_dev,omitempty"`
 
 	// Sum of all received values
 	// Required: true
-	// Minimum: 0
 	Total *int64 `json:"total"`
 }
 
 // Validate validates this packet analyzer flow summary counters
 func (m *PacketAnalyzerFlowSummaryCounters) Validate(formats strfmt.Registry) error {
 	var res []error
-
-	if err := m.validateMax(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateMin(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateStdDev(formats); err != nil {
-		res = append(res, err)
-	}
 
 	if err := m.validateTotal(formats); err != nil {
 		res = append(res, err)
@@ -63,49 +47,9 @@ func (m *PacketAnalyzerFlowSummaryCounters) Validate(formats strfmt.Registry) er
 	return nil
 }
 
-func (m *PacketAnalyzerFlowSummaryCounters) validateMax(formats strfmt.Registry) error {
-	if swag.IsZero(m.Max) { // not required
-		return nil
-	}
-
-	if err := validate.MinimumInt("max", "body", *m.Max, 0, false); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *PacketAnalyzerFlowSummaryCounters) validateMin(formats strfmt.Registry) error {
-	if swag.IsZero(m.Min) { // not required
-		return nil
-	}
-
-	if err := validate.MinimumInt("min", "body", *m.Min, 0, false); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *PacketAnalyzerFlowSummaryCounters) validateStdDev(formats strfmt.Registry) error {
-	if swag.IsZero(m.StdDev) { // not required
-		return nil
-	}
-
-	if err := validate.MinimumInt("std_dev", "body", *m.StdDev, 0, false); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (m *PacketAnalyzerFlowSummaryCounters) validateTotal(formats strfmt.Registry) error {
 
 	if err := validate.Required("total", "body", m.Total); err != nil {
-		return err
-	}
-
-	if err := validate.MinimumInt("total", "body", *m.Total, 0, false); err != nil {
 		return err
 	}
 
