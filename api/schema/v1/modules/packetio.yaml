@@ -322,7 +322,6 @@ definitions:
       - id
       - port_id
       - config
-      - stats
 
   InterfaceProtocolConfig:
     type: object

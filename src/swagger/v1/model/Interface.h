@@ -70,7 +70,9 @@ public:
     /// </summary>
     std::shared_ptr<InterfaceStats> getStats() const;
     void setStats(std::shared_ptr<InterfaceStats> value);
-    
+    bool statsIsSet() const;
+    void unsetStats();
+
 protected:
     std::string m_Id;
 
@@ -79,7 +81,7 @@ protected:
     std::shared_ptr<Interface_config> m_Config;
 
     std::shared_ptr<InterfaceStats> m_Stats;
-
+    bool m_StatsIsSet;
 };
 
 }

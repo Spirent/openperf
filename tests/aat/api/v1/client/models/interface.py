@@ -56,7 +56,8 @@ class Interface(object):
         self.id = id
         self.port_id = port_id
         self.config = config
-        self.stats = stats
+        if stats is not None:
+            self.stats = stats
 
     @property
     def id(self):
