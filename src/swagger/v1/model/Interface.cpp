@@ -21,6 +21,7 @@ Interface::Interface()
 {
     m_Id = "";
     m_Port_id = "";
+    m_StatsIsSet = false;
     
 }
 
@@ -40,7 +41,10 @@ nlohmann::json Interface::toJson() const
     val["id"] = ModelBase::toJson(m_Id);
     val["port_id"] = ModelBase::toJson(m_Port_id);
     val["config"] = ModelBase::toJson(m_Config);
-    val["stats"] = ModelBase::toJson(m_Stats);
+    if(m_StatsIsSet)
+    {
+        val["stats"] = ModelBase::toJson(m_Stats);
+    }
     
 
     return val;
@@ -50,6 +54,16 @@ void Interface::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
     setPortId(val.at("port_id"));
+    if(val.find("stats") != val.end())
+    {
+        if(!val["stats"].is_null())
+        {
+            std::shared_ptr<InterfaceStats> newItem(new InterfaceStats());
+            newItem->fromJson(val["stats"]);
+            setStats( newItem );
+        }
+        
+    }
     
 }
 
@@ -88,7 +102,15 @@ std::shared_ptr<InterfaceStats> Interface::getStats() const
 void Interface::setStats(std::shared_ptr<InterfaceStats> value)
 {
     m_Stats = value;
-    
+    m_StatsIsSet = true;
+}
+bool Interface::statsIsSet() const
+{
+    return m_StatsIsSet;
+}
+void Interface::unsetStats()
+{
+    m_StatsIsSet = false;
 }
 
 }

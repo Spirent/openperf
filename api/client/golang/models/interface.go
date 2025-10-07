@@ -33,8 +33,7 @@ type Interface struct {
 	PortID *string `json:"port_id"`
 
 	// stats
-	// Required: true
-	Stats *InterfaceStats `json:"stats"`
+	Stats *InterfaceStats `json:"stats,omitempty"`
 }
 
 // Validate validates this interface
@@ -100,9 +99,8 @@ func (m *Interface) validatePortID(formats strfmt.Registry) error {
 }
 
 func (m *Interface) validateStats(formats strfmt.Registry) error {
-
-	if err := validate.Required("stats", "body", m.Stats); err != nil {
-		return err
+	if swag.IsZero(m.Stats) { // not required
+		return nil
 	}
 
 	if m.Stats != nil {
