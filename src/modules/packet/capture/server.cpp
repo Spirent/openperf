@@ -484,29 +484,40 @@ reply_msg server::handle_request(const request_delete_capture& request)
                              request.id,
                              sink_id_comparator{});
 
-    if (found != std::end(m_sinks) && !found->template get<sink>().active()) {
-        // Remove sink from worker
-        remove_sink(m_client, *found);
-
-        auto& sink_ref = found->template get<sink>();
-
-        if (has_transfer(sink_ref)) {
-            add_trash(*found);
-        } else {
-            // Remove all results for this sink
-            erase_if(m_results, [&](const auto& pair) {
-                if (&pair.second->parent == &sink_ref) {
-                    cancel_capture_timer(*pair.second);
-                    return true;
-                }
-                return false;
-            });
-        }
-
-        // Delete this capture
-        m_sinks.erase(std::remove(found, std::next(found), *found),
-                      std::end(m_sinks));
+    if (found == std::end(m_sinks)) {
+        OP_LOG(OP_LOG_INFO,
+               "Unable to delete capture %s. Capture not found.",
+               request.id.c_str());
+        return (reply_ok{});
     }
+
+    auto& sink_ref = found->template get<sink>();
+
+    if (sink_ref.active()) {
+        OP_LOG(OP_LOG_INFO,
+               "Unable to delete capture %s. Capture is active.",
+               request.id.c_str());
+        return (reply_ok{});
+    }
+
+    // Remove sink from worker
+    remove_sink(m_client, *found);
+
+    if (has_transfer(sink_ref)) {
+        add_trash(*found);
+    } else {
+        // Remove all results for this sink
+        erase_if(m_results, [&](const auto& pair) {
+            if (&pair.second->parent == &sink_ref) {
+                cancel_capture_timer(*pair.second);
+                return true;
+            }
+            return false;
+        });
+    }
+
+    // Delete this capture
+    m_sinks.erase(found);
 
     return (reply_ok{});
 }
