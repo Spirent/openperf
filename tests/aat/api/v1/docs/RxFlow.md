@@ -6,7 +6,7 @@ Name | Type | Description | Notes
 **id** | **str** | Unique received flow identifier | 
 **analyzer_result_id** | **str** | Unique analyzer result identifier that observed this flow | 
 **counters** | [**PacketAnalyzerFlowCounters**](PacketAnalyzerFlowCounters.md) |  | 
-**digests** | [**PacketAnalyzerFlowDigests**](PacketAnalyzerFlowDigests.md) |  | 
+**digests** | [**PacketAnalyzerFlowDigests**](PacketAnalyzerFlowDigests.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

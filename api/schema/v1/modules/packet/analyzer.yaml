@@ -828,4 +828,3 @@ definitions:
       - id
       - analyzer_result_id
       - counters
-      - digests

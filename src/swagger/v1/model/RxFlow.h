@@ -70,7 +70,9 @@ public:
     /// </summary>
     std::shared_ptr<PacketAnalyzerFlowDigests> getDigests() const;
     void setDigests(std::shared_ptr<PacketAnalyzerFlowDigests> value);
-    
+    bool digestsIsSet() const;
+    void unsetDigests();
+
 protected:
     std::string m_Id;
 
@@ -79,7 +81,7 @@ protected:
     std::shared_ptr<PacketAnalyzerFlowCounters> m_Counters;
 
     std::shared_ptr<PacketAnalyzerFlowDigests> m_Digests;
-
+    bool m_DigestsIsSet;
 };
 
 }
