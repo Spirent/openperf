@@ -21,6 +21,7 @@ RxFlow::RxFlow()
 {
     m_Id = "";
     m_Analyzer_result_id = "";
+    m_DigestsIsSet = false;
     
 }
 
@@ -40,7 +41,10 @@ nlohmann::json RxFlow::toJson() const
     val["id"] = ModelBase::toJson(m_Id);
     val["analyzer_result_id"] = ModelBase::toJson(m_Analyzer_result_id);
     val["counters"] = ModelBase::toJson(m_Counters);
-    val["digests"] = ModelBase::toJson(m_Digests);
+    if(m_DigestsIsSet)
+    {
+        val["digests"] = ModelBase::toJson(m_Digests);
+    }
     
 
     return val;
@@ -50,6 +54,16 @@ void RxFlow::fromJson(nlohmann::json& val)
 {
     setId(val.at("id"));
     setAnalyzerResultId(val.at("analyzer_result_id"));
+    if(val.find("digests") != val.end())
+    {
+        if(!val["digests"].is_null())
+        {
+            std::shared_ptr<PacketAnalyzerFlowDigests> newItem(new PacketAnalyzerFlowDigests());
+            newItem->fromJson(val["digests"]);
+            setDigests( newItem );
+        }
+        
+    }
     
 }
 
@@ -88,7 +102,15 @@ std::shared_ptr<PacketAnalyzerFlowDigests> RxFlow::getDigests() const
 void RxFlow::setDigests(std::shared_ptr<PacketAnalyzerFlowDigests> value)
 {
     m_Digests = value;
-    
+    m_DigestsIsSet = true;
+}
+bool RxFlow::digestsIsSet() const
+{
+    return m_DigestsIsSet;
+}
+void RxFlow::unsetDigests()
+{
+    m_DigestsIsSet = false;
 }
 
 }

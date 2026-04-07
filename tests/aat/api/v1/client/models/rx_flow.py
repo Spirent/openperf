@@ -56,7 +56,8 @@ class RxFlow(object):
         self.id = id
         self.analyzer_result_id = analyzer_result_id
         self.counters = counters
-        self.digests = digests
+        if digests is not None:
+            self.digests = digests
 
     @property
     def id(self):

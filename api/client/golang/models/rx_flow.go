@@ -28,8 +28,7 @@ type RxFlow struct {
 	Counters *PacketAnalyzerFlowCounters `json:"counters"`
 
 	// digests
-	// Required: true
-	Digests *PacketAnalyzerFlowDigests `json:"digests"`
+	Digests *PacketAnalyzerFlowDigests `json:"digests,omitempty"`
 
 	// Unique received flow identifier
 	// Required: true
@@ -90,9 +89,8 @@ func (m *RxFlow) validateCounters(formats strfmt.Registry) error {
 }
 
 func (m *RxFlow) validateDigests(formats strfmt.Registry) error {
-
-	if err := validate.Required("digests", "body", m.Digests); err != nil {
-		return err
+	if swag.IsZero(m.Digests) { // not required
+		return nil
 	}
 
 	if m.Digests != nil {
