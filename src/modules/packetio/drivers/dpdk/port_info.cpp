@@ -91,34 +91,34 @@ uint32_t max_speed(uint16_t port_id)
 {
     auto speed_capa = get_info_field(port_id, &rte_eth_dev_info::speed_capa);
 
-    if (speed_capa & ETH_LINK_SPEED_100G) {
-        return (ETH_SPEED_NUM_100G);
-    } else if (speed_capa & ETH_LINK_SPEED_56G) {
-        return (ETH_SPEED_NUM_56G);
-    } else if (speed_capa & ETH_LINK_SPEED_50G) {
-        return (ETH_SPEED_NUM_50G);
-    } else if (speed_capa & ETH_LINK_SPEED_40G) {
-        return (ETH_SPEED_NUM_40G);
-    } else if (speed_capa & ETH_LINK_SPEED_25G) {
-        return (ETH_SPEED_NUM_25G);
-    } else if (speed_capa & ETH_LINK_SPEED_20G) {
-        return (ETH_SPEED_NUM_20G);
-    } else if (speed_capa & ETH_LINK_SPEED_10G) {
-        return (ETH_SPEED_NUM_10G);
-    } else if (speed_capa & ETH_LINK_SPEED_5G) {
-        return (ETH_SPEED_NUM_5G);
-    } else if (speed_capa & ETH_LINK_SPEED_2_5G) {
-        return (ETH_SPEED_NUM_2_5G);
-    } else if (speed_capa & ETH_LINK_SPEED_1G) {
-        return (ETH_SPEED_NUM_1G);
-    } else if (speed_capa & ETH_LINK_SPEED_100M
-               || speed_capa & ETH_LINK_SPEED_100M_HD) {
-        return (ETH_SPEED_NUM_100M);
-    } else if (speed_capa & ETH_LINK_SPEED_10M
-               || speed_capa & ETH_LINK_SPEED_10M_HD) {
-        return (ETH_SPEED_NUM_10M);
+    if (speed_capa & RTE_ETH_LINK_SPEED_100G) {
+        return (RTE_ETH_SPEED_NUM_100G);
+    } else if (speed_capa & RTE_ETH_LINK_SPEED_56G) {
+        return (RTE_ETH_SPEED_NUM_56G);
+    } else if (speed_capa & RTE_ETH_LINK_SPEED_50G) {
+        return (RTE_ETH_SPEED_NUM_50G);
+    } else if (speed_capa & RTE_ETH_LINK_SPEED_40G) {
+        return (RTE_ETH_SPEED_NUM_40G);
+    } else if (speed_capa & RTE_ETH_LINK_SPEED_25G) {
+        return (RTE_ETH_SPEED_NUM_25G);
+    } else if (speed_capa & RTE_ETH_LINK_SPEED_20G) {
+        return (RTE_ETH_SPEED_NUM_20G);
+    } else if (speed_capa & RTE_ETH_LINK_SPEED_10G) {
+        return (RTE_ETH_SPEED_NUM_10G);
+    } else if (speed_capa & RTE_ETH_LINK_SPEED_5G) {
+        return (RTE_ETH_SPEED_NUM_5G);
+    } else if (speed_capa & RTE_ETH_LINK_SPEED_2_5G) {
+        return (RTE_ETH_SPEED_NUM_2_5G);
+    } else if (speed_capa & RTE_ETH_LINK_SPEED_1G) {
+        return (RTE_ETH_SPEED_NUM_1G);
+    } else if (speed_capa & RTE_ETH_LINK_SPEED_100M
+               || speed_capa & RTE_ETH_LINK_SPEED_100M_HD) {
+        return (RTE_ETH_SPEED_NUM_100M);
+    } else if (speed_capa & RTE_ETH_LINK_SPEED_10M
+               || speed_capa & RTE_ETH_LINK_SPEED_10M_HD) {
+        return (RTE_ETH_SPEED_NUM_10M);
     } else {
-        return (ETH_SPEED_NUM_NONE);
+        return (RTE_ETH_SPEED_NUM_NONE);
     }
 }
 
@@ -143,7 +143,8 @@ uint64_t rss_offloads(uint16_t port_id)
 
 enum rte_eth_rx_mq_mode rx_mq_mode(uint16_t port_id)
 {
-    return (rx_queue_max(port_id) == 1 ? ETH_MQ_RX_NONE : ETH_MQ_RX_RSS);
+    return (rx_queue_max(port_id) == 1 ? RTE_ETH_MQ_RX_NONE
+                                       : RTE_ETH_MQ_RX_RSS);
 }
 
 uint16_t rx_queue_count(uint16_t port_id)

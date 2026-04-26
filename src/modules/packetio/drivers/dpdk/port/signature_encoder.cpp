@@ -46,8 +46,9 @@ static uint32_t get_link_speed_safe(uint16_t port_id)
      * case, then return the maximum speed of the port as a
      * safe default.
      */
-    return (link.link_status == ETH_LINK_UP ? link.link_speed
-                                            : port_info::max_speed(port_id));
+    return (link.link_status == RTE_ETH_LINK_UP
+                ? link.link_speed
+                : port_info::max_speed(port_id));
 }
 
 using picoseconds = std::chrono::duration<int64_t, std::pico>;

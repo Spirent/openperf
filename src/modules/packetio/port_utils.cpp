@@ -146,10 +146,9 @@ static dpdk_config from_swagger(const std::shared_ptr<PortConfig_dpdk>& config)
         if (link->duplexIsSet()) {
             auto duplex = link->getDuplex();
             to_return.duplex =
-                (duplex == "full"
-                     ? link_duplex::DUPLEX_FULL
-                     : duplex == "half" ? link_duplex::DUPLEX_HALF
-                                        : link_duplex::DUPLEX_UNKNOWN);
+                (duplex == "full"   ? link_duplex::DUPLEX_FULL
+                 : duplex == "half" ? link_duplex::DUPLEX_HALF
+                                    : link_duplex::DUPLEX_UNKNOWN);
         }
     }
 

@@ -249,7 +249,9 @@ static err_t net_interface_dpdk_init(netif* netif)
     /* Finally, check link status and set UP flag if needed */
     rte_eth_link link;
     rte_eth_link_get_nowait(ifp->port_index(), &link);
-    if (link.link_status == ETH_LINK_UP) { netif->flags |= NETIF_FLAG_LINK_UP; }
+    if (link.link_status == RTE_ETH_LINK_UP) {
+        netif->flags |= NETIF_FLAG_LINK_UP;
+    }
 
     return (ERR_OK);
 }
@@ -265,7 +267,7 @@ static int net_interface_link_status_change(uint16_t port_id,
     auto* netif = reinterpret_cast<struct netif*>(arg);
     rte_eth_link link;
     rte_eth_link_get_nowait(port_id, &link);
-    return (link.link_status == ETH_LINK_UP
+    return (link.link_status == RTE_ETH_LINK_UP
                 ? netifapi_netif_set_link_up(netif)
                 : netifapi_netif_set_link_down(netif));
 }

@@ -73,23 +73,23 @@ static uint32_t eth_link_speed_flag(port::link_speed speed,
                                     port::link_duplex duplex)
 {
     static std::unordered_map<port::link_speed, uint32_t> hd_flags = {
-        {port::link_speed::SPEED_10M, ETH_LINK_SPEED_10M_HD},
-        {port::link_speed::SPEED_100M, ETH_LINK_SPEED_100M_HD},
+        {port::link_speed::SPEED_10M, RTE_ETH_LINK_SPEED_10M_HD},
+        {port::link_speed::SPEED_100M, RTE_ETH_LINK_SPEED_100M_HD},
     };
 
     static std::unordered_map<port::link_speed, uint32_t> fd_flags = {
-        {port::link_speed::SPEED_10M, ETH_LINK_SPEED_10M},
-        {port::link_speed::SPEED_100M, ETH_LINK_SPEED_100M},
-        {port::link_speed::SPEED_1G, ETH_LINK_SPEED_1G},
-        {port::link_speed::SPEED_2_5G, ETH_LINK_SPEED_2_5G},
-        {port::link_speed::SPEED_5G, ETH_LINK_SPEED_5G},
-        {port::link_speed::SPEED_10G, ETH_LINK_SPEED_10G},
-        {port::link_speed::SPEED_20G, ETH_LINK_SPEED_20G},
-        {port::link_speed::SPEED_25G, ETH_LINK_SPEED_25G},
-        {port::link_speed::SPEED_40G, ETH_LINK_SPEED_40G},
-        {port::link_speed::SPEED_50G, ETH_LINK_SPEED_50G},
-        {port::link_speed::SPEED_56G, ETH_LINK_SPEED_56G},
-        {port::link_speed::SPEED_100G, ETH_LINK_SPEED_100G}};
+        {port::link_speed::SPEED_10M, RTE_ETH_LINK_SPEED_10M},
+        {port::link_speed::SPEED_100M, RTE_ETH_LINK_SPEED_100M},
+        {port::link_speed::SPEED_1G, RTE_ETH_LINK_SPEED_1G},
+        {port::link_speed::SPEED_2_5G, RTE_ETH_LINK_SPEED_2_5G},
+        {port::link_speed::SPEED_5G, RTE_ETH_LINK_SPEED_5G},
+        {port::link_speed::SPEED_10G, RTE_ETH_LINK_SPEED_10G},
+        {port::link_speed::SPEED_20G, RTE_ETH_LINK_SPEED_20G},
+        {port::link_speed::SPEED_25G, RTE_ETH_LINK_SPEED_25G},
+        {port::link_speed::SPEED_40G, RTE_ETH_LINK_SPEED_40G},
+        {port::link_speed::SPEED_50G, RTE_ETH_LINK_SPEED_50G},
+        {port::link_speed::SPEED_56G, RTE_ETH_LINK_SPEED_56G},
+        {port::link_speed::SPEED_100G, RTE_ETH_LINK_SPEED_100G}};
 
     if (duplex == port::link_duplex::DUPLEX_HALF) {
         return (hd_flags.find(speed) != hd_flags.end() ? hd_flags.at(speed)
@@ -122,18 +122,18 @@ static constexpr uint64_t filter_tx_offloads(uint64_t tx_capa)
 static rte_eth_conf make_rte_eth_conf(uint16_t port_id)
 {
     return {
-        .link_speeds = ETH_LINK_SPEED_AUTONEG,
+        .link_speeds = RTE_ETH_LINK_SPEED_AUTONEG,
         .rxmode =
             {
-                .mtu = port_info::max_mtu(port_id),
                 .mq_mode = port_info::rx_mq_mode(port_id),
+                .mtu = port_info::max_mtu(port_id),
                 .max_lro_pkt_size = port_info::max_lro_pkt_size(port_id)
                                     - quirks::adjust_max_rx_pktlen(port_id),
                 .offloads = filter_rx_offloads(port_info::rx_offloads(port_id)),
             },
         .txmode =
             {
-                .mq_mode = ETH_MQ_TX_NONE,
+                .mq_mode = RTE_ETH_MQ_TX_NONE,
                 .offloads = filter_tx_offloads(port_info::tx_offloads(port_id)),
             },
         .rx_adv_conf = {.rss_conf =
@@ -144,7 +144,6 @@ static rte_eth_conf make_rte_eth_conf(uint16_t port_id)
                                    port supports */
                             }},
         .tx_adv_conf = {},
-        .fdir_conf = {},
         .intr_conf = {.lsc = !!port_info::lsc_interrupt(port_id),
                       .rxq = !config::dpdk_disable_rx_irq()}};
 }
@@ -254,7 +253,7 @@ reconfigure_port(uint16_t port_id,
     }
 
     /* Update port config and then try to update port */
-    port_conf.link_speeds = ETH_LINK_SPEED_FIXED | link_flag;
+    port_conf.link_speeds = RTE_ETH_LINK_SPEED_FIXED | link_flag;
     return (do_port_config(port_id,
                            port_conf,
                            mempool,

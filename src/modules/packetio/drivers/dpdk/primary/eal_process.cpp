@@ -85,12 +85,12 @@ static int log_link_status_change(uint16_t port_id,
     assert(event == RTE_ETH_EVENT_INTR_LSC);
     struct rte_eth_link link;
     rte_eth_link_get_nowait(port_id, &link);
-    if (link.link_status == ETH_LINK_UP) {
+    if (link.link_status == RTE_ETH_LINK_UP) {
         OP_LOG(OP_LOG_INFO,
                "Port %u Link Up - speed %u Mbps - %s-duplex\n",
                port_id,
                link.link_speed,
-               link.link_duplex == ETH_LINK_FULL_DUPLEX ? "full" : "half");
+               link.link_duplex == RTE_ETH_LINK_FULL_DUPLEX ? "full" : "half");
     } else {
         OP_LOG(OP_LOG_INFO, "Port %u Link Down\n", port_id);
     }
