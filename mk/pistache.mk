@@ -31,6 +31,7 @@ HTTP_COMMON_SOURCES := \
 	common/base64.cc \
 	common/cookie.cc \
 	common/description.cc \
+	common/eventmeth.cc \
 	common/http.cc \
 	common/http_defs.cc \
 	common/http_header.cc \
@@ -39,8 +40,21 @@ HTTP_COMMON_SOURCES := \
 	common/net.cc \
 	common/os.cc \
 	common/peer.cc \
+	common/pist_check.cc \
+	common/pist_clock_gettime.cc \
+	common/pist_fcntl.cc \
+	common/pist_sockfns.cc \
+	common/pist_syslog.cc \
+	common/pist_ifaddrs.cc \
+	common/pist_resource.cc \
+	common/pist_strerror_r.cc \
+	common/pist_timelog.cc \
+	common/ps_basename.cc \
+	common/ps_sendfile.cc \
+	common/ps_strl.cc \
 	common/reactor.cc \
 	common/stream.cc \
+	common/string_logger.cc \
 	common/tcp.cc \
 	common/timer_pool.cc \
 	common/transport.cc \
