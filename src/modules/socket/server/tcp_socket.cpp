@@ -505,7 +505,7 @@ do_tcp_connect(tcp_pcb* pcb, const api::request_connect& connect)
     auto ip_addr = get_address(sstorage, IP_IS_V6_VAL(pcb->local_ip));
     auto ip_port = get_port(sstorage);
 
-    if (!ip_addr | !ip_port) { return (tl::make_unexpected(EINVAL)); }
+    if (!ip_addr || !ip_port) { return (tl::make_unexpected(EINVAL)); }
 
     auto error = tcp_connect(pcb, &*ip_addr, *ip_port, nullptr);
     if (error != ERR_OK) { return (tl::make_unexpected(err_to_errno(error))); }

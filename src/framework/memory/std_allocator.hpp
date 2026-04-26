@@ -61,7 +61,7 @@ template <class T, class U, class Impl>
 bool operator==(std_allocator<T, Impl> const& lhs,
                 std_allocator<U, Impl> const& rhs) noexcept
 {
-    return (lhs.base() == rhs.base() & lhs.size() == rhs.size());
+    return (lhs.base() == rhs.base() && lhs.size() == rhs.size());
 }
 
 template <class T, class U, class Impl>
