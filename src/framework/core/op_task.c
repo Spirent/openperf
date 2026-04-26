@@ -68,7 +68,7 @@ int op_task_launch(task_fn* task,
     assert(notify);
 
     /* Launch a detached thread */
-    int error = pthread_attr_init(&thread_attr);
+    __attribute__((unused)) int error = pthread_attr_init(&thread_attr);
     assert(!error);
     error = pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
     assert(!error);

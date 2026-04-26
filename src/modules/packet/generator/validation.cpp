@@ -891,7 +891,7 @@ static void validate(const duration_ptr& duration,
 
 static void validate(const load_ptr& load, std::vector<std::string>& errors)
 {
-    if (load->burstSizeIsSet() & (load->getBurstSize() < 1)) {
+    if (load->burstSizeIsSet() && (load->getBurstSize() < 1)) {
         errors.emplace_back("Load burst size must be positive.");
     }
 
