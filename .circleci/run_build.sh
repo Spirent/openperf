@@ -14,4 +14,4 @@ CI_ARCH=core-avx2
 
 # Use bear to generate the compilation database.
 # Treat first CLI argument to this script as additional parameter(s) to make.
-bear make -j${CI_CORES} OP_MACHINE_ARCH=${CI_ARCH} $1 all
+bear -- make -j${CI_CORES} OP_MACHINE_ARCH=${CI_ARCH} $1 all

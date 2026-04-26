@@ -87,7 +87,7 @@ static int lwip_link_status_change_callback(uint16_t port_id,
     std::for_each(std::begin(map), std::end(map), [&](auto& pair) {
         if (pair.second->port_index() == port_id) {
             pair.second->handle_link_state_change(link.link_status
-                                                  == ETH_LINK_UP);
+                                                  == RTE_ETH_LINK_UP);
         }
     });
 

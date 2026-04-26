@@ -191,7 +191,7 @@ static bool link_down(uint16_t port_idx)
 {
     auto link = rte_eth_link{};
     rte_eth_link_get_nowait(port_idx, &link);
-    return (link.link_status == ETH_LINK_DOWN);
+    return (link.link_status == RTE_ETH_LINK_DOWN);
 }
 
 static bool have_active_sources(const worker::tib& tib,
@@ -248,7 +248,7 @@ static uint32_t get_link_speed_safe(uint16_t port_id)
     rte_eth_link_get_nowait(port_id, &link);
 
     /* Caller should only call this when the link is up */
-    assert(link.link_status == ETH_LINK_UP);
+    assert(link.link_status == RTE_ETH_LINK_UP);
     return (link.link_speed);
 }
 

@@ -27,6 +27,11 @@ PIO_DRIVER_SOURCES += \
 # ALLOW_EXPERIMENTAL_API is required for rte_lcore_cpuset()
 $(PIO_OBJ_DIR)/drivers/dpdk/topology_utils.o: OP_CPPFLAGS += -DALLOW_EXPERIMENTAL_API
 
+# ALLOW_EXPERIMENTAL_API is required for DPDK bond member APIs
+# (rte_eth_bond_member_* and rte_eth_bond_members_get())
+$(PIO_OBJ_DIR)/drivers/dpdk/primary/driver_factory.o: OP_CPPFLAGS += -DALLOW_EXPERIMENTAL_API
+$(PIO_OBJ_DIR)/drivers/dpdk/secondary/driver_factory.o: OP_CPPFLAGS += -DALLOW_EXPERIMENTAL_API
+
 ifeq ($(OP_PACKETIO_DPDK_PROCESS_TYPE),primary)
 	PIO_DRIVER_SOURCES += \
 		primary/arg_parser.cpp \

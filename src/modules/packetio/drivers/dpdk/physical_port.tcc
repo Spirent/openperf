@@ -20,7 +20,7 @@ public:
     {
         auto link = rte_eth_link{};
         rte_eth_link_get_nowait(m_idx, &link);
-        return (link.link_status == ETH_LINK_UP
+        return (link.link_status == RTE_ETH_LINK_UP
                     ? static_cast<port::link_speed>(link.link_speed)
                     : port::link_speed::SPEED_UNKNOWN);
     }
@@ -29,15 +29,16 @@ public:
     {
         auto link = rte_eth_link{};
         rte_eth_link_get_nowait(m_idx, &link);
-        return (link.link_status == ETH_LINK_UP ? port::link_status::LINK_UP
-                                                : port::link_status::LINK_DOWN);
+        return (link.link_status == RTE_ETH_LINK_UP
+                    ? port::link_status::LINK_UP
+                    : port::link_status::LINK_DOWN);
     }
 
     port::link_duplex duplex() const
     {
         auto link = rte_eth_link{};
         rte_eth_link_get_nowait(m_idx, &link);
-        return (link.link_duplex == ETH_LINK_FULL_DUPLEX
+        return (link.link_duplex == RTE_ETH_LINK_FULL_DUPLEX
                     ? port::link_duplex::DUPLEX_FULL
                     : port::link_duplex::DUPLEX_HALF);
     }
@@ -66,12 +67,12 @@ public:
 
         auto link = rte_eth_link{};
         rte_eth_link_get_nowait(m_idx, &link);
-        if (link.link_autoneg == ETH_LINK_AUTONEG) {
+        if (link.link_autoneg == RTE_ETH_LINK_AUTONEG) {
             config.auto_negotiation = true;
         } else {
             config.auto_negotiation = false;
             config.speed = static_cast<port::link_speed>(link.link_speed);
-            config.duplex = (link.link_duplex == ETH_LINK_FULL_DUPLEX
+            config.duplex = (link.link_duplex == RTE_ETH_LINK_FULL_DUPLEX
                                  ? port::link_duplex::DUPLEX_FULL
                                  : port::link_duplex::DUPLEX_HALF);
         }

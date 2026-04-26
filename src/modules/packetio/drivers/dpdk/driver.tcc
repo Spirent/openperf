@@ -237,7 +237,7 @@ static void do_bootstrap()
 
     bootstrap();
 
-    /* Remove all DPDK slave cores from our original affinity mask */
+    /* Remove all DPDK member cores from our original affinity mask */
     int lcore_id = 0;
     RTE_LCORE_FOREACH_WORKER(lcore_id)
     {
@@ -257,7 +257,7 @@ static void do_bootstrap()
 
     OP_LOG(OP_LOG_DEBUG, "Non DPDK cpuset %s", cpuset.to_string().c_str());
 
-    /* Now restore the original cpu mask less the DPDK slave cores */
+    /* Now restore the original cpu mask less the DPDK member cores */
     if (auto error = core::cpuset_set_affinity(cpuset)) {
         throw std::runtime_error("Could not set CPU affinity mask: "
                                  + std::string(strerror(error)));
@@ -437,14 +437,14 @@ driver<ProcessType>::create_port(std::string_view id,
 
     std::vector<int> success_record;
     for (auto port_idx : port_indexes) {
-        int error = rte_eth_bond_slave_add(id_or_error, port_idx);
+        int error = rte_eth_bond_member_add(id_or_error, port_idx);
         if (error) {
             for (auto added_id : success_record) {
-                rte_eth_bond_slave_remove(id_or_error, added_id);
+                rte_eth_bond_member_remove(id_or_error, added_id);
             }
             rte_eth_bond_free(name.c_str());
             return tl::make_unexpected(
-                "Failed to add slave port " + std::to_string(port_idx)
+                "Failed to add member port " + std::to_string(port_idx)
                 + " to bond port " + std::to_string(id_or_error) + ": "
                 + std::string(rte_strerror(std::abs(error))));
         }
@@ -474,20 +474,20 @@ driver<ProcessType>::delete_port(std::string_view id)
     }
 
     /*
-     * There is apparently no way to query the number of slaves a port has,
+     * There is apparently no way to query the number of members a port has,
      * so resort to brute force here.
      */
-    std::array<uint16_t, RTE_MAX_ETHPORTS> slaves;
+    std::array<uint16_t, RTE_MAX_ETHPORTS> members;
     int length_or_err =
-        rte_eth_bond_slaves_get(port_idx, slaves.data(), slaves.size());
+        rte_eth_bond_members_get(port_idx, members.data(), members.size());
     if (length_or_err < 0) {
         /* Not sure what else we can do here... */
         OP_LOG(OP_LOG_ERROR,
-               "Could not retrieve slave port ids from bonded port %s\n",
+               "Could not retrieve member port ids from bonded port %s\n",
                id.data());
     } else if (length_or_err > 0) {
         for (int i = 0; i < length_or_err; i++) {
-            rte_eth_bond_slave_remove(port_idx, slaves[i]);
+            rte_eth_bond_member_remove(port_idx, members[i]);
         }
     }
     rte_eth_bond_free(m_bonded_ports[port_idx].c_str());

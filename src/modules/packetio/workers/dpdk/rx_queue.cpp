@@ -1,3 +1,4 @@
+#include <cmath>
 #include <optional>
 #include <sys/epoll.h>
 
