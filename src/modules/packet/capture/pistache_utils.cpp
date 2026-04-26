@@ -143,6 +143,7 @@ Pistache::Tcp::Transport* get_transport(Pistache::Http::ResponseWriter& writer)
         Pistache::Tcp::Transport* transport_;
         Pistache::Http::Timeout timeout_;
         ssize_t sent_bytes;
+        Pistache::Http::Header::Encoding contentEncoding_;
     };
     static_assert(sizeof(MockResponseWriter)
                   == sizeof(Pistache::Http::ResponseWriter));
