@@ -26,7 +26,12 @@ tl::expected<void, std::string> stop_port(uint16_t port_id)
      * that.
      */
     auto info = rte_eth_dev_info{};
-    rte_eth_dev_info_get(port_id, &info);
+    auto error = rte_eth_dev_info_get(port_id, &info);
+    if (error < 0) {
+        return (tl::make_unexpected("Failed to get port info for port "
+                                    + std::to_string(port_id) + ": "
+                                    + rte_strerror(std::abs(error))));
+    }
 
     auto errors = std::vector<std::string>{};
     for (int q = 0; q < info.nb_tx_queues; q++) {

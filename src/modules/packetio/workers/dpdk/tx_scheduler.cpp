@@ -1,6 +1,7 @@
 #include <sys/timerfd.h>
 #include <unistd.h>
 
+#include "packetio/drivers/dpdk/port_info.hpp"
 #include "packetio/drivers/dpdk/arg_parser.hpp"
 #include "packetio/workers/dpdk/tx_scheduler.hpp"
 #include "timesync/chrono.hpp"
@@ -190,7 +191,8 @@ tx_scheduler::event_callback_function() const
 static bool link_down(uint16_t port_idx)
 {
     auto link = rte_eth_link{};
-    rte_eth_link_get_nowait(port_idx, &link);
+    auto error = rte_eth_link_get_nowait(port_idx, &link);
+    if (error < 0) { return true; }
     return (link.link_status == RTE_ETH_LINK_DOWN);
 }
 
@@ -245,7 +247,8 @@ static uint32_t get_link_speed_safe(uint16_t port_id)
 {
     /* Query the port's link speed */
     struct rte_eth_link link;
-    rte_eth_link_get_nowait(port_id, &link);
+    auto error = rte_eth_link_get_nowait(port_id, &link);
+    if (error < 0) { return port_info::max_speed(port_id); }
 
     /* Caller should only call this when the link is up */
     assert(link.link_status == RTE_ETH_LINK_UP);
