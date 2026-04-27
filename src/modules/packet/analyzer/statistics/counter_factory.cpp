@@ -105,9 +105,11 @@ template <size_t I> constexpr auto make_flow_counters_constructor()
 template <size_t... I>
 auto make_flow_counters_constructor_index(std::index_sequence<I...>)
 {
-    auto constructors = std::vector<std::function<generic_flow_counters(
-        openperf::utils::bit_flags<flow_digest_flags>)>>{};
-    (constructors.emplace_back(make_flow_counters_constructor<I>()), ...);
+    using constructor_type = std::function<generic_flow_counters(
+        openperf::utils::bit_flags<flow_digest_flags>)>;
+
+    auto constructors =
+        std::vector<constructor_type>{make_flow_counters_constructor<I>()...};
     return (constructors);
 }
 
