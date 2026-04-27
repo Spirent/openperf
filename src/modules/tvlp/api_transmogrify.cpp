@@ -23,8 +23,8 @@ serialized_msg serialize(api_request&& msg)
                      return openperf::message::push(serialized, start.id)
                             || openperf::message::push(
                                 serialized,
-                                std::make_unique<decltype(
-                                    start.start_configuration)>(
+                                std::make_unique<
+                                    decltype(start.start_configuration)>(
                                     std::move(start.start_configuration)));
                  },
                  [&](const id_message& msg) {

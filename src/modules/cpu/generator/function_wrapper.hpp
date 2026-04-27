@@ -66,8 +66,8 @@ namespace instruction_set = openperf::cpu::instruction_set;
     }                                                                          \
     template <>                                                                \
     constexpr openperf::cpu::generator::function_wrapper<decltype(&ispc::f)>:: \
-        functions_map openperf::cpu::generator::function_wrapper<decltype(     \
-            &ispc::f)>::functions = {                                          \
+        functions_map openperf::cpu::generator::function_wrapper<              \
+            decltype(&ispc::f)>::functions = {                                 \
             ISPC_FUNCTION_WRAPPER_INIT_FUNCTION_DATA(f)}
 
 #endif // _OP_CPU_GENERATOR_FUNCTION_WRAPPER_HPP_

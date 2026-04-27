@@ -235,8 +235,8 @@ bool dgram_channel::send(pbuf* p)
  */
 static constexpr auto ipv6_addr_octets = 16;
 static_assert(
-    std::is_same_v<std::remove_reference_t<decltype(
-                       std::declval<sockaddr_in6>().sin6_addr.s6_addr)>,
+    std::is_same_v<std::remove_reference_t<decltype(std::declval<sockaddr_in6>()
+                                                        .sin6_addr.s6_addr)>,
                    uint8_t[ipv6_addr_octets]>);
 
 std::optional<dgram_channel_addr>

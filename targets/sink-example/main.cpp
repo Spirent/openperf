@@ -95,9 +95,9 @@ public:
 
     bool active() const { return m_active; }
 
-    bool uses_feature([
-        [maybe_unused]] openperf::packetio::packet::sink_feature_flags
-                          sink_feature_flags) const
+    bool
+    uses_feature([[maybe_unused]] openperf::packetio::packet::sink_feature_flags
+                     sink_feature_flags) const
     {
         return false;
     }
