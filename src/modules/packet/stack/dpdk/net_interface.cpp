@@ -248,7 +248,14 @@ static err_t net_interface_dpdk_init(netif* netif)
 
     /* Finally, check link status and set UP flag if needed */
     rte_eth_link link;
-    rte_eth_link_get_nowait(ifp->port_index(), &link);
+    auto error = rte_eth_link_get_nowait(ifp->port_index(), &link);
+    if (error < 0) {
+        OP_LOG(OP_LOG_ERROR,
+               "Failed to query link status for port %u: %s\n",
+               ifp->port_index(),
+               rte_strerror(std::abs(error)));
+        return (ERR_OK);
+    }
     if (link.link_status == RTE_ETH_LINK_UP) {
         netif->flags |= NETIF_FLAG_LINK_UP;
     }
@@ -266,7 +273,14 @@ static int net_interface_link_status_change(uint16_t port_id,
 
     auto* netif = reinterpret_cast<struct netif*>(arg);
     rte_eth_link link;
-    rte_eth_link_get_nowait(port_id, &link);
+    auto error = rte_eth_link_get_nowait(port_id, &link);
+    if (error < 0) {
+        OP_LOG(OP_LOG_ERROR,
+               "Failed to query link status for port %u: %s\n",
+               port_id,
+               rte_strerror(std::abs(error)));
+        return (0);
+    }
     return (link.link_status == RTE_ETH_LINK_UP
                 ? netifapi_netif_set_link_up(netif)
                 : netifapi_netif_set_link_down(netif));

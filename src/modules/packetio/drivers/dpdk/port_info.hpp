@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <stdexcept>
 
 #ifndef _NETINET_IP6_H
 #define _NETINET_IP6_H
@@ -53,10 +54,15 @@ uint16_t tx_tso_segment_max(uint16_t port_id);
 bool lsc_interrupt(uint16_t port_id);
 
 template <typename T>
-static T get_info_field(int id, T rte_eth_dev_info::*field)
+static T get_info_field(int port_id, T rte_eth_dev_info::*field)
 {
     auto info = rte_eth_dev_info{};
-    rte_eth_dev_info_get(id, &info);
+    auto error = rte_eth_dev_info_get(port_id, &info);
+    if (error < 0) {
+        throw std::runtime_error(
+            std::string("Failed to get device info for port ")
+            + std::to_string(port_id) + ": " + rte_strerror(-error));
+    }
     return (info.*field);
 }
 

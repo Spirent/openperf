@@ -103,7 +103,7 @@ static uint16_t detect_signatures([[maybe_unused]] uint16_t port_id,
                 packets + start + count,
                 [](const auto* mbuf) {
                     if constexpr (RTE_CACHE_LINE_SIZE == 64) {
-                        __builtin_prefetch(mbuf->cacheline1, 1, 0);
+                        rte_mbuf_prefetch_part2(const_cast<rte_mbuf*>(mbuf));
                     }
                 },
                 [&](auto idx, auto* mbuf) {

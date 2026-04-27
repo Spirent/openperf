@@ -14,7 +14,8 @@ static uint32_t get_link_speed_safe(uint16_t port_id)
 {
     /* Query the port's link speed */
     struct rte_eth_link link;
-    rte_eth_link_get_nowait(port_id, &link);
+    auto error = rte_eth_link_get_nowait(port_id, &link);
+    if (error < 0) { return port_info::max_speed(port_id); }
 
     /*
      * Check the link status.  Sometimes, we get packets before

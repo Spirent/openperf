@@ -96,8 +96,8 @@ tcp_flow_key get_ipv6_tcp_flow_key(const struct rte_mbuf* packet)
 
     return (tcp_flow_key{mac_address(eth_hdr->src_addr.addr_bytes),
                          mac_address(eth_hdr->dst_addr.addr_bytes),
-                         ipv6_address(ip6_hdr->src_addr),
-                         ipv6_address(ip6_hdr->dst_addr),
+                         ipv6_address(ip6_hdr->src_addr.a),
+                         ipv6_address(ip6_hdr->dst_addr.a),
                          tcp_hdr->src_port,
                          tcp_hdr->dst_port,
                          tcp_hdr->recv_ack});

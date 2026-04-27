@@ -19,7 +19,8 @@ public:
     port::link_speed speed() const
     {
         auto link = rte_eth_link{};
-        rte_eth_link_get_nowait(m_idx, &link);
+        auto error = rte_eth_link_get_nowait(m_idx, &link);
+        if (error < 0) { return port::link_speed::SPEED_UNKNOWN; }
         return (link.link_status == RTE_ETH_LINK_UP
                     ? static_cast<port::link_speed>(link.link_speed)
                     : port::link_speed::SPEED_UNKNOWN);
@@ -28,7 +29,8 @@ public:
     port::link_status link() const
     {
         auto link = rte_eth_link{};
-        rte_eth_link_get_nowait(m_idx, &link);
+        auto error = rte_eth_link_get_nowait(m_idx, &link);
+        if (error < 0) { return port::link_status::LINK_UNKNOWN; }
         return (link.link_status == RTE_ETH_LINK_UP
                     ? port::link_status::LINK_UP
                     : port::link_status::LINK_DOWN);
@@ -37,7 +39,8 @@ public:
     port::link_duplex duplex() const
     {
         auto link = rte_eth_link{};
-        rte_eth_link_get_nowait(m_idx, &link);
+        auto error = rte_eth_link_get_nowait(m_idx, &link);
+        if (error < 0) { return port::link_duplex::DUPLEX_UNKNOWN; }
         return (link.link_duplex == RTE_ETH_LINK_FULL_DUPLEX
                     ? port::link_duplex::DUPLEX_FULL
                     : port::link_duplex::DUPLEX_HALF);
@@ -66,7 +69,11 @@ public:
                               .mac_address = port_info::mac_address(m_idx)};
 
         auto link = rte_eth_link{};
-        rte_eth_link_get_nowait(m_idx, &link);
+        auto error = rte_eth_link_get_nowait(m_idx, &link);
+        if (error < 0) {
+            config.auto_negotiation = true;
+            return (config);
+        }
         if (link.link_autoneg == RTE_ETH_LINK_AUTONEG) {
             config.auto_negotiation = true;
         } else {
