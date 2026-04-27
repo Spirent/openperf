@@ -16,9 +16,10 @@ constexpr auto to_api_type(const AssociativeArray& array, std::string_view name)
     return (enum_type{0}); /* none */
 }
 
-template <typename AssociativeArray,
-          typename EnumType = decltype(
-              std::declval<typename AssociativeArray::value_type>().second)>
+template <
+    typename AssociativeArray,
+    typename EnumType =
+        decltype(std::declval<typename AssociativeArray::value_type>().second)>
 constexpr auto to_api_string(const AssociativeArray& array, EnumType value)
 {
     auto cursor = std::begin(array), end = std::end(array);

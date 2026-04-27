@@ -290,8 +290,8 @@ template <typename... T>
 constexpr auto get_packet_type_mask_impl(const std::tuple<T...>&)
 {
     using tuple_type = typename std::tuple_element<0, std::tuple<T...>>::type;
-    using mask_type = typename std::remove_cv<decltype(
-        std::declval<tuple_type>().mask)>::type;
+    using mask_type = typename std::remove_cv<
+        decltype(std::declval<tuple_type>().mask)>::type;
 
     auto masks = std::array<mask_type, sizeof...(T)>{};
     auto idx = 0U;

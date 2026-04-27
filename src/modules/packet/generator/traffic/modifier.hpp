@@ -176,8 +176,8 @@ auto to_sequence_address_range(const sequence_config<AddressField>& config)
 template <typename Config> auto to_range(const Config& config)
 {
     if constexpr (detail::is_sequence_config<Config>::value) {
-        if constexpr (detail::is_endian_field<decltype(
-                          Config().first)>::value) {
+        if constexpr (detail::is_endian_field<
+                          decltype(Config().first)>::value) {
             return (detail::to_sequence_field_range(config));
         } else {
             return (detail::to_sequence_address_range(config));

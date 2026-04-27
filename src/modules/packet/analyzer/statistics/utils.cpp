@@ -10,9 +10,10 @@ constexpr auto associative_array(Pairs&&... pairs)
     return {{std::forward<Pairs>(pairs)...}};
 }
 
-template <typename AssociativeArray,
-          typename EnumType = decltype(
-              std::declval<typename AssociativeArray::value_type>().second)>
+template <
+    typename AssociativeArray,
+    typename EnumType =
+        decltype(std::declval<typename AssociativeArray::value_type>().second)>
 constexpr auto to_api_string(const AssociativeArray& array, EnumType value)
 {
     auto cursor = std::begin(array), end = std::end(array);

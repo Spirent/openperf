@@ -7,7 +7,8 @@ const char op_packetio_dpdk_misc_worker_mask[] =
 const char op_packetio_dpdk_no_init[] = "modules.packetio.dpdk.no-init";
 const char op_packetio_dpdk_options[] = "modules.packetio.dpdk.options";
 const char op_packetio_dpdk_port_ids[] = "modules.packetio.dpdk.port-ids";
-const char op_packetio_dpdk_ports_required[] = "modules.packetio.dpdk.ports-required";
+const char op_packetio_dpdk_ports_required[] =
+    "modules.packetio.dpdk.ports-required";
 const char op_packetio_dpdk_rx_worker_mask[] =
     "modules.packetio.dpdk.rx-worker-mask";
 const char op_packetio_dpdk_tx_worker_mask[] =

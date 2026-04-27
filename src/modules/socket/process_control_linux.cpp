@@ -44,13 +44,10 @@ static std::string to_string(cap_value_t cap_values[], size_t nb_cap_values)
         std::string(),
         [&](const std::string& s, auto& cap_value) -> std::string {
             return (s
-                    + (s.length() == 0
-                           ? ""
-                           : nb_cap_values == 2
-                                 ? " and "
-                                 : cap_values[nb_cap_values - 1] == cap_value
-                                       ? ", and "
-                                       : ", ")
+                    + (s.length() == 0                              ? ""
+                       : nb_cap_values == 2                         ? " and "
+                       : cap_values[nb_cap_values - 1] == cap_value ? ", and "
+                                                                    : ", ")
                     + cap_to_name(cap_value));
         }));
 }

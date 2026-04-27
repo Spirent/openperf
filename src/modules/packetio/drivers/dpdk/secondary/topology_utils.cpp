@@ -9,9 +9,7 @@ std::vector<uint16_t> get_ports()
 {
     auto ids = std::vector<uint16_t>{};
     uint16_t port_id = 0;
-    RTE_ETH_FOREACH_DEV (port_id) {
-        ids.emplace_back(port_id);
-    }
+    RTE_ETH_FOREACH_DEV (port_id) { ids.emplace_back(port_id); }
 
     return (ids);
 }

@@ -14,11 +14,12 @@ constexpr auto associative_array(Pairs&&... pairs)
     return {{std::forward<Pairs>(pairs)...}};
 }
 
-template <typename AssociativeArray,
-          typename Key = decltype(
-              std::declval<typename AssociativeArray::value_type>().first),
-          typename Value = decltype(
-              std::declval<typename AssociativeArray::value_type>().second)>
+template <
+    typename AssociativeArray,
+    typename Key =
+        decltype(std::declval<typename AssociativeArray::value_type>().first),
+    typename Value =
+        decltype(std::declval<typename AssociativeArray::value_type>().second)>
 constexpr std::optional<Value> key_to_value(const AssociativeArray& array,
                                             const Key& key)
 {
@@ -31,11 +32,12 @@ constexpr std::optional<Value> key_to_value(const AssociativeArray& array,
     return (std::nullopt);
 }
 
-template <typename AssociativeArray,
-          typename Key = decltype(
-              std::declval<typename AssociativeArray::value_type>().first),
-          typename Value = decltype(
-              std::declval<typename AssociativeArray::value_type>().second)>
+template <
+    typename AssociativeArray,
+    typename Key =
+        decltype(std::declval<typename AssociativeArray::value_type>().first),
+    typename Value =
+        decltype(std::declval<typename AssociativeArray::value_type>().second)>
 constexpr std::optional<Key> value_to_key(const AssociativeArray& array,
                                           const Value& value)
 {

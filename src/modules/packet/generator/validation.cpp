@@ -425,10 +425,10 @@ static void validate_protocol(const get_protocol_fn& get_fn,
 
 static uint16_t max_modifier_offset(size_t length, const modifier_ptr& modifier)
 {
-    size_t mod_length =
-        (modifier->ipv4IsSet() || modifier->fieldIsSet()
-             ? 4
-             : modifier->ipv6IsSet() ? 16 : modifier->macIsSet() ? 6 : 0);
+    size_t mod_length = (modifier->ipv4IsSet() || modifier->fieldIsSet() ? 4
+                         : modifier->ipv6IsSet()                         ? 16
+                         : modifier->macIsSet()                          ? 6
+                                                                         : 0);
 
     return (mod_length > length ? 0 : length - mod_length);
 }
