@@ -210,8 +210,8 @@ public:
 
         Address addr(ip_addr, Port(port));
         auto opts = Http::Endpoint::options()
-                        .maxRequestSize(1024 * 1024)
-                        .maxResponseSize(1024 * 1024)
+                        .maxRequestSize(static_cast<size_t>(1024 * 1024))
+                        .maxResponseSize(static_cast<size_t>(1024 * 1024))
                         .threads(1)
                         .flags(Tcp::Options::ReuseAddr);
 

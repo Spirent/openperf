@@ -139,8 +139,9 @@ static int get_waiting_lcore()
 
 int sys_stack_worker_id()
 {
-    return (
-        openperf::packetio::dpdk::topology::get_stack_lcore_id().value_or(-1));
+    auto lcore_id = openperf::packetio::dpdk::topology::get_stack_lcore_id();
+    if (lcore_id) return static_cast<int>(*lcore_id);
+    return -1;
 }
 
 sys_thread_t sys_thread_new(const char* name,
