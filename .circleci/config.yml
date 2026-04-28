@@ -1,5 +1,10 @@
 version: 2.1
 
+parameters:
+  ci_build_image:
+    type: string
+    default: "public.ecr.aws/u6h7q0t4/openperf/openperf-ci:latest"
+
 jobs:
   acceptance_tests:
     machine:
@@ -9,10 +14,10 @@ jobs:
           at: "~"
       - run:
           name: Download latest openperf container
-          command: docker pull spirentorion/openperf:latest
+          command: docker pull << pipeline.parameters.ci_build_image >>
       - run:
           name: Run containerized build and test
-          command: docker run -it --privileged -v ~/project:/root/project spirentorion/openperf:latest /bin/bash -c "cd /root/project/tests/aat && make junit"
+          command: docker run -it --privileged -v ~/project:/root/project << pipeline.parameters.ci_build_image >> /bin/bash -c "cd /root/project/tests/aat && make junit"
       - run:
           name: Collect AAT log
           when: always
@@ -28,7 +33,7 @@ jobs:
 
   build:
     docker:
-      - image: spirentorion/openperf:latest
+      - image: << pipeline.parameters.ci_build_image >>
     steps:
       - checkout
       - run:
@@ -45,7 +50,7 @@ jobs:
 
   build_secondary:
     docker:
-      - image: spirentorion/openperf:latest
+      - image: << pipeline.parameters.ci_build_image >>
     steps:
       - checkout
       - run:
@@ -56,7 +61,7 @@ jobs:
 
   cross_compile_aarch64:
     docker:
-      - image: spirentorion/openperf:latest
+      - image: << pipeline.parameters.ci_build_image >>
     steps:
       - checkout
       - run:
@@ -69,7 +74,7 @@ jobs:
 
   static_analysis:
     docker:
-      - image: spirentorion/openperf:latest
+      - image: << pipeline.parameters.ci_build_image >>
     steps:
       - attach_workspace:
           at: "~"
@@ -79,7 +84,7 @@ jobs:
 
   unit_tests:
     docker:
-      - image: spirentorion/openperf:latest
+      - image: << pipeline.parameters.ci_build_image >>
     steps:
       - checkout
       - run:
