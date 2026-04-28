@@ -1,6 +1,7 @@
 Checks: '-*,
         bugprone-*,
         -bugprone-suspicious-semicolon,
+        -bugprone-easily-swappable-parameters,
         clang-analyzer-*,
         -clang-analyzer-osx.*,
         misc-*,

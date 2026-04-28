@@ -149,7 +149,9 @@ void pool_allocator::init(const std::vector<uint16_t>& port_indexes,
                      mempool_format.data(),
                      i);
             m_pools.emplace(
-                i, create_mempool(name_buf.data(), nb_mbufs, mbuf_size, i));
+                i,
+                create_mempool(
+                    name_buf.data(), nb_mbufs, mbuf_size, static_cast<int>(i)));
         }
     }
 };
