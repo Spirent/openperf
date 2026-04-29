@@ -15,10 +15,11 @@ std::chrono::nanoseconds system_poll_delay(unsigned i,
     using seconds = std::chrono::duration<double>;
     static constexpr int system_startup_polls = 8;
 
-    auto period = seconds(
-        i < system_startup_polls ? std::pow(
-            std::exp(std::log(max_period.count()) / system_startup_polls), i)
-                                 : max_period.count());
+    auto period = seconds(i < system_startup_polls
+                              ? std::pow(std::exp(std::log(max_period.count())
+                                                  / system_startup_polls),
+                                         i)
+                              : static_cast<unsigned int>(max_period.count()));
 
     return (std::chrono::duration_cast<std::chrono::nanoseconds>(period));
 }

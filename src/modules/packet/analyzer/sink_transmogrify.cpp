@@ -418,7 +418,7 @@ static void populate_flow_counters(
     static const std::string octets = "octets";
 
     const auto& frame_count = src.get<counter::frame_counter>();
-    dst->setFrameCount(frame_count.count);
+    dst->setFrameCount(static_cast<int64_t>(frame_count.count));
     if (frame_count.count) {
         dst->setTimestampFirst(to_rfc3339(frame_count.first_));
         dst->setTimestampLast(to_rfc3339(frame_count.last_));
@@ -498,9 +498,9 @@ static void populate_flow_counters(
         auto s_dst = std::make_shared<
             swagger::v1::model::PacketAnalyzerFlowCounters_prbs>();
 
-        s_dst->setBitErrors(s_src.bit_errors);
-        s_dst->setFrameErrors(s_src.frame_errors);
-        s_dst->setOctets(s_src.octets);
+        s_dst->setBitErrors(static_cast<int64_t>(s_src.bit_errors));
+        s_dst->setFrameErrors(static_cast<int64_t>(s_src.frame_errors));
+        s_dst->setOctets(static_cast<int64_t>(s_src.octets));
 
         dst->setPrbs(s_dst);
     }
@@ -509,12 +509,12 @@ static void populate_flow_counters(
         auto s_dst = std::make_shared<
             swagger::v1::model::PacketAnalyzerFlowCounters_sequence>();
 
-        s_dst->setDropped(s_src.dropped);
-        s_dst->setDuplicate(s_src.duplicate);
-        s_dst->setLate(s_src.late);
-        s_dst->setReordered(s_src.reordered);
-        s_dst->setInOrder(s_src.in_order);
-        s_dst->setRunLength(s_src.run_length);
+        s_dst->setDropped(static_cast<int64_t>(s_src.dropped));
+        s_dst->setDuplicate(static_cast<int64_t>(s_src.duplicate));
+        s_dst->setLate(static_cast<int64_t>(s_src.late));
+        s_dst->setReordered(static_cast<int64_t>(s_src.reordered));
+        s_dst->setInOrder(static_cast<int64_t>(s_src.in_order));
+        s_dst->setRunLength(static_cast<int64_t>(s_src.run_length));
 
         dst->setSequence(s_dst);
     }

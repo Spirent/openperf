@@ -8,21 +8,22 @@ namespace openperf::cpu::generator::worker {
 serialized_msg serialize_command(command_msg&& msg)
 {
     serialized_msg serialized;
-    auto error = (message::push(serialized, msg.index())
-                  || std::visit(
-                      utils::overloaded_visitor(
-                          [&](const start_msg& msg) -> int {
-                              return (message::push(serialized, msg.endpoint)
-                                      || message::push(serialized, msg.result));
-                          },
-                          [&](const stop_msg& msg) {
-                              return (message::push(serialized, msg.endpoint));
-                          },
-                          [&](const term_msg& msg) { return (0); },
-                          [&](const update_msg& msg) {
-                              return (message::push(serialized, msg.values));
-                          }),
-                      msg));
+    auto error =
+        (message::push(serialized, msg.index())
+         || std::visit(
+             utils::overloaded_visitor(
+                 [&](const start_msg& msg) -> int {
+                     return (message::push(serialized, msg.endpoint)
+                             || message::push(serialized, msg.result));
+                 },
+                 [&](const stop_msg& msg) {
+                     return (message::push(serialized, msg.endpoint));
+                 },
+                 [&]([[maybe_unused]] const term_msg& msg) { return (0); },
+                 [&](const update_msg& msg) {
+                     return (message::push(serialized, msg.values));
+                 }),
+             msg));
     if (error) { throw std::bad_alloc(); }
 
     return (serialized);

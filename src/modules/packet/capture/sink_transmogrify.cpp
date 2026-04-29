@@ -23,10 +23,11 @@ capture_ptr to_swagger(const sink& src)
     auto dst_config =
         std::make_shared<swagger::v1::model::PacketCaptureConfig>();
     dst_config->setMode(to_string(src_config.capture_mode));
-    dst_config->setBufferSize(src_config.buffer_size);
+    dst_config->setBufferSize(static_cast<int64_t>(src_config.buffer_size));
     dst_config->setBufferWrap(src_config.buffer_wrap);
     if (src_config.max_packet_size != UINT32_MAX)
-        dst_config->setPacketSize(src_config.max_packet_size);
+        dst_config->setPacketSize(
+            static_cast<int32_t>(src_config.max_packet_size));
     if (src_config.duration.count()) {
         auto duration_msec =
             std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -35,7 +36,8 @@ capture_ptr to_swagger(const sink& src)
         dst_config->setDuration(duration_msec);
     }
     if (src_config.packet_count) {
-        dst_config->setPacketCount(src_config.packet_count);
+        dst_config->setPacketCount(
+            static_cast<int64_t>(src_config.packet_count));
     }
     if (!src_config.filter.empty()) dst_config->setFilter(src_config.filter);
     if (!src_config.start_trigger.empty())
@@ -57,8 +59,8 @@ capture_result_ptr to_swagger(const core::uuid& id, const sink_result& src)
 
     dst->setState(to_string(src.state.load(std::memory_order_consume)));
     auto stats = src.get_stats();
-    dst->setPackets(stats.packets);
-    dst->setBytes(stats.bytes);
+    dst->setPackets(static_cast<int64_t>(stats.packets));
+    dst->setBytes(static_cast<int64_t>(stats.bytes));
 
     return (dst);
 }

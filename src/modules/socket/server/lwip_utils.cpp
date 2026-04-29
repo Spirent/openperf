@@ -122,7 +122,7 @@ tl::expected<void, int> do_sock_ioctl(const ip_pcb* pcb,
         auto* netif = packet::stack::netif_get_by_name(ifr.ifr_name);
         if (!netif) return (tl::make_unexpected(ENODEV));
 
-        ifr.ifr_flags = get_siocgifflags(netif);
+        ifr.ifr_flags = static_cast<short int>(get_siocgifflags(netif));
 
         result = copy_out(ioctl.id.pid, ioctl.argp, ifr);
         if (!result) return (tl::make_unexpected(result.error()));
@@ -184,7 +184,7 @@ tl::expected<void, int> do_sock_ioctl(const ip_pcb* pcb,
 
         if (conf.ifc_req == nullptr) {
             /* Caller only wants the buffer length */
-            conf.ifc_len = ifrs.size() * sizeof(struct ifreq);
+            conf.ifc_len = static_cast<int>(ifrs.size() * sizeof(struct ifreq));
         } else {
             /* Caller wants as much data as will fit */
             auto to_copy =
@@ -194,7 +194,7 @@ tl::expected<void, int> do_sock_ioctl(const ip_pcb* pcb,
             if (!result) return (tl::make_unexpected(result.error()));
 
             /* Update initial request with buffer length */
-            conf.ifc_len = to_copy;
+            conf.ifc_len = static_cast<int>(to_copy);
         }
         result = copy_out(ioctl.id.pid, ioctl.argp, conf);
         if (!result) return (tl::make_unexpected(result.error()));

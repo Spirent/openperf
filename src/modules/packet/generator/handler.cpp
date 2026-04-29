@@ -48,9 +48,7 @@ const char* to_string(const reply_error& error)
 {
     switch (error.info.type) {
     case error_type::BAD_REQUEST:
-        [[fallthrough]];
     case error_type::CONFLICT:
-        [[fallthrough]];
     case error_type::NOT_FOUND:
         return ("");
     case error_type::ZMQ_ERROR:

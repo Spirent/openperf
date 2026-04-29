@@ -50,7 +50,7 @@ int sys_mbox::fd() const { return (m_stack.fd); }
 static bool is_readable(int fd, u32_t timeout)
 {
     struct pollfd to_poll = {.fd = fd, .events = POLLIN};
-    int n = poll(&to_poll, 1, timeout);
+    int n = poll(&to_poll, 1, static_cast<int>(timeout));
     return (n == 1 ? to_poll.revents & POLLIN : false);
 }
 

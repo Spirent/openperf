@@ -350,7 +350,8 @@ size_t sequence::sum_packet_lengths() const
 size_t sequence::sum_packet_lengths(size_t idx) const
 {
     const auto& length_templates = m_definitions.get<1>();
-    auto q = lldiv(idx, m_packet_indexes.size());
+    auto q = lldiv(static_cast<long long>(idx),
+                   static_cast<long long>(m_packet_indexes.size()));
 
     auto sum =
         std::accumulate(std::begin(m_packet_indexes),
@@ -392,7 +393,8 @@ size_t sequence::sum_flow_packet_lengths(unsigned flow_idx) const
 size_t sequence::sum_flow_packet_lengths(unsigned flow_idx,
                                          size_t pkt_idx) const
 {
-    auto q = lldiv(pkt_idx, m_packet_indexes.size());
+    auto q = lldiv(static_cast<long long>(pkt_idx),
+                   static_cast<long long>(m_packet_indexes.size()));
 
     auto sum = filter_accumulate(
         std::begin(*this),
@@ -607,7 +609,8 @@ uint16_t sequence::unpack(size_t start_idx,
 
     ring_transform_n(std::begin(m_packet_indexes),
                      std::end(m_packet_indexes),
-                     std::begin(m_packet_indexes) + pkt_offset,
+                     std::next(std::begin(m_packet_indexes),
+                               static_cast<std::ptrdiff_t>(pkt_offset)),
                      count,
                      unzip(flow_indexes,
                            headers,
@@ -628,7 +631,8 @@ uint16_t sequence::unpack(size_t start_idx,
     const auto& length_templates = m_definitions.get<1>();
     ring_transform_n(std::begin(m_length_indexes),
                      std::end(m_length_indexes),
-                     std::begin(m_length_indexes) + len_offset,
+                     std::next(std::begin(m_length_indexes),
+                               static_cast<std::ptrdiff_t>(len_offset)),
                      count,
                      pkt_lengths,
                      [&](const auto& pair) {

@@ -51,7 +51,7 @@ static int get_port_index(std::string_view name)
 
     char* last_char;
     auto to_return = strtol(name.data() + index_offset, &last_char, 10);
-    if (*last_char == '\0') { return (to_return); }
+    if (*last_char == '\0') { return static_cast<int>(to_return); }
 
     return (-1);
 }

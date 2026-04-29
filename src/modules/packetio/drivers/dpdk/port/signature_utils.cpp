@@ -33,7 +33,7 @@ namespace openperf::packetio::dpdk::port::utils {
 namespace impl {
 
 /* 2000-03-01 (mod 400 year, immediately after feb29 */
-#define LEAPOCH (946684800LL + 86400 * (31 + 29))
+#define LEAPOCH (946684800LL + 86400LL * (31 + 29))
 
 #define DAYS_PER_400Y (365 * 400 + 97)
 #define DAYS_PER_100Y (365 * 100 + 24)

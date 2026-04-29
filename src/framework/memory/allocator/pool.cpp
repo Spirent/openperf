@@ -33,6 +33,7 @@ pool::pool(uintptr_t base, size_t pool_size, size_t item_size)
         throw std::runtime_error("pool_size is too small for item_size");
     }
     for (size_t offset = 0; offset + m_size < pool_size; offset += m_size) {
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         auto node = reinterpret_cast<intrusive_stack::node*>(base + offset);
         m_stack.push(node);
     }

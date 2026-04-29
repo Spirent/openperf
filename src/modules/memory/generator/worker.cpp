@@ -219,7 +219,7 @@ class worker : public finite_state_machine<worker<Traits>, state, command_msg>
     };
 
     void* m_context;
-    result* m_result;
+    result* m_result = nullptr;
     ops_per_sec m_rate;
     uint8_t m_id;
     io_config m_config;
@@ -245,7 +245,6 @@ class worker : public finite_state_machine<worker<Traits>, state, command_msg>
 public:
     worker(void* context, const io_config& config, uint8_t id)
         : m_context(context)
-        , m_result(nullptr)
         , m_rate(config.io_rate)
         , m_id(id)
         , m_config(config)

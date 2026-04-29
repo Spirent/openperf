@@ -135,7 +135,7 @@ std::shared_ptr<BlockDevice> to_swagger(const model::device& p_device)
     device->setId(p_device.id());
     device->setInfo(p_device.info());
     device->setPath(p_device.path());
-    device->setSize(p_device.size());
+    device->setSize(static_cast<int64_t>(p_device.size()));
     device->setUsable(p_device.is_usable());
     device->setInitPercentComplete(p_device.init_percent_complete());
     device->setState(std::string(to_string(p_device.state())));
@@ -147,7 +147,7 @@ std::shared_ptr<BlockFile> to_swagger(const model::file& p_file)
     auto blkfile = std::make_shared<BlockFile>();
     blkfile->setId(p_file.id());
     blkfile->setPath(p_file.path());
-    blkfile->setSize(p_file.size());
+    blkfile->setSize(static_cast<int64_t>(p_file.size()));
     blkfile->setInitPercentComplete(p_file.init_percent_complete());
     blkfile->setState(std::string(to_string(p_file.state())));
     return blkfile;
@@ -157,15 +157,19 @@ std::shared_ptr<BlockGenerator> to_swagger(const model::block_generator& p_gen)
 {
     auto gen_config = std::make_shared<BlockGeneratorConfig>();
     gen_config->setPattern(std::string(to_string(p_gen.config().pattern)));
-    gen_config->setQueueDepth(p_gen.config().queue_depth);
-    gen_config->setReadSize(p_gen.config().read_size);
-    gen_config->setReadsPerSec(p_gen.config().reads_per_sec);
-    gen_config->setWriteSize(p_gen.config().write_size);
-    gen_config->setWritesPerSec(p_gen.config().writes_per_sec);
+    gen_config->setQueueDepth(static_cast<int32_t>(p_gen.config().queue_depth));
+    gen_config->setReadSize(static_cast<int32_t>(p_gen.config().read_size));
+    gen_config->setReadsPerSec(
+        static_cast<int32_t>(p_gen.config().reads_per_sec));
+    gen_config->setWriteSize(static_cast<int32_t>(p_gen.config().write_size));
+    gen_config->setWritesPerSec(
+        static_cast<int32_t>(p_gen.config().writes_per_sec));
     if (p_gen.config().ratio) {
         auto ratio = std::make_shared<BlockGeneratorReadWriteRatio>();
-        ratio->setReads(p_gen.config().ratio.value().reads);
-        ratio->setWrites(p_gen.config().ratio.value().writes);
+        ratio->setReads(
+            static_cast<int32_t>(p_gen.config().ratio.value().reads));
+        ratio->setWrites(
+            static_cast<int32_t>(p_gen.config().ratio.value().writes));
         gen_config->setRatio(ratio);
     }
 
@@ -193,12 +197,13 @@ to_swagger(const model::block_generator_result& p_gen_result)
     auto to_statistics_t =
         [](const model::block_generator_result::statistics_t& gen_stat) {
             auto stat = std::make_shared<BlockGeneratorStats>();
-            stat->setBytesActual(gen_stat.bytes_actual);
-            stat->setBytesTarget(gen_stat.bytes_target);
-            stat->setIoErrors(gen_stat.io_errors);
-            stat->setOpsActual(gen_stat.ops_actual);
-            stat->setOpsTarget(gen_stat.ops_target);
-            stat->setLatencyTotal(gen_stat.latency.count());
+            stat->setBytesActual(static_cast<int64_t>(gen_stat.bytes_actual));
+            stat->setBytesTarget(static_cast<int64_t>(gen_stat.bytes_target));
+            stat->setIoErrors(static_cast<int64_t>(gen_stat.io_errors));
+            stat->setOpsActual(static_cast<int64_t>(gen_stat.ops_actual));
+            stat->setOpsTarget(static_cast<int64_t>(gen_stat.ops_target));
+            stat->setLatencyTotal(
+                static_cast<int64_t>(gen_stat.latency.count()));
 
             if (gen_stat.latency_max.has_value())
                 stat->setLatencyMin(gen_stat.latency_min.value().count());

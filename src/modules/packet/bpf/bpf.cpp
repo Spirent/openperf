@@ -451,7 +451,7 @@ bool bpf::set_prog(const bpf_insn* insns, unsigned int len, uint32_t flags)
                   .extwords = BPF_MEMWORDS,
                   .preinited = bpf_ctx_preinited()};
 
-    if (!op_bpf_validate_ext(&ctx, insns, len)) {
+    if (!op_bpf_validate_ext(&ctx, insns, static_cast<int>(len))) {
         OP_LOG(OP_LOG_ERROR, "Unable to validate BPF program");
         return false;
     }
@@ -460,7 +460,7 @@ bool bpf::set_prog(const bpf_insn* insns, unsigned int len, uint32_t flags)
     m_insn.reserve(len);
     std::copy(insns, insns + len, std::back_inserter(m_insn));
 
-    m_jit = bpf_jit(&ctx, insns, len);
+    m_jit = bpf_jit(&ctx, insns, static_cast<int>(len));
 
     if (!m_jit) {
         OP_LOG(OP_LOG_DEBUG, "Unable to generate BPF JIT code");

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <thread>
 #include <limits>
 #include <cerrno>
@@ -27,7 +28,7 @@ namespace openperf::network::internal::task {
 using namespace std::chrono_literals;
 constexpr duration TASK_SPIN_THRESHOLD = 100ms;
 constexpr duration QUANTA = 10ms;
-const size_t max_buffer_size = 64 * 1024;
+const size_t max_buffer_size = static_cast<size_t>(64 * 1024);
 
 stat_t& stat_t::operator+=(const stat_t& stat)
 {
@@ -216,10 +217,9 @@ populate_sockaddr(const drivers::driver_ptr& driver,
         using namespace libpacket::type;
         if (is_linklocal(ipv6_address(host))) {
             /* Need to set sin6_scope_id for link local IPv6 */
-            int ifindex;
-            if ((ifindex =
-                     driver->if_nametoindex(interface.value_or("").c_str()));
-                ifindex > 0) {
+            auto ifindex =
+                driver->if_nametoindex(interface.value_or("").c_str());
+            if (ifindex > 0) {
                 sa6->sin6_scope_id = ifindex;
             } else {
                 OP_LOG(OP_LOG_WARNING,
@@ -668,14 +668,15 @@ void network_task::config(const config_t& p_config)
 
 int32_t network_task::calculate_rate()
 {
-    if (!m_config.synchronizer) return m_config.ops_per_sec;
+    if (!m_config.synchronizer)
+        return static_cast<int32_t>(m_config.ops_per_sec);
 
     if (m_config.operation == operation_t::READ)
-        m_config.synchronizer->reads_actual.store(m_stat.ops_actual,
-                                                  std::memory_order_relaxed);
+        m_config.synchronizer->reads_actual.store(
+            static_cast<int64_t>(m_stat.ops_actual), std::memory_order_relaxed);
     else
-        m_config.synchronizer->writes_actual.store(m_stat.ops_actual,
-                                                   std::memory_order_relaxed);
+        m_config.synchronizer->writes_actual.store(
+            static_cast<int64_t>(m_stat.ops_actual), std::memory_order_relaxed);
 
     int64_t reads_actual =
         m_config.synchronizer->reads_actual.load(std::memory_order_relaxed);
@@ -687,23 +688,20 @@ int32_t network_task::calculate_rate()
     int32_t ratio_writes =
         m_config.synchronizer->ratio_writes.load(std::memory_order_relaxed);
 
+    auto ops_per_sec = static_cast<int64_t>(m_config.ops_per_sec);
+
     switch (m_config.operation) {
     case operation_t::READ: {
-        auto reads_expected = writes_actual * ratio_reads / ratio_writes;
-        return std::min(
-            std::max(reads_expected + static_cast<int64_t>(m_config.ops_per_sec)
-                         - reads_actual,
-                     1L),
-            static_cast<long>(m_config.ops_per_sec));
+        int64_t reads_expected = writes_actual * ratio_reads / ratio_writes;
+        int64_t calc_ops = reads_expected + ops_per_sec - reads_actual;
+        return static_cast<int32_t>(
+            std::clamp(calc_ops, int64_t{1}, ops_per_sec));
     }
     case operation_t::WRITE: {
-        auto writes_expected = reads_actual * ratio_writes / ratio_reads;
-        return std::min(
-            std::max(writes_expected
-                         + static_cast<int64_t>(m_config.ops_per_sec)
-                         - writes_actual,
-                     1L),
-            static_cast<long>(m_config.ops_per_sec));
+        int64_t writes_expected = reads_actual * ratio_writes / ratio_reads;
+        int64_t calc_ops = writes_expected + ops_per_sec - writes_actual;
+        return static_cast<int32_t>(
+            std::clamp(calc_ops, int64_t{1}, ops_per_sec));
     }
     }
 }

@@ -18,7 +18,7 @@ static std::string random_endpoint()
     static const std::string_view chars =
         "abcdefghijklmnaoqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
     std::mt19937_64 generator{std::random_device()()};
-    std::uniform_int_distribution<> dist(0, chars.size() - 1);
+    std::uniform_int_distribution<> dist(0, static_cast<int>(chars.size()) - 1);
     std::string to_return("inproc://worker_sync_");
     std::generate_n(std::back_inserter(to_return), 8, [&] {
         return chars[dist(generator)];

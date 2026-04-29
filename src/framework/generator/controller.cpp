@@ -81,7 +81,7 @@ void controller::send(internal::operation_t operation, bool wait)
 
     if (wait) {
         m_feedback_operation = operation;
-        m_feedback.init(m_workers.size());
+        m_feedback.init(static_cast<int>(m_workers.size()));
     }
 
     auto result = zmq_send(

@@ -6,6 +6,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <limits>
 
 #include "socket/shared_segment.hpp"
 
@@ -13,6 +14,11 @@ namespace openperf::memory {
 
 static void* do_mapping(const std::string_view path, size_t size, int shm_flags)
 {
+    if (size > static_cast<size_t>(std::numeric_limits<off_t>::max())) {
+        throw std::runtime_error("Requested shared memory segment size is too "
+                                 "large: "
+                                 + std::to_string(size));
+    }
     auto fd =
         shm_open(path.data(), shm_flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
     if (fd == -1) {
@@ -31,7 +37,7 @@ static void* do_mapping(const std::string_view path, size_t size, int shm_flags)
         }
     }
 
-    if (shm_flags & O_CREAT) { ftruncate(fd, size); }
+    if (shm_flags & O_CREAT) { ftruncate(fd, static_cast<off_t>(size)); }
 
     auto ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     close(fd); /* done with this regardless of outcome... */

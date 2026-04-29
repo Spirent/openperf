@@ -65,17 +65,19 @@ void set_message_fds(api::reply_msg& reply, const api::socket_fd_pair& fd_pair)
 
 api::io_channel_ptr to_pointer(api::io_channel_offset offset, const void* base)
 {
-    return (std::visit(
-        utils::overloaded_visitor(
-            [&](dgram_channel_offset dgram) -> io_channel_ptr {
-                return (reinterpret_cast<dgram_channel*>(
-                    reinterpret_cast<intptr_t>(base) + dgram.offset));
-            },
-            [&](stream_channel_offset stream) -> io_channel_ptr {
-                return (reinterpret_cast<stream_channel*>(
-                    reinterpret_cast<intptr_t>(base) + stream.offset));
-            }),
-        offset));
+    return (
+        std::visit(utils::overloaded_visitor(
+                       [&](dgram_channel_offset dgram) -> io_channel_ptr {
+                           return (reinterpret_cast<dgram_channel*>(
+                               reinterpret_cast<char*>(const_cast<void*>(base))
+                               + dgram.offset));
+                       },
+                       [&](stream_channel_offset stream) -> io_channel_ptr {
+                           return (reinterpret_cast<stream_channel*>(
+                               reinterpret_cast<char*>(const_cast<void*>(base))
+                               + stream.offset));
+                       }),
+                   offset));
 }
 
 } // namespace openperf::socket::api

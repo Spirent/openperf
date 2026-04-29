@@ -218,7 +218,7 @@ coordinator::coordinator(void* context, struct config&& conf)
                                      return (sum + config.utilization);
                                  });
 
-    m_pid.max(100. * m_config.core_configs.size());
+    m_pid.max(100. * static_cast<double>(m_config.core_configs.size()));
 
     /* Spawn a thread for each core configuration */
     const auto endpoint = m_client.endpoint();

@@ -162,9 +162,7 @@ static std::string to_string(const reply_msg& reply)
         case error_type::NOT_FOUND:
             return ("failed: Not Found");
         case error_type::POSIX:
-            [[fallthrough]];
         case error_type::ZMQ_ERROR:
-            [[fallthrough]];
         default:
             return ("failed: " + std::string(strerror(error->info.value)));
         }
@@ -434,13 +432,10 @@ static bool generator_can_start(const learning_resolved_state& state)
 {
     switch (state) {
     case learning_resolved_state::unsupported:
-        [[fallthrough]];
     case learning_resolved_state::resolved:
         return (true);
     case learning_resolved_state::unresolved:
-        [[fallthrough]];
     case learning_resolved_state::resolving:
-        [[fallthrough]];
     case learning_resolved_state::timed_out:
         return (false);
     default:

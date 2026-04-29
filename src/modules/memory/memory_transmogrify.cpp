@@ -13,15 +13,15 @@ static std::shared_ptr<swagger::v1::model::MemoryGeneratorConfig>
 to_swagger(const generator::config& config)
 {
     auto dst = std::make_shared<swagger::v1::model::MemoryGeneratorConfig>();
-    dst->setBufferSize(config.buffer_size);
+    dst->setBufferSize(static_cast<int64_t>(config.buffer_size));
     dst->setReadsPerSec(
         static_cast<int64_t>(std::trunc(config.read.io_rate.count())));
-    dst->setReadSize(config.read.io_size);
-    dst->setReadThreads(config.read.io_threads);
+    dst->setReadSize(static_cast<int32_t>(config.read.io_size));
+    dst->setReadThreads(static_cast<int32_t>(config.read.io_threads));
     dst->setWritesPerSec(
         static_cast<int64_t>(std::trunc(config.write.io_rate.count())));
-    dst->setWriteSize(config.write.io_size);
-    dst->setWriteThreads(config.write.io_threads);
+    dst->setWriteSize(static_cast<int32_t>(config.write.io_size));
+    dst->setWriteThreads(static_cast<int32_t>(config.write.io_threads));
     dst->setPattern(to_string(config.read.io_pattern));
 
     return (dst);

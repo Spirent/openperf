@@ -715,7 +715,7 @@ bool capture_buffer_file_reader::read_file_header()
         return false;
     }
     auto remain = section.block_total_length - sizeof(section);
-    if (remain > 0 && fseek(m_fp_read, remain, SEEK_CUR)) {
+    if (remain > 0 && fseek(m_fp_read, static_cast<long>(remain), SEEK_CUR)) {
         OP_LOG(OP_LOG_ERROR, "Failed skipping PCAP section options.");
         return false;
     }
@@ -737,7 +737,7 @@ bool capture_buffer_file_reader::read_file_header()
             return true;
         }
         remain = block_header.block_length - sizeof(block_header);
-        if (remain && fseek(m_fp_read, remain, SEEK_CUR)) {
+        if (remain && fseek(m_fp_read, static_cast<long>(remain), SEEK_CUR)) {
             OP_LOG(OP_LOG_ERROR, "Failed skipping PCAP block data.");
             return false;
         }
@@ -820,14 +820,15 @@ uint16_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
         m_read_offset += block_hdr.captured_len;
         block_remain -= block_hdr.captured_len;
         if (pad_length) {
-            if (fseek(m_fp_read, pad_length, SEEK_CUR) != 0) {
+            if (fseek(m_fp_read, static_cast<long>(pad_length), SEEK_CUR)
+                != 0) {
                 OP_LOG(OP_LOG_ERROR,
                        "Failed skipping PCAP enhanced packet block data %zu",
                        pad_length);
                 m_eof = true;
                 break;
             }
-            m_read_offset += pad_length;
+            m_read_offset += static_cast<ssize_t>(pad_length);
             block_remain -= pad_length;
         }
 
@@ -842,7 +843,8 @@ uint16_t capture_buffer_file_reader::read_packets(capture_packet* packets[],
             m_packets[i].hdr.dir =
                 static_cast<int>(options.flags.flags.get_direction());
         } else {
-            if (fseek(m_fp_read, block_remain, SEEK_CUR) != 0) {
+            if (fseek(m_fp_read, static_cast<long>(block_remain), SEEK_CUR)
+                != 0) {
                 OP_LOG(OP_LOG_ERROR,
                        "Failed skipping PCAP enhanced packet block remaining "
                        "data %zu",

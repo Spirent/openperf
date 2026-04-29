@@ -92,7 +92,7 @@ int64_t packet_stack_memp_pool_avail(const struct memp_desc* mem)
             }
         }
     } else {
-        total_avail = mem->stats->avail;
+        total_avail = static_cast<int64_t>(mem->stats->avail);
     }
 
     return (total_avail);
@@ -103,7 +103,9 @@ int64_t packet_stack_memp_pool_max(const struct memp_desc* mem)
     auto cursor = std::find(std::begin(lwip_pbuf_pool_names),
                             std::end(lwip_pbuf_pool_names),
                             mem->desc);
-    return (cursor == std::end(lwip_pbuf_pool_names) ? mem->stats->max : -1);
+    return (cursor == std::end(lwip_pbuf_pool_names)
+                ? static_cast<int64_t>(mem->stats->max)
+                : -1);
 }
 
 int64_t packet_stack_memp_pool_used(const struct memp_desc* mem)
@@ -123,7 +125,7 @@ int64_t packet_stack_memp_pool_used(const struct memp_desc* mem)
             }
         }
     } else {
-        total_used = mem->stats->used;
+        total_used = static_cast<int64_t>(mem->stats->used);
     }
 
     return (total_used);

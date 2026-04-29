@@ -484,21 +484,29 @@ int client::fcntl(int s, int cmd, ...)
 
     auto& [id, channel] = *result;
 
-    va_list ap;
-    va_start(ap, cmd);
-
     int to_return = 0;
+
+    /* If va_start() is used, va_end() must be called before any return
+     * statement to avoid undefined behavior.
+     * clang was falsely reporting errors about uninitialized va_list
+     * variables, so the lint check was disabled.
+     */
 
     switch (cmd) {
     case F_GETFL:
         to_return = channel.flags() & supported_socket_flags;
         break;
-    case F_SETFL:
+    case F_SETFL: {
+        va_list ap;
+        va_start(ap, cmd);
+        int flags = va_arg(ap, int);  // NOLINT(clang-analyzer-valist.Uninitialized)
+        va_end(ap);
         // Only allow changing the supported socket flag bits
         to_return =
-            channel.flags((va_arg(ap, int) & supported_socket_flags)
+            channel.flags((flags & supported_socket_flags)
                           | (channel.flags() & ~supported_socket_flags));
         break;
+    }
     case F_GETFD:
     case F_GETOWN:
         to_return = ::fcntl(s, cmd);
@@ -506,14 +514,23 @@ int client::fcntl(int s, int cmd, ...)
     case F_DUPFD:
     case F_DUPFD_CLOEXEC:
     case F_SETFD:
-    case F_SETOWN:
-        to_return = ::fcntl(s, cmd, va_arg(ap, int));
+    case F_SETOWN: {
+        va_list ap;
+        va_start(ap, cmd);
+        int arg = va_arg(ap, int);  // NOLINT(clang-analyzer-valist.Uninitialized)
+        va_end(ap);
+        to_return = ::fcntl(s, cmd, arg);
         break;
-    default:
-        to_return = ::fcntl(s, cmd, va_arg(ap, void*));
     }
-
-    va_end(ap);
+    default: {
+        va_list ap;
+        va_start(ap, cmd);
+        void* arg = va_arg(ap, void*);  // NOLINT(clang-analyzer-valist.Uninitialized)
+        va_end(ap);
+        to_return = ::fcntl(s, cmd, arg);
+        break;
+    }
+    }
     return (to_return);
 }
 
@@ -529,23 +546,34 @@ int client::ioctl(int s, unsigned long req, ...)
 
     auto& [id, channel] = *result;
 
-    va_list ap;
-    va_start(ap, req);
+    /* If va_start() is used, va_end() must be called before any return
+     * statement to avoid undefined behavior.
+     * clang was falsely reporting errors about uninitialized va_list
+     * variables, so the lint check was disabled.
+     */
 
     if (req == FIONBIO) {
-        auto enable = va_arg(ap, int);
+        va_list ap;
+        va_start(ap, req);
+        int* enable_ptr = va_arg(ap, int*);  // NOLINT(clang-analyzer-valist.Uninitialized)
         va_end(ap);
+        // For FIONBIO, argument is pointer to int
+        auto enable = *enable_ptr;
         if (enable)
             return channel.flags(channel.flags() | O_NONBLOCK);
         else
             return channel.flags(channel.flags() & ~O_NONBLOCK);
     }
 
+    va_list ap;
+    va_start(ap, req);
+    void* argp = va_arg(ap, void*);  // NOLINT(clang-analyzer-valist.Uninitialized)
+    va_end(ap);
+
     api::request_msg request =
-        api::request_ioctl{.id = id, .request = req, .argp = va_arg(ap, void*)};
+        api::request_ioctl{.id = id, .request = req, .argp = argp};
 
     auto reply = submit_request(m_sock.get(), m_sock_lock, request);
-    va_end(ap);
     if (!reply) {
         errno = reply.error();
         return (-1);
@@ -622,7 +650,7 @@ ssize_t client::recvmsg(int s, struct msghdr* message, int flags)
         return (-1);
     }
 
-    return (*recv_result);
+    return static_cast<ssize_t>(*recv_result);
 }
 
 /***
@@ -656,7 +684,7 @@ ssize_t client::sendmsg(int s, const struct msghdr* message, int flags)
         return (-1);
     }
 
-    return (*send_result);
+    return static_cast<ssize_t>(*send_result);
 }
 
 ssize_t client::sendto(int s,

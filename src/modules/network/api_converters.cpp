@@ -208,17 +208,24 @@ std::shared_ptr<swagger::NetworkGenerator>
 to_swagger(const model::generator& model)
 {
     auto network_config = std::make_shared<swagger::NetworkGeneratorConfig>();
-    network_config->setReadSize(model.config().read_size);
-    network_config->setReadsPerSec(model.config().reads_per_sec);
-    network_config->setWriteSize(model.config().write_size);
-    network_config->setWritesPerSec(model.config().writes_per_sec);
-    network_config->setConnections(model.config().connections);
-    network_config->setOpsPerConnection(model.config().ops_per_connection);
+    network_config->setReadSize(static_cast<int32_t>(model.config().read_size));
+    network_config->setReadsPerSec(
+        static_cast<int32_t>(model.config().reads_per_sec));
+    network_config->setWriteSize(
+        static_cast<int32_t>(model.config().write_size));
+    network_config->setWritesPerSec(
+        static_cast<int32_t>(model.config().writes_per_sec));
+    network_config->setConnections(
+        static_cast<int64_t>(model.config().connections));
+    network_config->setOpsPerConnection(
+        static_cast<int32_t>(model.config().ops_per_connection));
     if (model.config().ratio) {
         auto ratio =
             std::make_shared<swagger::NetworkGeneratorReadWriteRatio>();
-        ratio->setReads(model.config().ratio.value().reads);
-        ratio->setWrites(model.config().ratio.value().writes);
+        ratio->setReads(
+            static_cast<int32_t>(model.config().ratio.value().reads));
+        ratio->setWrites(
+            static_cast<int32_t>(model.config().ratio.value().writes));
         network_config->setRatio(ratio);
     }
 
@@ -242,14 +249,14 @@ swagger::NetworkGeneratorStats
 to_swagger(const model::generator_result::load_stat_t& stat)
 {
     swagger::NetworkGeneratorStats model;
-    model.setBytesActual(stat.bytes_actual);
-    model.setBytesTarget(stat.bytes_target);
+    model.setBytesActual(static_cast<int64_t>(stat.bytes_actual));
+    model.setBytesTarget(static_cast<int64_t>(stat.bytes_target));
     model.setLatencyTotal(
         std::chrono::duration_cast<std::chrono::nanoseconds>(stat.latency)
             .count());
-    model.setOpsActual(stat.ops_actual);
-    model.setOpsTarget(stat.ops_target);
-    model.setIoErrors(stat.io_errors);
+    model.setOpsActual(static_cast<int64_t>(stat.ops_actual));
+    model.setOpsTarget(static_cast<int64_t>(stat.ops_target));
+    model.setIoErrors(static_cast<int64_t>(stat.io_errors));
 
     if (stat.latency_max.has_value()) {
         model.setLatencyMax(
@@ -272,10 +279,10 @@ swagger::NetworkGeneratorConnectionStats
 to_swagger(const model::generator_result::conn_stat_t& stat)
 {
     swagger::NetworkGeneratorConnectionStats model;
-    model.setAttempted(stat.attempted);
-    model.setSuccessful(stat.successful);
-    model.setClosed(stat.closed);
-    model.setErrors(stat.errors);
+    model.setAttempted(static_cast<int64_t>(stat.attempted));
+    model.setSuccessful(static_cast<int64_t>(stat.successful));
+    model.setClosed(static_cast<int64_t>(stat.closed));
+    model.setErrors(static_cast<int64_t>(stat.errors));
 
     return model;
 }
@@ -309,11 +316,11 @@ std::shared_ptr<swagger::NetworkServer> to_swagger(const model::server& model)
 {
     auto mstat = model.stat();
     auto stats = std::make_shared<swagger::NetworkServerStats>();
-    stats->setBytesReceived(mstat.bytes_received);
-    stats->setBytesSent(mstat.bytes_sent);
-    stats->setConnections(mstat.connections);
-    stats->setClosed(mstat.closed);
-    stats->setErrors(mstat.errors);
+    stats->setBytesReceived(static_cast<int64_t>(mstat.bytes_received));
+    stats->setBytesSent(static_cast<int64_t>(mstat.bytes_sent));
+    stats->setConnections(static_cast<int64_t>(mstat.connections));
+    stats->setClosed(static_cast<int64_t>(mstat.closed));
+    stats->setErrors(static_cast<int64_t>(mstat.errors));
 
     auto server = std::make_shared<swagger::NetworkServer>();
     server->setId(model.id());

@@ -170,7 +170,10 @@ start_ipv6_next_hop_probe(netif* intf,
     case ERR_RTE:
         // no route found. not an error but don't populate anything
         // further.
-        nd_result.neighbor_cache_offset = result;
+        // clang falsely reports an error suggesting casting to unsigned char
+        // which is not correct here.
+        // NOLINTNEXTLINE(bugprone-signed-char-misuse)
+        nd_result.neighbor_cache_offset = static_cast<int>(result);
         return ERR_OK;
     case ERR_MEM:
         // could not allocate memory neighbor or destination cache.
@@ -194,7 +197,10 @@ start_ipv6_next_hop_probe(netif* intf,
 
     // Keep track of where in the neighbor/destination cache
     // this entry is at.
-    nd_result.neighbor_cache_offset = result;
+    // clang falsely reports an error suggesting casting to unsigned char
+    // which is not correct here.
+    // NOLINTNEXTLINE(bugprone-signed-char-misuse)
+    nd_result.neighbor_cache_offset = static_cast<int>(result);
 
     nd_result.next_hop_address =
         std::get<libpacket::type::ipv6_address>(*neighbor_entry);
@@ -420,6 +426,7 @@ static void check_nd_cache(check_learning_params& slp)
             // Is this entry already resolved?
             if (ipv6_result.second.next_hop_mac.has_value()) { return; }
 
+            // NOLINTBEGIN(bugprone-branch-clone)
             switch (ipv6_result.second.neighbor_cache_offset) {
             case ERR_RTE:
                 // Stack indicated no route to destination.
@@ -431,7 +438,8 @@ static void check_nd_cache(check_learning_params& slp)
                 return;
             default:
                 [[fallthrough]];
-            };
+            }
+            // NOLINTEND(bugprone-branch-clone)
 
             auto neighbor_entry =
                 get_nd_cache_entry(ipv6_result.second.neighbor_cache_offset);

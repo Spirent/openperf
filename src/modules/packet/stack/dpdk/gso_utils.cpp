@@ -337,6 +337,7 @@ int packet_stack_gso_segment_split(struct tcp_pcb* pcb,
                  seg->p->tot_len - seg->len));
 
     uint16_t seg_header_length = seg->p->tot_len - seg->len;
+    // NOLINTNEXTLINE(bugprone-branch-clone)
     uint16_t tcp_header_length = TCP_HLEN + LWIP_TCP_OPT_LENGTH(seg->flags);
 
     LWIP_ASSERT("zero length header?", seg_header_length);
@@ -363,7 +364,7 @@ int packet_stack_gso_segment_split(struct tcp_pcb* pcb,
     }
 
     /* Copy the original TCP header to the new chain */
-    auto err = pbuf_header(next_pbuf, tcp_header_length);
+    auto err = pbuf_header(next_pbuf, static_cast<s16_t>(tcp_header_length));
     LWIP_ASSERT("appending header failed",
                 err == ERR_OK); /* can never fail... */
     packet_stack_gso_pbuf_copy(next_pbuf, 0, seg->tcphdr, tcp_header_length);

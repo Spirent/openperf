@@ -58,17 +58,20 @@ err_t lwip_tcp_event(void* arg,
 
     switch (event) {
     case LWIP_EVENT_ACCEPT:
-        return (socket->do_lwip_accept(pcb, err));
+        return static_cast<err_t>(
+            socket->do_lwip_accept(pcb, static_cast<int>(err)));
     case LWIP_EVENT_SENT:
-        return (socket->do_lwip_sent(size));
+        return static_cast<err_t>(socket->do_lwip_sent(size));
     case LWIP_EVENT_RECV:
-        return (socket->do_lwip_recv(p, err));
+        return static_cast<err_t>(
+            socket->do_lwip_recv(p, static_cast<int>(err)));
     case LWIP_EVENT_CONNECTED:
-        return (socket->do_lwip_connected(err));
+        return static_cast<err_t>(
+            socket->do_lwip_connected(static_cast<int>(err)));
     case LWIP_EVENT_POLL:
-        return (socket->do_lwip_poll());
+        return static_cast<err_t>(socket->do_lwip_poll());
     case LWIP_EVENT_ERR:
-        return (socket->do_lwip_error(err));
+        return static_cast<err_t>(socket->do_lwip_error(static_cast<int>(err)));
     default:
         OP_LOG(OP_LOG_WARNING, "Unhandled tcp socket event: %d\n", event);
         return (ERR_VAL);

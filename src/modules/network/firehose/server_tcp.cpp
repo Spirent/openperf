@@ -356,7 +356,8 @@ void tcp_worker::join()
 void tcp_worker::run()
 {
     struct op_event_callbacks ctrl_callbacks = {
-        .on_read = [](const op_event_data* data, void* arg) -> int {
+        .on_read = []([[maybe_unused]] const op_event_data* data,
+                      void* arg) -> int {
             auto w = reinterpret_cast<tcp_worker*>(arg);
             if (!w) return -1;
             return w->do_control();
@@ -364,7 +365,8 @@ void tcp_worker::run()
     m_loop->add(m_ctrl_sub.get(), &ctrl_callbacks, this);
 
     struct op_event_callbacks accept_callbacks = {
-        .on_read = [](const op_event_data* data, void* arg) -> int {
+        .on_read = []([[maybe_unused]] const op_event_data* data,
+                      void* arg) -> int {
             auto w = reinterpret_cast<tcp_worker*>(arg);
             if (!w) return -1;
             return w->do_accept();
@@ -482,7 +484,7 @@ int tcp_worker::do_read(tcp_connection_t& conn)
         if (conn.request.size()) {
             /* put the cursor back in the right spot */
             recv_cursor -= conn.request.size();
-            recv_or_err += conn.request.size();
+            recv_or_err += static_cast<ssize_t>(conn.request.size());
             conn.request.clear();
         }
 

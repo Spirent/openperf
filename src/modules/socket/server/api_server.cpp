@@ -136,7 +136,7 @@ static ssize_t log_ptrace_error(void*, const char* buf, size_t size)
            static_cast<int>(size),
            buf);
 
-    return (size);
+    return static_cast<ssize_t>(size);
 }
 
 server::server(void* context)
