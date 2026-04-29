@@ -126,4 +126,4 @@ private:
 
 } // namespace openperf::block::worker
 
-#endif // _OP_BLOCK_GENERATOR_WORKER_HPP_
+#endif // _OP_BLOCK_GENERATOR_TASK_HPP_

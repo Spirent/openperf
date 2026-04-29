@@ -33,10 +33,19 @@ int virtual_device::write_header(int fd, uint64_t file_size)
     return (pwrite(fd, &header, sizeof(header), 0) == sizeof(header) ? 0 : -1);
 }
 
-constexpr size_t SCRUB_BUFFER_SIZE = 128 * 1024; /* 128KB */
+constexpr size_t SCRUB_BUFFER_SIZE =
+    static_cast<const size_t>(128 * 1024); /* 128KB */
 void virtual_device::scrub_worker(int fd, size_t header_size, size_t file_size)
 {
-    ftruncate(fd, file_size);
+    if (file_size > std::numeric_limits<off_t>::max()) {
+        OP_LOG(OP_LOG_ERROR,
+               "File size is too large to scrub: %zu > %zu bytes\n",
+               file_size,
+               static_cast<size_t>(std::numeric_limits<off_t>::max()));
+        return;
+    }
+
+    ftruncate(fd, static_cast<off_t>(file_size));
     write_header(fd, file_size);
 
     auto current = header_size;
@@ -46,8 +55,12 @@ void virtual_device::scrub_worker(int fd, size_t header_size, size_t file_size)
         auto file_offset = (current / page_size) * page_size;
         auto mmap_len = buf_len + current - file_offset;
 
-        void* buf =
-            mmap(nullptr, mmap_len, PROT_WRITE, MAP_SHARED, fd, file_offset);
+        void* buf = mmap(nullptr,
+                         mmap_len,
+                         PROT_WRITE,
+                         MAP_SHARED,
+                         fd,
+                         static_cast<off_t>(file_offset));
         if (buf == MAP_FAILED) {
             OP_LOG(OP_LOG_ERROR,
                    "Cannot write scrub to vdev: %s\n",
@@ -73,13 +86,13 @@ tl::expected<void, std::string> virtual_device::queue_scrub()
     if (fd < 0) { return tl::make_unexpected("Wrong file descriptor"); }
 
     struct virtual_device_header header = {};
-    int read_or_err = pread(fd, &header, sizeof(header), 0);
+    auto read_or_err = pread(fd, &header, sizeof(header), 0);
 
     if (read_or_err == -1) {
         ::close(fd);
         return tl::make_unexpected("Cannot read header: "
                                    + std::string(strerror(errno)));
-    } else if (read_or_err >= (int)sizeof(header)
+    } else if (read_or_err >= static_cast<ssize_t>(sizeof(header))
                && strncmp(header.tag,
                           virtual_device_header_tag.data(),
                           virtual_device_header_tag.length())

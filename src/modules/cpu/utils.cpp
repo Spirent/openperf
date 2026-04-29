@@ -157,7 +157,7 @@ cpu_info_ptr get_cpu_info()
 {
     auto info = std::make_unique<swagger::v1::model::CpuInfoResult>();
 
-    info->setCores(op_cpu_count());
+    info->setCores(static_cast<int32_t>(op_cpu_count()));
     info->setCacheLineSize(op_cpu_l1_cache_line_size());
     info->setArchitecture(std::string(op_cpu_architecture()));
 

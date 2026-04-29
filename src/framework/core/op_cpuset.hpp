@@ -60,10 +60,10 @@ public:
     bool operator!=(const cpuset& other) const noexcept;
     cpuset& operator&=(const cpuset& other) noexcept;
     cpuset& operator|=(const cpuset& other) noexcept;
-    cpuset operator~() const noexcept;
+    cpuset operator~() const;
 
-    friend cpuset operator&(const cpuset& lhs, const cpuset& rhs) noexcept;
-    friend cpuset operator|(const cpuset& lhs, const cpuset& rhs) noexcept;
+    friend cpuset operator&(const cpuset& lhs, const cpuset& rhs);
+    friend cpuset operator|(const cpuset& lhs, const cpuset& rhs);
 };
 
 int cpuset_set_affinity(const cpuset& set);

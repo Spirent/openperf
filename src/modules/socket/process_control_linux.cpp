@@ -31,7 +31,7 @@ static int read_ptrace_scope(FILE* output)
     }
 
     auto input = std::string(1, '\0');
-    f.read(input.data(), input.size());
+    f.read(input.data(), static_cast<std::streamsize>(input.size()));
 
     return (std::stoi(input));
 }
@@ -86,7 +86,7 @@ get_caps(FILE* output, cap_value_t cap_values[], size_t nb_cap_values)
     auto nb_unset_flags = std::distance(cursor, cap_values + nb_cap_values);
     if (nb_unset_flags) {
         if (auto error = cap_set_flag(
-                caps.get(), CAP_EFFECTIVE, nb_unset_flags, cursor, CAP_SET);
+                caps.get(), CAP_EFFECTIVE, static_cast<int>(nb_unset_flags), cursor, CAP_SET);
             error != 0) {
             fprintf(output,
                     "Could not set effective capability flag for %s: %s\n",

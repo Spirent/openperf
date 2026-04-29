@@ -26,6 +26,7 @@ void yaml_json_emitter::OnScalar(const Mark& mark __attribute__((unused)),
     } else if ((m_state_stack.top() == State::WaitingForKey)
                || (m_state_stack.top() == State::WaitingForSequenceEntry)) {
         // Tag of '!' means yaml-cpp read this node as a quoted string.
+        // NOLINTNEXTLINE(bugprone-branch-clone)
         if (tag == "!") {
             m_emitter << YAML::DoubleQuoted << value;
         } else if (value == "true" || value == "false") {

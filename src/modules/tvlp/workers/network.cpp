@@ -29,9 +29,9 @@ network_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
 
     // Apply Load Scale to generator configuration
     config->setReadsPerSec(
-        static_cast<uint32_t>(config->getReadsPerSec() * load_scale));
+        static_cast<int32_t>(config->getReadsPerSec() * load_scale));
     config->setWritesPerSec(
-        static_cast<uint32_t>(config->getWritesPerSec() * load_scale));
+        static_cast<int32_t>(config->getWritesPerSec() * load_scale));
 
     swagger::NetworkGenerator gen;
     gen.setConfig(config);
@@ -146,6 +146,8 @@ network_tvlp_worker_t::send_toggle(
         return tl::make_unexpected(to_string(*error->info));
     }
     return tl::make_unexpected("Unexpected error");
+    // clang falsely reports memory leaks in this function
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
 }
 
 } // namespace openperf::tvlp::internal::worker

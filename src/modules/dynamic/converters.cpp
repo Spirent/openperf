@@ -126,8 +126,8 @@ model::ThresholdResult to_swagger(const results::threshold& r)
     auto& threshold = r.threshold;
     result.setValue(threshold.value());
     result.setCondition(std::string(to_string(threshold.condition())));
-    result.setConditionTrue(threshold.trues());
-    result.setConditionFalse(threshold.falses());
+    result.setConditionTrue(static_cast<int32_t>(threshold.trues()));
+    result.setConditionFalse(static_cast<int32_t>(threshold.falses()));
 
     return result;
 }
@@ -142,7 +142,7 @@ model::TDigestResult to_swagger(const results::tdigest& r)
 
     if (r.argument.function == argument_t::DXDY) result.setStatY(r.argument.y);
 
-    result.setCompression(r.compression);
+    result.setCompression(static_cast<int32_t>(r.compression));
 
     auto centroids = r.centroids;
     std::transform(centroids.begin(),

@@ -60,6 +60,7 @@ free_list::free_list(uintptr_t heap_base,
     , m_upper(heap_base + heap_size)
 {
     RB_INIT(&m_heap);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto node = reinterpret_cast<impl::heap_node*>(heap_base);
     node->size = heap_size;
     RB_INSERT(heap, &m_heap, node);
@@ -86,7 +87,7 @@ void* free_list::reserve(size_t size)
      */
     if (node->size > size + sizeof(impl::heap_node)) {
         auto extra = reinterpret_cast<impl::heap_node*>(
-            reinterpret_cast<uintptr_t>(node) + size);
+            reinterpret_cast<char*>(node) + size);
         extra->size = node->size - size;
         RB_INSERT(heap, &m_heap, extra);
     }
@@ -96,7 +97,7 @@ void* free_list::reserve(size_t size)
     tag->size = size;
     tag->magic = magic_key;
 
-    return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(tag)
+    return reinterpret_cast<void*>(reinterpret_cast<char*>(tag)
                                    + sizeof(impl::heap_tag));
 }
 
@@ -109,8 +110,8 @@ void free_list::release(void* ptr)
     }
 
     /* Check tag & magic key */
-    auto tag = reinterpret_cast<impl::heap_tag*>(
-        reinterpret_cast<uintptr_t>(ptr) - sizeof(impl::heap_tag));
+    auto tag = reinterpret_cast<impl::heap_tag*>(reinterpret_cast<char*>(ptr)
+                                                 - sizeof(impl::heap_tag));
     if (tag->magic != magic_key) {
         throw std::runtime_error("memory corruption for ptr");
     }

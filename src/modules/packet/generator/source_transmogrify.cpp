@@ -60,8 +60,8 @@ static void populate_flow_counters(
     std::shared_ptr<swagger::v1::model::PacketGeneratorFlowCounters>& dst)
 {
     const auto& src = result[flow_idx];
-    dst->setOctetsActual(src.octet);
-    dst->setPacketsActual(src.packet);
+    dst->setOctetsActual(static_cast<int64_t>(src.octet));
+    dst->setPacketsActual(static_cast<int64_t>(src.packet));
 
     if (src.packet) {
         /* Calculate expected packets/octets */
@@ -76,8 +76,8 @@ static void populate_flow_counters(
         auto exp_packets =
             exp_seq_packets * sequence.flow_packets(flow_idx) / sequence.size();
 
-        dst->setOctetsIntended(exp_octets);
-        dst->setPacketsIntended(exp_packets);
+        dst->setOctetsIntended(static_cast<int64_t>(exp_octets));
+        dst->setPacketsIntended(static_cast<int64_t>(exp_packets));
         dst->setTimestampFirst(to_rfc3339(src.first_));
         dst->setTimestampLast(to_rfc3339(src.last_));
     }
@@ -89,8 +89,8 @@ static void populate_counters(
     api::tx_rate rate,
     const traffic::sequence& sequence)
 {
-    dst->setOctetsActual(src.octet);
-    dst->setPacketsActual(src.packet);
+    dst->setOctetsActual(static_cast<int64_t>(src.octet));
+    dst->setPacketsActual(static_cast<int64_t>(src.packet));
 
     if (src.packet) {
         /**
@@ -103,8 +103,8 @@ static void populate_counters(
                 src.last_ - src.first_);
         auto exp_octets = sequence.sum_packet_lengths(exp_packets);
 
-        dst->setOctetsIntended(exp_octets);
-        dst->setPacketsIntended(exp_packets);
+        dst->setOctetsIntended(static_cast<int64_t>(exp_octets));
+        dst->setPacketsIntended(static_cast<int64_t>(exp_packets));
         dst->setTimestampFirst(to_rfc3339(src.first_));
         dst->setTimestampLast(to_rfc3339(src.last_));
     }
@@ -118,7 +118,8 @@ generator_ptr to_swagger(const source& src)
     dst->setTargetId(src.target());
     dst->setActive(src.active());
     dst->setConfig(src.config());
-    dst->getConfig()->setFlowCount(src.sequence().flow_count());
+    dst->getConfig()->setFlowCount(
+        static_cast<int64_t>(src.sequence().flow_count()));
 
     dst->setLearning(to_string(src.maybe_learning_resolved()));
 
@@ -153,7 +154,8 @@ static void populate_remainder(
     } else if (src->framesIsSet()) {
         auto tx_limit = result.parent().tx_limit().value();
         dst->setUnit(api::to_duration_string(api::duration_type::frames));
-        dst->setValue(tx_limit > sum.packet ? tx_limit - sum.packet : 0);
+        dst->setValue(static_cast<int32_t>(
+            tx_limit > sum.packet ? tx_limit - sum.packet : 0));
     } else {
         assert(src->timeIsSet());
 
@@ -162,11 +164,11 @@ static void populate_remainder(
         auto total_time = get_traffic_duration(src->getTime());
 
         dst->setUnit(api::to_duration_string(api::duration_type::seconds));
-        dst->setValue(total_time > run_time
-                          ? std::chrono::duration_cast<std::chrono::seconds>(
-                                total_time - run_time)
-                                .count()
-                          : 0);
+        dst->setValue(total_time > run_time ? static_cast<int32_t>(
+                          std::chrono::duration_cast<std::chrono::seconds>(
+                              total_time - run_time)
+                              .count())
+                                            : 0);
     }
 }
 
@@ -186,8 +188,10 @@ generator_result_ptr to_swagger(const core::uuid& id,
                       flow_counters,
                       result.parent().packet_rate(),
                       result.parent().sequence());
-    flow_counters->setOctetsDropped(result.dropped_octets());
-    flow_counters->setPacketsDropped(result.dropped_packets());
+    flow_counters->setOctetsDropped(
+        static_cast<int64_t>(result.dropped_octets()));
+    flow_counters->setPacketsDropped(
+        static_cast<int64_t>(result.dropped_packets()));
     dst->setFlowCounters(flow_counters);
 
     auto protocol_counters =

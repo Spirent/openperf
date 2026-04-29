@@ -163,14 +163,15 @@ std::string source::target() const { return (m_config.target); }
 std::string source::target_port() const
 {
     std::string to_return;
-    std::visit(
-        utils::overloaded_visitor(
-            [](const std::monostate&) { /* no-op */ },
-            [&](const interface_source& intf_src) {
-                to_return = intf_src.target_port();
-            },
-            [&](const port_source& port_src) { to_return = m_config.target; }),
-        m_helper);
+    std::visit(utils::overloaded_visitor(
+                   [](const std::monostate&) { /* no-op */ },
+                   [&](const interface_source& intf_src) {
+                       to_return = intf_src.target_port();
+                   },
+                   [&]([[maybe_unused]] const port_source& port_src) {
+                       to_return = m_config.target;
+                   }),
+               m_helper);
 
     return (to_return);
 }
@@ -435,8 +436,12 @@ bool source::supports_learning() const
     return (
         std::visit(utils::overloaded_visitor(
                        [](const std::monostate&) { return (false); },
-                       [](const interface_source& intf_src) { return (true); },
-                       [](const port_source& port_src) { return (false); }),
+                       []([[maybe_unused]] const interface_source& intf_src) {
+                           return (true);
+                       },
+                       []([[maybe_unused]] const port_source& port_src) {
+                           return (false);
+                       }),
                    m_helper));
 }
 

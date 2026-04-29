@@ -102,7 +102,7 @@ constexpr auto vector(T&& a, U&& b) -> std::array<remove_cvref_t<T>, 2>
 class worker : public finite_state_machine<worker, state, command_msg>
 {
     void* m_context;
-    result* m_result;
+    result* m_result = nullptr;
     double m_ratio;
     double m_ref_ratio;
     std::vector<target_op> m_ops;
@@ -130,7 +130,6 @@ class worker : public finite_state_machine<worker, state, command_msg>
 public:
     worker(void* context, const core_config& config, uint8_t id)
         : m_context(context)
-        , m_result(nullptr)
         , m_ratio(config.utilization / 100.)
         , m_ref_ratio(m_ratio)
         , m_id(id)

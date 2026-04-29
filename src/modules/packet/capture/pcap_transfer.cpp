@@ -157,11 +157,7 @@ public:
         , m_writer(std::make_unique<pcap_buffer_writer>())
         , m_packet_start(packet_start)
         , m_packet_end(packet_end)
-        , m_packet_index(0)
-        , m_buffer_sent(0)
-        , m_total_bytes_sent(0)
         , m_chunked(chunked)
-        , m_error(false)
     {}
 
     ~pcap_thread_transfer_context() override
@@ -460,13 +456,13 @@ private:
     Pistache::Tcp::Transport* m_transport;
     std::shared_ptr<Pistache::Tcp::Peer> m_peer;
     std::unique_ptr<pcap_buffer_writer> m_writer;
-    uint64_t m_packet_start;
-    uint64_t m_packet_end;
-    uint64_t m_packet_index;
-    size_t m_buffer_sent;
-    size_t m_total_bytes_sent;
-    bool m_chunked;
-    bool m_error;
+    uint64_t m_packet_start = 0;
+    uint64_t m_packet_end = 0;
+    uint64_t m_packet_index = 0;
+    size_t m_buffer_sent = 0;
+    size_t m_total_bytes_sent = 0;
+    bool m_chunked = false;
+    bool m_error = false;
 };
 
 class pcap_async_transfer_context final : public pcap_transfer_context
@@ -482,11 +478,7 @@ public:
         , m_writer(std::make_unique<pcap_buffer_writer>())
         , m_packet_start(packet_start)
         , m_packet_end(packet_end)
-        , m_packet_index(0)
-        , m_total_bytes_sent(0)
         , m_chunked(chunked)
-        , m_error(false)
-        , m_wrote_trailer(false)
     {}
 
     ~pcap_async_transfer_context() override = default;
@@ -654,13 +646,13 @@ private:
     std::shared_ptr<Pistache::Tcp::Peer> m_peer;
     std::unique_ptr<pcap_buffer_writer> m_writer;
     std::unique_ptr<burst_reader_type> m_burst;
-    uint64_t m_packet_start;
-    uint64_t m_packet_end;
-    uint64_t m_packet_index;
-    ssize_t m_total_bytes_sent;
-    bool m_chunked;
-    bool m_error;
-    bool m_wrote_trailer;
+    uint64_t m_packet_start = 0;
+    uint64_t m_packet_end = 0;
+    uint64_t m_packet_index = 0;
+    ssize_t m_total_bytes_sent = 0;
+    bool m_chunked = false;
+    bool m_error = false;
+    bool m_wrote_trailer = false;
 };
 
 std::unique_ptr<transfer_context>

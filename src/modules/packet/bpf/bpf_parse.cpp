@@ -84,7 +84,7 @@ std::string to_string(unary_logical_op op)
     }
 }
 
-bool expr::has_special() const
+bool expr::has_special() const // NOLINT(misc-no-recursion)
 {
     if (is_special()) return true;
 
@@ -94,7 +94,7 @@ bool expr::has_special() const
     return false;
 }
 
-bool expr::has_all_special() const
+bool expr::has_all_special() const // NOLINT(misc-no-recursion)
 {
     if (is_special()) return true;
 
@@ -223,7 +223,6 @@ public:
 
     tokenizer(std::string_view str)
         : m_str(str)
-        , m_offset(0)
     {}
 
     const token& get_next()
@@ -299,7 +298,7 @@ public:
 
 private:
     std::string m_str;
-    size_t m_offset;
+    size_t m_offset = 0;
     token m_token;
 };
 
@@ -365,7 +364,6 @@ class parser
 public:
     parser(tokenizer& tokenizer)
         : m_tokenizer(tokenizer)
-        , m_paren_level(0)
     {
         consume();
     }
@@ -373,7 +371,8 @@ public:
     std::unique_ptr<expr> parse() { return parse_logical_expr(); }
 
 private:
-    std::unique_ptr<expr> parse_logical_expr(bool unary = false)
+    std::unique_ptr<expr>
+    parse_logical_expr(bool unary = false) // NOLINT(misc-no-recursion)
     {
         std::optional<binary_logical_op> logical_op;
         std::unique_ptr<expr> accum_expr;
@@ -574,7 +573,7 @@ private:
         return std::make_unique<signature_match_expr>(stream_id);
     }
 
-    std::string parse_match_expr_term()
+    std::string parse_match_expr_term() // NOLINT(misc-no-recursion)
     {
         std::string term_str;
         bool done = false;
@@ -645,7 +644,7 @@ private:
 
     tokenizer& m_tokenizer;
     tokenizer::token m_token;
-    int m_paren_level;
+    int m_paren_level = 0;
 };
 
 std::unique_ptr<expr> bpf_parse_string(std::string_view str)
@@ -672,7 +671,8 @@ void expr_toggle_binary_op(binary_logical_expr& expr)
                                                   : binary_logical_op::AND;
 }
 
-std::unique_ptr<expr> expr_remove_double_not(std::unique_ptr<expr>&& ex)
+std::unique_ptr<expr>
+expr_remove_double_not(std::unique_ptr<expr>&& ex) // NOLINT(misc-no-recursion)
 {
     std::unique_ptr<expr> result = std::forward<std::unique_ptr<expr>>(ex);
     if (auto uexpr = dynamic_cast<unary_logical_expr*>(result.get())) {
@@ -695,7 +695,8 @@ std::unique_ptr<expr> expr_remove_double_not(std::unique_ptr<expr>&& ex)
     return result;
 }
 
-std::unique_ptr<expr> bpf_split_special(std::unique_ptr<expr>&& ex)
+std::unique_ptr<expr>
+bpf_split_special(std::unique_ptr<expr>&& ex) // NOLINT(misc-no-recursion)
 {
     std::unique_ptr<expr> result = std::forward<std::unique_ptr<expr>>(ex);
     constexpr auto split_err_str =

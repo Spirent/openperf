@@ -159,19 +159,19 @@ cpuset& cpuset::operator|=(const cpuset& other) noexcept
     return (*this);
 }
 
-cpuset cpuset::operator~() const noexcept
+cpuset cpuset::operator~() const
 {
     auto value = cpuset(*this);
     value.flip();
     return (value);
 }
 
-cpuset operator&(const cpuset& lhs, const cpuset& rhs) noexcept
+cpuset operator&(const cpuset& lhs, const cpuset& rhs)
 {
     return (cpuset(lhs) &= rhs);
 }
 
-cpuset operator|(const cpuset& lhs, const cpuset& rhs) noexcept
+cpuset operator|(const cpuset& lhs, const cpuset& rhs)
 {
     return (cpuset(lhs) |= rhs);
 }

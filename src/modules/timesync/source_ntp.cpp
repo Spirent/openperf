@@ -166,7 +166,7 @@ std::chrono::nanoseconds ntp_poll_delay(unsigned i,
     auto period = seconds(
         i < ntp_startup_packets ? std::pow(
             std::exp(std::log(max_period.count()) / ntp_startup_packets), i)
-                                : max_period.count());
+                                : static_cast<double>(max_period.count()));
 
     return (std::chrono::duration_cast<std::chrono::nanoseconds>(period));
 }

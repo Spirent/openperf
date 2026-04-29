@@ -68,6 +68,7 @@ void* decode_pcb_id(std::string_view id)
         pcb_addr <<= 8;
         pcb_addr |= u[i];
     }
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     return reinterpret_cast<void*>(pcb_addr);
 }
 
@@ -77,12 +78,12 @@ make_swagger_socket_stats(const socket::server::socket_pcb_stats& src)
     auto dst = std::make_unique<SocketStats>();
 
     if (src.id.pid != 0 || src.id.sid != 0) {
-        dst->setPid(src.id.pid);
-        dst->setSid(src.id.sid);
+        dst->setPid(static_cast<int32_t>(src.id.pid));
+        dst->setSid(static_cast<int32_t>(src.id.sid));
     }
     dst->setId(encode_pcb_id(src.pcb));
-    dst->setRxqBytes(src.channel_stats.rxq_len);
-    dst->setTxqBytes(src.channel_stats.txq_len);
+    dst->setRxqBytes(static_cast<int64_t>(src.channel_stats.rxq_len));
+    dst->setTxqBytes(static_cast<int64_t>(src.channel_stats.txq_len));
 
     const char* ip_str;
     char ip_buf[INET_ADDRSTRLEN];
@@ -91,7 +92,7 @@ make_swagger_socket_stats(const socket::server::socket_pcb_stats& src)
                    [&](const std::monostate&) { dst->setProtocol("raw"); },
                    [&](const socket::server::ip_pcb_stats& stats) {
                        dst->setProtocol("ip");
-                       dst->setIfIndex(stats.if_index);
+                       dst->setIfIndex(static_cast<int32_t>(stats.if_index));
                        ip_str = inet_ntop(stats.ip_address_family,
                                           stats.local_ip.data(),
                                           ip_buf,
@@ -109,7 +110,7 @@ make_swagger_socket_stats(const socket::server::socket_pcb_stats& src)
                    },
                    [&](const socket::server::tcp_pcb_stats& stats) {
                        dst->setProtocol("tcp");
-                       dst->setIfIndex(stats.if_index);
+                       dst->setIfIndex(static_cast<int32_t>(stats.if_index));
                        ip_str = inet_ntop(stats.ip_address_family,
                                           stats.local_ip.data(),
                                           ip_buf,
@@ -132,7 +133,7 @@ make_swagger_socket_stats(const socket::server::socket_pcb_stats& src)
                    },
                    [&](const socket::server::udp_pcb_stats& stats) {
                        dst->setProtocol("udp");
-                       dst->setIfIndex(stats.if_index);
+                       dst->setIfIndex(static_cast<int32_t>(stats.if_index));
                        ip_str = inet_ntop(stats.ip_address_family,
                                           stats.local_ip.data(),
                                           ip_buf,
@@ -152,7 +153,7 @@ make_swagger_socket_stats(const socket::server::socket_pcb_stats& src)
                    },
                    [&](const socket::server::raw_pcb_stats& stats) {
                        dst->setProtocol("raw");
-                       dst->setIfIndex(stats.if_index);
+                       dst->setIfIndex(static_cast<int32_t>(stats.if_index));
                        ip_str = inet_ntop(stats.ip_address_family,
                                           stats.local_ip.data(),
                                           ip_buf,
@@ -171,7 +172,7 @@ make_swagger_socket_stats(const socket::server::socket_pcb_stats& src)
                    },
                    [&](const socket::server::packet_pcb_stats& stats) {
                        dst->setProtocol("packet");
-                       dst->setIfIndex(stats.if_index);
+                       dst->setIfIndex(static_cast<int32_t>(stats.if_index));
                        dst->setProtocolId(stats.protocol);
                    }),
                src.pcb_stats);

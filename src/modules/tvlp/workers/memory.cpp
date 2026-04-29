@@ -33,10 +33,10 @@ memory_tvlp_worker_t::send_create(const model::tvlp_profile_t::entry& entry,
     config->fromJson(const_cast<nlohmann::json&>(entry.config));
 
     // Apply Load Scale to generator configuration
-    config->setReadsPerSec(
-        static_cast<int64_t>(config->getReadsPerSec() * load_scale));
-    config->setWritesPerSec(
-        static_cast<int64_t>(config->getWritesPerSec() * load_scale));
+    config->setReadsPerSec(static_cast<int64_t>(
+        static_cast<double>(config->getReadsPerSec()) * load_scale));
+    config->setWritesPerSec(static_cast<int64_t>(
+        static_cast<double>(config->getWritesPerSec()) * load_scale));
 
     auto gen = std::make_unique<swagger::MemoryGenerator>();
     gen->setConfig(config);

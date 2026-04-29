@@ -25,7 +25,7 @@ int dpdk_test_portpairs()
             op_packetio_dpdk_test_portpairs)
             .value_or(dpdk_test_mode() ? 1 : 0);
 
-    return (port_pairs);
+    return static_cast<int>(port_pairs);
 }
 
 bool dpdk_test_mode()

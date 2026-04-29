@@ -49,9 +49,9 @@ make_swagger_element_stats(const element_stats_data& src)
 {
     auto dst = std::make_shared<StackElementStats>();
 
-    dst->setUsed(src.used);
-    dst->setMax(src.max);
-    dst->setErrors(src.errors);
+    dst->setUsed(static_cast<int32_t>(src.used));
+    dst->setMax(static_cast<int32_t>(src.max));
+    dst->setErrors(static_cast<int32_t>(src.errors));
 
     return (dst);
 }

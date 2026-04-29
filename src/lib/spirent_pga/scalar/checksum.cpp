@@ -39,7 +39,8 @@ void checksum_ipv4_headers(const uint8_t* const ipv4_header_ptrs[],
                        sum += header->data[3];
                        sum += header->data[4];
 
-                       const int nb_words = header->data[0] & 0xf;
+                       const int nb_words =
+                           static_cast<int>(header->data[0] & 0xf);
                        if (nb_words > 5) {
                            for (int word = 5; word < nb_words; word++) {
                                sum += header->data[word];

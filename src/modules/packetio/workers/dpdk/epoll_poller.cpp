@@ -35,6 +35,7 @@ static constexpr uintptr_t ptr_mask = 0x00ffffffffffffff;
 
 void* to_epoll_ptr(task_ptr ptr)
 {
+    // NOLINTBEGIN(performance-no-int-to-ptr)
     static_assert(std::variant_size_v<task_ptr> < 255);
     auto tag_ptr_visitor = [](auto task) {
         auto idx = variant_index<task_ptr, decltype(task)>();
@@ -43,10 +44,12 @@ void* to_epoll_ptr(task_ptr ptr)
     };
 
     return (reinterpret_cast<void*>(std::visit(tag_ptr_visitor, ptr)));
+    // NOLINTEND(performance-no-int-to-ptr)
 }
 
 task_ptr to_task_ptr(void* ptr)
 {
+    // NOLINTBEGIN(performance-no-int-to-ptr)
     auto idx = reinterpret_cast<uintptr_t>(ptr) >> ptr_shift;
     switch (idx) {
     case variant_index<task_ptr, callback*>():
@@ -67,6 +70,7 @@ task_ptr to_task_ptr(void* ptr)
     default:
         throw std::runtime_error("Unhandled task_ptr variant; fix me!");
     }
+    // NOLINTEND(performance-no-int-to-ptr)
 }
 
 epoll_poller::epoll_poller() { m_events.reserve(max_events); }

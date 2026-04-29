@@ -135,7 +135,7 @@ to_swagger(const time_counter& src)
 
     dst->setId(std::string(src.id));
     dst->setName(std::string(src.name));
-    dst->setFrequency(src.frequency);
+    dst->setFrequency(static_cast<int64_t>(src.frequency));
     dst->setPriority(src.priority);
 
     return (dst);
@@ -157,10 +157,19 @@ to_swagger(const time_keeper_info& src)
     using TimeKeeperState = swagger::v1::model::TimeKeeperState;
     auto dst = std::make_shared<TimeKeeperState>();
 
-    if (src.freq) { dst->setFrequency(src.freq->count()); }
-    if (src.freq_error) { dst->setFrequencyError(*src.freq_error); }
-    if (src.local_freq) { dst->setLocalFrequency(src.local_freq->count()); }
-    if (src.local_freq) { dst->setLocalFrequencyError(*src.local_freq_error); }
+    if (src.freq) {
+        dst->setFrequency(static_cast<int64_t>(src.freq->count()));
+    }
+    if (src.freq_error) {
+        dst->setFrequencyError(static_cast<int64_t>(*src.freq_error));
+    }
+    if (src.local_freq) {
+        dst->setLocalFrequency(static_cast<int64_t>(src.local_freq->count()));
+    }
+    if (src.local_freq_error) {
+        dst->setLocalFrequencyError(
+            static_cast<int64_t>(*src.local_freq_error));
+    }
     dst->setOffset(to_double(src.offset));
     dst->setSynced(src.synced);
     if (src.theta) { dst->setTheta(to_double(*src.theta)); }

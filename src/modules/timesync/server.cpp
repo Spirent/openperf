@@ -154,7 +154,7 @@ static tl::expected<server::time_source, reply_error> make_time_source(
 
                 return (std::make_unique<source::ntp>(loop, clock, ai));
             },
-            [&](const time_source_system& sys)
+            [&]([[maybe_unused]] const time_source_system& sys)
                 -> tl::expected<server::time_source, reply_error> {
                 return (std::make_unique<source::system>(loop, clock));
             }),

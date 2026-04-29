@@ -146,15 +146,16 @@ int keeper::sync(const bintime& timestamp, counter::ticks t, counter::hz freq)
                        detail::to_seconds<double>(jump).count(),
                        static_cast<int>(slew * 1000000));
                 th_next->lerp.offset = detail::time_at(*th, t);
-                th_next->lerp.freq = counter::hz{
-                    static_cast<uint64_t>(freq.count() * (1 + slew))};
+                th_next->lerp.freq =
+                    counter::hz{static_cast<uint64_t>(std::round(
+                        static_cast<double>(freq.count()) * (1 + slew)))};
                 th_next->lerp.scalar =
                     ((1ULL << 63) / th_next->lerp.freq.count()) << 1;
 
                 /* Figure out how long it will take to make up the jump */
-                auto slew_ticks = static_cast<counter::ticks>(
-                    th_next->lerp.freq.count()
-                    * detail::to_seconds<double>(jump).count() / slew);
+                auto slew_ticks = static_cast<counter::ticks>(std::round(
+                    static_cast<double>(th_next->lerp.freq.count())
+                    * detail::to_seconds<double>(jump).count() / slew));
                 th_next->t_lerp = th_next->t_zero + slew_ticks;
 
                 /* Slewed time should be continuous */

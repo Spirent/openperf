@@ -173,8 +173,8 @@ static void accumulate_theta_hat(const timestamp& ts,
     auto e_i = to_rtt(ts) - min_rtt;
     auto t_i = to_bintime(ts.Tf, token.f_hat);
     auto delta_t = token.t - t_i;
-    auto e_i_t = e_i + (1e-7 * to_double(delta_t));
-    auto omega_i = exp(-1 * (pow(e_i_t / e, 2)));
+    auto e_i_t = static_cast<double>(e_i) + (1e-7 * to_double(delta_t));
+    auto omega_i = exp(-1 * (pow(e_i_t / static_cast<double>(e), 2)));
 
     if (omega_i > std::numeric_limits<decltype(omega_i)>::epsilon()) {
         auto theta_i = calculate_theta(ts, token.K, token.f_hat);

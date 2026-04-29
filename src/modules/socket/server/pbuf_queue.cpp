@@ -66,7 +66,7 @@ size_t pbuf_queue::clear(size_t length)
             assert(len > length);
 
             item.payload(reinterpret_cast<void*>(
-                reinterpret_cast<uintptr_t>(item.payload()) + length));
+                reinterpret_cast<char*>(item.payload()) + length));
             item.len(len - length);
 
             cleared += length;
@@ -76,10 +76,13 @@ size_t pbuf_queue::clear(size_t length)
         }
     }
 
-    std::for_each(begin(m_queue),
-                  begin(m_queue) + delete_idx,
-                  [](const pbuf_vec& vec) { pbuf_free(vec.pbuf()); });
-    m_queue.erase(begin(m_queue), begin(m_queue) + delete_idx);
+    std::for_each(
+        std::begin(m_queue),
+        std::next(std::begin(m_queue), static_cast<std::ptrdiff_t>(delete_idx)),
+        [](const pbuf_vec& vec) { pbuf_free(vec.pbuf()); });
+    m_queue.erase(std::begin(m_queue),
+                  std::next(std::begin(m_queue),
+                            static_cast<std::ptrdiff_t>(delete_idx)));
 
     m_length -= cleared;
 

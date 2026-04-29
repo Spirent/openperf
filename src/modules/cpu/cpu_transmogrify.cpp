@@ -21,7 +21,7 @@ from_swagger(const swagger::v1::model::CpuGeneratorSystemConfig& src)
 
     auto cores = config::core_mask();
     auto core_count = cores ? cores->count() : core::cpuset_online().count();
-    auto per_core_load = src.getUtilization() / core_count;
+    auto per_core_load = src.getUtilization() / static_cast<double>(core_count);
 
     assert(per_core_load <= 100.0);
 

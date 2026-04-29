@@ -19,7 +19,7 @@ serialized_msg serialize(command_msg&& msg)
                  [&](const stop_msg& msg) {
                      return (message::push(serialized, msg.endpoint));
                  },
-                 [&](const term_msg& msg) { return (0); },
+                 [&]([[maybe_unused]] const term_msg& msg) { return (0); },
                  [&](const update_msg& msg) -> int {
                      return (message::push(serialized, msg.load.read)
                              || message::push(serialized, msg.load.write));

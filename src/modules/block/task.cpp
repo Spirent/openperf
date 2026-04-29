@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <thread>
 #include <limits>
 
@@ -281,14 +282,15 @@ void block_task::config(const task_config_t& p_config)
 
 int32_t block_task::calculate_rate()
 {
-    if (!m_task_config.synchronizer) return m_task_config.ops_per_sec;
+    if (!m_task_config.synchronizer)
+        return static_cast<int32_t>(m_task_config.ops_per_sec);
 
     if (m_task_config.operation == task_operation::READ)
         m_task_config.synchronizer->reads_actual.store(
-            m_stat.ops_actual, std::memory_order_relaxed);
+            static_cast<int64_t>(m_stat.ops_actual), std::memory_order_relaxed);
     else
         m_task_config.synchronizer->writes_actual.store(
-            m_stat.ops_actual, std::memory_order_relaxed);
+            static_cast<int64_t>(m_stat.ops_actual), std::memory_order_relaxed);
 
     int64_t reads_actual = m_task_config.synchronizer->reads_actual.load(
         std::memory_order_relaxed);
@@ -300,20 +302,20 @@ int32_t block_task::calculate_rate()
     int32_t ratio_writes = m_task_config.synchronizer->ratio_writes.load(
         std::memory_order_relaxed);
 
+    int64_t ops_per_sec = m_task_config.ops_per_sec;
+
     switch (m_task_config.operation) {
     case task_operation::READ: {
-        auto reads_expected = writes_actual * ratio_reads / ratio_writes;
-        return std::min(
-            std::max(reads_expected + m_task_config.ops_per_sec - reads_actual,
-                     1L),
-            static_cast<long>(m_task_config.ops_per_sec));
+        int64_t reads_expected = writes_actual * ratio_reads / ratio_writes;
+        int64_t calc_ops = reads_expected + ops_per_sec - reads_actual;
+        return static_cast<int32_t>(
+            std::clamp(calc_ops, int64_t{1}, ops_per_sec));
     }
     case task_operation::WRITE: {
-        auto writes_expected = reads_actual * ratio_writes / ratio_reads;
-        return std::min(std::max(writes_expected + m_task_config.ops_per_sec
-                                     - writes_actual,
-                                 1L),
-                        static_cast<long>(m_task_config.ops_per_sec));
+        int64_t writes_expected = reads_actual * ratio_writes / ratio_reads;
+        int64_t calc_ops = writes_expected + ops_per_sec - writes_actual;
+        return static_cast<int32_t>(
+            std::clamp(calc_ops, int64_t{1}, ops_per_sec));
     }
     }
 }
@@ -360,7 +362,7 @@ int block_task::wait_for_aio_ops(std::vector<operation_state>& aio_ops,
                                  size_t nb_ops)
 {
     const aiocb* aiocblist[nb_ops];
-    size_t nb_cbs = 0;
+    int nb_cbs = 0;
     /*
      * Loop through all of our aio cb's and build a list with all pending
      * operations.

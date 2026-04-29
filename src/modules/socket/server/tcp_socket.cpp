@@ -329,7 +329,7 @@ int tcp_socket::do_lwip_poll()
 
 int tcp_socket::do_lwip_error(int err)
 {
-    m_channel->error(err_to_errno(err));
+    m_channel->error(err_to_errno(static_cast<err_t>(err)));
 
     /*
      * If we are in the connecting state, then we need to unblock
@@ -339,7 +339,7 @@ int tcp_socket::do_lwip_error(int err)
         m_channel->unblock();
     }
 
-    state(tcp_error{.value = err_to_errno(err)});
+    state(tcp_error{.value = err_to_errno(static_cast<err_t>(err))});
 
     /*
      * lwIP will "conveniently" free the pbuf for us before this callback is

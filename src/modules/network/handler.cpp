@@ -698,6 +698,8 @@ void handler::toggle_generators(const Rest::Request& request,
     } else {
         response.send(Http::Code::Internal_Server_Error);
     }
+    // clang falsely reports memory leaks in this function
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
 }
 
 void handler::list_generator_results(const Rest::Request&,

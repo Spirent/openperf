@@ -233,6 +233,7 @@ static YAML::Node make_data_node(std::string_view opt_data,
  * Recursive function to create a new YAML tree path by the given
  * path component strings of the range [pos, end).
  */
+// NOLINTNEXTLINE(misc-no-recursion)
 static YAML::Node create_param_by_path(path_iterator pos,
                                        const path_iterator end,
                                        std::string_view opt_data,
@@ -253,6 +254,7 @@ static YAML::Node create_param_by_path(path_iterator pos,
  * path exists the base case will assign the requested data value. Else,
  * function will switch over to creating a new path.
  */
+// NOLINTNEXTLINE(misc-no-recursion)
 static void update_param_by_path(YAML::Node& parent_node,
                                  path_iterator pos,
                                  const path_iterator end,
@@ -278,6 +280,7 @@ static void update_param_by_path(YAML::Node& parent_node,
     return;
 }
 
+// NOLINTNEXTLINE(misc-no-recursion)
 static std::optional<YAML::Node> get_param_by_path(
     const YAML::Node& parent_node, path_iterator pos, const path_iterator end)
 {
