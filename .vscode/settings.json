@@ -14,5 +14,6 @@
     ],
     "files.associations": {
         "string_view": "cpp"
-    }
+    },
+    "C_Cpp.default.cppStandard": "gnu++17"
 }
