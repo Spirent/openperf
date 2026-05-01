@@ -325,7 +325,7 @@ int coordinator::do_load_update()
             last.value() - m_prev_sum->last().value_or(sum.first().value());
         auto read_rate = (sum.read.ops_actual - m_prev_sum->read.ops_actual)
                          / to_seconds(delta_t).count();
-        auto write_rate = (sum.write.ops_actual = m_prev_sum->write.ops_actual)
+        auto write_rate = (sum.write.ops_actual - m_prev_sum->write.ops_actual)
                           / to_seconds(delta_t).count();
 
         /* Update PID controllers */
