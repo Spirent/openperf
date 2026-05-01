@@ -91,7 +91,7 @@ bool event_loop_adapter::add_callback(
 }
 
 void event_loop_adapter::del_callback(
-    event_loop::event_notifier notify) noexcept
+    event_loop::event_notifier notify)
 {
     /*
      * Since partition sorts the vector into [true items, false items], we need

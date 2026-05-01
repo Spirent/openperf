@@ -29,7 +29,7 @@ public:
                       event_loop::event_handler&& on_event,
                       std::optional<event_loop::delete_handler>&& on_delete,
                       std::any&& arg) noexcept;
-    void del_callback(event_loop::event_notifier notify) noexcept;
+    void del_callback(event_loop::event_notifier notify);
 
 private:
     using callback_ptr = std::unique_ptr<callback>;

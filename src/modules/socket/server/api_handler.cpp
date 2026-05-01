@@ -25,7 +25,17 @@ api_handler::~api_handler()
 {
     /* Remove any remaining fds in our loop that the client didn't explicitly
      * close. */
-    for (auto fd : m_server_fds) { m_loop.del_callback(fd); }
+    for (auto fd : m_server_fds) {
+        try {
+            m_loop.del_callback(fd);
+        }
+        catch (const std::exception& e) {
+            OP_LOG(OP_LOG_ERROR,
+                   "Error removing fd %d from event loop: %s\n",
+                   fd,
+                   e.what());
+        }
+    }
 }
 
 static ssize_t
