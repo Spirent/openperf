@@ -39,7 +39,7 @@ public:
                       event_notifier notify,
                       event_handler on_event,
                       delete_handler on_delete,
-                      std::any arg) noexcept
+                      std::any arg)
     {
         return (m_self->add_callback(name,
                                      notify,
@@ -48,7 +48,7 @@ public:
                                      std::move(arg)));
     }
 
-    void del_callback(event_notifier notify) noexcept
+    void del_callback(event_notifier notify)
     {
         return (m_self->del_callback(notify));
     }
@@ -70,8 +70,8 @@ private:
                                   event_notifier notify,
                                   event_handler on_event,
                                   std::optional<delete_handler> on_delete,
-                                  std::any arg) noexcept = 0;
-        virtual void del_callback(event_notifier notify) noexcept = 0;
+                                  std::any arg) = 0;
+        virtual void del_callback(event_notifier notify) = 0;
         virtual const std::type_info& type_info() const = 0;
     };
 
@@ -86,7 +86,7 @@ private:
                           event_notifier notify,
                           event_handler on_event,
                           std::optional<delete_handler> on_delete,
-                          std::any arg) noexcept override
+                          std::any arg) override
         {
             return (m_loop.add_callback(name,
                                         notify,
@@ -95,7 +95,7 @@ private:
                                         std::move(arg)));
         }
 
-        void del_callback(event_notifier notify) noexcept override
+        void del_callback(event_notifier notify) override
         {
             return (m_loop.del_callback(notify));
         }
