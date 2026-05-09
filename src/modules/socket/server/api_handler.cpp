@@ -28,8 +28,7 @@ api_handler::~api_handler()
     for (auto fd : m_server_fds) {
         try {
             m_loop.del_callback(fd);
-        }
-        catch (const std::exception& e) {
+        } catch (const std::exception& e) {
             OP_LOG(OP_LOG_ERROR,
                    "Error removing fd %d from event loop: %s\n",
                    fd,

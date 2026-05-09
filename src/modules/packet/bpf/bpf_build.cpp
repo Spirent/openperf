@@ -60,8 +60,10 @@ size_t bpf_find_ret(std::vector<bpf_insn>& bf_insns,
                     size_t offset,
                     bpf_branch_type branch)
 {
-    auto found =
-        std::find_if(std::next(bf_insns.begin(), static_cast<std::ptrdiff_t>(offset)), bf_insns.end(), [&](auto& ins) {
+    auto found = std::find_if(
+        std::next(bf_insns.begin(), static_cast<std::ptrdiff_t>(offset)),
+        bf_insns.end(),
+        [&](auto& ins) {
             if (branch == bpf_branch_type::PASS) {
                 if (ins.code & (BPF_RET | BPF_K) && ins.k != 0) return true;
                 return false;

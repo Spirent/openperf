@@ -97,12 +97,13 @@ send_to_peer_timeout(Pistache::Tcp::Peer& peer,
                      int flags,
                      const std::chrono::duration<int64_t, std::milli>& timeout)
 {
-    // The return type of this function is ssize_t so can't send more than SSIZE_MAX bytes without
-    // causing confusion with the return value.
-    // If more than SSIZE_MAX bytes need to be sent, then this function should be called multiple
-    // times until all bytes are sent. In practice, this shouldn't ever happen because data will be
-    // sent in reasonably sized chunks, but this is a safeguard against that and to prevent
-    // errors from static analysis tools.
+    // The return type of this function is ssize_t so can't send more than
+    // SSIZE_MAX bytes without causing confusion with the return value. If more
+    // than SSIZE_MAX bytes need to be sent, then this function should be called
+    // multiple times until all bytes are sent. In practice, this shouldn't ever
+    // happen because data will be sent in reasonably sized chunks, but this is
+    // a safeguard against that and to prevent errors from static analysis
+    // tools.
     size_t len_to_send = std::min(len, static_cast<size_t>(SSIZE_MAX));
     size_t total_sent = 0;
 
@@ -120,11 +121,14 @@ send_to_peer_timeout(Pistache::Tcp::Peer& peer,
         }
         if (nsent == 0) {
             // Socket is full
-            auto msec = static_cast<int>(std::min(timeout.count(), int64_t(INT_MAX)));
+            auto msec =
+                static_cast<int>(std::min(timeout.count(), int64_t(INT_MAX)));
             if (msec == 0) { return static_cast<ssize_t>(total_sent); }
 
             pollfd pfd{peer.fd(), POLLOUT, 0};
-            if (::poll(&pfd, 1, msec) != 1) { return static_cast<ssize_t>(total_sent); }
+            if (::poll(&pfd, 1, msec) != 1) {
+                return static_cast<ssize_t>(total_sent);
+            }
         }
         total_sent += nsent;
     }

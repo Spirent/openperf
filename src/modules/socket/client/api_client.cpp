@@ -499,7 +499,8 @@ int client::fcntl(int s, int cmd, ...)
     case F_SETFL: {
         va_list ap;
         va_start(ap, cmd);
-        int flags = va_arg(ap, int);  // NOLINT(clang-analyzer-valist.Uninitialized)
+        int flags =
+            va_arg(ap, int); // NOLINT(clang-analyzer-valist.Uninitialized)
         va_end(ap);
         // Only allow changing the supported socket flag bits
         to_return =
@@ -517,7 +518,8 @@ int client::fcntl(int s, int cmd, ...)
     case F_SETOWN: {
         va_list ap;
         va_start(ap, cmd);
-        int arg = va_arg(ap, int);  // NOLINT(clang-analyzer-valist.Uninitialized)
+        int arg =
+            va_arg(ap, int); // NOLINT(clang-analyzer-valist.Uninitialized)
         va_end(ap);
         to_return = ::fcntl(s, cmd, arg);
         break;
@@ -525,7 +527,8 @@ int client::fcntl(int s, int cmd, ...)
     default: {
         va_list ap;
         va_start(ap, cmd);
-        void* arg = va_arg(ap, void*);  // NOLINT(clang-analyzer-valist.Uninitialized)
+        void* arg =
+            va_arg(ap, void*); // NOLINT(clang-analyzer-valist.Uninitialized)
         va_end(ap);
         to_return = ::fcntl(s, cmd, arg);
         break;
@@ -555,7 +558,8 @@ int client::ioctl(int s, unsigned long req, ...)
     if (req == FIONBIO) {
         va_list ap;
         va_start(ap, req);
-        int* enable_ptr = va_arg(ap, int*);  // NOLINT(clang-analyzer-valist.Uninitialized)
+        int* enable_ptr =
+            va_arg(ap, int*); // NOLINT(clang-analyzer-valist.Uninitialized)
         va_end(ap);
         // For FIONBIO, argument is pointer to int
         auto enable = *enable_ptr;
@@ -567,7 +571,8 @@ int client::ioctl(int s, unsigned long req, ...)
 
     va_list ap;
     va_start(ap, req);
-    void* argp = va_arg(ap, void*);  // NOLINT(clang-analyzer-valist.Uninitialized)
+    void* argp =
+        va_arg(ap, void*); // NOLINT(clang-analyzer-valist.Uninitialized)
     va_end(ap);
 
     api::request_msg request =

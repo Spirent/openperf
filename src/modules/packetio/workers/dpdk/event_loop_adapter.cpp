@@ -90,8 +90,7 @@ bool event_loop_adapter::add_callback(
     return (true);
 }
 
-void event_loop_adapter::del_callback(
-    event_loop::event_notifier notify)
+void event_loop_adapter::del_callback(event_loop::event_notifier notify)
 {
     /*
      * Since partition sorts the vector into [true items, false items], we need

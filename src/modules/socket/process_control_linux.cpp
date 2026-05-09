@@ -85,8 +85,11 @@ get_caps(FILE* output, cap_value_t cap_values[], size_t nb_cap_values)
     /* Set any needed capability flags */
     auto nb_unset_flags = std::distance(cursor, cap_values + nb_cap_values);
     if (nb_unset_flags) {
-        if (auto error = cap_set_flag(
-                caps.get(), CAP_EFFECTIVE, static_cast<int>(nb_unset_flags), cursor, CAP_SET);
+        if (auto error = cap_set_flag(caps.get(),
+                                      CAP_EFFECTIVE,
+                                      static_cast<int>(nb_unset_flags),
+                                      cursor,
+                                      CAP_SET);
             error != 0) {
             fprintf(output,
                     "Could not set effective capability flag for %s: %s\n",

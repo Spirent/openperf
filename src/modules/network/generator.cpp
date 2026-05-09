@@ -178,10 +178,12 @@ void generator::config(const model::generator_config& config)
 
     if (config.ratio) {
         t_config.synchronizer = &m_synchronizer;
-        m_synchronizer.ratio_reads.store(static_cast<int32_t>(config.ratio.value().reads),
-                                         std::memory_order_relaxed);
-        m_synchronizer.ratio_writes.store(static_cast<int32_t>(config.ratio.value().writes),
-                                          std::memory_order_relaxed);
+        m_synchronizer.ratio_reads.store(
+            static_cast<int32_t>(config.ratio.value().reads),
+            std::memory_order_relaxed);
+        m_synchronizer.ratio_writes.store(
+            static_cast<int32_t>(config.ratio.value().writes),
+            std::memory_order_relaxed);
     }
 
     // Find existing read/write tasks
