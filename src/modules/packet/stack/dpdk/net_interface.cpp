@@ -643,9 +643,6 @@ err_t net_interface::handle_tx(struct pbuf* p)
 
     if (!m_head) { return ERR_BUF; }
 
-    /* Store the interface hwaddr in the mbuf so tx capture can use it */
-    mbuf_tx_sink_set(m_head, m_netif.hwaddr);
-
     /* Drop packets not matching the Tx filter. */
     if (!m_tx_filter.accept(m_head)) { return ERR_RTE; }
 
@@ -657,6 +654,9 @@ err_t net_interface::handle_tx(struct pbuf* p)
     if (~m_netif.chksum_flags & netif_tx_chksum_mask) {
         set_tx_offload_metadata(m_head, m_netif.mtu);
     }
+
+    /* Store the interface hwaddr in the mbuf so tx capture can use it */
+    mbuf_tx_sink_set(m_head, m_netif.hwaddr);
 
     rte_mbuf* pkts[] = {m_head};
     if (m_transmit(port_index(), 0, reinterpret_cast<void**>(pkts), 1) != 1) {
