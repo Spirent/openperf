@@ -693,7 +693,9 @@ reply_msg server::handle_request(const request_start_capture& request)
 
     try {
         // Create capture buffers for each worker and add to result object
-        for (int worker = 0, n = static_cast<int>(impl.worker_count()); worker < n; ++worker) {
+        for (int worker = 0, n = static_cast<int>(impl.worker_count());
+             worker < n;
+             ++worker) {
             result->buffers.emplace_back(
                 create_capture_buffer(id, impl, worker));
         }
