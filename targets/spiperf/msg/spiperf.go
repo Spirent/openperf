@@ -62,8 +62,10 @@ type DataStreamStats struct {
 
 // ServerConfiguration sends the server's view of the test configuration to the server.
 type ServerConfiguration struct {
-	TransmitDuration uint `json:"transmit_duration"`
-	FixedFrameSize   uint `json:"fixed_frame_size"`
+	TransmitDuration  uint   `json:"transmit_duration"`
+	FixedFrameSize    uint   `json:"fixed_frame_size"`
+	UpstreamRateBps   uint64 `json:"upstream_rate_bps"`
+	DownstreamRateBps uint64 `json:"downstream_rate_bps"`
 }
 
 // ServerParametersResponse conveys the server's parameters to the client.
